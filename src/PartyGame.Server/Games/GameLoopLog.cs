@@ -24,4 +24,7 @@ internal static partial class GameLoopLog
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Effect {EffectType} has no executor")]
     public static partial void EffectNotSupported(this ILogger logger, string effectType);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Timer {TimerId} elapsed but its input could not be enqueued")]
+    public static partial void TimerInputLost(this ILogger logger, Exception exception, string timerId);
 }

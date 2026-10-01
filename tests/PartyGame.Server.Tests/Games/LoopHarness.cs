@@ -13,16 +13,21 @@ internal sealed class LoopHarness : IAsyncDisposable
 {
     public static readonly GameState InitialState = GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")));
 
-    private LoopHarness(ScriptedEngine engine, Func<Effect, bool>? effectFails, IEnumerable<Func<Journal, RecordingListener>> listeners)
+    private LoopHarness(
+        ScriptedEngine engine,
+        Func<LoopHarness, IEffectExecutor>? effects,
+        Func<Effect, bool>? effectFails,
+        IEnumerable<Func<Journal, RecordingListener>> listeners)
     {
         Engine = engine;
         Listeners = [.. listeners.Select(create => create(Journal))];
         Loop = new GameLoop(
             InitialState,
             seed: 42,
+            Inputs,
             engine,
             Time,
-            new RecordingEffectExecutor(Journal, effectFails),
+            effects?.Invoke(this) ?? new RecordingEffectExecutor(Journal, effectFails),
             Listeners,
             Logger);
     }
@@ -30,6 +35,8 @@ internal sealed class LoopHarness : IAsyncDisposable
     public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2026, 10, 1, 20, 0, 0, TimeSpan.Zero));
 
     public Journal Journal { get; } = new();
+
+    public GameInputQueue Inputs { get; } = new();
 
     public RecordingLogger<GameLoop> Logger { get; } = new();
 
@@ -42,10 +49,12 @@ internal sealed class LoopHarness : IAsyncDisposable
     public static async Task<LoopHarness> StartAsync(
         ScriptedEngine? engine = null,
         Func<Effect, bool>? effectFails = null,
+        Func<LoopHarness, IEffectExecutor>? effects = null,
         params Func<Journal, RecordingListener>[] listeners)
     {
         var harness = new LoopHarness(
             engine ?? new ScriptedEngine(),
+            effects,
             effectFails,
             listeners.Length == 0 ? [journal => new RecordingListener(journal)] : listeners);
         await harness.Loop.StartAsync(TestContext.Current.CancellationToken);

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Threading.Channels;
 using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
 
@@ -10,12 +9,9 @@ namespace PartyGame.Server.Games;
 /// a time, so neither the engine nor the state ever needs a lock. No exception ever leaves the loop: a background service
 /// that throws stops the whole application.
 /// </summary>
-internal sealed class GameLoop : BackgroundService, IGameInputWriter
+internal sealed class GameLoop : BackgroundService
 {
-    // Unbounded: an intent must never be dropped, and the volume of a party game cannot exhaust memory.
-    private readonly Channel<QueuedInput> _queue =
-        Channel.CreateUnbounded<QueuedInput>(new UnboundedChannelOptions { SingleReader = true });
-
+    private readonly GameInputQueue _queue;
     private readonly IGameEngine _engine;
     private readonly TimeProvider _timeProvider;
     private readonly IEffectExecutor _effects;
@@ -26,6 +22,7 @@ internal sealed class GameLoop : BackgroundService, IGameInputWriter
 
     /// <param name="initialState">State of the game before any input.</param>
     /// <param name="seed">Seed of the random generator handed to the engine, so that a game can be replayed.</param>
+    /// <param name="queue">The queue the loop reads its inputs from.</param>
     /// <param name="engine">The rules of the game.</param>
     /// <param name="timeProvider">Source of <see cref="GameContext.Now"/>.</param>
     /// <param name="effects">Executes the effects of each transition.</param>
@@ -34,6 +31,7 @@ internal sealed class GameLoop : BackgroundService, IGameInputWriter
     public GameLoop(
         GameState initialState,
         int seed,
+        GameInputQueue queue,
         IGameEngine engine,
         TimeProvider timeProvider,
         IEffectExecutor effects,
@@ -42,6 +40,7 @@ internal sealed class GameLoop : BackgroundService, IGameInputWriter
     {
         _state = initialState;
         _random = new Random(seed);
+        _queue = queue;
         _engine = engine;
         _timeProvider = timeProvider;
         _effects = effects;
@@ -53,22 +52,6 @@ internal sealed class GameLoop : BackgroundService, IGameInputWriter
     /// The current state. Readable from any thread: it is immutable, and only its reference is replaced by the loop.
     /// </summary>
     public GameState State => Volatile.Read(ref _state);
-
-    public async ValueTask WriteAsync(GameInput input, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(input);
-        await EnqueueAsync(new QueuedInput(input, Completion: null), cancellationToken).ConfigureAwait(false);
-    }
-
-    public async Task<InputOutcome> SubmitAsync(GameInput input, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(input);
-
-        // The producer's continuation must not run on the loop, which would then wait for it.
-        var completion = new TaskCompletionSource<InputOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await EnqueueAsync(new QueuedInput(input, completion), cancellationToken).ConfigureAwait(false);
-        return await completion.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
-    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -96,25 +79,9 @@ internal sealed class GameLoop : BackgroundService, IGameInputWriter
         finally
         {
             // Producers waiting for an answer must not hang once nobody reads the queue anymore.
-            _queue.Writer.TryComplete();
-            while (_queue.Reader.TryRead(out var pending))
-            {
-                pending.Completion?.TrySetCanceled(stoppingToken);
-            }
+            _queue.Close(stoppingToken);
 
             _logger.GameLoopStopped();
-        }
-    }
-
-    private async ValueTask EnqueueAsync(QueuedInput queued, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _queue.Writer.WriteAsync(queued, cancellationToken).ConfigureAwait(false);
-        }
-        catch (ChannelClosedException ex)
-        {
-            throw new OperationCanceledException("The game loop is stopped.", ex);
         }
     }
 

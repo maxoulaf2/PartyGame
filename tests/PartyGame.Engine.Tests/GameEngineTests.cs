@@ -29,7 +29,7 @@ public sealed class GameEngineTests
         var state = Games.LobbyWith("Zoé");
 
         // When
-        var transition = Games.Engine.Handle(state, new TimerElapsed(new TimerId("countdown")), Games.Context());
+        var transition = Games.Engine.Handle(state, new TimerElapsed(new TimerId("countdown"), DateTimeOffset.UnixEpoch), Games.Context());
 
         // Then
         Assert.Same(state, transition.State);

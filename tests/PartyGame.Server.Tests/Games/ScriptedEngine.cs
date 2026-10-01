@@ -16,6 +16,9 @@ internal sealed class ScriptedEngine(Func<GameState, GameInput, GameContext, Tra
 
     public GameContext? LastContext { get; private set; }
 
+    /// <summary>Inputs handled so far, in order.</summary>
+    public List<GameInput> Inputs { get; } = [];
+
     public Transition Handle(GameState state, GameInput input, GameContext context)
     {
         var running = Interlocked.Increment(ref _running);
@@ -23,6 +26,7 @@ internal sealed class ScriptedEngine(Func<GameState, GameInput, GameContext, Tra
         try
         {
             LastContext = context;
+            Inputs.Add(input);
             return (handle ?? AddPlayer)(state, input, context);
         }
         finally

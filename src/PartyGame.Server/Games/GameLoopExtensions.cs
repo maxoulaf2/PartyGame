@@ -13,18 +13,21 @@ internal static class GameLoopExtensions
     {
         builder.Services.TryAddSingleton(TimeProvider.System);
         builder.Services.TryAddSingleton<IGameEngine, GameEngine>();
-        builder.Services.TryAddSingleton<IEffectExecutor, UnsupportedEffectExecutor>();
+        builder.Services.TryAddSingleton<GameInputQueue>();
+        builder.Services.TryAddSingleton<IGameInputWriter>(services => services.GetRequiredService<GameInputQueue>());
+        builder.Services.TryAddSingleton<TimerScheduler>();
+        builder.Services.TryAddSingleton<IEffectExecutor, EffectExecutor>();
 
         // The engine has no randomness of its own: the identifier of the game and the seed come from here.
         builder.Services.AddSingleton(services => new GameLoop(
             GameState.Create(new GameId(Guid.NewGuid())),
             Random.Shared.Next(),
+            services.GetRequiredService<GameInputQueue>(),
             services.GetRequiredService<IGameEngine>(),
             services.GetRequiredService<TimeProvider>(),
             services.GetRequiredService<IEffectExecutor>(),
             services.GetServices<IGameStateListener>(),
             services.GetRequiredService<ILogger<GameLoop>>()));
-        builder.Services.AddSingleton<IGameInputWriter>(services => services.GetRequiredService<GameLoop>());
         builder.Services.AddHostedService(services => services.GetRequiredService<GameLoop>());
 
         return builder;
