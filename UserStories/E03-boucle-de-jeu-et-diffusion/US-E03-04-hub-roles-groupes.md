@@ -1,6 +1,6 @@
 ### US-E03-04 — Hub SignalR typé, rôles et groupes
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 Un hub SignalR fortement typé, exposé sous `/hub`, accepte les connexions des trois rôles et les range dans leurs groupes. Côté client, un module unique de `shared/connection` encapsule `@microsoft/signalr` : aucun composant ne l'importe directement. Le hub se contente de valider la forme des messages et de les déposer dans la file.
@@ -28,6 +28,12 @@ Joueurs et public : un message rejeté ne produit aucun affichage. GM : un code 
 - `EnableDetailedErrors` uniquement en développement.
 - Nouvelles dépendances (décision 3 du README) : `@microsoft/signalr` et `Microsoft.AspNetCore.SignalR.Client` (tests).
 - Mettre à jour CLAUDE.md (« Commandes » si le proxy change, « Points d'attention » si utile).
+- Réalisation : l'annonce est une méthode unique `Announce(Announcement)`, où `Announcement` porte le rôle et le code GM (nullable, toujours présent sur le fil). Elle répond un `AnnouncementResult` dont le motif de refus (`AnnouncementRefusal`) vaut `GameMasterCodeInvalid` ou `MessageInvalid`. Le rôle `Player` est refusé comme malformé : un joueur s'identifie par `JoinGame` ou `ResumeSession`. Une nouvelle annonce remplace la précédente, y compris quand elle est refusée ; un message malformé ne change rien.
+- Réalisation : les méthodes du hub reçoivent leur message en `JsonElement` et le lisent avec `HubMessage.TryRead` (conventions de `ContractJsonOptions`). SignalR rejetterait sinon un message mal typé avant d'atteindre le hub, avec un log `Debug` invisible. Le `Warning` ne contient que le chemin JSON fautif, jamais la valeur. Un nombre d'arguments erroné reste rejeté par SignalR lui-même, sans message transmis au client.
+- Réalisation : une intention GM se déclare avec `[GameMasterOnly]` ; le filtre de hub `GameMasterOnlyFilter` l'ignore (réponse vide, log `Warning`) si la connexion n'est pas authentifiée comme GM. `HubExceptionFilter` journalise en `Error` toute exception d'une méthode du hub et répond vide. Aucune intention GM n'existant encore, les tests passent par un hub de test (`ProbeHub`) monté à côté du vrai avec la configuration SignalR du serveur.
+- Réalisation : les méthodes du hub portent le suffixe `Async` et gardent leur nom sur le fil par `[HubMethodName]` (`GameHub.Announce`).
+- Réalisation : `IGameClient` est vide jusqu'aux snapshots (US-E03-05). `PartyGame.TypeGen` traduit une interface non polymorphe de `Contracts` en interface TypeScript dont chaque méthode garde son nom C# (la cible SignalR) et retourne `void` ; seules les méthodes retournant `Task`, sans surcharge, sont acceptées.
+- Réalisation : côté client, `shared/connection/gameHub.ts` expose `createGameConnection` (`start`, `stop`, `invoke` typé par `GameHubMethods`, `on` typé par `IGameClient`). Aucune page ne se connecte encore : la connexion de la TV et du GM arrive avec les snapshots (US-E03-05) et l'écran du code (US-E04-01). Le proxy Vite de `/hub` (`ws: true`) existait déjà. Vérifié avec un client Node en WebSocket seul, sur le serveur .NET et à travers `npm run dev`.
 
 **Hors périmètre**
 - Reconnexion automatique et réidentification (E05).

@@ -1,6 +1,6 @@
 ### US-E03-05 — Snapshots versionnés, projetés par rôle et diffusés
 
-**Statut :** À faire
+**Statut :** Prête
 
 **Résultat attendu**
 Après chaque transition qui change l'état, le serveur envoie à chaque client l'état complet qui le concerne, projeté selon son rôle et versionné. Côté client, un store partagé conserve le dernier snapshot et ignore tout ce qui est plus ancien. Une connexion qui s'annonce reçoit immédiatement le snapshot courant.
@@ -24,6 +24,7 @@ Joueurs et public : si un envoi échoue (connexion coupée), le client garde le 
 - La diffusion est exécutée par la boucle après la transition et ses effets, protégée comme eux : elle implémente `IGameStateListener` (`PartyGame.Server/Games`), appelé après chaque transition qui change l'état.
 - Le contenu des snapshots du lobby (joueurs, adresse, phase) est défini par E04. Cette US peut démarrer avec un contenu minimal (phase et nombre de joueurs).
 - Le helper de test de non-fuite réutilisable par tous les modes est l'objet de E07 ; ici, des tests ciblés suffisent.
+- Point d'accroche (US-E03-04) : les messages du serveur vers les clients s'ajoutent comme méthodes de `IGameClient` (`Contracts`), puis `npm run generate:contracts` ; le client s'y abonne par `GameConnection.on`. L'envoi du snapshot courant après une annonce acceptée se fait dans `GameHub.AnnounceAsync` ; les groupes sont nommés dans `HubGroups`. La TV se connecte et s'annonce par `createGameConnection` (`shared/connection/gameHub.ts`).
 
 **Hors périmètre**
 - Diffs entre snapshots (écartés par l'ADR 0001).
