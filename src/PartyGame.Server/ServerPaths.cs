@@ -17,6 +17,9 @@ internal static class ServerPaths
 
     public static readonly IReadOnlyList<PathString> Reserved = [Api, Hub, Media, Assets, Health];
 
+    /// <summary>Connection information for the TV screen (<c>JoinInfo</c>).</summary>
+    public static readonly string Join = $"{Api}/join";
+
     public static bool IsReserved(PathString path) =>
         Reserved.Any(prefix => path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase));
 }
