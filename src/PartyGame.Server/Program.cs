@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using PartyGame.Contracts.Serialization;
 using PartyGame.Server;
 using PartyGame.Server.FrontEnd;
+using PartyGame.Server.GameMaster;
 using PartyGame.Server.Logging;
 using PartyGame.Server.Network;
 using Serilog;
@@ -18,6 +19,7 @@ try
 
     builder.Services.AddSerilog(ServerLogging.CreateLogger(configuration), dispose: true);
     builder.AddLocalNetworkListening();
+    builder.AddGameMasterCode();
 
     builder.Services.ConfigureHttpJsonOptions(options => ContractJsonOptions.Apply(options.SerializerOptions));
     builder.Services.AddHealthChecks();
@@ -31,7 +33,8 @@ try
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
     app.Lifetime.ApplicationStarted.Register(() => Console.Out.Write(StartupBanner.Format(
         app.Services.GetRequiredService<AddressSelection>(),
-        app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port)));
+        app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port,
+        app.Services.GetRequiredService<GameMasterCode>())));
 
     app.Run();
     return 0;
