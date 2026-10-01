@@ -105,6 +105,7 @@ dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained
 ## Points d'attention
 
 - **Écoute réseau.** Kestrel écoute sur `0.0.0.0` et non sur `localhost`, sinon les téléphones ne peuvent pas se connecter. Le port vient de l'option typée `NetworkOptions` (`Network:Port`), qui remplace toute URL passée par `urls` : ne pas ajouter de `launchSettings.json` ni de `Kestrel:Endpoints`. Sous Windows, le pare-feu doit autoriser le port (voir [docs/installation.md](docs/installation.md)).
+- **Routage des pages.** `/display` et `/gm` (sans barre oblique finale ou dans une autre casse) sont redirigés temporairement vers `/display/` et `/gm/`, côté serveur comme dans Vite (plugin `client/vite/canonicalPages.ts`). Un navigateur qui ouvre une page inconnue est redirigé vers `/`, sauf sous les préfixes techniques réservés, définis dans `ServerPaths` (`/api`, `/hub`, `/media`, `/assets`, `/health`) : tout nouveau préfixe technique y est déclaré.
 - **QR code.** Il encode l'IPv4 privée détectée au démarrage, jamais un nom en `.local` (mal résolu sur Android). Si plusieurs interfaces réseau sont actives, le GM choisit la bonne.
 - **Autoplay sur l'écran TV.** L'écran affiche un bouton « Démarrer » dont le clic débloque l'audio du navigateur. En mode kiosque Chromium sur le Pi, utiliser le flag `--autoplay-policy=no-user-gesture-required`.
 - **Interface joueur.** Appliquer `touch-action: manipulation` sur les zones interactives pour éviter le délai et le zoom au double tap, et rendre le viewport non zoomable.
