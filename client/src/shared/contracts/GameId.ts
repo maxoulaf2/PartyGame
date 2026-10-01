@@ -3,7 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type * from './GameId';
-export type * from './JoinInfo';
-export type * from './PlayerId';
-export type * from './Role';
+export type GameId = string & { readonly __brand: 'GameId' };
