@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using PartyGame.Server.GameMaster;
 using PartyGame.Server.Network;
 
 namespace PartyGame.Server;
@@ -12,7 +13,7 @@ internal static class StartupBanner
 {
     private const string Rule = "==============================================================";
 
-    public static string Format(AddressSelection selection, int port)
+    public static string Format(AddressSelection selection, int port, GameMasterCode gameMasterCode)
     {
         var host = selection.Address?.ToString() ?? "localhost";
         var banner = new StringBuilder()
@@ -40,6 +41,8 @@ internal static class StartupBanner
 
         Line(banner, "Écran TV", $"http://{host}:{port}/display/");
         Line(banner, "Game master", $"http://{host}:{port}/gm/");
+        var codeOrigin = gameMasterCode.IsConfigured ? $" (imposé par {GameMasterOptions.CodeSetting})" : string.Empty;
+        Line(banner, "Code game master", gameMasterCode.RevealForBanner() + codeOrigin);
 
         var others = selection.OtherCandidates.ToList();
         if (others.Count > 0)

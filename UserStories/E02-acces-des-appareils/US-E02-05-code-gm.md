@@ -1,6 +1,6 @@
 ### US-E02-05 — Code GM généré au démarrage
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** qu'un code secret soit généré au démarrage et affiché uniquement dans la console du serveur

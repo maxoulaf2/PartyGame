@@ -22,10 +22,25 @@ Une fois prêt, le serveur affiche dans la console une bannière qui donne tout 
   Adresse des joueurs : 192.168.1.42 (détectée)
   Écran TV            : http://192.168.1.42:5000/display/
   Game master         : http://192.168.1.42:5000/gm/
+  Code game master    : 482913
 ==============================================================
 ```
 
 Ouvrir l'URL « Écran TV » sur le navigateur de la TV, et l'URL « Game master » sur l'appareil du GM.
+
+## Code game master
+
+N'importe qui sur le réseau peut ouvrir `/gm/` : seul le code game master permet de piloter la partie. C'est un code de 6 chiffres, tiré au hasard à chaque démarrage du serveur et affiché uniquement dans la bannière de la console. Il n'est jamais écrit dans les fichiers de `logs/` ni envoyé par le serveur à un navigateur. Après un redémarrage, y compris une reprise après crash, relire le nouveau code dans la console.
+
+Pour le développement et les tests E2E, un code fixe peut être imposé par le paramètre `GameMaster:Code` (la bannière l'indique alors par « imposé par GameMaster:Code ») :
+
+| Moyen | Exemple |
+|---|---|
+| Fichier `appsettings.json` du serveur | `"GameMaster": { "Code": "123456" }` |
+| Variable d'environnement | `GameMaster__Code=123456` (PowerShell : `$env:GameMaster__Code = "123456"`) |
+| Argument de ligne de commande | `dotnet run --project src/PartyGame.Server -- --GameMaster:Code=123456` |
+
+Une valeur qui n'est pas faite d'exactement 6 chiffres arrête le serveur au démarrage. Un code imposé reste lisible par quiconque accède au fichier ou à l'environnement du PC : ne pas l'utiliser pour une vraie soirée.
 
 ## Adresse annoncée aux téléphones
 
