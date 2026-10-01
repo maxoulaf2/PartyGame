@@ -1,6 +1,7 @@
 using System.Globalization;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.Logging;
+using PartyGame.Server.Network;
 using Serilog;
 
 // Catches failures that happen before the configuration is available (e.g. unreadable appsettings).
@@ -13,6 +14,7 @@ try
     configuration = builder.Configuration;
 
     builder.Services.AddSerilog(ServerLogging.CreateLogger(configuration), dispose: true);
+    builder.AddLocalNetworkListening();
 
     builder.Services.AddHealthChecks();
 
@@ -36,6 +38,19 @@ catch (Exception ex)
     // A failing host disposes its logger before the exception gets here, so the fatal error needs a logger of its own.
     // Disposing it flushes the message before the process exits.
     using var fatalLogger = configuration is null ? null : ServerLogging.CreateLogger(configuration);
-    ((Serilog.ILogger?)fatalLogger ?? bootstrapLogger).Fatal(ex, "Server terminated unexpectedly");
+    var logger = (Serilog.ILogger?)fatalLogger ?? bootstrapLogger;
+    if (ServerLogging.IsPortInUse(ex) && configuration is not null)
+    {
+        // A common operator mistake (a second server, another app on the port): no stack trace, just what to do.
+        logger.Fatal(
+            "Port {Port} is already in use by another program. Stop that program, or choose another port with the {Setting} setting (e.g. environment variable Network__Port=5001 or argument --Network:Port=5001)",
+            NetworkOptions.Read(configuration).Port,
+            $"{NetworkOptions.SectionName}:Port");
+    }
+    else
+    {
+        logger.Fatal(ex, "Server terminated unexpectedly");
+    }
+
     return 1;
 }

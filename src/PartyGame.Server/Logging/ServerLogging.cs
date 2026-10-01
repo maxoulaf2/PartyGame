@@ -1,6 +1,8 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Connections;
 using Serilog;
 using Serilog.Core;
+using Serilog.Events;
 using Serilog.Formatting.Compact;
 
 namespace PartyGame.Server.Logging;
@@ -19,6 +21,7 @@ internal static class ServerLogging
         return new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
             .Enrich.FromLogContext()
+            .Filter.ByExcluding(IsPortInUseStackTrace)
             .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
             .WriteTo.File(
                 new CompactJsonFormatter(),
@@ -29,4 +32,15 @@ internal static class ServerLogging
                 retainedFileCountLimit: options.RetainedFileCount)
             .CreateLogger();
     }
+
+    public static bool IsPortInUse(Exception? exception) =>
+        exception is IOException { InnerException: AddressInUseException };
+
+    // The host logs a busy port with its full stack trace before rethrowing. The entry point reports it
+    // instead with a plain message telling the operator what to do.
+    private static bool IsPortInUseStackTrace(LogEvent logEvent) =>
+        IsPortInUse(logEvent.Exception)
+        && logEvent.Properties.TryGetValue("SourceContext", out var source)
+        && source is ScalarValue { Value: string context }
+        && context.StartsWith("Microsoft.Extensions.Hosting", StringComparison.Ordinal);
 }
