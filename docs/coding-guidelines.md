@@ -42,7 +42,7 @@ public sealed record Transition(GameState State, ImmutableArray<Effect> Effects)
 
 ### Les rejets métier ne sont pas des exceptions
 
-Une intention invalide (réponse hors délai, second buzz, mauvaise phase) est un cas normal. `Handle` retourne alors la même instance d'état sans effet, et `GameLoop` ne diffuse rien. Les exceptions sont réservées aux bugs.
+Une intention invalide (réponse hors délai, second buzz, mauvaise phase) est un cas normal. `Handle` retourne alors la même instance d'état sans effet, accompagnée d'un motif (`Transition.Rejection`), et `GameLoop` ne diffuse rien. Le motif sert au log `Debug` et à la réponse faite à l'émetteur quand l'intention en attend une (inscription refusée, par exemple). Les exceptions sont réservées aux bugs.
 
 ### Idempotence des intentions
 

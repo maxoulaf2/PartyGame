@@ -22,6 +22,7 @@ Joueur : serveur injoignable, le bouton reste désactivé et l'indicateur de rec
 
 **Notes techniques**
 - Intention `JoinGame(nickname)`. Le hub génère le jeton (128 bits aléatoires avec `RandomNumberGenerator`, encodés en base64url) et le `PlayerId`, puis dépose l'entrée dans la file et attend la réponse de la boucle (US-E03-02). La réponse au client est soit le jeton et le `PlayerId`, soit un code de refus.
+- La partie moteur est déjà livrée par US-E03-01 : intention `JoinGame` (identifiant, jeton et pseudo fournis par le hub), règles du pseudo dans `NicknameRules`, et motifs de refus `NicknameInvalid`, `NicknameTaken` et `PlayerAlreadyJoined` (inscription rejouée). Il reste à traduire ces motifs en codes de `PartyGame.Contracts` dans la réponse au client.
 - L'état associe le jeton au `PlayerId`. Cette correspondance n'est jamais projetée : un jeton ne circule qu'une fois, dans la réponse à l'inscription.
 - La normalisation (espaces, comparaison sans casse ni accents) est une fonction pure du moteur, partagée par l'inscription et le renommage (US-E04-04). Les graphèmes se comptent avec `StringInfo`.
 - Présence : un joueur inscrit est marqué connecté. Quand sa dernière connexion se ferme, le hub dépose une entrée `PlayerConnectionLost` ; la reconnexion (US-E05-01) le marque de nouveau connecté. Cet état alimente les listes de la TV et du GM.
