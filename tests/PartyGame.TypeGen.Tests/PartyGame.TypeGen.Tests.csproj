@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\PartyGame.TypeGen\PartyGame.TypeGen.csproj" />
+  </ItemGroup>
+
+</Project>
