@@ -1,0 +1,15 @@
+using PartyGame.Engine;
+
+namespace PartyGame.Server.Games;
+
+/// <summary>
+/// Notified by the loop after each transition that changed the state, once its effects are executed.
+/// The broadcast of snapshots (US-E03-05) is one.
+/// </summary>
+internal interface IGameStateListener
+{
+    /// <summary>
+    /// Called from the loop, one change at a time. It must stay quick: the loop waits for it before the next input.
+    /// </summary>
+    ValueTask OnStateChangedAsync(GameState state, CancellationToken cancellationToken);
+}

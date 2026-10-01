@@ -21,7 +21,7 @@ Joueurs et public : si un envoi échoue (connexion coupée), le client garde le 
 - Les projections sont des fonctions pures de l'état vers les DTO, testées sans réseau. L'état du moteur n'est jamais sérialisé directement vers un client.
 - La version est portée par l'état (ou par la boucle, à condition d'être persistée avec lui en E11) : elle doit survivre à une reprise après crash.
 - Le store vit dans un module `.svelte.ts` de `shared/connection`, en runes Svelte 5. Il expose aussi un indicateur « snapshot frais reçu », utilisé par US-E05-02.
-- La diffusion est un effet exécuté par la boucle après la transition, protégée comme les autres effets.
+- La diffusion est exécutée par la boucle après la transition et ses effets, protégée comme eux : elle implémente `IGameStateListener` (`PartyGame.Server/Games`), appelé après chaque transition qui change l'état.
 - Le contenu des snapshots du lobby (joueurs, adresse, phase) est défini par E04. Cette US peut démarrer avec un contenu minimal (phase et nombre de joueurs).
 - Le helper de test de non-fuite réutilisable par tous les modes est l'objet de E07 ; ici, des tests ciblés suffisent.
 

@@ -1,6 +1,6 @@
 ### US-E03-03 — Timers déposés dans la file
 
-**Statut :** À faire
+**Statut :** Prête
 
 **Résultat attendu**
 Le moteur peut demander un timer par un effet. À échéance, le timer ne modifie rien lui-même : il dépose une entrée `TimerElapsed` dans la file, traitée par la boucle comme n'importe quelle autre entrée. Les comptes à rebours (E08) et la fenêtre d'arbitrage du buzzer (E13) reposeront sur ce mécanisme.
@@ -21,6 +21,7 @@ Sans objet pour les utilisateurs. Un timer qui ne peut pas être programmé est 
 - Les timers sont créés avec `TimeProvider.CreateTimer`, jamais avec `Task.Delay` ou `System.Threading.Timer` directement.
 - L'échéance est une heure absolue (`DateTimeOffset`) calculée par le moteur à partir de `context.Now`, pour que l'état connaisse l'instant exact (affiché plus tard aux clients comme échéance serveur).
 - Le service de timers vit dans `PartyGame.Server` ; le moteur ne connaît que les effets et l'entrée.
+- La boucle (US-E03-02) exécute les effets par `IEffectExecutor` (`PartyGame.Server/Games`) : le service de timers remplace l'implémentation provisoire `UnsupportedEffectExecutor`, et dépose ses entrées par `IGameInputWriter.WriteAsync`.
 - Le moteur n'a pas encore de phase qui utilise un timer : les tests passent par un état ou un moteur de test. La première utilisation réelle est le compte à rebours du quiz (E08).
 
 **Hors périmètre**

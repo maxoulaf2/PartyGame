@@ -1,6 +1,6 @@
 ### US-E03-02 — `GameLoop` : une file et un seul écrivain
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 Dans `PartyGame.Server`, une boucle unique traite une à une les entrées de la partie, déposées dans un `Channel<GameInput>`. Elle est le seul écrivain de l'état, exécute les effets, signale les changements d'état à la diffusion, et survit à toute exception.

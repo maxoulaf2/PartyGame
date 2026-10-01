@@ -4,6 +4,7 @@ using PartyGame.Contracts.Serialization;
 using PartyGame.Server;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
+using PartyGame.Server.Games;
 using PartyGame.Server.Logging;
 using PartyGame.Server.Network;
 using Serilog;
@@ -20,6 +21,7 @@ try
     builder.Services.AddSerilog(ServerLogging.CreateLogger(configuration), dispose: true);
     builder.AddLocalNetworkListening();
     builder.AddGameMasterCode();
+    builder.AddGameLoop();
 
     builder.Services.ConfigureHttpJsonOptions(options => ContractJsonOptions.Apply(options.SerializerOptions));
     builder.Services.AddHealthChecks();
