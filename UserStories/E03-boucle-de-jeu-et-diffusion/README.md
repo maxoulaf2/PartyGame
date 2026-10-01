@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E03-01](US-E03-01-moteur-pur.md) | Moteur pur : état immuable, transitions et effets | Terminée | — |
 | [US-E03-02](US-E03-02-game-loop.md) | `GameLoop` : une file et un seul écrivain | Terminée | US-E03-01 |
-| [US-E03-03](US-E03-03-timers.md) | Timers déposés dans la file | Prête | US-E03-02 |
+| [US-E03-03](US-E03-03-timers.md) | Timers déposés dans la file | Terminée | US-E03-02 |
 | [US-E03-04](US-E03-04-hub-roles-groupes.md) | Hub SignalR typé, rôles et groupes | Prête | US-E03-02 |
 | [US-E03-05](US-E03-05-snapshots-par-role.md) | Snapshots versionnés, projetés par rôle et diffusés | À faire | US-E03-04 |
 

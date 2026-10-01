@@ -23,11 +23,11 @@ public sealed class GameLoopTests
             {
                 for (var i = 0; i < InputsPerProducer; i++)
                 {
-                    await harness.Loop.WriteAsync(new TestInput((producer * 1000) + i), Ct);
+                    await harness.Inputs.WriteAsync(new TestInput((producer * 1000) + i), Ct);
                 }
             },
             Ct)));
-        await harness.Loop.SubmitAsync(new TestInput(-1), Ct);
+        await harness.Inputs.SubmitAsync(new TestInput(-1), Ct);
 
         // Then
         Assert.Equal(1, harness.Engine.MaxConcurrentCalls);
@@ -50,7 +50,7 @@ public sealed class GameLoopTests
         await using var harness = await LoopHarness.StartAsync(engine);
 
         // When
-        var outcome = await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        var outcome = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // Then
         Assert.Equal(InputOutcome.Accepted, outcome);
@@ -68,7 +68,7 @@ public sealed class GameLoopTests
         await using var harness = await LoopHarness.StartAsync(engine);
 
         // When
-        var outcome = await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        var outcome = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // Then
         Assert.Equal(InputOutcome.Rejected(RejectionReason.NicknameTaken), outcome);
@@ -90,9 +90,9 @@ public sealed class GameLoopTests
         await using var harness = await LoopHarness.StartAsync(engine);
 
         // When
-        var failed = await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        var failed = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
         var stateAfterFailure = harness.Loop.State;
-        var next = await harness.Loop.SubmitAsync(new TestInput(2), Ct);
+        var next = await harness.Inputs.SubmitAsync(new TestInput(2), Ct);
 
         // Then
         Assert.Equal(InputOutcome.Failed, failed);
@@ -116,7 +116,7 @@ public sealed class GameLoopTests
         await using var harness = await LoopHarness.StartAsync(engine, effectFails: effect => effect == failing);
 
         // When
-        var outcome = await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        var outcome = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // Then
         Assert.Equal(InputOutcome.Accepted, outcome);
@@ -133,7 +133,7 @@ public sealed class GameLoopTests
             listeners: [journal => new RecordingListener(journal, "failing", fails: true), journal => new RecordingListener(journal, "other")]);
 
         // When
-        var outcome = await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        var outcome = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // Then
         Assert.Equal(InputOutcome.Accepted, outcome);
@@ -149,7 +149,7 @@ public sealed class GameLoopTests
         harness.Time.Advance(TimeSpan.FromMinutes(5));
 
         // When
-        await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // Then
         Assert.Equal(harness.Time.GetUtcNow(), harness.Engine.LastContext?.Now);
@@ -160,15 +160,15 @@ public sealed class GameLoopTests
     {
         // Given
         var harness = await LoopHarness.StartAsync();
-        await harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // When
         await harness.DisposeAsync();
 
         // Then
         Assert.True(harness.Loop.ExecuteTask?.IsCompletedSuccessfully);
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => harness.Loop.WriteAsync(new TestInput(2), Ct).AsTask());
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => harness.Loop.SubmitAsync(new TestInput(3), Ct));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => harness.Inputs.WriteAsync(new TestInput(2), Ct).AsTask());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => harness.Inputs.SubmitAsync(new TestInput(3), Ct));
     }
 
     [Fact]
@@ -184,9 +184,9 @@ public sealed class GameLoopTests
             return ScriptedEngine.AddPlayer(state, input, context);
         });
         var harness = await LoopHarness.StartAsync(engine);
-        var inProgress = harness.Loop.SubmitAsync(new TestInput(1), Ct);
+        var inProgress = harness.Inputs.SubmitAsync(new TestInput(1), Ct);
         engineEntered.Wait(Ct);
-        var queued = harness.Loop.SubmitAsync(new TestInput(2), Ct);
+        var queued = harness.Inputs.SubmitAsync(new TestInput(2), Ct);
 
         // When
         var stopping = harness.DisposeAsync();

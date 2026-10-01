@@ -24,7 +24,8 @@ public sealed class GameLoopHostingTests(WebApplicationFactory<Program> factory)
 
         // Then
         Assert.Contains(loop, services.GetServices<IHostedService>());
-        Assert.Same(loop, services.GetRequiredService<IGameInputWriter>());
+        Assert.Same(services.GetRequiredService<GameInputQueue>(), services.GetRequiredService<IGameInputWriter>());
+        Assert.IsType<EffectExecutor>(services.GetRequiredService<IEffectExecutor>());
         Assert.Equal(InputOutcome.Accepted, outcome);
         Assert.Equal(GamePhase.Lobby, loop.State.Phase);
         Assert.Equal("Zoé", Assert.Single(loop.State.Players).Nickname);
