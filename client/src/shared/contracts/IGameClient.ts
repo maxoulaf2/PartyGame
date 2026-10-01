@@ -3,4 +3,12 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export interface IGameClient {}
+import type { DisplaySnapshot } from './DisplaySnapshot';
+import type { GameMasterSnapshot } from './GameMasterSnapshot';
+import type { PlayerSnapshot } from './PlayerSnapshot';
+
+export interface IGameClient {
+    ReceiveDisplaySnapshot(snapshot: DisplaySnapshot): void;
+    ReceiveGameMasterSnapshot(snapshot: GameMasterSnapshot): void;
+    ReceivePlayerSnapshot(snapshot: PlayerSnapshot): void;
+}

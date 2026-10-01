@@ -6,8 +6,12 @@
 export type * from './Announcement';
 export type * from './AnnouncementRefusal';
 export type * from './AnnouncementResult';
+export type * from './DisplaySnapshot';
 export type * from './GameId';
+export type * from './GameMasterSnapshot';
 export type * from './IGameClient';
 export type * from './JoinInfo';
+export type * from './Phase';
 export type * from './PlayerId';
+export type * from './PlayerSnapshot';
 export type * from './Role';
