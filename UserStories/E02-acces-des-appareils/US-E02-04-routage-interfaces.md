@@ -1,6 +1,6 @@
 ### US-E02-04 — Routage des trois interfaces
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant qu'**opérateur
 **je veux** que chaque rôle ait une adresse courte, stable et tolérante aux fautes de frappe courantes

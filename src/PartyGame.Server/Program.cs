@@ -1,4 +1,5 @@
 using System.Globalization;
+using PartyGame.Server;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.Logging;
 using PartyGame.Server.Network;
@@ -21,7 +22,7 @@ try
     var app = builder.Build();
 
     app.UseFrontEnd();
-    app.MapHealthChecks("/health");
+    app.MapHealthChecks(ServerPaths.Health);
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
 

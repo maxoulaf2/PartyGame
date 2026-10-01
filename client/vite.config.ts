@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vitest/config';
+import { canonicalPages } from './vite/canonicalPages.ts';
 
 const page = (path: string): string => fileURLToPath(new URL(path, import.meta.url));
 
@@ -8,7 +9,7 @@ const page = (path: string): string => fileURLToPath(new URL(path, import.meta.u
 const server = process.env.PARTYGAME_SERVER_URL ?? 'http://localhost:5000';
 
 export default defineConfig({
-    plugins: [svelte()],
+    plugins: [svelte(), canonicalPages(['display', 'gm'])],
     build: {
         // The .NET server serves the client from its web root.
         outDir: page('../src/PartyGame.Server/wwwroot'),
