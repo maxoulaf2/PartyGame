@@ -5,6 +5,7 @@ using PartyGame.Server;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
+using PartyGame.Server.Hubs;
 using PartyGame.Server.Logging;
 using PartyGame.Server.Network;
 using Serilog;
@@ -22,6 +23,7 @@ try
     builder.AddLocalNetworkListening();
     builder.AddGameMasterCode();
     builder.AddGameLoop();
+    builder.AddGameHub();
 
     builder.Services.ConfigureHttpJsonOptions(options => ContractJsonOptions.Apply(options.SerializerOptions));
     builder.Services.AddHealthChecks();
@@ -31,6 +33,7 @@ try
     app.UseFrontEnd();
     app.MapHealthChecks(ServerPaths.Health);
     app.MapJoinInfo();
+    app.MapGameHub();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
     app.Lifetime.ApplicationStarted.Register(() => Console.Out.Write(StartupBanner.Format(

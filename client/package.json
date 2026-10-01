@@ -30,6 +30,7 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.11",
     "uqr": "^0.1.3"
   }
 }

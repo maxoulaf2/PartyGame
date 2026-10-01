@@ -20,6 +20,9 @@ internal static class ServerPaths
     /// <summary>Connection information for the TV screen (<c>JoinInfo</c>).</summary>
     public static readonly string Join = $"{Api}/join";
 
+    /// <summary>The SignalR hub every client connects to (<c>GameHub</c>).</summary>
+    public static readonly string GameHub = $"{Hub}/game";
+
     public static bool IsReserved(PathString path) =>
         Reserved.Any(prefix => path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase));
 }

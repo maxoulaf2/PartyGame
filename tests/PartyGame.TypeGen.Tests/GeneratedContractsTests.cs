@@ -26,6 +26,7 @@ public sealed class GeneratedContractsTests
 
         Assert.Contains(files, f => f.Path == "PlayerId.ts");
         Assert.Contains(files, f => f.Path == "Role.ts");
+        Assert.Contains(files, f => f.Path == "IGameClient.ts");
         Assert.DoesNotContain(files, f => f.Path.StartsWith("ContractJsonOptions", StringComparison.Ordinal));
     }
 

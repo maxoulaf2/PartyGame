@@ -57,4 +57,31 @@ public static class UnsupportedFixtures
 
     /// <summary>Same name as <see cref="SampleFixtures.SampleItem"/>.</summary>
     public sealed record SampleItem(string Label);
+
+    public interface IClientWithResult
+    {
+        Task<int> Ask();
+    }
+
+    public interface IClientWithOverloads
+    {
+        Task Notify();
+
+        Task Notify(string text);
+    }
+
+    public interface IClientWithRef
+    {
+        Task Update(ref int value);
+    }
+
+    public interface IClientWithProperty
+    {
+        int Count { get; }
+    }
+
+    public interface IClientWithObject
+    {
+        Task Send(object payload);
+    }
 }

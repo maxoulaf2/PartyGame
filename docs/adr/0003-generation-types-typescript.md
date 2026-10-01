@@ -48,11 +48,12 @@ Un générateur maison, `tools/PartyGame.TypeGen`, produit les types TypeScript 
 | `record` ou classe | `export interface`, propriétés en camelCase |
 | Identifiant typé (`readonly record struct` à une seule propriété `Value`) | type marqué : `type PlayerId = string & { readonly __brand: "PlayerId" }` |
 | Base `[JsonPolymorphic]` avec ses `[JsonDerivedType]` | une interface par sous-type, avec `type` typé par son littéral, et une union discriminée nommée comme la base |
+| Interface non polymorphe (interface client du hub, comme `IGameClient`) | `export interface` du même nom, une méthode par message, au nom C# inchangé (la cible SignalR), retournant `void` |
 
 - Sur le fil, un identifiant typé est une simple chaîne. Un convertisseur JSON générique, défini dans `PartyGame.Contracts`, en assure la sérialisation. Il ne s'appuie que sur System.Text.Json, inclus dans .NET.
 - Le type marqué empêche, à la compilation, de passer un `RoundId` là où un `PlayerId` est attendu. Côté client, une valeur reçue du serveur garde son type. Un identifiant n'est jamais construit à la main.
 - Un type ou une construction non prise en charge fait échouer le générateur. Le message d'erreur nomme le type et la propriété en cause. Le générateur ne produit jamais de `unknown` ou de `any` silencieux.
-- La traduction de l'interface du hub (`IGameClient`) sera ajoutée avec E03, selon les mêmes principes.
+- L'interface client du hub (`IGameClient`, ajoutée avec US-E03-04) suit les mêmes principes : ses méthodes retournent `Task`, sans surcharge, et leurs paramètres suivent la correspondance ci-dessus. Une interface n'est acceptée qu'à la racine, jamais comme type de propriété (sauf base polymorphe).
 
 ### Détection des écarts
 

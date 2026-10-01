@@ -98,6 +98,25 @@ internal static partial class TypeScriptWriter
                 builder.Append(CultureInfo.InvariantCulture, $"export type {union.Name} = {string.Join(" | ", union.Members)};\n");
                 break;
 
+            case TsClientInterface client:
+                // Method names stay as in C#: they are the SignalR targets the client registers its handlers for.
+                builder.Append(CultureInfo.InvariantCulture, $"export interface {client.Name} {{");
+                if (client.Methods.IsEmpty)
+                {
+                    builder.Append("}\n");
+                    break;
+                }
+
+                builder.Append('\n');
+                foreach (var method in client.Methods)
+                {
+                    var parameters = method.Parameters.Select(p => $"{p.Name}: {TypeExpression(p.Type)}");
+                    builder.Append(CultureInfo.InvariantCulture, $"{Indent}{method.Name}({string.Join(", ", parameters)}): void;\n");
+                }
+
+                builder.Append("}\n");
+                break;
+
             default:
                 throw new InvalidOperationException($"Unexpected declaration {declaration.GetType().Name}.");
         }
@@ -109,6 +128,7 @@ internal static partial class TypeScriptWriter
     {
         TsInterface tsInterface => tsInterface.Properties.SelectMany(p => References(p.Type)),
         TsUnion union => union.Members,
+        TsClientInterface client => client.Methods.SelectMany(m => m.Parameters).SelectMany(p => References(p.Type)),
         _ => [],
     };
 

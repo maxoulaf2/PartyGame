@@ -19,7 +19,8 @@
 GM : serveur injoignable pendant la saisie, le bouton reste désactivé et l'indicateur de reconnexion (US-E05-02) s'affiche ; aucun message technique. Joueurs et public : sans objet.
 
 **Notes techniques**
-- L'annonce `GameMaster` avec code est fournie par le hub (US-E03-04) ; cette US livre l'écran, la mémorisation et la réannonce à chaque connexion.
+- L'annonce `GameMaster` avec code est fournie par le hub (US-E03-04) ; cette US livre l'écran, la mémorisation et la réannonce à chaque connexion. Appel : `connection.invoke('Announce', { role: 'GameMaster', gameMasterCode })`, qui répond `{ refusal: null }` ou `{ refusal: 'GameMasterCodeInvalid' }`.
+- Les intentions GM à venir (renommage, lancement) portent `[GameMasterOnly]` côté hub : sans authentification, elles sont ignorées.
 - Le code est conservé dans le `localStorage` sous une clé propre à l'interface GM. Le `localStorage` est disponible en HTTP simple.
 - Le champ accepte les espaces autour (la vérification les tolère) et refuse la validation tant qu'il ne contient pas 6 chiffres.
 - Tous les textes sont dans `fr.ts`. Les erreurs arrivent du serveur sous forme de codes (`GameMasterCodeInvalid`) traduits par le client.
