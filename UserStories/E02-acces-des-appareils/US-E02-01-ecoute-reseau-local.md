@@ -1,6 +1,6 @@
 ### US-E02-01 — Écoute sur le réseau local
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant qu'**opérateur
 **je veux** que le serveur soit joignable depuis tous les appareils du réseau local dès son lancement
