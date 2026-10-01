@@ -116,7 +116,8 @@ dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained
 |---|---|
 | Serveur .NET + SignalR, état autoritaire, snapshots par rôle | Retenu ([ADR 0001](docs/adr/0001-architecture-generale.md)) |
 | Hôte sur PC, Raspberry Pi en cible secondaire | Retenu ([ADR 0001](docs/adr/0001-architecture-generale.md)) |
-| Front en TypeScript + Svelte 5 | Provisoire (alternative : Blazor WebAssembly) |
+| Front en TypeScript + Svelte 5 | Retenu ([ADR 0002](docs/adr/0002-front-svelte-5.md)) |
+| Génération des types TypeScript par un outil maison | Retenu ([ADR 0003](docs/adr/0003-generation-types-typescript.md)) |
 | Descripteurs de packs en JSON | Provisoire (alternative : YAML) |
 | HTTPS en local | Reporté (piste : domaine réel pointant vers l'IP locale + certificat Let's Encrypt via validation DNS) |
 | Hébergement en ligne | Hors périmètre pour l'instant |

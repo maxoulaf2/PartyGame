@@ -1,6 +1,6 @@
 ### US-E01-02 — Client Vite + Svelte 5 multi-entrées
 
-**Statut :** À faire (bloquée par la décision Svelte 5 / Blazor WebAssembly)
+**Statut :** Prête
 
 **Résultat attendu**
 Une application front unique dans `client/`, avec trois points d'entrée (`player`, `display`, `gm`) qui affichent chacun une page d'attente, et un outillage de qualité (typecheck, lint, format, tests unitaires, tests E2E) prêt à l'emploi.
@@ -25,7 +25,7 @@ Sans objet pour les joueurs, le public et le GM à ce stade. Une erreur de type,
 - Dépendances npm à signaler, toutes en `devDependencies` et sans appel réseau à l'exécution : `vite`, `svelte`, `@sveltejs/vite-plugin-svelte`, `typescript`, `svelte-check`, `eslint`, `typescript-eslint`, `eslint-plugin-svelte`, `prettier`, `prettier-plugin-svelte`, `vitest`, `@playwright/test`.
 - Les navigateurs Playwright se téléchargent à l'installation, pas à l'exécution du jeu.
 - Une police auto-hébergée dans `client/src/assets/fonts/` peut être ajoutée ici ou reportée à E20 ; dans tous les cas, aucune police externe.
-- Le choix Svelte 5 / Blazor WebAssembly fait l'objet d'un ADR avant le démarrage de l'US.
+- Choix du front : [ADR 0002](../../docs/adr/0002-front-svelte-5.md).
 
 **Hors périmètre**
 - Build vers `wwwroot` et proxy vers le serveur .NET (US-E01-03).
