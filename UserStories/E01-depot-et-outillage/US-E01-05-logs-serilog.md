@@ -1,6 +1,6 @@
 ### US-E01-05 — Logs Serilog vers la console et un fichier tournant
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **Résultat attendu**
 Le serveur journalise des messages structurés vers la console et vers un fichier tournant dans `logs/`, avec des niveaux réglables par configuration.
