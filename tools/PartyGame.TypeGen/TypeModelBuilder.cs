@@ -57,6 +57,11 @@ internal sealed class TypeModelBuilder
         {
             Declare(variant.Base);
         }
+        else if (IsClientInterface(type))
+        {
+            // Never the type of a property: only a root, such as IGameClient, describes the messages of the hub.
+            Declare(type);
+        }
         else
         {
             Reference(type, $"type '{type.FullName}'");
@@ -148,6 +153,11 @@ internal sealed class TypeModelBuilder
             throw Unsupported(context, $"generic type '{type}' is not supported");
         }
 
+        if (IsClientInterface(type))
+        {
+            throw Unsupported(context, "interfaces are only supported as [JsonPolymorphic] bases, or as hub client interfaces at the root");
+        }
+
         if (FindPolymorphicBase(type) is { } variant)
         {
             // Serialized under its own declared type, a derived type carries no discriminator.
@@ -203,9 +213,14 @@ internal sealed class TypeModelBuilder
             return CreateUnion(type, context);
         }
 
-        if (type.IsInterface || type.IsAbstract)
+        if (IsClientInterface(type))
         {
-            throw Unsupported(context, "interfaces and abstract types are only supported as [JsonPolymorphic] bases");
+            return CreateClientInterface(type, context);
+        }
+
+        if (type.IsAbstract)
+        {
+            throw Unsupported(context, "abstract types are only supported as [JsonPolymorphic] bases");
         }
 
         if (typeof(Delegate).IsAssignableFrom(type) || (type.BaseType is { } baseType && baseType != typeof(object) && baseType != typeof(ValueType) && IsFrameworkType(baseType)))
@@ -309,6 +324,66 @@ internal sealed class TypeModelBuilder
         return new TsInterface(type.Name, type, properties.ToImmutable());
     }
 
+    /// <summary>
+    /// Translates a hub client interface: each method is a message whose arguments SignalR serializes one by one,
+    /// with the same conventions as any DTO.
+    /// </summary>
+    private TsClientInterface CreateClientInterface(Type type, string context)
+    {
+        if (type.IsGenericType)
+        {
+            throw Unsupported(context, "a hub client interface cannot be generic");
+        }
+
+        if (type.GetInterfaces().Length > 0)
+        {
+            throw Unsupported(context, "a hub client interface cannot extend other interfaces");
+        }
+
+        if (type.GetProperties().Length > 0 || type.GetEvents().Length > 0)
+        {
+            throw Unsupported(context, "a hub client interface only has methods");
+        }
+
+        var methods = ImmutableArray.CreateBuilder<TsMethod>();
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance).OrderBy(m => m.MetadataToken))
+        {
+            var methodContext = $"method '{type.Name}.{method.Name}'";
+
+            if (method.IsGenericMethod)
+            {
+                throw Unsupported(methodContext, "generic methods are not supported");
+            }
+
+            if (method.ReturnType != typeof(Task))
+            {
+                throw Unsupported(methodContext, "it must return Task, as results from clients are not supported");
+            }
+
+            if (!names.Add(method.Name))
+            {
+                throw Unsupported(methodContext, "overloads are not supported, as SignalR targets a method by its name only");
+            }
+
+            var parameters = ImmutableArray.CreateBuilder<TsParameter>();
+            foreach (var parameter in method.GetParameters())
+            {
+                var parameterContext = $"parameter '{type.Name}.{method.Name}({parameter.Name})'";
+                if (parameter.ParameterType.IsByRef)
+                {
+                    throw Unsupported(parameterContext, "ref, in and out parameters are not supported");
+                }
+
+                parameters.Add(new TsParameter(parameter.Name!, Map(parameter.ParameterType, _nullability.Create(parameter), parameterContext)));
+            }
+
+            methods.Add(new TsMethod(method.Name, parameters.ToImmutable()));
+        }
+
+        return new TsClientInterface(type.Name, type, methods.ToImmutable());
+    }
+
     private static IEnumerable<PropertyInfo> GetSerializedProperties(Type type) =>
         type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.GetMethod is { IsPublic: true } && p.GetIndexParameters().Length == 0)
@@ -357,6 +432,9 @@ internal sealed class TypeModelBuilder
     private static Type? FindGenericInterface(Type type, Type genericInterface) =>
         (type.IsInterface ? type.GetInterfaces().Prepend(type) : type.GetInterfaces())
             .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericInterface);
+
+    private static bool IsClientInterface(Type type) =>
+        type.IsInterface && !type.IsDefined(typeof(JsonPolymorphicAttribute), inherit: false);
 
     private static bool IsTypedId(Type type) =>
         type.GetCustomAttribute<JsonConverterAttribute>()?.ConverterType == typeof(TypedIdJsonConverterFactory);

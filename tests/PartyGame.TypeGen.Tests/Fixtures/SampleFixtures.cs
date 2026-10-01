@@ -55,4 +55,12 @@ public static class SampleFixtures
         [JsonIgnore]
         public string Hidden => Renamed.ToUpperInvariant();
     }
+
+    /// <summary>Messages of a hub to its clients, as IGameClient.</summary>
+    public interface ISampleClient
+    {
+        Task Moved(SampleId id, SampleItem? item, IReadOnlyList<SampleColor> colors);
+
+        Task Reset();
+    }
 }

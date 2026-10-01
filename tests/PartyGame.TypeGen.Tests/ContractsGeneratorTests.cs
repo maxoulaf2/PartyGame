@@ -97,6 +97,27 @@ public sealed class ContractsGeneratorTests
     }
 
     [Fact]
+    public void Generate_ClientInterface_WritesOneMethodPerMessage()
+    {
+        var files = ContractsGenerator.Generate([typeof(ISampleClient)]);
+
+        Assert.Equal(
+            """
+            import type { SampleColor } from './SampleColor';
+            import type { SampleId } from './SampleId';
+            import type { SampleItem } from './SampleItem';
+
+            export interface ISampleClient {
+                Moved(id: SampleId, item: SampleItem | null, colors: readonly SampleColor[]): void;
+                Reset(): void;
+            }
+
+            """.ReplaceLineEndings("\n"),
+            Body(files, "ISampleClient.ts"));
+        Assert.Contains(files, f => f.Path == "SampleItem.ts");
+    }
+
+    [Fact]
     public void Generate_DerivedTypeAsRoot_GeneratesWholeUnion()
     {
         var files = ContractsGenerator.Generate([typeof(SampleCircle)]);
@@ -158,7 +179,12 @@ public sealed class ContractsGeneratorTests
     [InlineData(typeof(WithFlags), "UnsupportedFixtures+Permissions", "[Flags]")]
     [InlineData(typeof(WithIntKeys), "property 'WithIntKeys.Labels'", "dictionary key type 'System.Int32'")]
     [InlineData(typeof(WithBytes), "property 'WithBytes.Data'", "base64")]
-    [InlineData(typeof(WithInterface), "UnsupportedFixtures+IMarker", "interfaces and abstract types")]
+    [InlineData(typeof(WithInterface), "property 'WithInterface.Marker'", "interfaces are only supported")]
+    [InlineData(typeof(IClientWithResult), "method 'IClientWithResult.Ask'", "must return Task")]
+    [InlineData(typeof(IClientWithOverloads), "method 'IClientWithOverloads.Notify'", "overloads are not supported")]
+    [InlineData(typeof(IClientWithRef), "parameter 'IClientWithRef.Update(value)'", "ref, in and out")]
+    [InlineData(typeof(IClientWithProperty), "UnsupportedFixtures+IClientWithProperty", "only has methods")]
+    [InlineData(typeof(IClientWithObject), "parameter 'IClientWithObject.Send(payload)'", "System.Object")]
     [InlineData(typeof(Undiscriminated), "UnsupportedFixtures+Undiscriminated", "'UndiscriminatedVariant' needs a type discriminator")]
     [InlineData(typeof(ConcreteBase), "UnsupportedFixtures+ConcreteBase", "must be abstract or an interface")]
     [InlineData(typeof(ClashingVariant), "property 'ClashingVariant.Type'", "JSON name 'type' is already used")]
