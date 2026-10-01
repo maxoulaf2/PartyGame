@@ -1,6 +1,6 @@
 ### US-E02-03 — QR code sur l'écran TV
 
-**Statut :** Prête
+**Statut :** En cours (reste la vérification sur iPhone et Android face à une TV)
 
 **En tant que** joueur
 **je veux** scanner un QR code affiché sur la TV avec l'appareil photo de mon téléphone

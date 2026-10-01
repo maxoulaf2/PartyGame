@@ -23,3 +23,37 @@ export async function fetchJoinInfo(fetcher: typeof fetch = fetch): Promise<Join
         return null;
     }
 }
+
+/** How long the TV screen waits before asking again for an address it could not get. */
+export const joinInfoRetryMs = 5000;
+
+/**
+ * Asks for the join address until the server knows one, then hands it over once. A missing
+ * server or address is retried quietly, so the TV screen recovers without anyone reloading it.
+ * Returns a function that stops the retries.
+ */
+export function watchJoinAddress(
+    onAddress: (address: string | null) => void,
+    fetcher: typeof fetch = fetch,
+    retryMs: number = joinInfoRetryMs,
+): () => void {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const attempt = async (): Promise<void> => {
+        const address = (await fetchJoinInfo(fetcher))?.address ?? null;
+        if (stopped) {
+            return;
+        }
+        onAddress(address);
+        if (address === null) {
+            timer = setTimeout(() => void attempt(), retryMs);
+        }
+    };
+
+    void attempt();
+    return () => {
+        stopped = true;
+        clearTimeout(timer);
+    };
+}

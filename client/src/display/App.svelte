@@ -1,20 +1,93 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import QrCode from '../shared/components/QrCode.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
-    import { fetchJoinInfo } from '../shared/connection/joinInfo';
+    import { watchJoinAddress } from '../shared/connection/joinInfo';
+    import { composeJoinUrl } from '../shared/connection/joinUrl';
     import { fr } from '../shared/i18n/fr';
 
-    // Until the server confirms it has no address, the screen keeps the usual waiting text.
-    let hasAddress = $state(true);
+    // undefined until the server first answers, null while it knows no address phones can reach.
+    let address = $state<string | null | undefined>(undefined);
 
-    onMount(() => {
-        void fetchJoinInfo().then((info) => {
-            hasAddress = info?.address != null;
-        });
-    });
+    const joinUrl = $derived(address ? composeJoinUrl(address, location) : null);
+
+    onMount(() =>
+        watchJoinAddress((next) => {
+            address = next;
+        }),
+    );
 </script>
 
-<WaitingScreen
-    title={fr.app.name}
-    message={hasAddress ? fr.display.waiting : fr.display.joinUnavailable}
-/>
+{#if joinUrl}
+    <main>
+        <div class="qr">
+            <QrCode text={joinUrl} label={fr.display.qrCodeLabel} />
+        </div>
+        <div class="details">
+            <h1>{fr.app.name}</h1>
+            <p class="invite">{fr.display.scanToJoin}</p>
+            <p>{fr.display.typeAddress}</p>
+            <p class="url">{joinUrl}</p>
+            <p class="status">{fr.display.waiting}</p>
+        </div>
+    </main>
+{:else}
+    <WaitingScreen
+        title={fr.app.name}
+        message={address === null ? fr.display.joinUnavailable : fr.display.waiting}
+    />
+{/if}
+
+<style>
+    /* TVs may crop their edges (overscan): nothing essential within 5% of any border. */
+    main {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 5vw;
+        min-height: 100vh;
+        padding: 5vh 5vw;
+    }
+
+    .qr {
+        width: min(75vh, 40vw);
+    }
+
+    .details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: 45vw;
+    }
+
+    h1,
+    p {
+        margin: 0;
+    }
+
+    h1 {
+        color: var(--color-accent);
+        font-size: var(--font-size-title);
+        line-height: 1.1;
+    }
+
+    .invite {
+        font-weight: 700;
+    }
+
+    p:not(.invite, .url) {
+        color: var(--color-text-muted);
+    }
+
+    .url {
+        color: var(--color-text);
+        font-size: 1.4em;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .status {
+        margin-top: var(--space-m);
+    }
+</style>

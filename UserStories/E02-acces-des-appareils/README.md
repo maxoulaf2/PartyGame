@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E02-01](US-E02-01-ecoute-reseau-local.md) | Écoute sur le réseau local | Terminée | — |
 | [US-E02-02](US-E02-02-detection-ip-privee.md) | Détection de l'adresse IPv4 privée | Terminée | US-E02-01 |
-| [US-E02-03](US-E02-03-qr-code-ecran-tv.md) | QR code sur l'écran TV | Prête | US-E02-02 |
+| [US-E02-03](US-E02-03-qr-code-ecran-tv.md) | QR code sur l'écran TV | En cours | US-E02-02 |
 | [US-E02-04](US-E02-04-routage-interfaces.md) | Routage des trois interfaces | Terminée | — |
 | [US-E02-05](US-E02-05-code-gm.md) | Code GM généré au démarrage | Terminée | US-E02-01 |
 
