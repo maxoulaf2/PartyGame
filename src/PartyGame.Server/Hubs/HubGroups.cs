@@ -12,8 +12,8 @@ internal static class HubGroups
     public const string GameMaster = "gm";
 
     /// <summary>
-    /// The group of the connections that announced <paramref name="role"/>. Players get a group each, joined when they
-    /// identify themselves (US-E04-02).
+    /// The group of the connections that announced <paramref name="role"/>. Players get a group each, see
+    /// <see cref="Player"/>.
     /// </summary>
     public static string Of(Role role) => role switch
     {
@@ -21,4 +21,10 @@ internal static class HubGroups
         Role.GameMaster => GameMaster,
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Only the TV screen and the game master announce a role."),
     };
+
+    /// <summary>
+    /// The group of every connection of one player, joined when the player identifies (US-E04-02): a player may have
+    /// several connections, such as two tabs, and none of them defines who they are.
+    /// </summary>
+    public static string Player(PlayerId playerId) => $"player:{playerId.Value}";
 }

@@ -19,4 +19,7 @@ internal static partial class HubLog
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Hub method {HubMethod} failed for connection {ConnectionId}")]
     public static partial void HubMethodFailed(this ILogger logger, Exception exception, string hubMethod, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Snapshot not sent to group {Group}")]
+    public static partial void SnapshotNotSent(this ILogger logger, Exception exception, string group);
 }

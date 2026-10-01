@@ -121,9 +121,13 @@ internal sealed class GameLoop : BackgroundService
         }
 
         var changed = !ReferenceEquals(transition.State, state);
+        var newState = state;
         if (changed)
         {
-            Volatile.Write(ref _state, transition.State);
+            // Numbered here rather than by the engine, so that no transition can forget it: clients rely on it to
+            // ignore older snapshots.
+            newState = transition.State with { Version = state.Version + 1 };
+            Volatile.Write(ref _state, newState);
         }
 
         foreach (var effect in transition.Effects)
@@ -141,7 +145,7 @@ internal sealed class GameLoop : BackgroundService
 
         if (changed)
         {
-            await NotifyAsync(transition.State, stoppingToken).ConfigureAwait(false);
+            await NotifyAsync(newState, stoppingToken).ConfigureAwait(false);
         }
 
         return InputOutcome.Accepted;

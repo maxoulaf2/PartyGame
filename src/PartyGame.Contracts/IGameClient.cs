@@ -4,7 +4,20 @@ namespace PartyGame.Contracts;
 /// Messages the server sends to the clients through the SignalR hub: one method per message, named as its SignalR target.
 /// The TypeScript client registers its handlers against the generated equivalent.
 /// </summary>
-/// <remarks>
-/// Empty until the snapshots (US-E03-05): what a client receives so far only comes as the answer to its own calls.
-/// </remarks>
-public interface IGameClient;
+public interface IGameClient
+{
+    /// <summary>
+    /// The current state of the game for the TV screen, sent after each change and right after the announcement.
+    /// </summary>
+    Task ReceiveDisplaySnapshot(DisplaySnapshot snapshot);
+
+    /// <summary>
+    /// The current state of the game for the game master, sent after each change and right after the announcement.
+    /// </summary>
+    Task ReceiveGameMasterSnapshot(GameMasterSnapshot snapshot);
+
+    /// <summary>
+    /// The current state of the game for one player, sent after each change and right after the identification.
+    /// </summary>
+    Task ReceivePlayerSnapshot(PlayerSnapshot snapshot);
+}
