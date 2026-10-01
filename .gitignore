@@ -1,0 +1,25 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+
+# Test results and coverage
+TestResults/
+*.trx
+coverage*.xml
+coverage*.json
+
+# Runtime data written by the server
+logs/
+data/
+
+# Published output
+publish/
+artifacts/
+
+# OS files
+Thumbs.db
+.DS_Store

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PartyGame.Contracts\PartyGame.Contracts.csproj" />
+    <ProjectReference Include="..\PartyGame.Engine\PartyGame.Engine.csproj" />
+    <ProjectReference Include="..\PartyGame.Content\PartyGame.Content.csproj" />
+  </ItemGroup>
+
+</Project>
