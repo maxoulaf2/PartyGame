@@ -1,4 +1,5 @@
 using System.Globalization;
+using PartyGame.Server.FrontEnd;
 using PartyGame.Server.Logging;
 using Serilog;
 
@@ -17,6 +18,7 @@ try
 
     var app = builder.Build();
 
+    app.UseFrontEnd();
     app.MapHealthChecks("/health");
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
