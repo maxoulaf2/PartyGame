@@ -12,7 +12,7 @@
 | [US-E01-03](US-E01-03-integration-front-serveur.md) | Build du front vers `wwwroot` et proxy de développement | À faire | US-E01-01, US-E01-02 |
 | [US-E01-04](US-E01-04-generation-types-ts.md) | Génération des types TypeScript depuis `PartyGame.Contracts` | À faire | US-E01-01, US-E01-02, décision sur l'outil |
 | [US-E01-05](US-E01-05-logs-serilog.md) | Logs Serilog vers la console et un fichier tournant | À faire | US-E01-01 |
-| [US-E01-06](US-E01-06-adr-architecture.md) | ADR 0001 : architecture générale | Prête | — |
+| [US-E01-06](US-E01-06-adr-architecture.md) | ADR 0001 : architecture générale | Terminée | — |
 
 ## Points à trancher avant de démarrer
 

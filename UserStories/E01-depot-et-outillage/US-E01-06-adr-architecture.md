@@ -1,6 +1,6 @@
 ### US-E01-06 — ADR 0001 : architecture générale
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 Les choix d'architecture déjà retenus sont consignés dans `docs/adr/0001-architecture-generale.md`, au format Contexte / Décision / Conséquences, pour qu'un nouveau contributeur comprenne pourquoi le serveur est construit ainsi.
