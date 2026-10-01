@@ -3,7 +3,11 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+export type * from './Announcement';
+export type * from './AnnouncementRefusal';
+export type * from './AnnouncementResult';
 export type * from './GameId';
+export type * from './IGameClient';
 export type * from './JoinInfo';
 export type * from './PlayerId';
 export type * from './Role';
