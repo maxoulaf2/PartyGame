@@ -114,8 +114,8 @@ dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained
 
 | Sujet | Statut |
 |---|---|
-| Serveur .NET + SignalR, état autoritaire, snapshots par rôle | Retenu |
-| Hôte sur PC, Raspberry Pi en cible secondaire | Retenu |
+| Serveur .NET + SignalR, état autoritaire, snapshots par rôle | Retenu ([ADR 0001](docs/adr/0001-architecture-generale.md)) |
+| Hôte sur PC, Raspberry Pi en cible secondaire | Retenu ([ADR 0001](docs/adr/0001-architecture-generale.md)) |
 | Front en TypeScript + Svelte 5 | Provisoire (alternative : Blazor WebAssembly) |
 | Descripteurs de packs en JSON | Provisoire (alternative : YAML) |
 | HTTPS en local | Reporté (piste : domaine réel pointant vers l'IP locale + certificat Let's Encrypt via validation DNS) |
