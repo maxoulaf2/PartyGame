@@ -37,7 +37,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 - ADR 0001 : architecture générale (boucle unique, moteur pur, snapshots par rôle).
 
 ### E02 — Accès des appareils
-- Écoute sur `0.0.0.0` et détection de l'IPv4 privée, avec un choix possible si plusieurs interfaces réseau sont actives.
+- Écoute sur `0.0.0.0` et détection de l'IPv4 privée, avec un choix par configuration si plusieurs interfaces réseau sont actives (choix depuis l'interface GM en E04).
 - QR code affiché sur l'écran TV.
 - Routage des trois interfaces : `/` pour les joueurs, `/display` pour l'écran TV, `/gm` pour le game master.
 - Code GM généré et affiché dans la console au démarrage.
@@ -62,6 +62,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 - Un joueur rejoint avec un pseudo (longueur limitée, doublons refusés) et reçoit un jeton du serveur.
 - L'écran TV affiche le QR code et la liste des joueurs connectés.
 - Le GM voit la liste, peut renommer ou exclure un joueur, et lance la partie.
+- Le GM choisit l'interface réseau encodée dans le QR code quand plusieurs sont actives (en E02, seule la configuration le permet).
 
 ### E05 — Connexion robuste
 - Reconnexion automatique par jeton, suivie de l'envoi d'un snapshot frais.
