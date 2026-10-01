@@ -61,7 +61,8 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 ### E04 — Lobby
 - Un joueur rejoint avec un pseudo (longueur limitée, doublons refusés) et reçoit un jeton du serveur.
 - L'écran TV affiche le QR code et la liste des joueurs connectés.
-- Le GM voit la liste, peut renommer ou exclure un joueur, et lance la partie.
+- Le GM voit la liste, peut renommer un joueur (pas d'exclusion), et lance la partie.
+- Les inscriptions restent ouvertes après le lancement.
 - Le GM choisit l'interface réseau encodée dans le QR code quand plusieurs sont actives (en E02, seule la configuration le permet).
 
 ### E05 — Connexion robuste
@@ -185,7 +186,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 ### E19 — Contrôles avancés du GM
 - Pause et reprise de la partie.
-- Ajustement manuel des scores, exclusion de joueurs et gestion des arrivées en cours de partie.
+- Ajustement manuel des scores et gestion des arrivées en cours de partie.
 - Saut de manche et réordonnancement en direct.
 
 ### E20 — Habillage
@@ -195,7 +196,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 **Critère de sortie :** une soirée test d'une heure, avec au moins trois modes, menée par le GM sans toucher au PC hôte.
 
-**À trancher :** jeu en équipes ou en individuel, et comportement face à un joueur qui arrive en cours de partie.
+**À trancher :** jeu en équipes ou en individuel, et participation à la manche en cours et points de départ d'un joueur qui arrive en cours de partie (les inscriptions restent ouvertes, décision E04).
 
 ---
 
