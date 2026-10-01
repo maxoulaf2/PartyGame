@@ -125,7 +125,8 @@ catch (Exception ex)
 - Jamais de `DateTime.Now`, `DateTime.UtcNow` ou `new Random()` dans le moteur : passer par le contexte.
 - Les modes de jeu sont enregistrés explicitement dans une méthode d'extension `AddGameModes()`, pas par scan réflexif.
 - Hub fortement typé : `Hub<IGameClient>`, avec l'interface `IGameClient` définie dans `PartyGame.Contracts`.
-- JSON sur le fil : propriétés en camelCase, énumérations sérialisées en chaînes (`JsonStringEnumConverter`).
+- JSON sur le fil : propriétés en camelCase, énumérations sérialisées en chaînes (`JsonStringEnumConverter`), propriétés nullables toujours présentes. Ces conventions sont définies une seule fois dans `ContractJsonOptions` (`PartyGame.Contracts`), que tout sérialiseur parlant aux clients applique.
+- Identifiants typés : `[JsonConverter(typeof(TypedIdJsonConverterFactory))]` sur le `readonly record struct`, pour qu'ils circulent comme de simples chaînes.
 
 ## Conventions TypeScript et Svelte
 

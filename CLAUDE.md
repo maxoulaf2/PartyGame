@@ -63,14 +63,17 @@ client/
   src/display/           Point d'entrée de l'écran TV
   src/gm/                Point d'entrée de l'interface game master
   src/shared/            Connexion SignalR, synchro d'horloge, store du snapshot, composants communs
+  src/shared/contracts/  Types TypeScript générés depuis PartyGame.Contracts (versionnés, jamais modifiés à la main)
   src/modes/<mode>/      Vues player, display et gm de chaque mode de jeu
-tests/                   Un projet de test par projet de src/
+tools/
+  PartyGame.TypeGen/     Générateur des types TypeScript, par réflexion sur PartyGame.Contracts
+tests/                   Un projet de test par projet de src/ et de tools/
 packs/                   Packs d'exemple, utilisés en développement et dans les tests
 schemas/                 JSON Schema des descripteurs de packs
 docs/                    Documentation et décisions d'architecture
 ```
 
-Sens des dépendances : `Contracts` ne dépend de rien, `Engine` et `Content` ne dépendent que de `Contracts`, `Server` dépend de tous. `Engine` ne référence jamais ASP.NET Core ni SignalR.
+Sens des dépendances : `Contracts` ne dépend de rien, `Engine` et `Content` ne dépendent que de `Contracts`, `Server` dépend de tous. L'outil `TypeGen` ne dépend que de `Contracts`. `Engine` ne référence jamais ASP.NET Core ni SignalR.
 
 ## Commandes
 
@@ -88,7 +91,8 @@ npx playwright install chromium webkit   # une fois : navigateurs des tests E2E
 npm run dev        # port 5173 sur toutes les interfaces : pages /, /display/, /gm/ ; /hub et /media relayés au serveur .NET
                    # PARTYGAME_SERVER_URL change la cible du proxy (défaut http://localhost:5000)
 npm run build      # sortie dans src/PartyGame.Server/wwwroot (non versionné), servie par le serveur .NET
-npm run check      # svelte-check + tsc + ESLint + Prettier
+npm run check      # types générés à jour (si dotnet est présent) + svelte-check + tsc + ESLint + Prettier
+npm run generate:contracts   # régénère src/shared/contracts depuis PartyGame.Contracts (SDK .NET requis)
 npm run format     # reformatage Prettier
 npm run test       # Vitest
 npm run e2e        # Playwright sur le build : iPhone (WebKit), Pixel (Chromium), desktop
@@ -107,7 +111,7 @@ dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained
 
 ## Façon de travailler
 
-- Toute modification du protocole (messages, DTO, projections) commence par `PartyGame.Contracts`, puis la régénération des types TypeScript, puis l'adaptation des tests.
+- Toute modification du protocole (messages, DTO, projections) commence par `PartyGame.Contracts`, puis la régénération des types TypeScript (`npm run generate:contracts`), puis l'adaptation des tests.
 - Une tâche n'est terminée que si `dotnet test` et `npm run check` passent.
 - Ne pas ajouter de dépendance NuGet ou npm sans le signaler et le justifier. Vérifier qu'elle ne fait aucun appel réseau à l'exécution.
 - Le moteur se teste sans réseau, en tests unitaires avec `FakeTimeProvider`. Un simulateur de joueurs (bots clients SignalR) sert aux tests de charge et aux tests E2E.
