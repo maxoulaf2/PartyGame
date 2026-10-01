@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.SignalR;
 using PartyGame.Contracts.Serialization;
+using PartyGame.Server.Games;
 
 namespace PartyGame.Server.Hubs;
 
 internal static class GameHubExtensions
 {
     /// <summary>
-    /// Adds SignalR with the wire conventions of <see cref="ContractJsonOptions"/>, and the filters every hub method goes
-    /// through.
+    /// Adds SignalR with the wire conventions of <see cref="ContractJsonOptions"/>, the filters every hub method goes
+    /// through, and the broadcast of the snapshots after each change of the game.
     /// </summary>
     public static WebApplicationBuilder AddGameHub(this WebApplicationBuilder builder)
     {
@@ -22,6 +23,7 @@ internal static class GameHubExtensions
                 options.AddFilter<GameMasterOnlyFilter>();
             })
             .AddJsonProtocol(options => ContractJsonOptions.Apply(options.PayloadSerializerOptions));
+        builder.Services.AddSingleton<IGameStateListener, SnapshotBroadcaster>();
 
         return builder;
     }

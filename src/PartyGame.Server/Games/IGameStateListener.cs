@@ -4,7 +4,7 @@ namespace PartyGame.Server.Games;
 
 /// <summary>
 /// Notified by the loop after each transition that changed the state, once its effects are executed.
-/// The broadcast of snapshots (US-E03-05) is one.
+/// The broadcast of the snapshots (<see cref="Hubs.SnapshotBroadcaster"/>) is one.
 /// </summary>
 internal interface IGameStateListener
 {

@@ -61,6 +61,55 @@ public sealed class GameLoopTests
     }
 
     [Fact]
+    public async Task SubmitAsync_StateChanges_IncrementVersionByOneEach()
+    {
+        // Given
+        await using var harness = await LoopHarness.StartAsync();
+
+        // When
+        for (var i = 0; i < 3; i++)
+        {
+            await harness.Inputs.SubmitAsync(new TestInput(i), Ct);
+        }
+
+        // Then
+        Assert.Equal(1, LoopHarness.InitialState.Version);
+        Assert.Equal([2, 3, 4], harness.Listeners[0].States.Select(s => s.Version));
+        Assert.Equal(4, harness.Loop.State.Version);
+    }
+
+    [Fact]
+    public async Task SubmitAsync_EngineSetsVersion_IsNumberedFromPreviousState()
+    {
+        // Given
+        var engine = new ScriptedEngine((state, input, context) =>
+            ScriptedEngine.AddPlayer(state with { Version = 100 }, input, context));
+        await using var harness = await LoopHarness.StartAsync(engine);
+
+        // When
+        await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
+
+        // Then
+        Assert.Equal(2, harness.Loop.State.Version);
+    }
+
+    [Fact]
+    public async Task SubmitAsync_AcceptedWithoutChange_KeepsVersionAndNotifiesNothing()
+    {
+        // Given
+        var engine = new ScriptedEngine((state, _, _) => new Transition(state, []));
+        await using var harness = await LoopHarness.StartAsync(engine);
+
+        // When
+        var outcome = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
+
+        // Then
+        Assert.Equal(InputOutcome.Accepted, outcome);
+        Assert.Same(LoopHarness.InitialState, harness.Loop.State);
+        Assert.Empty(harness.Journal.Entries);
+    }
+
+    [Fact]
     public async Task SubmitAsync_RejectedInput_NotifiesNothingAndLogsDebug()
     {
         // Given

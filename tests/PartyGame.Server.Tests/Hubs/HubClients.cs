@@ -70,4 +70,22 @@ internal static class HubClients
         await ended.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
         return received;
     }
+
+    /// <summary>
+    /// Waits until the connection has received every message sent to it so far: messages to one connection arrive in
+    /// order, so a last message sent to it alone marks the end.
+    /// </summary>
+    public static async Task FlushAsync<THub>(WebApplicationFactory<Program> factory, HubConnection connection)
+        where THub : Microsoft.AspNetCore.SignalR.Hub
+    {
+        const string Flush = "Flush";
+
+        var flushed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var subscription = connection.On(Flush, flushed.SetResult);
+
+        var clients = factory.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<THub>>().Clients;
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await clients.Client(connection.ConnectionId!).SendCoreAsync(Flush, [], cancellationToken);
+        await flushed.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+    }
 }
