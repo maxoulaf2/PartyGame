@@ -84,11 +84,13 @@ dotnet run --project src/PartyGame.Server
 
 # Front (depuis client/)
 npm install
-npm run dev        # Vite exposé sur le réseau local, proxy de /hub et /media vers le serveur .NET
-npm run build      # sortie dans src/PartyGame.Server/wwwroot
-npm run check      # typecheck + lint
+npx playwright install chromium webkit   # une fois : navigateurs des tests E2E
+npm run dev        # pages sur /, /display/, /gm/ ; réseau local et proxy /hub, /media à venir (US-E01-03)
+npm run build      # sortie dans client/dist, puis src/PartyGame.Server/wwwroot (US-E01-03)
+npm run check      # svelte-check + tsc + ESLint + Prettier
+npm run format     # reformatage Prettier
 npm run test       # Vitest
-npm run e2e        # Playwright
+npm run e2e        # Playwright sur le build : iPhone (WebKit), Pixel (Chromium), desktop
 
 # Publication pour Raspberry Pi
 dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained

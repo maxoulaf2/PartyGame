@@ -1,0 +1,6 @@
+/* The whole player page is a touch surface: no double-tap zoom, no 300 ms delay. */
+html {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}

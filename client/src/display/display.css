@@ -1,0 +1,6 @@
+/* Seen from across the room on a 1080p TV: larger type than on a phone. */
+:root {
+    --font-size-base: 2.5rem;
+    --font-size-title: 6rem;
+    --space-l: 5vw;
+}

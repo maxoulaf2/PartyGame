@@ -1,6 +1,6 @@
 ### US-E01-02 — Client Vite + Svelte 5 multi-entrées
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 Une application front unique dans `client/`, avec trois points d'entrée (`player`, `display`, `gm`) qui affichent chacun une page d'attente, et un outillage de qualité (typecheck, lint, format, tests unitaires, tests E2E) prêt à l'emploi.
