@@ -1,6 +1,6 @@
 ### US-E03-01 — Moteur pur : état immuable, transitions et effets
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 `PartyGame.Engine` expose une fonction pure `Handle(state, input, context)` qui retourne une `Transition` (nouvel état et effets). L'état de la partie est immuable et ne dépend ni de l'horloge, ni du hasard, ni d'aucune entrée/sortie. C'est le socle sur lequel le lobby (E04) puis les modes de jeu (E07) sont construits.
