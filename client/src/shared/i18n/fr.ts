@@ -9,6 +9,9 @@ export const fr = {
     },
     display: {
         waiting: 'En attente des joueurs…',
+        scanToJoin: 'Scannez pour rejoindre la partie',
+        typeAddress: 'ou ouvrez cette adresse :',
+        qrCodeLabel: 'QR code pour rejoindre la partie',
         // Shown instead of the QR code when the server knows no address phones can reach.
         joinUnavailable: 'Préparation de la connexion des joueurs…',
     },
