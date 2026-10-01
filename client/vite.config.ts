@@ -28,7 +28,9 @@ export default defineConfig({
         host: true,
         port: 5173,
         strictPort: true,
+        // Also used by `vite preview`.
         proxy: {
+            '/api': { target: server },
             '/hub': { target: server, ws: true },
             '/media': { target: server },
         },

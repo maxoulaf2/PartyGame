@@ -1,4 +1,6 @@
 using System.Globalization;
+using Microsoft.Extensions.Options;
+using PartyGame.Contracts.Serialization;
 using PartyGame.Server;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.Logging;
@@ -17,14 +19,19 @@ try
     builder.Services.AddSerilog(ServerLogging.CreateLogger(configuration), dispose: true);
     builder.AddLocalNetworkListening();
 
+    builder.Services.ConfigureHttpJsonOptions(options => ContractJsonOptions.Apply(options.SerializerOptions));
     builder.Services.AddHealthChecks();
 
     var app = builder.Build();
 
     app.UseFrontEnd();
     app.MapHealthChecks(ServerPaths.Health);
+    app.MapJoinInfo();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
+    app.Lifetime.ApplicationStarted.Register(() => Console.Out.Write(StartupBanner.Format(
+        app.Services.GetRequiredService<AddressSelection>(),
+        app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port)));
 
     app.Run();
     return 0;

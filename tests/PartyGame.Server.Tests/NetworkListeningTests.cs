@@ -44,6 +44,35 @@ public sealed class NetworkListeningTests : IDisposable
     }
 
     [Fact]
+    public async Task Startup_ServerReady_PrintsBannerWithScreenUrlsToConsole()
+    {
+        var port = ServerProcess.GetFreePort();
+        var environment = ServerEnvironment(port);
+        environment["Network__AdvertisedAddress"] = "192.168.50.7";
+        using var server = ServerProcess.Start(environment);
+        using var client = new HttpClient();
+
+        using var response = await server.WaitForResponseAsync(client, new Uri($"http://localhost:{port}/health"), _startupTimeout);
+        var output = await server.WaitForOutputAsync("/gm/", _startupTimeout);
+
+        Assert.Contains($"http://192.168.50.7:{port}/display/", output, StringComparison.Ordinal);
+        Assert.Contains($"http://192.168.50.7:{port}/gm/", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Startup_InvalidAdvertisedAddress_ExitsNamingTheSetting()
+    {
+        var environment = ServerEnvironment(ServerProcess.GetFreePort());
+        environment["Network__AdvertisedAddress"] = "partygame.local";
+        using var server = ServerProcess.Start(environment);
+
+        var exitCode = await server.WaitForExitAsync(_startupTimeout);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("Network:AdvertisedAddress must be an IPv4 address", server.Output, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Startup_PortAlreadyInUse_ExitsWithPlainFatalMessage()
     {
         using var occupant = new TcpListener(IPAddress.Any, 0);

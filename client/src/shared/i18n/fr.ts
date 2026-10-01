@@ -9,6 +9,8 @@ export const fr = {
     },
     display: {
         waiting: 'En attente des joueurs…',
+        // Shown instead of the QR code when the server knows no address phones can reach.
+        joinUnavailable: 'Préparation de la connexion des joueurs…',
     },
     gm: {
         waiting: 'Console du game master : en attente de la partie.',

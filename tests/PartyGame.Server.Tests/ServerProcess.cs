@@ -99,6 +99,18 @@ internal sealed class ServerProcess : IDisposable
         }
     }
 
+    /// <summary>Waits until the output contains <paramref name="text"/>, which the process may write after it answers requests.</summary>
+    public async Task<string> WaitForOutputAsync(string text, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (!Output.Contains(text, StringComparison.Ordinal) && !_process.HasExited && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
+        }
+
+        return Output;
+    }
+
     public void Dispose()
     {
         if (!_process.HasExited)

@@ -89,7 +89,7 @@ dotnet run --project src/PartyGame.Server   # port 5000 sur 0.0.0.0 ; sert le fr
 # Front (depuis client/)
 npm install
 npx playwright install chromium webkit   # une fois : navigateurs des tests E2E
-npm run dev        # port 5173 sur toutes les interfaces : pages /, /display/, /gm/ ; /hub et /media relayés au serveur .NET
+npm run dev        # port 5173 sur toutes les interfaces : pages /, /display/, /gm/ ; /api, /hub et /media relayés au serveur .NET
                    # PARTYGAME_SERVER_URL change la cible du proxy (défaut http://localhost:5000)
 npm run build      # sortie dans src/PartyGame.Server/wwwroot (non versionné), servie par le serveur .NET
 npm run check      # types générés à jour (si dotnet est présent) + svelte-check + tsc + ESLint + Prettier

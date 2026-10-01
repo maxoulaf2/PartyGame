@@ -13,6 +13,40 @@ dotnet run --project src/PartyGame.Server
 
 Le serveur écoute en HTTP sur le port 5000 de **toutes** les interfaces IPv4 (`0.0.0.0`), et pas seulement sur `localhost`. La console affiche `Now listening on: http://0.0.0.0:5000`. Sur le PC hôte, la page joueur reste accessible à l'adresse `http://localhost:5000/`.
 
+Une fois prêt, le serveur affiche dans la console une bannière qui donne tout ce qu'il faut pour lancer la soirée :
+
+```
+==============================================================
+  PartyGame est prêt
+
+  Adresse des joueurs : 192.168.1.42 (détectée)
+  Écran TV            : http://192.168.1.42:5000/display/
+  Game master         : http://192.168.1.42:5000/gm/
+==============================================================
+```
+
+Ouvrir l'URL « Écran TV » sur le navigateur de la TV, et l'URL « Game master » sur l'appareil du GM.
+
+## Adresse annoncée aux téléphones
+
+L'adresse des joueurs est celle que l'écran TV encode dans son QR code. Le serveur la détermine seul au démarrage :
+
+- il ne retient que les adresses IPv4 privées (`10.x.x.x`, `172.16.x.x` à `172.31.x.x`, `192.168.x.x`) des interfaces actives ;
+- il écarte les interfaces virtuelles (Hyper-V `vEthernet`, WSL, Docker, VirtualBox, VMware) et les VPN (WireGuard, Tailscale, ZeroTier, OpenVPN…), ainsi que les adresses en lien local (`169.254.x.x`) ou en CGNAT (`100.64.x.x` à `100.127.x.x`) ;
+- s'il reste plusieurs candidates, il préfère celle qui a une passerelle par défaut (la box ou le routeur), puis la plus petite adresse : le choix ne change pas d'un démarrage à l'autre tant que le réseau ne change pas.
+
+Si le PC est relié à plusieurs réseaux (Ethernet et Wi-Fi par exemple), la bannière liste les autres adresses possibles. Pour en imposer une, relancer le serveur avec le paramètre `Network:AdvertisedAddress` :
+
+| Moyen | Exemple |
+|---|---|
+| Fichier `appsettings.json` du serveur | `"Network": { "AdvertisedAddress": "192.168.1.42" }` |
+| Variable d'environnement | `Network__AdvertisedAddress=192.168.1.42` (PowerShell : `$env:Network__AdvertisedAddress = "192.168.1.42"`) |
+| Argument de ligne de commande | `dotnet run --project src/PartyGame.Server -- --Network:AdvertisedAddress=192.168.1.42` |
+
+L'adresse imposée est retenue telle quelle. Si aucune interface active ne la porte, le serveur démarre quand même mais l'indique dans la bannière et dans les logs. Une valeur qui n'est pas une adresse IPv4 (`192.168.1.42`) arrête le serveur au démarrage.
+
+L'adresse est calculée une seule fois : après un changement de réseau, relancer le serveur. Si le PC n'est connecté à aucun réseau, le serveur démarre, la bannière invite à connecter le PC au Wi-Fi, et l'écran TV affiche un message d'attente à la place du QR code.
+
 ## Changer de port
 
 Le port se règle par le paramètre `Network:Port` (5000 par défaut), sans recompiler. Par ordre de priorité croissante :
@@ -25,7 +59,7 @@ Le port se règle par le paramètre `Network:Port` (5000 par défaut), sans reco
 
 Si le port est déjà occupé (un autre serveur PartyGame encore lancé, une autre application), le serveur s'arrête immédiatement avec un message `FTL` qui nomme le port et rappelle comment en choisir un autre.
 
-En développement, le serveur Vite relaie `/hub` et `/media` vers `http://localhost:5000`. Après un changement de port, définir aussi `PARTYGAME_SERVER_URL` (par exemple `http://localhost:5001`) avant `npm run dev`.
+En développement, le serveur Vite relaie `/api`, `/hub` et `/media` vers `http://localhost:5000`. Après un changement de port, définir aussi `PARTYGAME_SERVER_URL` (par exemple `http://localhost:5001`) avant `npm run dev`.
 
 ## Autoriser le port dans le pare-feu Windows
 
@@ -46,7 +80,7 @@ Le serveur n'ajoute jamais de règle lui-même : cela exigerait des droits admin
 
 ## Vérifier qu'un téléphone atteint le serveur
 
-1. Trouver l'adresse IPv4 privée du PC : `ipconfig` dans un terminal, ligne « Adresse IPv4 » de la carte Wi-Fi ou Ethernet (par exemple `192.168.1.42`).
+1. Lire l'adresse des joueurs dans la bannière de démarrage (par exemple `192.168.1.42`). À défaut, `ipconfig` dans un terminal donne la ligne « Adresse IPv4 » de la carte Wi-Fi ou Ethernet.
 2. Sur le PC, ouvrir `http://localhost:5000/health` : la page doit afficher `Healthy`.
 3. Sur un téléphone connecté **au même Wi-Fi**, ouvrir `http://192.168.1.42:5000/health`, puis `http://192.168.1.42:5000/` pour la page joueur.
 
