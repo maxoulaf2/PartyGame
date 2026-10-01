@@ -1,6 +1,6 @@
 ### US-E03-04 — Hub SignalR typé, rôles et groupes
 
-**Statut :** À faire
+**Statut :** Prête
 
 **Résultat attendu**
 Un hub SignalR fortement typé, exposé sous `/hub`, accepte les connexions des trois rôles et les range dans leurs groupes. Côté client, un module unique de `shared/connection` encapsule `@microsoft/signalr` : aucun composant ne l'importe directement. Le hub se contente de valider la forme des messages et de les déposer dans la file.
