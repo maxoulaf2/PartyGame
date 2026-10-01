@@ -1,6 +1,6 @@
 ### US-E01-04 — Génération des types TypeScript depuis `PartyGame.Contracts`
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 Les DTO et messages de `PartyGame.Contracts` sont disponibles en TypeScript dans `client/src/shared/contracts/`, générés par une commande unique, et une désynchronisation entre C# et TypeScript est détectée automatiquement.
