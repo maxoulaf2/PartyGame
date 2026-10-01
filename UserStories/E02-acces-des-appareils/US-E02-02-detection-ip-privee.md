@@ -1,6 +1,6 @@
 ### US-E02-02 — Détection de l'adresse IPv4 privée
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant qu'**opérateur
 **je veux** que le serveur détermine seul l'adresse à laquelle les téléphones peuvent le joindre, en me laissant la corriger si plusieurs réseaux sont actifs
