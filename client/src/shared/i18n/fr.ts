@@ -14,6 +14,11 @@ export const fr = {
         qrCodeLabel: 'QR code pour rejoindre la partie',
         // Shown instead of the QR code when the server knows no address phones can reach.
         joinUnavailable: 'Préparation de la connexion des joueurs…',
+        playersJoined: {
+            zero: 'En attente des joueurs…',
+            one: '{count} joueur inscrit',
+            other: '{count} joueurs inscrits',
+        },
     },
     gm: {
         waiting: 'Console du game master : en attente de la partie.',

@@ -2,8 +2,12 @@
     import { onMount } from 'svelte';
     import QrCode from '../shared/components/QrCode.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
+    import type { DisplaySnapshot } from '../shared/contracts';
+    import { connectDisplay } from '../shared/connection/displayConnection';
     import { watchJoinAddress } from '../shared/connection/joinInfo';
     import { composeJoinUrl } from '../shared/connection/joinUrl';
+    import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
+    import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
 
     // undefined until the server first answers, null while it knows no address phones can reach.
@@ -11,11 +15,21 @@
 
     const joinUrl = $derived(address ? composeJoinUrl(address, location) : null);
 
-    onMount(() =>
-        watchJoinAddress((next) => {
+    const game = new SnapshotStore<DisplaySnapshot>();
+
+    // Until the first snapshot, the TV screen waits as if nobody had joined yet.
+    const status = $derived(countText(fr.display.playersJoined, game.current?.playerCount ?? 0));
+
+    onMount(() => {
+        const stopWatching = watchJoinAddress((next) => {
             address = next;
-        }),
-    );
+        });
+        const disconnect = connectDisplay(game);
+        return () => {
+            stopWatching();
+            disconnect();
+        };
+    });
 </script>
 
 {#if joinUrl}
@@ -28,7 +42,7 @@
             <p class="invite">{fr.display.scanToJoin}</p>
             <p>{fr.display.typeAddress}</p>
             <p class="url">{joinUrl}</p>
-            <p class="status">{fr.display.waiting}</p>
+            <p class="status">{status}</p>
         </div>
     </main>
 {:else}
