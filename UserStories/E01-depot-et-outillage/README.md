@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E01-01](US-E01-01-solution-dotnet.md) | Solution .NET et projets de test | Terminée | — |
 | [US-E01-02](US-E01-02-client-multi-entrees.md) | Client Vite + Svelte 5 multi-entrées | Terminée | — |
-| [US-E01-03](US-E01-03-integration-front-serveur.md) | Build du front vers `wwwroot` et proxy de développement | Prête | US-E01-01, US-E01-02 |
+| [US-E01-03](US-E01-03-integration-front-serveur.md) | Build du front vers `wwwroot` et proxy de développement | Terminée | US-E01-01, US-E01-02 |
 | [US-E01-04](US-E01-04-generation-types-ts.md) | Génération des types TypeScript depuis `PartyGame.Contracts` | Prête | US-E01-01, US-E01-02 |
 | [US-E01-05](US-E01-05-logs-serilog.md) | Logs Serilog vers la console et un fichier tournant | Terminée | US-E01-01 |
 | [US-E01-06](US-E01-06-adr-architecture.md) | ADR 0001 : architecture générale | Terminée | — |
@@ -24,4 +24,4 @@ Toutes les décisions qui bloquaient l'épopée sont prises.
 
 ## Ordre de réalisation suggéré
 
-US-E01-03 et US-E01-04, dans n'importe quel ordre.
+US-E01-04, dernière US restante.

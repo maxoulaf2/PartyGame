@@ -80,13 +80,14 @@ Cette section décrit les commandes de référence. La mettre à jour dès qu'un
 # Serveur
 dotnet build
 dotnet test
-dotnet run --project src/PartyGame.Server
+dotnet run --project src/PartyGame.Server   # port 5000 ; sert le front construit dans wwwroot
 
 # Front (depuis client/)
 npm install
 npx playwright install chromium webkit   # une fois : navigateurs des tests E2E
-npm run dev        # pages sur /, /display/, /gm/ ; réseau local et proxy /hub, /media à venir (US-E01-03)
-npm run build      # sortie dans client/dist, puis src/PartyGame.Server/wwwroot (US-E01-03)
+npm run dev        # port 5173 sur toutes les interfaces : pages /, /display/, /gm/ ; /hub et /media relayés au serveur .NET
+                   # PARTYGAME_SERVER_URL change la cible du proxy (défaut http://localhost:5000)
+npm run build      # sortie dans src/PartyGame.Server/wwwroot (non versionné), servie par le serveur .NET
 npm run check      # svelte-check + tsc + ESLint + Prettier
 npm run format     # reformatage Prettier
 npm run test       # Vitest

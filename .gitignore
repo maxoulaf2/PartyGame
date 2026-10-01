@@ -23,3 +23,6 @@ artifacts/
 # OS files
 Thumbs.db
 .DS_Store
+
+# Client build, produced by npm run build in client/
+src/PartyGame.Server/wwwroot/

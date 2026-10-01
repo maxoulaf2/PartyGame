@@ -1,6 +1,6 @@
 ### US-E01-03 — Build du front vers `wwwroot` et proxy de développement
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **Résultat attendu**
 Le serveur .NET sert le front construit, et en développement Vite est exposé sur le réseau local et relaie vers le serveur .NET les requêtes qu'il ne traite pas lui-même.
