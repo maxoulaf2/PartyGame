@@ -8,7 +8,7 @@
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E06-01](US-E06-01-format-et-schema.md) | Format du descripteur et schéma généré | Terminée | — |
-| [US-E06-02](US-E06-02-chargement-et-validation.md) | Chargement et validation des packs au démarrage | À faire | US-E06-01, US-E08-01 |
+| [US-E06-02](US-E06-02-chargement-et-validation.md) | Chargement et validation des packs au démarrage | Terminée | US-E06-01, US-E08-01 |
 | [US-E06-03](US-E06-03-choix-du-pack.md) | Choix du pack par le GM et erreurs de pack | À faire | US-E06-02 |
 | [US-E06-04](US-E06-04-service-des-medias.md) | Médias du pack servis sur le réseau local | À faire | US-E06-03 |
 
@@ -20,6 +20,7 @@ Toutes les décisions qui bloquaient l'épopée sont prises.
 2. **Types du descripteur dans `PartyGame.Contracts.Packs` :** lus par `Content`, consommés par les modes de `Engine`, exclus de la génération TypeScript ([ADR 0004](../../docs/adr/0004-format-et-modele-des-packs.md)). Options écartées : `Engine` qui référence `Content`, et deux modèles reliés par une conversion dans le serveur.
 3. **Schéma généré :** `schemas/pack.schema.json` est produit depuis les types C# par `PartyGame.TypeGen` avec `JsonSchemaExporter`, et un test détecte tout écart ([ADR 0004](../../docs/adr/0004-format-et-modele-des-packs.md)). Option écartée : un schéma écrit à la main.
 4. **Packs zip reportés :** en phase 2, un pack est un dossier. Le format zip arrive avec les outils de création de contenu (E17), quand le partage de packs devient utile. Il faudra alors extraire les médias pour servir les requêtes partielles.
+5. **Codes de problème précis** (décidé pendant US-E06-02) : un code par nature de problème, pour que le client (US-E06-03) formule un message juste sans interpréter les paramètres. Les bornes ont trois codes, selon ce qu'elles limitent : une valeur (`PackValueOutOfRange`), un nombre de caractères (`PackTextLengthOutOfRange`) ou un nombre d'éléments (`PackItemCountOutOfRange`). Un type incorrect a son propre code (`PackValueTypeInvalid`, avec le type attendu), tout comme un chemin de média mal écrit (`PackMediaPathInvalid`). Option écartée : un seul `PackValueOutOfRange` pour toutes les bornes, que le client n'aurait pas su dire en caractères, en éléments ou en valeur.
 
 ## Ordre de réalisation suggéré
 

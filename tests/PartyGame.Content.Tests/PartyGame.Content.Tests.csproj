@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PartyGame.Content\PartyGame.Content.csproj" />
+    <!-- The packs of the repository are checked with the consistency rules of the real game modes. -->
+    <ProjectReference Include="..\..\src\PartyGame.Engine\PartyGame.Engine.csproj" />
   </ItemGroup>
 
 </Project>

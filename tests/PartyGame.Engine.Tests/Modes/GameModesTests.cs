@@ -1,5 +1,7 @@
+using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Engine.Tests.Rounds;
 
 namespace PartyGame.Engine.Tests.Modes;
@@ -36,6 +38,44 @@ public sealed class GameModesTests
         Assert.False(found);
         Assert.Null(mode);
         Assert.Throws<InvalidOperationException>(() => modes.For(quiz));
+    }
+
+    [Fact]
+    public void Validate_RegisteredActivity_ReturnsTheProblemsOfItsMode()
+    {
+        // Given
+        var modes = new GameModes([new QuizMode()]);
+        var quiz = new QuizRoundDescriptor
+        {
+            Title = "Quiz",
+            Questions = [new QuizQuestion { Text = "Question ?", Choices = [new QuizChoice { Text = "Oui" }, new QuizChoice { Text = "Non" }] }],
+        };
+
+        // When
+        var problems = modes.Validate(quiz, "$.rounds[2]");
+
+        // Then
+        var problem = Assert.Single(problems);
+        Assert.Equal(PackProblemCode.QuizCorrectChoiceMissing, problem.Code);
+        Assert.Equal("$.rounds[2].questions[0]", problem.Path);
+    }
+
+    [Fact]
+    public void Validate_ActivityWithoutMode_ReportsItsTypeAsUnknown()
+    {
+        // Given
+        var modes = new GameModes([new FakeMode()]);
+        var quiz = new QuizRoundDescriptor { Title = "Quiz", Questions = [] };
+
+        // When
+        var problems = modes.Validate(quiz, "$.rounds[1]");
+
+        // Then
+        var problem = Assert.Single(problems);
+        Assert.Equal(PackProblemCode.PackRoundTypeUnknown, problem.Code);
+        Assert.Equal(PackDescriptor.FileName, problem.File);
+        Assert.Equal("$.rounds[1].type", problem.Path);
+        Assert.Equal("quiz", problem.Parameters["type"]);
     }
 
     [Fact]

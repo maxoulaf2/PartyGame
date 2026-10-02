@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Text;
+using PartyGame.Content;
+using PartyGame.Contracts.Packs;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Network;
+using PartyGame.Server.Packs;
 
 namespace PartyGame.Server;
 
@@ -13,8 +16,10 @@ internal static class StartupBanner
 {
     private const string Rule = "==============================================================";
 
-    public static string Format(AddressSelection selection, int port, GameMasterCode gameMasterCode)
+    public static string Format(AddressSelection selection, int port, GameMasterCode gameMasterCode, PackLibrary packs)
     {
+        ArgumentNullException.ThrowIfNull(packs);
+
         var host = selection.Address?.ToString() ?? "localhost";
         var banner = new StringBuilder()
             .AppendLine()
@@ -60,8 +65,48 @@ internal static class StartupBanner
                 .AppendLine(CultureInfo.InvariantCulture, $"    ou la variable d'environnement {NetworkExtensions.AdvertisedAddressSetting.Replace(":", "__", StringComparison.Ordinal)}={example}");
         }
 
+        AppendPacks(banner, packs);
+
         return banner.AppendLine(Rule).ToString();
     }
+
+    private static void AppendPacks(StringBuilder banner, PackLibrary packs)
+    {
+        banner.AppendLine();
+        if (!packs.DirectoryExists)
+        {
+            banner
+                .AppendLine(CultureInfo.InvariantCulture, $"  Aucun pack : le dossier {packs.Directory} est introuvable.")
+                .AppendLine("  Pour indiquer le dossier des packs, relancez avec :")
+                .AppendLine(CultureInfo.InvariantCulture, $"    --{PacksOptions.DirectorySetting}=<chemin du dossier des packs>");
+            return;
+        }
+
+        if (packs.Packs.IsEmpty)
+        {
+            banner
+                .AppendLine(CultureInfo.InvariantCulture, $"  Aucun pack dans le dossier {packs.Directory}.")
+                .AppendLine(CultureInfo.InvariantCulture, $"  Un pack est un sous-dossier qui contient un fichier {PackDescriptor.FileName}.");
+            return;
+        }
+
+        banner.AppendLine(CultureInfo.InvariantCulture, $"  Packs ({packs.Directory}) :");
+        foreach (var pack in packs.Packs)
+        {
+            var title = pack.Title is null ? "sans titre" : $"« {pack.Title} »";
+            var rounds = pack.RoundCount is { } count ? $", {Plural(count, "manche")}" : string.Empty;
+            var state = pack.IsValid ? "valide" : $"invalide ({Plural(pack.Problems.Length, "problème")})";
+            banner.AppendLine(CultureInfo.InvariantCulture, $"    {pack.Id,-20}: {title}{rounds}, {state}");
+        }
+
+        if (packs.Packs.Any(pack => !pack.IsValid))
+        {
+            banner.AppendLine("  Les problèmes des packs invalides sont détaillés dans le journal ci-dessus.");
+        }
+    }
+
+    private static string Plural(int count, string noun) =>
+        string.Create(CultureInfo.InvariantCulture, $"{count} {noun}{(count > 1 ? "s" : string.Empty)}");
 
     private static void Line(StringBuilder banner, string label, string value) =>
         banner.AppendLine(CultureInfo.InvariantCulture, $"  {label,-20}: {value}");

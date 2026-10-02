@@ -81,7 +81,7 @@ Cette section décrit les commandes de référence. La mettre à jour dès qu'un
 
 ```bash
 # Lancement complet (PowerShell) : prérequis, npm ci, contrats, build du front si besoin, port libre, puis serveur
-.\scripts\start.ps1            # -Port 5001, -GameMasterCode 123456, -Rebuild
+.\scripts\start.ps1            # -Port 5001, -GameMasterCode 123456, -Rebuild ; charge les packs de packs/
 # Test sur un seul PC (serveur déjà lancé) : écran TV, GM et N joueurs en fenêtres privées isolées
 .\scripts\open-browsers.ps1 3  # -BaseUrl http://localhost:5173 (Vite), -Port 5001, -Browser chrome|edge
 
@@ -90,6 +90,7 @@ dotnet build
 dotnet test
 dotnet run --project src/PartyGame.Server   # port 5000 sur 0.0.0.0 ; sert le front construit dans wwwroot
                                             # Network:Port change le port (Network__Port=5001 ou -- --Network:Port=5001)
+                                            # Packs:Directory désigne le dossier des packs (défaut : packs à côté de l'exécutable)
 
 # Front (depuis client/)
 npm install
