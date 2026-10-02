@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Inputs;
@@ -20,6 +21,16 @@ public interface IGameMode
     /// The type of the descriptors of the activities this mode plays, derived from <see cref="RoundDescriptor"/>.
     /// </summary>
     Type DescriptorType { get; }
+
+    /// <summary>
+    /// Checks the consistency of an activity of a pack when the pack is loaded: what the simple constraints of the
+    /// descriptor (bounds, lengths), checked beforehand, cannot express, such as the rules that tie several of its values
+    /// together. A round whose activity passes both never fails because of its content.
+    /// </summary>
+    /// <param name="descriptor">The activity of the pack, of type <see cref="DescriptorType"/>.</param>
+    /// <param name="path">The JSON path of the activity in the descriptor file, such as <c>$.rounds[1]</c>.</param>
+    /// <returns>The problems found, located under <paramref name="path"/>, or none when the activity is consistent.</returns>
+    ImmutableArray<PackProblem> Validate(RoundDescriptor descriptor, string path);
 
     /// <summary>
     /// Starts a round, when the game starts or when the game master asks for the next round.

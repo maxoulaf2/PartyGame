@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Quiz;
@@ -13,6 +14,8 @@ namespace PartyGame.Server.Tests.Hubs;
 /// </summary>
 internal sealed class TestQuizMode : GameMode<QuizRoundDescriptor, TestQuizRound>
 {
+    public override ImmutableArray<PackProblem> Validate(QuizRoundDescriptor descriptor, string path) => [];
+
     public override RoundTransition Start(QuizRoundDescriptor descriptor, GameState game, GameContext context) =>
         new(new TestQuizRound(PlayerIntents: 0), []);
 
