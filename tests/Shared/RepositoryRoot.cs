@@ -1,4 +1,4 @@
-namespace PartyGame.TypeGen.Tests;
+namespace PartyGame.Tests.Shared;
 
 internal static class RepositoryRoot
 {
