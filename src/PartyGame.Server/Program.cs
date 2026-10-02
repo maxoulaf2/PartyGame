@@ -8,6 +8,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Logging;
 using PartyGame.Server.Network;
+using PartyGame.Server.Packs;
 using Serilog;
 
 // Catches failures that happen before the configuration is available (e.g. unreadable appsettings).
@@ -23,6 +24,7 @@ try
     builder.AddLocalNetworkListening();
     builder.AddFrontEnd();
     builder.AddGameMasterCode();
+    builder.AddPacks();
     builder.AddGameLoop();
     builder.AddGameHub();
 
@@ -36,10 +38,12 @@ try
     app.MapGameHub();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
+    var packs = app.LoadPacks();
     app.Lifetime.ApplicationStarted.Register(() => Console.Out.Write(StartupBanner.Format(
         app.Services.GetRequiredService<AddressSelection>(),
         app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port,
-        app.Services.GetRequiredService<GameMasterCode>())));
+        app.Services.GetRequiredService<GameMasterCode>(),
+        packs)));
 
     app.Run();
     return 0;

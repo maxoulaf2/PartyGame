@@ -6,7 +6,8 @@
     Vérifie les prérequis (SDK .NET, Node.js), installe les dépendances du front si elles manquent
     ou ont changé, contrôle que les types TypeScript générés correspondent à PartyGame.Contracts,
     reconstruit le front s'il n'est plus à jour, signale un port occupé ou un réseau Windows
-    déclaré public, puis lance le serveur.
+    déclaré public, puis lance le serveur avec les packs du dossier packs/ du dépôt (sauf si la
+    variable d'environnement Packs__Directory en désigne un autre).
 
 .PARAMETER Port
     Port d'écoute. Par défaut : la variable d'environnement Network__Port, sinon 5000.
@@ -179,6 +180,11 @@ try {
     # --- Server -------------------------------------------------------------------------------
     Write-Step 'Lancement du serveur (Ctrl+C pour l''arrêter)'
     $serverArgs = @("--Network:Port=$Port")
+    # The packs of the repository, unless the environment points to other ones. Relative to the
+    # server executable otherwise, the default would find no pack under `dotnet run`.
+    if (-not $env:Packs__Directory) {
+        $serverArgs += "--Packs:Directory=$(Join-Path $root 'packs')"
+    }
     if ($GameMasterCode) {
         $serverArgs += "--GameMaster:Code=$GameMasterCode"
     }
