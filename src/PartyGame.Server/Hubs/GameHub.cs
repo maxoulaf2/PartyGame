@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Projections;
+using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
 
@@ -23,6 +24,7 @@ internal sealed class GameHub(
     GameLoop game,
     IGameInputWriter inputs,
     PlayerConnections playerConnections,
+    FrontEndBuild frontEndBuild,
     TimeProvider timeProvider,
     ILogger<GameHub> logger) : Hub<IGameClient>
 {
@@ -47,10 +49,29 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="ReadClock"/>, as the clients call it.</summary>
     public const string SyncClock = nameof(SyncClock);
 
+    /// <summary>SignalR target of <see cref="LogStaleBuild"/>, as the clients call it.</summary>
+    public const string ReportStaleBuild = nameof(ReportStaleBuild);
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
+    /// <summary>
+    /// Longest build identifier a page may report: those of <c>npm run build</c> are far shorter, and a longer one would
+    /// only flood the logs.
+    /// </summary>
+    private const int MaxBuildIdLength = 64;
+
     private static readonly AnnouncementResult _accepted = new(Refusal: null);
+
+    /// <summary>
+    /// Tells the new connection, before anything else, which client build the server serves: a page built otherwise is
+    /// outdated and reloads itself. Sent again on every restored connection, which the server sees as a new one.
+    /// </summary>
+    public override async Task OnConnectedAsync()
+    {
+        await Clients.Caller.ReceiveWelcome(new Welcome(frontEndBuild.Id)).ConfigureAwait(false);
+        await base.OnConnectedAsync().ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Gives the connection the role it claims, puts it in the group of that role, and sends it the current snapshot of
@@ -309,6 +330,30 @@ internal sealed class GameHub(
     /// </summary>
     [HubMethodName(SyncClock)]
     public ClockSyncResult ReadClock() => new(timeProvider.GetUtcNow().ToUnixTimeMilliseconds());
+
+    /// <summary>
+    /// Logs for the operator that a page still runs another build than the one served, although it reloaded to get it: a
+    /// stubborn cache or a proxy. The page goes on with its build. Any connection may report it, identified or not.
+    /// </summary>
+    /// <remarks>A minimal report, until the clients report their errors in general (E10).</remarks>
+    /// <param name="message">A <see cref="StaleBuildReport"/>.</param>
+    [HubMethodName(ReportStaleBuild)]
+    public void LogStaleBuild(JsonElement message)
+    {
+        if (!HubMessage.TryRead<StaleBuildReport>(message, out var report, out var invalidPath))
+        {
+            logger.MessageMalformed(ReportStaleBuild, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (report.ClientBuildId.Length > MaxBuildIdLength)
+        {
+            logger.MessageMalformed(ReportStaleBuild, Context.ConnectionId, "$.clientBuildId");
+            return;
+        }
+
+        logger.StaleBuildReported(Context.ConnectionId, report.ClientBuildId, frontEndBuild.Id);
+    }
 
     /// <summary>
     /// Reports to the loop that a player lost their last connection, so that the TV screen and the game master show them

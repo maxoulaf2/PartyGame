@@ -21,6 +21,7 @@ try
 
     builder.Services.AddSerilog(ServerLogging.CreateLogger(configuration), dispose: true);
     builder.AddLocalNetworkListening();
+    builder.AddFrontEnd();
     builder.AddGameMasterCode();
     builder.AddGameLoop();
     builder.AddGameHub();
