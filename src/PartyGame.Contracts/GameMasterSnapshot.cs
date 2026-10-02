@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace PartyGame.Contracts;
 
 /// <summary>
@@ -7,5 +9,5 @@ namespace PartyGame.Contracts;
 /// <param name="GameId">The game the snapshot belongs to. A client that receives another one starts over.</param>
 /// <param name="Version">Increases by one with each change of the game, so that a client ignores older snapshots.</param>
 /// <param name="Phase">Current phase of the game.</param>
-/// <param name="PlayerCount">Number of registered players.</param>
-public sealed record GameMasterSnapshot(GameId GameId, long Version, Phase Phase, int PlayerCount);
+/// <param name="Players">Registered players, in order of arrival, so that nobody moves when another one joins.</param>
+public sealed record GameMasterSnapshot(GameId GameId, long Version, Phase Phase, ImmutableArray<GameMasterPlayer> Players);

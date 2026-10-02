@@ -54,5 +54,29 @@ export const fr = {
             one: '{count} joueur inscrit',
             other: '{count} joueurs inscrits',
         },
+        playersConnected: {
+            zero: 'aucun connecté',
+            one: '{count} connecté',
+            other: '{count} connectés',
+        },
+        playerListLabel: 'Joueurs inscrits',
+        connected: 'Connecté',
+        disconnected: 'Déconnecté',
+        rename: {
+            action: 'Renommer',
+            // Read by screen readers: several « Renommer » buttons must be told apart.
+            actionFor: 'Renommer {nickname}',
+            label: 'Nouveau pseudo de {nickname}',
+            submit: 'Valider',
+            cancel: 'Annuler',
+            problems: {
+                tooLong: 'Le pseudo ne peut pas dépasser 16 caractères.',
+                invalidCharacters: 'Le pseudo contient des caractères non autorisés.',
+                invalid: 'Ce pseudo n’est pas accepté : de 1 à 16 caractères visibles.',
+                taken: 'Ce pseudo est déjà pris par un autre joueur.',
+                unknown: 'Ce joueur est introuvable.',
+                failed: 'Le renommage n’a pas abouti : réessayez.',
+            },
+        },
     },
 } as const;

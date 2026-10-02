@@ -50,7 +50,10 @@ export class PlayerSession {
     /** Connects to the server. Returns a function that disconnects. */
     start(): () => void {
         const unsubscribe = this.#connection.on('ReceivePlayerSnapshot', (snapshot) => {
-            this.#store.accept(snapshot);
+            // The game master may rename the player: the form is filled with the current nickname.
+            if (this.#store.accept(snapshot)) {
+                this.#nickname.save(snapshot.nickname);
+            }
         });
         const lost = () => {
             this.#connected = false;

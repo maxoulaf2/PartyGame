@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ConnectionIcon from '../shared/components/ConnectionIcon.svelte';
     import type { DisplayPlayer } from '../shared/contracts';
     import { fr } from '../shared/i18n/fr';
     import { playerListLayout } from './playerListLayout';
@@ -25,13 +26,7 @@
                 <span class="nickname">{player.nickname}</span>
                 {#if !player.isConnected}
                     <!-- Dimmed and marked with an icon: never told apart by colour alone. -->
-                    <svg viewBox="0 0 24 24" aria-hidden="true" class="icon">
-                        <path
-                            d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"
-                        />
-                        <circle cx="12" cy="19" r="1.2" />
-                        <path d="M3 3l18 18" />
-                    </svg>
+                    <ConnectionIcon connected={false} />
                     <span class="visually-hidden">({fr.display.disconnected})</span>
                 {/if}
             </li>
@@ -70,20 +65,6 @@
 
     .disconnected {
         opacity: 0.45;
-    }
-
-    .icon {
-        flex: none;
-        width: 1em;
-        height: 1em;
-        fill: currentColor;
-        stroke: currentColor;
-        stroke-linecap: round;
-        stroke-width: 2;
-    }
-
-    .icon path {
-        fill: none;
     }
 
     .visually-hidden {

@@ -10,7 +10,7 @@
 | [US-E04-01](US-E04-01-acces-gm.md) | Accès à l'interface GM par le code | Terminée | US-E03-05 |
 | [US-E04-02](US-E04-02-rejoindre-avec-pseudo.md) | Rejoindre la partie avec un pseudo | Terminée | US-E03-05 |
 | [US-E04-03](US-E04-03-lobby-ecran-tv.md) | Lobby sur l'écran TV | Terminée | US-E04-02 |
-| [US-E04-04](US-E04-04-liste-et-renommage-gm.md) | Liste des joueurs et renommage par le GM | À faire | US-E04-01, US-E04-02 |
+| [US-E04-04](US-E04-04-liste-et-renommage-gm.md) | Liste des joueurs et renommage par le GM | Terminée | US-E04-01, US-E04-02 |
 | [US-E04-05](US-E04-05-lancement-partie.md) | Lancement de la partie | À faire | US-E04-04 |
 | [US-E04-06](US-E04-06-choix-interface-reseau.md) | Choix de l'interface réseau par le GM | À faire | US-E04-01, US-E04-03 |
 

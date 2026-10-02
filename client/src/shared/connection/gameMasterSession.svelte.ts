@@ -1,4 +1,4 @@
-import type { GameMasterSnapshot } from '../contracts';
+import type { GameMasterSnapshot, PlayerId, RenamePlayerRefusal } from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
 import type { SnapshotStore } from './snapshotStore.svelte';
@@ -19,6 +19,12 @@ export type CodeProblem = 'invalid' | 'expired';
 
 /** What became of a code the game master submitted. */
 export type SubmitOutcome = 'granted' | 'refused' | 'unreachable';
+
+/**
+ * What became of a rename the game master asked for: done, refused by the server, or not sent
+ * (connection lost, or the console no longer authenticated).
+ */
+export type RenameOutcome = 'renamed' | 'unreachable' | RenamePlayerRefusal;
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -99,6 +105,28 @@ export class GameMasterSession {
             return 'unreachable';
         }
         return this.#announce(code.trim(), false);
+    }
+
+    /**
+     * Renames a player. The server alone decides whether the nickname is valid and free; the new
+     * nickname reaches the console through the next snapshot.
+     */
+    async rename(playerId: PlayerId, nickname: string): Promise<RenameOutcome> {
+        if (!this.#connected || this.#access !== 'granted') {
+            return 'unreachable';
+        }
+
+        let result;
+        try {
+            result = await this.#connection.invoke('RenamePlayer', { playerId, nickname });
+        } catch {
+            return 'unreachable';
+        }
+        // No answer: the server ignored the intent, the code is being checked again.
+        if (result === null) {
+            return 'unreachable';
+        }
+        return result.refusal ?? 'renamed';
     }
 
     #onConnected(): void {

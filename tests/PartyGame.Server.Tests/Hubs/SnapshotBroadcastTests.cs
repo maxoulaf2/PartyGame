@@ -65,7 +65,9 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
 
         // Then
         await FlushAsync(connection);
-        Assert.Equal([new GameMasterSnapshot(GameId, 2, Phase.Lobby, PlayerCount: 1)], received.GameMaster);
+        var snapshot = Assert.Single(received.GameMaster);
+        Assert.Equal((GameId, 2, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
+        Assert.Equal([new GameMasterPlayer(PlayerIdOf(1), "Zoé", IsConnected: true)], snapshot.Players);
         Assert.Single(received.Json);
     }
 

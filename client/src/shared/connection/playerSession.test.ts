@@ -69,6 +69,7 @@ function fakeServer(options: { startFails?: boolean; taken?: string[] } = {}) {
     return {
         connection,
         typed,
+        send: (snapshot: PlayerSnapshot) => handlers.get('ReceivePlayerSnapshot')?.(snapshot),
         drop: () => {
             reachable = false;
             callbacks.reconnecting();
@@ -175,5 +176,15 @@ describe('PlayerSession', () => {
         expect(store.fresh).toBe(false);
         server.restore();
         expect(session.connected).toBe(true);
+    });
+
+    it('remembers the nickname the game master renamed the player to', async () => {
+        const { session, store, server, nicknames } = await startedSession();
+        await session.join('Zoé');
+
+        server.send(snapshot(3, 'Léa'));
+
+        expect(store.current?.nickname).toBe('Léa');
+        expect(nicknames.value).toBe('Léa');
     });
 });

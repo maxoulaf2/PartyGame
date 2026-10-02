@@ -4,11 +4,12 @@
 // </auto-generated>
 
 import type { GameId } from './GameId';
+import type { GameMasterPlayer } from './GameMasterPlayer';
 import type { Phase } from './Phase';
 
 export interface GameMasterSnapshot {
     readonly gameId: GameId;
     readonly version: number;
     readonly phase: Phase;
-    readonly playerCount: number;
+    readonly players: readonly GameMasterPlayer[];
 }
