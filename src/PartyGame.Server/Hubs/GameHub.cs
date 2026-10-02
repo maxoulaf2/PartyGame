@@ -44,6 +44,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="ChooseAdvertisedAddressAsync"/>, as the clients call it.</summary>
     public const string ChooseAdvertisedAddress = nameof(ChooseAdvertisedAddress);
 
+    /// <summary>SignalR target of <see cref="ReadClock"/>, as the clients call it.</summary>
+    public const string SyncClock = nameof(SyncClock);
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
@@ -298,6 +301,14 @@ internal sealed class GameHub(
         logger.AdvertisedAddressChosen(request.Address);
         return new ChooseAdvertisedAddressResult(Refusal: null);
     }
+
+    /// <summary>
+    /// Answers the current time of the server, for any connection, identified or not: the clients estimate from it the
+    /// offset of their clock, as NTP does. A mere reading of the clock, it never goes through the loop, whose queue would
+    /// add a variable delay to the measure, and logs nothing: every client calls it in bursts.
+    /// </summary>
+    [HubMethodName(SyncClock)]
+    public ClockSyncResult ReadClock() => new(timeProvider.GetUtcNow().ToUnixTimeMilliseconds());
 
     /// <summary>
     /// Reports to the loop that a player lost their last connection, so that the TV screen and the game master show them

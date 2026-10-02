@@ -2,14 +2,26 @@
     import { onMount } from 'svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
     import type { DisplaySnapshot } from '../shared/contracts';
+    import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { connectDisplay } from '../shared/connection/displayConnection';
+    import { createGameConnection } from '../shared/connection/gameHub';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
     import { fr } from '../shared/i18n/fr';
     import LobbyScreen from './LobbyScreen.svelte';
 
     const game = new SnapshotStore<DisplaySnapshot>();
+    const connection = createGameConnection();
+    const clock = new ClockSync(connection);
 
-    onMount(() => connectDisplay(game));
+    onMount(() => {
+        // Before the connection starts, so as not to miss the first one.
+        const stopClock = clock.start();
+        const disconnect = connectDisplay(game, connection);
+        return () => {
+            stopClock();
+            disconnect();
+        };
+    });
 </script>
 
 {#if game.current}
