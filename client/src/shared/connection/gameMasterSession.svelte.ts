@@ -91,6 +91,14 @@ export class GameMasterSession {
         return this.#connected;
     }
 
+    /**
+     * Whether the page shows the state of the server since the connection was last established:
+     * connected, and either without access yet, which waits for no snapshot, or with a fresh one.
+     */
+    get synchronized(): boolean {
+        return this.#connected && (this.#access !== 'granted' || this.#store.fresh);
+    }
+
     /** Connects to the server and presents the remembered code, if any. Returns a function that disconnects. */
     start(): () => void {
         const unsubscribe = this.#connection.on('ReceiveGameMasterSnapshot', (snapshot) => {

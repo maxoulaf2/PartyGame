@@ -6,11 +6,11 @@
     interface Props {
         snapshot: GameMasterSnapshot;
         session: GameMasterSession;
-        /** Whether `snapshot` reflects the server since the connection was last established. */
-        fresh: boolean;
+        /** Whether the page is synchronized with the server: everything is disabled otherwise. */
+        interactive: boolean;
     }
 
-    let { snapshot, session, fresh }: Props = $props();
+    let { snapshot, session, interactive }: Props = $props();
 
     // The address just chosen, shown until the snapshot advertises it or the server refuses it:
     // the snapshot has the last word.
@@ -20,7 +20,7 @@
     // A derived primitive only changes with the address itself, not with every snapshot.
     const advertised = $derived(snapshot.joinAddress);
     const candidates = $derived(snapshot.joinAddressCandidates);
-    const canChoose = $derived(session.connected && fresh && pending === null);
+    const canChoose = $derived(interactive && pending === null);
 
     $effect(() => {
         void advertised;

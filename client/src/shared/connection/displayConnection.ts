@@ -19,6 +19,8 @@ export function connectDisplay(
     const announce = () =>
         connection.invoke('Announce', { role: 'Display', gameMasterCode: null }).catch(() => {});
 
+    // The TV screen keeps showing the last snapshot, marked as possibly outdated (US-E05-02).
+    connection.onReconnecting(() => store.markStale());
     connection.onReconnected(announce);
     connection
         .start()

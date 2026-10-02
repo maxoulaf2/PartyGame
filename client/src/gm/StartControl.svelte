@@ -8,11 +8,11 @@
     interface Props {
         snapshot: GameMasterSnapshot;
         session: GameMasterSession;
-        /** Whether `snapshot` reflects the server since the connection was last established. */
-        fresh: boolean;
+        /** Whether the page is synchronized with the server: everything is disabled otherwise. */
+        interactive: boolean;
     }
 
-    let { snapshot, session, fresh }: Props = $props();
+    let { snapshot, session, interactive }: Props = $props();
 
     let confirming = $state(false);
     let sending = $state(false);
@@ -20,7 +20,7 @@
 
     const playerCount = $derived(snapshot.players.length);
     const enoughPlayers = $derived(playerCount >= snapshot.minimumPlayerCount);
-    const canStart = $derived(session.connected && fresh && !sending && enoughPlayers);
+    const canStart = $derived(interactive && !sending && enoughPlayers);
 
     async function start() {
         if (!canStart) {

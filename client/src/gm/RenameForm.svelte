@@ -11,13 +11,13 @@
     interface Props {
         player: GameMasterPlayer;
         session: GameMasterSession;
-        /** Whether the console shows the state of the server, not a snapshot older than a disconnection. */
-        fresh: boolean;
+        /** Whether the page is synchronized with the server: everything is disabled otherwise. */
+        interactive: boolean;
         /** Called once the rename is done, or cancelled. */
         onclose: () => void;
     }
 
-    let { player, session, fresh, onclose }: Props = $props();
+    let { player, session, interactive, onclose }: Props = $props();
 
     // Filled once with the current nickname, then the game master's to edit: a snapshot arriving
     // meanwhile, or a lost connection, never wipes what was typed.
@@ -32,7 +32,7 @@
     });
 
     const problem = $derived(checkNickname(nickname));
-    const canSubmit = $derived(session.connected && fresh && !sending && problem === null);
+    const canSubmit = $derived(interactive && !sending && problem === null);
     const fieldId = $derived(`rename-${player.id}`);
 
     const problems = fr.gm.rename.problems;
@@ -94,6 +94,7 @@
         autocapitalize="words"
         spellcheck="false"
         enterkeyhint="done"
+        disabled={!interactive}
         aria-invalid={message !== null}
         aria-describedby={message ? `${fieldId}-problem` : undefined}
     />
@@ -132,6 +133,10 @@
         color: var(--color-text);
         /* At least 16 px: Safari on iOS zooms into a smaller field when it gets the focus. */
         font-size: 1.25rem;
+    }
+
+    input:disabled {
+        opacity: 0.6;
     }
 
     input:focus-visible {

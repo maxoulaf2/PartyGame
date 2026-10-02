@@ -206,6 +206,35 @@ describe('PlayerSession', () => {
         expect(session.connected).toBe(true);
     });
 
+    it('is synchronized on the form as soon as connected, without any snapshot', async () => {
+        const store = new SnapshotStore<PlayerSnapshot>();
+        const server = fakeServer();
+        const session = new PlayerSession(store, memoryStorage(), memoryStorage(), server.typed);
+        expect(session.synchronized).toBe(false);
+
+        session.start();
+
+        await vi.waitFor(() => expect(session.synchronized).toBe(true));
+        expect(store.current).toBeNull();
+    });
+
+    it('is synchronized again only once a fresh snapshot follows a lost connection', async () => {
+        const { session, server } = await startedSession();
+        await session.join('Zoé');
+        expect(session.synchronized).toBe(true);
+
+        server.connection.invoke.mockImplementationOnce(() => new Promise(() => {}));
+        server.drop();
+        expect(session.synchronized).toBe(false);
+        server.restore();
+        // Connected, but the resumption has not brought its snapshot yet.
+        expect(session.connected).toBe(true);
+        expect(session.synchronized).toBe(false);
+
+        server.send(snapshot(4));
+        expect(session.synchronized).toBe(true);
+    });
+
     it('remembers the nickname the game master renamed the player to', async () => {
         const { session, store, server, nicknames } = await startedSession();
         await session.join('Zoé');
