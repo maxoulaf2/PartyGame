@@ -40,10 +40,10 @@
         ],
         "anyOf": [
           {
-            "description": "Manche de quiz à choix multiples.",
+            "description": "Manche de quiz à choix multiples : le game master présente chaque question, ouvre les réponses, puis révèle la bonne.",
             "properties": {
               "type": {
-                "description": "Manche de quiz à choix multiples.",
+                "description": "Manche de quiz à choix multiples : le game master présente chaque question, ouvre les réponses, puis révèle la bonne.",
                 "const": "quiz"
               },
               "title": {
@@ -51,10 +51,98 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 60
+              },
+              "answerSeconds": {
+                "description": "Durée de réponse par défaut des questions, en secondes, de 5 à 120. 20 si absente.",
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 120
+              },
+              "points": {
+                "description": "Points d'une bonne réponse, de 0 à 10 000. 1 000 si absent.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "speedBonus": {
+                "description": "Bonus de rapidité maximal, de 0 à 10 000, ajouté aux points d'une bonne réponse en proportion du temps restant. 0 si absent, c'est-à-dire sans bonus.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "shuffleChoices": {
+                "description": "Mélange les propositions de chaque question au lieu de les présenter dans l'ordre du descripteur. Faux si absent.",
+                "type": "boolean"
+              },
+              "questions": {
+                "description": "Questions de la manche, de 1 à 50, posées dans cet ordre.",
+                "type": "array",
+                "items": {
+                  "description": "Question d'une manche de quiz, avec ses propositions.",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "description": "Texte de la question, affiché sur l'écran TV.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "image": {
+                      "description": "Image facultative, affichée sur l'écran TV seulement : chemin d'un fichier .jpg, .jpeg, .png ou .webp du pack.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "answerSeconds": {
+                      "description": "Durée de réponse de cette question, en secondes, de 5 à 120. Remplace celle de la manche. Si absente, celle de la manche s'applique.",
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "choices": {
+                      "description": "Propositions, de 2 à 4, dont une seule est la bonne réponse. Elles sont présentées dans cet ordre, sauf si la manche les mélange.",
+                      "type": "array",
+                      "items": {
+                        "description": "Proposition d'une question de quiz.",
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "description": "Texte de la proposition, affiché sur l'écran TV et sur les téléphones.",
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "correct": {
+                            "description": "Indique la bonne réponse : true sur une seule proposition de la question. Faux si absent.",
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "text"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 2,
+                      "maxItems": 4
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "choices"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 50
               }
             },
             "required": [
-              "title"
+              "title",
+              "questions"
             ],
             "additionalProperties": false
           }

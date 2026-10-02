@@ -19,6 +19,7 @@ public abstract record RoundDescriptor
     /// <summary>
     /// The title of the round, shown to everyone.
     /// </summary>
+    [JsonPropertyOrder(-1)] // before the properties of the derived type, where an author of the pack looks for it
     [StringLength(60, MinimumLength = 1)]
     [Description("Titre de la manche, affiché à tous.")]
     public required string Title { get; init; }

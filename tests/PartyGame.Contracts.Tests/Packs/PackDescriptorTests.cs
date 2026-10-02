@@ -38,8 +38,8 @@ public sealed class PackDescriptorTests
     }
 
     [Theory]
-    [InlineData("""{"type":"quiz","title":"Manche 1"}""")]
-    [InlineData("""{"title":"Manche 1","type":"quiz"}""")]
+    [InlineData("""{"type":"quiz","title":"Manche 1","questions":[]}""")]
+    [InlineData("""{"title":"Manche 1","questions":[],"type":"quiz"}""")]
     public void Deserialize_RoundWithTypeAnywhere_ReadsItsMode(string round)
     {
         var pack = Read($$"""{"formatVersion":1,"title":"Soirée quiz","rounds":[{{round}}]}""");
@@ -50,7 +50,7 @@ public sealed class PackDescriptorTests
 
     [Theory]
     [InlineData("""{"formatVersion":1,"titel":"Soirée quiz","title":"Soirée quiz","rounds":[]}""")]
-    [InlineData("""{"formatVersion":1,"title":"Soirée quiz","rounds":[{"type":"quiz","title":"Manche 1","titel":"x"}]}""")]
+    [InlineData("""{"formatVersion":1,"title":"Soirée quiz","rounds":[{"type":"quiz","title":"Manche 1","questions":[],"titel":"x"}]}""")]
     public void Deserialize_UnknownProperty_Throws(string json) =>
         Assert.Throws<JsonException>(() => Read(json));
 
@@ -69,7 +69,7 @@ public sealed class PackDescriptorTests
     [InlineData("""{"formatVersion":1,"title":"Soirée quiz"}""")]
     [InlineData("""{"formatVersion":1,"title":null,"rounds":[]}""")]
     [InlineData("""{"formatVersion":"1","title":"Soirée quiz","rounds":[]}""")]
-    [InlineData("""{"formatVersion":1,"title":"Soirée quiz","rounds":[{"type":"quiz"}]}""")]
+    [InlineData("""{"formatVersion":1,"title":"Soirée quiz","rounds":[{"type":"quiz","questions":[]}]}""")]
     public void Deserialize_MissingOrMistypedProperty_Throws(string json) =>
         Assert.Throws<JsonException>(() => Read(json));
 
@@ -82,7 +82,7 @@ public sealed class PackDescriptorTests
 
     [Fact]
     public void Validate_ValidEnvelope_ReportsNothing() =>
-        Assert.Empty(Validate(Read(Envelope) with { Rounds = [new QuizRoundDescriptor { Title = "Manche 1" }] }));
+        Assert.Empty(Validate(Read(Envelope) with { Rounds = [Quiz("Manche 1")] }));
 
     [Theory]
     [InlineData(0)]
@@ -108,7 +108,7 @@ public sealed class PackDescriptorTests
     [InlineData(0)]
     [InlineData(61)]
     public void Validate_RoundTitleLengthOutOfBounds_ReportsTitle(int length) =>
-        Assert.Equal([nameof(RoundDescriptor.Title)], Validate(new QuizRoundDescriptor { Title = new string('a', length) }));
+        Assert.Equal([nameof(RoundDescriptor.Title)], Validate(Quiz(new string('a', length))));
 
     private static PackDescriptor Read(string json) =>
         JsonSerializer.Deserialize<PackDescriptor>(json, PackJsonOptions.Default)
@@ -118,7 +118,13 @@ public sealed class PackDescriptorTests
     {
         FormatVersion = PackDescriptor.CurrentFormatVersion,
         Title = "Soirée quiz",
-        Rounds = [new QuizRoundDescriptor { Title = "Manche 1" }],
+        Rounds = [Quiz("Manche 1")],
+    };
+
+    private static QuizRoundDescriptor Quiz(string title) => new()
+    {
+        Title = title,
+        Questions = [new QuizQuestion { Text = "Capitale de la France ?", Choices = [new QuizChoice { Text = "Paris", Correct = true }, new QuizChoice { Text = "Lyon" }] }],
     };
 
     // The same attributes produce the schema constraints. The validator checks one object, not the objects it contains.

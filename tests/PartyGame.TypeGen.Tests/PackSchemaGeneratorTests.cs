@@ -71,6 +71,13 @@ public sealed class PackSchemaGeneratorTests
     }
 
     [Fact]
+    public void Generate_TypedIdentifier_GivesStringNullableWhenOptional()
+    {
+        Assert.Equal("""{"type":"string"}""", Properties["cover"]!.ToJsonString());
+        Assert.Equal("""{"description":"Une image.","type":["string","null"]}""", Properties["picture"]!.ToJsonString());
+    }
+
+    [Fact]
     public void Generate_PolymorphicBase_OffersEachTypeWithItsDescription()
     {
         var items = Properties["activities"]!["items"]!;

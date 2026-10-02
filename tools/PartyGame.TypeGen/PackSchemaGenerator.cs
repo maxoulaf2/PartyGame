@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 using PartyGame.Contracts.Packs;
+using PartyGame.Contracts.Serialization;
 
 namespace PartyGame.TypeGen;
 
@@ -63,12 +64,17 @@ internal static class PackSchemaGenerator
 
     private static JsonNode Transform(JsonSchemaExporterContext context, JsonNode node)
     {
+        var type = context.TypeInfo.Type;
+        if (TypedIdSchema(type) is { } typedId)
+        {
+            node = typedId;
+        }
+
         if (node is not JsonObject schema)
         {
             return node;
         }
 
-        var type = context.TypeInfo.Type;
         var attributes = context.PropertyInfo?.AttributeProvider;
         var where = context.PropertyInfo is { } property
             ? $"property '{property.Name}' of type '{property.DeclaringType.FullName}'"
@@ -147,6 +153,21 @@ internal static class PackSchemaGenerator
                 throw new TypeGenException(
                     $"Validation attribute '{attribute.GetType().Name}' on {where} has no JSON Schema translation.");
         }
+    }
+
+    /// <summary>
+    /// A typed identifier, such as a media path, has a custom converter the exporter cannot see through, and gets an
+    /// empty schema that accepts anything. It reads a plain string.
+    /// </summary>
+    private static JsonObject? TypedIdSchema(Type type)
+    {
+        var underlying = Nullable.GetUnderlyingType(type);
+        if (TypedIdJsonConverterFactory.FindValueProperty(underlying ?? type) is null)
+        {
+            return null;
+        }
+
+        return underlying is null ? new JsonObject { ["type"] = "string" } : new JsonObject { ["type"] = new JsonArray("string", "null") };
     }
 
     private static JsonValue ToJson(object bound) =>

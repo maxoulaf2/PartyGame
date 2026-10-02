@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using PartyGame.Contracts.Serialization;
 
 namespace PartyGame.TypeGen.Tests.Fixtures;
 
@@ -45,7 +46,15 @@ public static class PackSchemaFixtures
 
         [Description("Réglages propres à ce descripteur.")]
         public SampleSettings? Overrides { get; init; }
+
+        public SamplePath Cover { get; init; }
+
+        [Description("Une image.")]
+        public SamplePath? Picture { get; init; }
     }
+
+    [JsonConverter(typeof(TypedIdJsonConverterFactory))]
+    public readonly record struct SamplePath(string Value);
 
     [Description("Des réglages.")]
     public sealed record SampleSettings

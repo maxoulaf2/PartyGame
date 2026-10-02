@@ -34,7 +34,7 @@ public sealed class RoundsTests : IAsyncDisposable
                 services.AddSingleton(provider => new GameLoop(
                     GameState.Create(new GameId(Guid.NewGuid()), "192.168.1.42", []) with
                     {
-                        Rounds = [new QuizRoundDescriptor { Title = "Échauffement" }, new QuizRoundDescriptor { Title = "Finale" }],
+                        Rounds = [new QuizRoundDescriptor { Title = "Échauffement", Questions = [] }, new QuizRoundDescriptor { Title = "Finale", Questions = [] }],
                     },
                     seed: 42,
                     provider.GetRequiredService<GameInputQueue>(),
