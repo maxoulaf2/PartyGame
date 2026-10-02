@@ -16,4 +16,10 @@ public enum RejectionReason
 
     /// <summary>Another player already has this nickname, ignoring case and accents.</summary>
     NicknameTaken,
+
+    /// <summary>The input concerns a player who is not registered.</summary>
+    PlayerUnknown,
+
+    /// <summary>The player is already shown as disconnected.</summary>
+    PlayerAlreadyDisconnected,
 }

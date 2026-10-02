@@ -41,7 +41,7 @@ internal sealed class ScriptedEngine(Func<GameState, GameInput, GameContext, Tra
     public static Transition AddPlayer(GameState state, GameInput input, GameContext context)
     {
         var value = ((TestInput)input).Value;
-        var player = new Player(new PlayerId(Guid.NewGuid()), value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var player = new Player(new PlayerId(Guid.NewGuid()), value.ToString(System.Globalization.CultureInfo.InvariantCulture), IsConnected: true);
         return new Transition(state with { Players = state.Players.Add(player) }, []);
     }
 }
