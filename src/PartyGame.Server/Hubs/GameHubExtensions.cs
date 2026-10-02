@@ -24,6 +24,7 @@ internal static class GameHubExtensions
             })
             .AddJsonProtocol(options => ContractJsonOptions.Apply(options.PayloadSerializerOptions));
         builder.Services.AddSingleton<IGameStateListener, SnapshotBroadcaster>();
+        builder.Services.AddSingleton<PlayerConnections>();
 
         return builder;
     }

@@ -23,7 +23,7 @@ internal static class HubGroups
     };
 
     /// <summary>
-    /// The group of every connection of one player, joined when the player identifies (US-E04-02): a player may have
+    /// The group of every connection of one player, joined when the player registers or identifies: a player may have
     /// several connections, such as two tabs, and none of them defines who they are.
     /// </summary>
     public static string Player(PlayerId playerId) => $"player:{playerId.Value}";
