@@ -38,7 +38,7 @@ Un pack est un dossier (les zip arrivent en E17) contenant un descripteur `pack.
 - Chaque activité du descripteur a un champ `type` qui désigne son mode de jeu (désérialisation polymorphe avec System.Text.Json).
 - Le schéma de référence est `schemas/pack.schema.json`. Il est généré depuis les types C# du descripteur (`PartyGame.Contracts.Packs`) par `npm run generate:contracts`, à chaque évolution de leur format. `.vscode/settings.json` l'associe aux fichiers `packs/*/pack.json`.
 - Un pack est entièrement validé au chargement : structure, existence des médias référencés, cohérence des données. Une partie ne doit jamais échouer en cours de route à cause du contenu. Les erreurs sont remontées au GM avant le lancement, avec un message précis (fichier, chemin dans le descripteur, problème).
-- Les médias sont servis avec prise en charge des requêtes partielles (Range), pour pouvoir démarrer un extrait au milieu d'un morceau.
+- Les médias sont servis avec prise en charge des requêtes partielles (Range), pour pouvoir démarrer un extrait au milieu d'un morceau. Ils le sont sous `/media/<identifiant>`, un identifiant tiré au hasard au lancement de la partie : le chemin d'un média n'apparaît jamais dans une URL ni dans une projection.
 
 ## Stack
 

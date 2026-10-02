@@ -472,5 +472,38 @@ public sealed class SnapshotsTests
         Assert.All(projected, p => Assert.Equal((expected, null), p));
     }
 
+    [Fact]
+    public void ForDisplay_RoundWithAnImage_ShowsTheUrlOfItsMedia()
+    {
+        // Given
+        var state = Games.PlayedUpTo(GamePhase.Round, Games.IllustratedLobbyWith("Zoé"));
+        var id = state.Media.Files.Single(f => f.Value == Games.Flag).Key;
+
+        // When
+        var snapshot = Games.Snapshots.ForDisplay(state);
+
+        // Then
+        Assert.Equal($"/media/{id.Value}", Assert.IsType<FakeDisplayView>(snapshot.RoundView).ImageUrl);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public void ForEachRole_AnyPhaseOfAnIllustratedGame_ContainsNoPathOfAMedia(GamePhase phase, Phase _)
+    {
+        // Given: a media file is named after what it shows, which may be the answer
+        var state = Games.PlayedUpTo(phase, Games.IllustratedLobbyWith("Zoé", "Max"));
+
+        // When
+        var projections = new List<object> { Games.Snapshots.ForDisplay(state), Games.Snapshots.ForGameMaster(state) };
+        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
+
+        // Then
+        foreach (var json in projections.Select(Serialize))
+        {
+            string[] secrets = ["images", "drapeau", "japon", "monuments", "tour-eiffel", ".png", ".jpg"];
+            Assert.All(secrets, secret => Assert.DoesNotContain(secret, json, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
     private static string Serialize(object snapshot) => FakeJson.Serialize(snapshot);
 }

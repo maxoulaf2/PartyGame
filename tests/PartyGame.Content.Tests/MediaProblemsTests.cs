@@ -1,3 +1,4 @@
+using PartyGame.Contracts.Packs;
 using static PartyGame.Content.Tests.TestPacks;
 
 namespace PartyGame.Content.Tests;
@@ -125,5 +126,30 @@ public sealed class MediaProblemsTests : IDisposable
 
         // Then
         Assert.Equal(["PackMediaMissing pack.json $.rounds[0].questions[1].image media=b.png"], Describe(pack));
+    }
+
+    [Fact]
+    public void Load_ValidPackWithMedia_ListsEachMediaOnceInTheOrderOfTheDescriptor()
+    {
+        // Given: an image used twice, and a question without image
+        var round = Quiz(QuestionWithImage("b.png"), ValidQuestion, QuestionWithImage("images/a.png"), QuestionWithImage("b.png"));
+
+        // When
+        var pack = _packs.Load(Pack(round), "b.png", "images/a.png");
+
+        // Then: the game draws one identifier per file
+        Assert.True(pack.IsValid);
+        Assert.Equal([new MediaPath("b.png"), new MediaPath("images/a.png")], pack.Media);
+    }
+
+    [Fact]
+    public void Load_InvalidPackWithMedia_ListsNoMedia()
+    {
+        // When
+        var pack = _packs.Load(Pack(Quiz(QuestionWithImage("a.png"), QuestionWithImage("b.png"))), "a.png");
+
+        // Then: an invalid pack is never played
+        Assert.False(pack.IsValid);
+        Assert.Empty(pack.Media);
     }
 }

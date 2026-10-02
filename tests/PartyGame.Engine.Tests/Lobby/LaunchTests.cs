@@ -1,4 +1,6 @@
+using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.Tests.Rounds;
 
 namespace PartyGame.Engine.Tests.Lobby;
 
@@ -115,5 +117,53 @@ public sealed class LaunchTests
         Assert.Same(state, transition.State);
         Assert.Empty(transition.Effects);
         Assert.Equal(RejectionReason.GameAlreadyStarted, transition.Rejection);
+    }
+
+    [Fact]
+    public void Handle_StartGame_DrawsAnIdentifierForEachMediaOfTheSelectedPackOnly()
+    {
+        // Given: another pack, which is not played, has images too
+        var other = Games.ValidPack(
+            "autre",
+            "Autre soirée",
+            [new FakeRoundDescriptor { Title = "Ailleurs", Image = new MediaPath("images/autre.png") }]);
+        var state = Games.IllustratedLobbyWith("Zoé");
+        state = Games.Accepted(state, Games.Loaded(Games.IllustratedPack(), other));
+
+        // When
+        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        Assert.Equal(
+            [Games.Flag.Value, Games.Monument.Value],
+            transition.State.Media.Files.Values.Select(m => m.Value).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Handle_StartGameRejected_DrawsNoIdentifier()
+    {
+        // Given
+        var state = Games.Accepted(Games.Accepted(Games.NewLobby(), Games.Loaded(Games.IllustratedPack())), Games.Select("illustre"));
+
+        // When: no player yet
+        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+
+        // Then
+        Assert.Equal(RejectionReason.NotEnoughPlayers, transition.Rejection);
+        Assert.Empty(transition.State.Media.Files);
+    }
+
+    [Fact]
+    public void Handle_NextRound_KeepsTheIdentifiersOfTheMedia()
+    {
+        // Given
+        var state = Games.PlayedUpTo(GamePhase.BetweenRounds, Games.IllustratedLobbyWith("Zoé"));
+
+        // When
+        var next = Games.Accepted(state, Games.NextRound(state), seed: 43);
+
+        // Then: a URL serves the same file for the whole game
+        Assert.Same(state.Media, next.Media);
     }
 }

@@ -18,4 +18,7 @@ internal static partial class PackLog
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Pack directory {Directory} holds no pack: no pack can be played. A pack is a subfolder with a pack.json file")]
     public static partial void PackDirectoryEmpty(this ILogger logger, string directory);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Media file {File} of the pack of the game is missing: it was deleted or moved since the pack was loaded")]
+    public static partial void PackMediaFileMissing(this ILogger logger, string file);
 }

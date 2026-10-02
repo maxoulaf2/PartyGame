@@ -28,6 +28,7 @@ public sealed class GameStateTests
         Assert.Null(state.SelectedPackId);
         Assert.Null(state.Pack);
         Assert.Empty(state.Rounds);
+        Assert.Empty(state.Media.Files);
         Assert.Null(state.CurrentRound);
     }
 
@@ -62,7 +63,7 @@ public sealed class GameStateTests
     public void Serialize_StartedGameWithPlayersAndPacks_RoundTripsUnchanged()
     {
         // Given
-        var state = Games.InPhase(GamePhase.Round, "Zoé", "Max") with { Version = 42 };
+        var state = Games.PlayedUpTo(GamePhase.Round, Games.IllustratedLobbyWith("Zoé", "Max")) with { Version = 42 };
         state = state with { Catalog = state.Catalog with { Packs = [.. state.Catalog.Packs, Games.InvalidPack("casse")] } };
 
         // When
@@ -79,6 +80,9 @@ public sealed class GameStateTests
         Assert.Equal(state.PlayerTokens.OrderBy(t => t.Key.Value), restored.PlayerTokens.OrderBy(t => t.Key.Value));
         Assert.Equal(state.SelectedPackId, restored.SelectedPackId);
         Assert.Equal(state.Rounds, restored.Rounds);
+        Assert.Equal(
+            state.Media.Files.OrderBy(f => f.Key.Value, StringComparer.Ordinal),
+            restored.Media.Files.OrderBy(f => f.Key.Value, StringComparer.Ordinal));
         Assert.Equal(json, JsonSerializer.Serialize(restored, FakeJson.Options));
     }
 }

@@ -49,7 +49,10 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
         new FakePlayerView(player.Nickname, round.Inputs.Count);
 
     public override DisplayRoundView ProjectForDisplay(FakeRoundState round, GameState game) =>
-        new FakeDisplayView(round.Title, round.Inputs.Count);
+        new FakeDisplayView(
+            round.Title,
+            round.Inputs.Count,
+            game.Rounds[game.CurrentRound!.Index] is FakeRoundDescriptor { Image: { } image } ? game.Media.UrlOf(image) : null);
 
     public override GameMasterRoundView ProjectForGameMaster(FakeRoundState round, GameState game) =>
         new FakeGameMasterView(round.Title, [.. round.Inputs]);

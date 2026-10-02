@@ -34,4 +34,10 @@ public sealed record LoadedPack(
     /// to log, never shown to the game master.
     /// </summary>
     public Exception? Failure { get; init; }
+
+    /// <summary>
+    /// The media files the descriptor of a valid pack references, each path once, in the order of the descriptor. Empty
+    /// when the pack is invalid.
+    /// </summary>
+    public ImmutableArray<MediaPath> Media { get; init; } = [];
 }

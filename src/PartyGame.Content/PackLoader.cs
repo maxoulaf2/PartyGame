@@ -107,7 +107,10 @@ public sealed class PackLoader(RoundValidator validateRound)
 
             // Every check passed, so the deserialization cannot fail but because of a bug.
             var descriptor = problems.Count == 0 ? root.Deserialize<PackDescriptor>(PackJsonOptions.Default) : null;
-            return new LoadedPack(id, fullPath, Title(root), RoundCount(root), descriptor, problems.ToImmutable());
+            return new LoadedPack(id, fullPath, Title(root), RoundCount(root), descriptor, problems.ToImmutable())
+            {
+                Media = descriptor is null ? [] : [.. reading.Media.Select(reference => reference.Media).Distinct()],
+            };
         }
     }
 
