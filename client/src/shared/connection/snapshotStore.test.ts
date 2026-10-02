@@ -13,6 +13,7 @@ function snapshot(version: number, gameId: GameId = gameA, host = 1): DisplaySna
         phase: 'Lobby',
         joinAddress: `10.0.0.${host}`,
         players: [],
+        packTitle: null,
         round: null,
         roundView: null,
     };

@@ -15,6 +15,7 @@ export interface DisplaySnapshot {
     readonly phase: Phase;
     readonly joinAddress: string | null;
     readonly players: readonly DisplayPlayer[];
+    readonly packTitle: string | null;
     readonly round: RoundInfo | null;
     readonly roundView: DisplayRoundView | null;
 }

@@ -5,7 +5,8 @@ using PartyGame.Engine.Rounds;
 namespace PartyGame.Engine.Lobby;
 
 /// <summary>
-/// Start of the game by the game master, once: the first round of the pack starts. Registration stays open afterwards.
+/// Start of the game by the game master, once: the pack chosen is fixed, and its first round starts. Registration stays
+/// open afterwards.
 /// </summary>
 internal static class Launch
 {
@@ -27,18 +28,21 @@ internal static class Launch
             return Transition.Rejected(state, RejectionReason.NotEnoughPlayers);
         }
 
+        // Only a valid pack can be selected, and a reload cancels the selection of a pack that is no longer valid.
+        if (state.SelectedPackId is not { } packId || state.Catalog.Find(packId) is not { IsValid: true } pack)
+        {
+            return Transition.Rejected(state, RejectionReason.PackNotSelected);
+        }
+
+        // Copied into the game, which then depends neither on the catalog nor on the disk: it is persisted with it (E11).
+        var started = state with { Pack = pack.Descriptor };
+
         // Checked once and for all here, so that no round can fail to start in the middle of the game.
-        if (state.Rounds.Any(descriptor => !modes.TryFind(descriptor, out _)))
+        if (started.Rounds.Any(descriptor => !modes.TryFind(descriptor, out _)))
         {
             return Transition.Rejected(state, RejectionReason.GameModeMissing);
         }
 
-        if (state.Rounds.IsEmpty)
-        {
-            // Until the game master chooses a pack (US-E06-03), the game has no round to play.
-            return new Transition(state with { Phase = GamePhase.Finished }, []);
-        }
-
-        return RoundFlow.Start(state, index: 0, modes, context);
+        return RoundFlow.Start(started, index: 0, modes, context);
     }
 }

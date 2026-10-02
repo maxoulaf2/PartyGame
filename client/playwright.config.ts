@@ -1,8 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
-import { advertisedAddress, gameMasterCode, gameServerPort } from './e2e/gameServer.ts';
+import {
+    advertisedAddress,
+    gameMasterCode,
+    gameServerPort,
+    packDirectory,
+} from './e2e/gameServer.ts';
 
 const port = 4173;
-const mobilePages = /(player|gm|reconnection|buildReload)\.spec\.ts/;
+const mobilePages = /(player|gm|packs|reconnection|buildReload)\.spec\.ts/;
 // Tests that change the shared server for every other test: starting the game, the address.
 const serverWide = /(launch|address)\.spec\.ts/;
 
@@ -44,7 +49,7 @@ export default defineConfig({
         // The real server behind the preview proxy, for the hub. Started once the build has
         // rewritten its web root.
         {
-            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode} --Network:AdvertisedAddress=${advertisedAddress}`,
+            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode} --Network:AdvertisedAddress=${advertisedAddress} "--Packs:Directory=${packDirectory}"`,
             cwd: '..',
             url: `http://localhost:${gameServerPort}/health`,
             reuseExistingServer: false,

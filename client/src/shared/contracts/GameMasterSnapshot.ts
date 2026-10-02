@@ -5,6 +5,7 @@
 
 import type { GameId } from './GameId';
 import type { GameMasterJoinAddress } from './GameMasterJoinAddress';
+import type { GameMasterPackCatalog } from './GameMasterPackCatalog';
 import type { GameMasterPlayer } from './GameMasterPlayer';
 import type { GameMasterRoundView } from './GameMasterRoundView';
 import type { Phase } from './Phase';
@@ -18,6 +19,9 @@ export interface GameMasterSnapshot {
     readonly minimumPlayerCount: number;
     readonly joinAddress: string | null;
     readonly joinAddressCandidates: readonly GameMasterJoinAddress[];
+    readonly packCatalog: GameMasterPackCatalog | null;
+    readonly selectedPackId: string | null;
+    readonly packTitle: string | null;
     readonly round: RoundInfo | null;
     readonly roundView: GameMasterRoundView | null;
 }

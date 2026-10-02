@@ -12,11 +12,14 @@ import type {
     IGameClient,
     JoinRequest,
     JoinResult,
+    ReloadPacksResult,
     RenamePlayerRequest,
     RenamePlayerResult,
     ResumeSessionRequest,
     ResumeSessionResult,
     ClockSyncResult,
+    SelectPackRequest,
+    SelectPackResult,
     StaleBuildReport,
     StartGameResult,
 } from '../contracts';
@@ -39,6 +42,8 @@ export interface GameHubMethods {
         args: [request: ChooseAdvertisedAddressRequest];
         result: ChooseAdvertisedAddressResult | null;
     };
+    SelectPack: { args: [request: SelectPackRequest]; result: SelectPackResult | null };
+    ReloadPacks: { args: []; result: ReloadPacksResult | null };
     SyncClock: { args: []; result: ClockSyncResult };
     ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };
 }

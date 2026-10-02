@@ -86,9 +86,11 @@ L'adresse est calculée une seule fois : après un changement de réseau, relanc
 
 ## Dossier des packs
 
-Au démarrage, avant d'accepter la moindre connexion, le serveur charge et vérifie entièrement chaque pack du dossier des packs : chaque sous-dossier qui contient un fichier `pack.json` (nom exact, en minuscules) est un pack, et son identifiant est le nom du sous-dossier. Les autres sous-dossiers sont ignorés. Le descripteur est lu une seule fois : une modification de `pack.json` n'est prise en compte qu'au redémarrage.
+Au démarrage, avant d'accepter la moindre connexion, le serveur charge et vérifie entièrement chaque pack du dossier des packs : chaque sous-dossier qui contient un fichier `pack.json` (nom exact, en minuscules) est un pack, et son identifiant est le nom du sous-dossier. Les autres sous-dossiers sont ignorés. Le descripteur n'est relu que sur demande : après avoir corrigé un pack, le GM appuie sur « Actualiser les packs » dans sa console, et le serveur recharge et revérifie tous les packs. Une fois la partie lancée, le pack choisi est copié dans la partie : modifier ses fichiers n'a plus d'effet, et l'actualisation n'est plus proposée.
 
 La bannière liste les packs, avec pour chacun son titre, son nombre de manches et son état : valide, ou invalide avec le nombre de problèmes. Chaque problème est détaillé dans le journal, en `WRN`, avec le fichier, le chemin dans le descripteur (par exemple `$.rounds[1].questions[4].choices`) et ses paramètres. Un pack invalide n'empêche jamais le démarrage : il ne pourra simplement pas être choisi. Un dossier des packs absent ou vide non plus : la bannière le signale.
+
+Dans le lobby, la console GM liste les mêmes packs, avec leurs manches et leur mode de jeu. Le GM y choisit le pack à jouer, dont l'écran TV affiche le titre ; s'il n'y a qu'un pack valide, il est choisi d'office. Pour un pack invalide, « Voir les problèmes » détaille chaque problème en français, avec le fichier et le chemin dans le descripteur. Tant qu'aucun pack n'est choisi, la partie ne peut pas être lancée.
 
 Le dossier se règle par le paramètre `Packs:Directory`. Par défaut, c'est le dossier `packs` à côté de l'exécutable du serveur. Un chemin relatif est lui aussi relatif au dossier de l'exécutable, et non au dossier courant. `scripts/start.ps1` indique le dossier `packs/` du dépôt, sauf si la variable d'environnement `Packs__Directory` en désigne un autre.
 

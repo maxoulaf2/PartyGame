@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type StartGameRefusal = 'NotEnoughPlayers' | 'AlreadyStarted' | 'StartFailed';
+export type StartGameRefusal = 'NotEnoughPlayers' | 'PackNotSelected' | 'AlreadyStarted' | 'StartFailed';

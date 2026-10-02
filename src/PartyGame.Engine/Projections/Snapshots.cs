@@ -25,6 +25,7 @@ public sealed class Snapshots(GameModes modes)
             PhaseOf(state),
             state.JoinAddress,
             [.. state.Players.Select(p => new DisplayPlayer(p.Id, p.Nickname, p.IsConnected))],
+            PackTitleOf(state),
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State, state) : null);
     }
@@ -44,6 +45,9 @@ public sealed class Snapshots(GameModes modes)
             Launch.MinimumPlayerCount,
             state.JoinAddress,
             [.. state.JoinAddressCandidates.Select(c => new GameMasterJoinAddress(c.Address, c.InterfaceName))],
+            state.Phase == GamePhase.Lobby ? CatalogOf(state.Catalog) : null,
+            state.SelectedPackId,
+            PackTitleOf(state),
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State, state) : null);
     }
@@ -76,6 +80,29 @@ public sealed class Snapshots(GameModes modes)
         GamePhase.Finished => Phase.Finished,
         _ => throw new InvalidOperationException($"Phase {state.Phase} has no projection."),
     };
+
+    /// <summary>
+    /// The title of the pack the game plays, or of the pack chosen in the lobby.
+    /// </summary>
+    private static string? PackTitleOf(GameState state) =>
+        state.Pack?.Title ?? (state.SelectedPackId is { } id ? state.Catalog.Find(id)?.Title : null);
+
+    /// <summary>
+    /// What the game master needs to choose a pack: the rounds of each one, never its questions nor its answers, and why
+    /// the invalid ones cannot be chosen.
+    /// </summary>
+    private static GameMasterPackCatalog CatalogOf(PackCatalog catalog) =>
+        new(
+            catalog.Directory,
+            [
+                .. catalog.Packs.Select(pack => new GameMasterPack(
+                    pack.Id,
+                    pack.Title,
+                    pack.RoundCount,
+                    pack.IsValid,
+                    pack.IsValid ? [.. pack.Descriptor.Rounds.Select(r => new GameMasterPackRound(r.Title, GameModes.TypeOf(r)))] : [],
+                    pack.Problems)),
+            ]);
 
     private static RoundInfo? RoundInfoOf(GameState state) =>
         state.CurrentRound is { } round

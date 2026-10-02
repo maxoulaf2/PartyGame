@@ -8,6 +8,7 @@ using PartyGame.Engine.Projections;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
+using PartyGame.Server.Packs;
 
 namespace PartyGame.Server.Hubs;
 
@@ -25,6 +26,7 @@ internal sealed class GameHub(
     Snapshots snapshots,
     IGameInputWriter inputs,
     PlayerConnections playerConnections,
+    PackReloader packReloader,
     FrontEndBuild frontEndBuild,
     TimeProvider timeProvider,
     ILogger<GameHub> logger) : Hub<IGameClient>
@@ -46,6 +48,12 @@ internal sealed class GameHub(
 
     /// <summary>SignalR target of <see cref="ChooseAdvertisedAddressAsync"/>, as the clients call it.</summary>
     public const string ChooseAdvertisedAddress = nameof(ChooseAdvertisedAddress);
+
+    /// <summary>SignalR target of <see cref="SelectPackAsync"/>, as the clients call it.</summary>
+    public const string SelectPack = nameof(SelectPack);
+
+    /// <summary>SignalR target of <see cref="ReloadPacksAsync"/>, as the clients call it.</summary>
+    public const string ReloadPacks = nameof(ReloadPacks);
 
     /// <summary>SignalR target of <see cref="NextRoundAsync"/>, as the clients call it.</summary>
     public const string NextRound = nameof(NextRound);
@@ -293,12 +301,14 @@ internal sealed class GameHub(
             return new StartGameResult(outcome.Rejection switch
             {
                 RejectionReason.NotEnoughPlayers => StartGameRefusal.NotEnoughPlayers,
+                RejectionReason.PackNotSelected => StartGameRefusal.PackNotSelected,
                 RejectionReason.GameAlreadyStarted => StartGameRefusal.AlreadyStarted,
                 _ => StartGameRefusal.StartFailed,
             });
         }
 
-        logger.GameStarted(game.State.Players.Length);
+        var started = game.State;
+        logger.GameStarted(started.Players.Length, started.SelectedPackId!, started.Pack!.Title);
         return new StartGameResult(Refusal: null);
     }
 
@@ -331,6 +341,66 @@ internal sealed class GameHub(
 
         logger.AdvertisedAddressChosen(request.Address);
         return new ChooseAdvertisedAddressResult(Refusal: null);
+    }
+
+    /// <summary>
+    /// Chooses the pack of the game at the request of the game master, in the lobby. The loop alone decides whether the pack
+    /// can be chosen; the selection reaches every console and the TV screen through the snapshots. Choosing the selected
+    /// pack again changes nothing.
+    /// </summary>
+    /// <param name="message">A <see cref="SelectPackRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(SelectPack)]
+    public async Task<SelectPackResult> SelectPackAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<SelectPackRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(SelectPack, Context.ConnectionId, invalidPath);
+            return new SelectPackResult(SelectPackRefusal.MessageInvalid);
+        }
+
+        // Not cancelled with the connection: once enqueued, the choice may be accepted whoever is left to hear the answer.
+        var outcome = await inputs
+            .SubmitAsync(new Engine.Inputs.SelectPack(request.PackId, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status != InputStatus.Accepted)
+        {
+            return new SelectPackResult(outcome.Rejection switch
+            {
+                RejectionReason.PackUnknown => SelectPackRefusal.PackUnknown,
+                RejectionReason.PackInvalid => SelectPackRefusal.PackInvalid,
+                RejectionReason.GameAlreadyStarted => SelectPackRefusal.AlreadyStarted,
+                _ => SelectPackRefusal.SelectionFailed,
+            });
+        }
+
+        logger.PackSelected(request.PackId);
+        return new SelectPackResult(Refusal: null);
+    }
+
+    /// <summary>
+    /// Loads and checks the packs again at the request of the game master, once they fixed a pack on the disk. The loop
+    /// refuses the result once the game is started; the new catalog reaches every console through the snapshots, and the
+    /// selection is cancelled if its pack is no longer valid.
+    /// </summary>
+    /// <remarks>No message: there is nothing to tell but the intent itself.</remarks>
+    [GameMasterOnly]
+    [HubMethodName(ReloadPacks)]
+    public async Task<ReloadPacksResult> ReloadPacksAsync()
+    {
+        // Not cancelled with the connection: the other consoles get the new catalog whoever is left to hear the answer.
+        var outcome = await packReloader.ReloadAsync(CancellationToken.None).ConfigureAwait(false);
+        if (outcome.Status != InputStatus.Accepted)
+        {
+            return new ReloadPacksResult(outcome.Rejection == RejectionReason.GameAlreadyStarted
+                ? ReloadPacksRefusal.AlreadyStarted
+                : ReloadPacksRefusal.ReloadFailed);
+        }
+
+        var catalog = game.State.Catalog;
+        var validCount = catalog.Packs.Count(pack => pack.IsValid);
+        logger.PacksReloaded(catalog.Packs.Length, validCount);
+        return new ReloadPacksResult(Refusal: null);
     }
 
     /// <summary>

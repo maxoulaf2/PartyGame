@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
-import { gameMasterCode } from './gameServer.ts';
+import { gameMasterCode, playedPack } from './gameServer.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
 
 // Starting the game cannot be undone, and every test shares the same server: playwright.config.ts
@@ -34,6 +34,10 @@ test('the game master starts the game, and every interface leaves the lobby toge
     const start = page.getByRole('button', { name: fr.gm.start.action, exact: true });
     const dialog = page.getByRole('dialog', { name: fr.gm.start.confirmTitle });
 
+    // The pack may already be chosen by the tests of the packs: choosing it again changes nothing.
+    await page.getByRole('radio', { name: playedPack.title }).check();
+    await expect(display.getByText(playedPack.title)).toBeVisible();
+
     // Cancelling leaves everything in the lobby.
     await start.click();
     await expect(dialog).toBeVisible();
@@ -46,6 +50,12 @@ test('the game master starts the game, and every interface leaves the lobby toge
 
     await expect(page.getByText(fr.gm.started)).toBeVisible();
     await expect(start).toHaveCount(0);
+    // The pack is fixed: neither the list of packs nor their reload are offered anymore.
+    await expect(page.getByRole('radio')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.gm.packs.reload })).toHaveCount(0);
+    await expect(
+        page.getByText(fr.gm.packs.played.replace('{title}', () => playedPack.title)),
+    ).toBeVisible();
     await expect(display.getByText(fr.display.started)).toBeVisible();
     await expect(phone.getByText(fr.player.started)).toBeVisible();
 

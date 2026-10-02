@@ -1,3 +1,4 @@
+using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Modes.Quiz;
@@ -34,5 +35,29 @@ public sealed class RepositoryPacksTests
         Assert.Contains(questions, question => question.AnswerSeconds is not null);
         Assert.Contains(rounds, round => round.SpeedBonus > 0);
         Assert.Contains(rounds, round => round.ShuffleChoices);
+    }
+
+    [Fact]
+    public void EndToEndPacks_AreTheValidAndInvalidPacksTheBrowserTestsExpect()
+    {
+        // Given: the packs of the Playwright tests (client/e2e/packs), which check what the console shows of them
+        var library = new PackLoader(new GameModes([new QuizMode()]).Validate)
+            .LoadAll(Path.Combine(RepositoryRoot.Find(), "client", "e2e", "packs"));
+
+        // Then
+        Assert.Equal(
+            [("apero", true), ("casse", false), ("soiree", true)],
+            library.Packs.Select(pack => (pack.Id, pack.IsValid)));
+        var soiree = library.Packs[2];
+        Assert.Equal("Grande soirée", soiree.Title);
+        Assert.Equal(["Échauffement", "Finale"], soiree.Descriptor!.Rounds.Select(r => r.Title));
+        var broken = library.Packs[1];
+        Assert.Equal(
+            [
+                (PackProblemCode.PackMediaMissing, "$.rounds[0].questions[0].image"),
+                (PackProblemCode.QuizCorrectChoiceMissing, "$.rounds[0].questions[0]"),
+            ],
+            broken.Problems.Select(problem => (problem.Code, problem.Path)).Order());
+        Assert.Equal("images/tour-eiffel.jpg", broken.Problems.Single(p => p.Code == PackProblemCode.PackMediaMissing).Parameters["media"]);
     }
 }

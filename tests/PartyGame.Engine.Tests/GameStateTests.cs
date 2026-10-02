@@ -1,19 +1,20 @@
 using System.Text.Json;
 using PartyGame.Contracts;
-using PartyGame.Contracts.Serialization;
+using PartyGame.Engine.Tests.Rounds;
 
 namespace PartyGame.Engine.Tests;
 
 public sealed class GameStateTests
 {
     [Fact]
-    public void Create_NewGame_IsEmptyLobbyWithItsIdAndAddressAtVersionOne()
+    public void Create_NewGame_IsEmptyLobbyWithItsIdAddressAndPacksAtVersionOne()
     {
         // Given
         var gameId = new GameId(Guid.NewGuid());
+        var catalog = new PackCatalog(Games.PackDirectory, [Games.Pack, Games.ValidPack("autre", "Autre", Games.TwoRounds)]);
 
         // When
-        var state = GameState.Create(gameId, "192.168.1.42", Games.JoinAddressCandidates);
+        var state = GameState.Create(gameId, "192.168.1.42", Games.JoinAddressCandidates, catalog);
 
         // Then
         Assert.Equal(gameId, state.GameId);
@@ -23,19 +24,50 @@ public sealed class GameStateTests
         Assert.Equal(Games.JoinAddressCandidates, state.JoinAddressCandidates);
         Assert.Empty(state.Players);
         Assert.Empty(state.PlayerTokens);
+        Assert.Same(catalog, state.Catalog);
+        Assert.Null(state.SelectedPackId);
+        Assert.Null(state.Pack);
         Assert.Empty(state.Rounds);
         Assert.Null(state.CurrentRound);
     }
 
     [Fact]
-    public void Serialize_StateWithPlayers_RoundTripsUnchanged()
+    public void Create_SingleValidPack_ChoosesIt()
     {
-        // Given
-        var state = Games.LobbyWith("Zoé", "Max") with { Phase = GamePhase.Finished, Version = 42 };
+        // Given: the game master has nothing to choose
+        var catalog = new PackCatalog(Games.PackDirectory, [Games.InvalidPack("a-casse"), Games.Pack]);
 
         // When
-        var json = JsonSerializer.Serialize(state, ContractJsonOptions.Default);
-        var restored = JsonSerializer.Deserialize<GameState>(json, ContractJsonOptions.Default)!;
+        var state = GameState.Create(new GameId(Guid.NewGuid()), "192.168.1.42", [], catalog);
+
+        // Then
+        Assert.Equal(Games.PackId, state.SelectedPackId);
+        Assert.Null(state.Pack);
+    }
+
+    [Fact]
+    public void Create_NoValidPack_ChoosesNone()
+    {
+        // Given
+        var catalog = new PackCatalog(Games.PackDirectory, [Games.InvalidPack("a-casse")]);
+
+        // When
+        var state = GameState.Create(new GameId(Guid.NewGuid()), "192.168.1.42", [], catalog);
+
+        // Then
+        Assert.Null(state.SelectedPackId);
+    }
+
+    [Fact]
+    public void Serialize_StartedGameWithPlayersAndPacks_RoundTripsUnchanged()
+    {
+        // Given
+        var state = Games.InPhase(GamePhase.Round, "Zoé", "Max") with { Version = 42 };
+        state = state with { Catalog = state.Catalog with { Packs = [.. state.Catalog.Packs, Games.InvalidPack("casse")] } };
+
+        // When
+        var json = JsonSerializer.Serialize(state with { CurrentRound = null }, FakeJson.Options);
+        var restored = JsonSerializer.Deserialize<GameState>(json, FakeJson.Options)!;
 
         // Then
         Assert.Equal(state.GameId, restored.GameId);
@@ -45,5 +77,8 @@ public sealed class GameStateTests
         Assert.Equal(state.JoinAddressCandidates, restored.JoinAddressCandidates);
         Assert.Equal(state.Players, restored.Players);
         Assert.Equal(state.PlayerTokens.OrderBy(t => t.Key.Value), restored.PlayerTokens.OrderBy(t => t.Key.Value));
+        Assert.Equal(state.SelectedPackId, restored.SelectedPackId);
+        Assert.Equal(state.Rounds, restored.Rounds);
+        Assert.Equal(json, JsonSerializer.Serialize(restored, FakeJson.Options));
     }
 }

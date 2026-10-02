@@ -29,8 +29,19 @@ public enum RejectionReason
     /// <summary>The game cannot start with fewer players than the minimum.</summary>
     NotEnoughPlayers,
 
-    /// <summary>The game is already started: a start is only allowed from the lobby.</summary>
+    /// <summary>
+    /// The game is already started: a start, a choice of pack and a reload of the packs are only allowed from the lobby.
+    /// </summary>
     GameAlreadyStarted,
+
+    /// <summary>The catalog has no pack with this identifier, for instance one removed by a reload meanwhile.</summary>
+    PackUnknown,
+
+    /// <summary>The pack has problems: it cannot be chosen until they are fixed and the packs reloaded.</summary>
+    PackInvalid,
+
+    /// <summary>The game cannot start before the game master chooses a pack.</summary>
+    PackNotSelected,
 
     /// <summary>The address is not one of the candidates the server offers to the game master.</summary>
     AddressUnknown,

@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 /**
  * The .NET server the E2E tests start behind the preview server, on a port of its own so that a
  * server left running on the default port does not get in the way.
@@ -12,3 +14,12 @@ export const gameMasterCode = '246810';
  * screen encodes it in its QR code.
  */
 export const advertisedAddress = '192.168.1.42';
+
+/**
+ * The packs of the tests, read by the server through `Packs:Directory`: two valid packs, so that
+ * none is chosen at startup, and an invalid one.
+ */
+export const packDirectory = fileURLToPath(new URL('./packs', import.meta.url));
+
+/** The valid pack the tests choose, and its title. */
+export const playedPack = { id: 'soiree', title: 'Grande soirée' } as const;
