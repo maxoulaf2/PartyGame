@@ -4,8 +4,8 @@ import { serveJoinInfo } from './joinInfo.ts';
 
 // Addresses typed by hand by the operator: a missing slash or another case still opens the right page.
 const addresses = [
-    { typed: '/display', page: '/display/', text: fr.display.waiting },
-    { typed: '/Display/', page: '/display/', text: fr.display.waiting },
+    { typed: '/display', page: '/display/', text: fr.display.scanToJoin },
+    { typed: '/Display/', page: '/display/', text: fr.display.scanToJoin },
     { typed: '/gm', page: '/gm/', text: fr.gm.code.title },
     { typed: '/GM', page: '/gm/', text: fr.gm.code.title },
 ];

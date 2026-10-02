@@ -1,5 +1,11 @@
 import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
-import type { Announcement, AnnouncementResult, IGameClient } from '../contracts';
+import type {
+    Announcement,
+    AnnouncementResult,
+    IGameClient,
+    JoinRequest,
+    JoinResult,
+} from '../contracts';
 
 /** Where the .NET server exposes its SignalR hub (`ServerPaths.GameHub`). */
 export const gameHubUrl = '/hub/game';
@@ -10,6 +16,7 @@ export const gameHubUrl = '/hub/game';
  */
 export interface GameHubMethods {
     Announce: { args: [announcement: Announcement]; result: AnnouncementResult };
+    JoinGame: { args: [request: JoinRequest]; result: JoinResult };
 }
 
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */
