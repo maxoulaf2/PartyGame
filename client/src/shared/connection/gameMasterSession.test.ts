@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AnnouncementResult, GameId, GameMasterSnapshot, IGameClient } from '../contracts';
+import type {
+    AnnouncementResult,
+    GameId,
+    GameMasterSnapshot,
+    IGameClient,
+    PlayerId,
+    RenamePlayerResult,
+} from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
 import { GameMasterSession, isCodeComplete } from './gameMasterSession.svelte';
@@ -7,6 +14,7 @@ import { SnapshotStore } from './snapshotStore.svelte';
 
 const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
 const goodCode = '123456';
+const playerId = '00000001-0000-0000-0000-000000000000' as PlayerId;
 
 function memoryStorage(initial: string | null = null): CodeStorage & { value: string | null } {
     const storage = {
@@ -22,9 +30,13 @@ function memoryStorage(initial: string | null = null): CodeStorage & { value: st
     return storage;
 }
 
-/** A server that accepts one code only, and whose connection can drop and come back. */
+/**
+ * A server that accepts one code only, and whose connection can drop and come back. A rename gets
+ * `renameAnswer`.
+ */
 function fakeServer(options: { startFails?: boolean } = {}) {
     let code = goodCode;
+    let renameAnswer: RenamePlayerResult | null = { refusal: null };
     let reachable = true;
     const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
     const callbacks = { reconnecting: () => {}, reconnected: () => {}, close: () => {} };
@@ -35,11 +47,14 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         stop: vi.fn(() => Promise.resolve()),
         invoke: vi.fn(
             async (
-                _method: string,
+                method: string,
                 announcement: { gameMasterCode: string | null },
-            ): Promise<AnnouncementResult> => {
+            ): Promise<AnnouncementResult | RenamePlayerResult | null> => {
                 if (!reachable) {
                     throw new Error('disconnected');
+                }
+                if (method === 'RenamePlayer') {
+                    return renameAnswer;
                 }
                 return {
                     refusal: announcement.gameMasterCode === code ? null : 'GameMasterCodeInvalid',
@@ -81,11 +96,14 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         becomeUnreachable: () => {
             reachable = false;
         },
+        answerRenamesWith: (answer: RenamePlayerResult | null) => {
+            renameAnswer = answer;
+        },
     };
 }
 
 function snapshot(version: number): GameMasterSnapshot {
-    return { gameId, version, phase: 'Lobby', playerCount: 2 };
+    return { gameId, version, phase: 'Lobby', players: [] };
 }
 
 async function startedSession(storage: CodeStorage, server = fakeServer()) {
@@ -271,5 +289,63 @@ describe('GameMasterSession', () => {
 
         expect(store.current).toBeNull();
         expect(server.connection.stop).toHaveBeenCalledOnce();
+    });
+
+    describe('rename', () => {
+        async function grantedSession() {
+            const started = await startedSession(memoryStorage(goodCode));
+            await vi.waitFor(() => expect(started.session.access).toBe('granted'));
+            return started;
+        }
+
+        it('sends the player and the nickname as typed, and reports the rename', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.rename(playerId, ' Zoé ');
+
+            expect(outcome).toBe('renamed');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('RenamePlayer', {
+                playerId,
+                nickname: ' Zoé ',
+            });
+        });
+
+        it.each(['NicknameTaken', 'NicknameInvalid', 'PlayerUnknown'] as const)(
+            'reports the refusal %s of the server',
+            async (refusal) => {
+                const { session, server } = await grantedSession();
+                server.answerRenamesWith({ refusal });
+
+                expect(await session.rename(playerId, 'Max')).toBe(refusal);
+            },
+        );
+
+        it('reports an ignored rename as unreachable, the code being checked again', async () => {
+            const { session, server } = await grantedSession();
+            server.answerRenamesWith(null);
+
+            expect(await session.rename(playerId, 'Max')).toBe('unreachable');
+        });
+
+        it('reports a rename lost with the connection as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.becomeUnreachable();
+
+            expect(await session.rename(playerId, 'Max')).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.rename(playerId, 'Max')).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.rename(playerId, 'Max')).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'RenamePlayer',
+                expect.anything(),
+            );
+        });
     });
 });

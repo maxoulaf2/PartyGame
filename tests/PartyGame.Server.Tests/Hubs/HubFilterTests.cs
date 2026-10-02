@@ -11,8 +11,8 @@ using PartyGame.Server.Hubs;
 namespace PartyGame.Server.Tests.Hubs;
 
 /// <summary>
-/// The filters apply to every hub method. No game master intent exists yet, so a probe hub, mapped beside the real one
-/// with the server's own SignalR configuration, stands for the hub methods to come.
+/// The filters apply to every hub method. A probe hub, mapped beside the real one with the server's own SignalR
+/// configuration, checks them apart from any game rule; <see cref="RenamePlayerTests"/> covers a real game master intent.
 /// </summary>
 public sealed class HubFilterTests : IAsyncDisposable
 {

@@ -30,7 +30,11 @@ public static class Snapshots
     public static GameMasterSnapshot ForGameMaster(GameState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return new GameMasterSnapshot(state.GameId, state.Version, PhaseOf(state), state.Players.Length);
+        return new GameMasterSnapshot(
+            state.GameId,
+            state.Version,
+            PhaseOf(state),
+            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected))]);
     }
 
     /// <summary>

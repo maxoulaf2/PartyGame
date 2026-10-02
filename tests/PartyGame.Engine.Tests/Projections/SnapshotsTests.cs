@@ -66,16 +66,39 @@ public sealed class SnapshotsTests
     }
 
     [Fact]
-    public void ForGameMaster_LobbyWithPlayers_ShowsGameVersionPhaseAndPlayerCount()
+    public void ForGameMaster_LobbyWithPlayers_ShowsGameVersionPhaseAndPlayersInOrderOfArrival()
     {
         // Given
-        var state = Games.LobbyWith("Zoé", "Max") with { Version = 7 };
+        var state = Games.LobbyWith("Zoé", "Max", "Léa") with { Version = 7 };
+        state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(2)), Games.Context()).State;
 
         // When
         var snapshot = Snapshots.ForGameMaster(state);
 
         // Then
-        Assert.Equal(new GameMasterSnapshot(state.GameId, 7, Phase.Lobby, PlayerCount: 2), snapshot);
+        Assert.Equal((state.GameId, 7, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
+        Assert.Equal(
+            [
+                new GameMasterPlayer(Games.PlayerIdOf(1), "Zoé", IsConnected: true),
+                new GameMasterPlayer(Games.PlayerIdOf(2), "Max", IsConnected: false),
+                new GameMasterPlayer(Games.PlayerIdOf(3), "Léa", IsConnected: true),
+            ],
+            snapshot.Players);
+    }
+
+    [Fact]
+    public void ForEachRole_RenamedPlayer_ShowsTheNewNickname()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé", "Max");
+
+        // When
+        state = Games.Engine.Handle(state, Games.Rename(2, "Maxime"), Games.Context()).State;
+
+        // Then
+        Assert.Equal(["Zoé", "Maxime"], Snapshots.ForDisplay(state).Players.Select(p => p.Nickname));
+        Assert.Equal(["Zoé", "Maxime"], Snapshots.ForGameMaster(state).Players.Select(p => p.Nickname));
+        Assert.Equal("Maxime", Snapshots.ForPlayer(state, state.Players[1]).Nickname);
     }
 
     [Fact]
@@ -160,6 +183,21 @@ public sealed class SnapshotsTests
 
         // Then: compared as JSON, since the list of players has no value equality
         Assert.Equal(Serialize(Snapshots.ForDisplay(withoutSecrets)), Serialize(snapshot));
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public void ForGameMaster_AnyPhase_IsTheSameAsWithoutSecrets(GamePhase phase, Phase _)
+    {
+        // Given: the tokens are the only secret the game master may not see
+        var state = Games.LobbyWith("Zoé", "Max") with { Phase = phase };
+        var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear() };
+
+        // When
+        var snapshot = Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.Equal(Serialize(Snapshots.ForGameMaster(withoutSecrets)), Serialize(snapshot));
     }
 
     private static string Serialize(object snapshot) =>

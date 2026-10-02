@@ -33,6 +33,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="JoinGameAsync"/>, as the clients call it.</summary>
     public const string JoinGame = nameof(JoinGame);
 
+    /// <summary>SignalR target of <see cref="RenamePlayerAsync"/>, as the clients call it.</summary>
+    public const string RenamePlayer = nameof(RenamePlayer);
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
@@ -140,6 +143,42 @@ internal sealed class GameHub(
         logger.PlayerJoined(playerId.Value, player.Nickname);
         await Clients.Caller.ReceivePlayerSnapshot(Snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new JoinResult(Refusal: null, playerId, token.Value);
+    }
+
+    /// <summary>
+    /// Renames a player at the request of the game master. The loop alone decides whether the nickname is valid and
+    /// free; the new nickname reaches every client through the snapshots.
+    /// </summary>
+    /// <param name="message">A <see cref="RenamePlayerRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(RenamePlayer)]
+    public async Task<RenamePlayerResult> RenamePlayerAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<RenamePlayerRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(RenamePlayer, Context.ConnectionId, invalidPath);
+            return new RenamePlayerResult(RenamePlayerRefusal.MessageInvalid);
+        }
+
+        // Not cancelled with the connection: once enqueued, the rename may be accepted whoever is left to hear the answer.
+        var outcome = await inputs
+            .SubmitAsync(new Engine.Inputs.RenamePlayer(request.PlayerId, request.Nickname, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status != InputStatus.Accepted)
+        {
+            return new RenamePlayerResult(outcome.Rejection switch
+            {
+                RejectionReason.NicknameInvalid => RenamePlayerRefusal.NicknameInvalid,
+                RejectionReason.NicknameTaken => RenamePlayerRefusal.NicknameTaken,
+                RejectionReason.PlayerUnknown => RenamePlayerRefusal.PlayerUnknown,
+                _ => RenamePlayerRefusal.RenameFailed,
+            });
+        }
+
+        // Logged as normalized by the engine. Players are never removed, so the renamed one is still there.
+        var renamed = game.State.Players.First(p => p.Id == request.PlayerId);
+        logger.PlayerRenamed(request.PlayerId.Value, renamed.Nickname);
+        return new RenamePlayerResult(Refusal: null);
     }
 
     /// <summary>

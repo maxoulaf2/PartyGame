@@ -2,7 +2,7 @@
     import { untrack } from 'svelte';
     import type { JoinOutcome, PlayerSession } from '../shared/connection/playerSession.svelte';
     import { fr } from '../shared/i18n/fr';
-    import { checkNickname } from './nickname';
+    import { checkNickname } from '../shared/nickname';
 
     interface Props {
         session: PlayerSession;

@@ -21,7 +21,7 @@
 </script>
 
 {#if session.access === 'granted' && game.current}
-    <LobbyConsole snapshot={game.current} />
+    <LobbyConsole snapshot={game.current} {session} fresh={game.fresh} />
 {:else if session.access === 'codeRequired'}
     <CodeForm {session} />
 {:else}

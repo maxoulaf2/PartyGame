@@ -32,4 +32,7 @@ internal static partial class HubLog
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "JoinGame from connection {ConnectionId} ignored: it already registered a player")]
     public static partial void JoinRepeated(this ILogger logger, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} renamed {Nickname} by the game master")]
+    public static partial void PlayerRenamed(this ILogger logger, Guid playerId, string nickname);
 }
