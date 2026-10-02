@@ -9,6 +9,7 @@ export type * from './AnnouncementResult';
 export type * from './ChooseAdvertisedAddressRefusal';
 export type * from './ChooseAdvertisedAddressRequest';
 export type * from './ChooseAdvertisedAddressResult';
+export type * from './ClockSyncResult';
 export type * from './DisplayPlayer';
 export type * from './DisplaySnapshot';
 export type * from './GameId';
