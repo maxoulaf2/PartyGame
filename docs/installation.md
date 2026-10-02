@@ -4,12 +4,29 @@ Ce guide s'adresse à l'opérateur : la personne qui installe et lance le serveu
 
 ## Lancer le serveur
 
-Depuis la racine du dépôt :
+Depuis la racine du dépôt, dans PowerShell :
+
+```powershell
+.\scripts\start.ps1
+```
+
+Le script vérifie que tout est en ordre avant de lancer le serveur, et s'arrête avec un message précis sinon :
+
+- le SDK .NET demandé par `global.json` et Node.js (20.19 au minimum) sont installés ;
+- les dépendances du front sont installées (`npm ci`) si elles manquent ou si `package-lock.json` a changé ;
+- le front est reconstruit (`npm run build`) si ses sources ou `PartyGame.Contracts` ont changé depuis le dernier build, après avoir vérifié que les types TypeScript générés sont à jour. Une empreinte des sources est conservée dans `wwwroot/.build-stamp` : un build lancé par un autre moyen est donc refait au lancement suivant ;
+- le port est libre, et aucun réseau n'est déclaré « public » dans Windows (voir le pare-feu plus bas).
+
+Paramètres : `-Port 5001` pour changer de port, `-GameMasterCode 123456` pour imposer le code GM (développement seulement), `-Rebuild` pour forcer la reconstruction du front. `Get-Help .\scripts\start.ps1 -Detailed` les décrit.
+
+Sans le script, l'équivalent manuel est :
 
 ```bash
 cd client && npm install && npm run build && cd ..
 dotnet run --project src/PartyGame.Server
 ```
+
+Le serveur .NET sert le dernier build du front : après une modification du front, sans le script, relancer `npm run build`.
 
 Le serveur écoute en HTTP sur le port 5000 de **toutes** les interfaces IPv4 (`0.0.0.0`), et pas seulement sur `localhost`. La console affiche `Now listening on: http://0.0.0.0:5000`. Sur le PC hôte, la page joueur reste accessible à l'adresse `http://localhost:5000/`.
 

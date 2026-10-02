@@ -80,6 +80,9 @@ Sens des dépendances : `Contracts` ne dépend de rien, `Engine` et `Content` ne
 Cette section décrit les commandes de référence. La mettre à jour dès qu'un script change.
 
 ```bash
+# Lancement complet (PowerShell) : prérequis, npm ci, contrats, build du front si besoin, port libre, puis serveur
+.\scripts\start.ps1            # -Port 5001, -GameMasterCode 123456, -Rebuild
+
 # Serveur
 dotnet build
 dotnet test
