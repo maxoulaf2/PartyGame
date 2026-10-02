@@ -103,7 +103,7 @@ npm run generate:contracts   # régénère src/shared/contracts et schemas/pack.
 npm run format     # reformatage Prettier
 npm run test       # Vitest
 npm run e2e        # Playwright sur le build : iPhone (WebKit), Pixel (Chromium), desktop
-                   # démarre aussi le serveur .NET (port 5199, GameMaster:Code=246810) derrière le proxy
+                   # démarre aussi le serveur .NET (port 5199, GameMaster:Code=246810, packs de e2e/packs) derrière le proxy
                    # le projet « launch » (lancement de la partie, changement d'adresse : tout le serveur partagé) passe après tous les autres
 
 # Publication pour Raspberry Pi
