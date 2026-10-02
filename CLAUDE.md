@@ -33,10 +33,10 @@ Un serveur ASP.NET Core sert à la fois le front (fichiers statiques) et un hub 
 
 ## Packs de contenu
 
-Un pack est un dossier (ou un zip) contenant un descripteur `pack.json` et ses médias (MP3, images). Des exemples se trouvent dans `packs/`.
+Un pack est un dossier (les zip arrivent en E17) contenant un descripteur `pack.json` et ses médias (MP3, images). Des exemples se trouvent dans `packs/`.
 
 - Chaque activité du descripteur a un champ `type` qui désigne son mode de jeu (désérialisation polymorphe avec System.Text.Json).
-- Le schéma de référence est `schemas/pack.schema.json`. Il est mis à jour à chaque évolution du format des descripteurs.
+- Le schéma de référence est `schemas/pack.schema.json`. Il est généré depuis les types C# du descripteur, à chaque évolution de leur format.
 - Un pack est entièrement validé au chargement : structure, existence des médias référencés, cohérence des données. Une partie ne doit jamais échouer en cours de route à cause du contenu. Les erreurs sont remontées au GM avant le lancement, avec un message précis (fichier, chemin dans le descripteur, problème).
 - Les médias sont servis avec prise en charge des requêtes partielles (Range), pour pouvoir démarrer un extrait au milieu d'un morceau.
 
@@ -135,7 +135,7 @@ dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained
 | Hôte sur PC, Raspberry Pi en cible secondaire | Retenu ([ADR 0001](docs/adr/0001-architecture-generale.md)) |
 | Front en TypeScript + Svelte 5 | Retenu ([ADR 0002](docs/adr/0002-front-svelte-5.md)) |
 | Génération des types TypeScript par un outil maison | Retenu ([ADR 0003](docs/adr/0003-generation-types-typescript.md)) |
-| Descripteurs de packs en JSON | Provisoire (alternative : YAML) |
+| Packs : descripteurs en JSON, types dans `Contracts.Packs`, schéma généré | Retenu ([ADR 0004](docs/adr/0004-format-et-modele-des-packs.md)) |
 | HTTPS en local | Reporté (piste : domaine réel pointant vers l'IP locale + certificat Let's Encrypt via validation DNS) |
 | Hébergement en ligne | Hors périmètre pour l'instant |
 
