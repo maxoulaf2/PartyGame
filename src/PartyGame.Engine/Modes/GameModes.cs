@@ -1,5 +1,9 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Text.Json.Serialization;
+using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 
 namespace PartyGame.Engine.Modes;
@@ -40,6 +44,34 @@ public sealed class GameModes
     {
         ArgumentNullException.ThrowIfNull(descriptor);
         return _byDescriptorType.TryGetValue(descriptor.GetType(), out mode);
+    }
+
+    /// <summary>
+    /// Checks the consistency of an activity of a pack with the mode that plays it, when the pack is loaded.
+    /// </summary>
+    /// <param name="descriptor">The activity of the pack.</param>
+    /// <param name="path">The JSON path of the activity in the descriptor file, such as <c>$.rounds[1]</c>.</param>
+    /// <returns>
+    /// The problems found by the mode, or <see cref="PackProblemCode.PackRoundTypeUnknown"/> when no mode of this server
+    /// plays the activity.
+    /// </returns>
+    public ImmutableArray<PackProblem> Validate(RoundDescriptor descriptor, string path)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        if (TryFind(descriptor, out var mode))
+        {
+            return mode.Validate(descriptor, path);
+        }
+
+        // The descriptor type is declared on RoundDescriptor, but its mode is not registered.
+        var type = typeof(RoundDescriptor).GetCustomAttributes<JsonDerivedTypeAttribute>()
+            .FirstOrDefault(derived => derived.DerivedType == descriptor.GetType())?.TypeDiscriminator?.ToString() ?? string.Empty;
+        return [new PackProblem(
+            PackProblemCode.PackRoundTypeUnknown,
+            PackDescriptor.FileName,
+            $"{path}.type",
+            ImmutableDictionary<string, string>.Empty.Add("type", type))];
     }
 
     /// <summary>
