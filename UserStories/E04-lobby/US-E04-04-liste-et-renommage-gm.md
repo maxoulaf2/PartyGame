@@ -1,6 +1,6 @@
 ### US-E04-04 — Liste des joueurs et renommage par le GM
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** voir la liste des joueurs avec leur état de connexion et pouvoir corriger un pseudo
@@ -24,6 +24,13 @@ GM : connexion perdue, les actions sont désactivées et l'indicateur de reconne
 - La validation et la normalisation sont celles de US-E04-02.
 - L'interface GM est utilisable sur téléphone : liste en une colonne, zones tactiles d'au moins 48 px.
 - Pas d'exclusion de joueur (décision 4 du README).
+- Réalisation : contrats `RenamePlayerRequest(playerId, nickname)` et `RenamePlayerResult(refusal)`, codes `RenamePlayerRefusal` : `NicknameInvalid`, `NicknameTaken`, `PlayerUnknown`, `RenameFailed` (bug du moteur) et `MessageInvalid`. `GameMasterSnapshot` remplace `PlayerCount` par `Players`, une liste de `GameMasterPlayer(Id, Nickname, IsConnected)` dans l'ordre d'arrivée ; la console compte la liste. La projection ne porte que l'identifiant, jamais le jeton (test de non-fuite comparé en JSON à l'état sans jetons).
+- Réalisation : le hub expose `RenamePlayer`, marqué `[GameMasterOnly]` : sans authentification, l'intention est ignorée et la réponse est vide. L'intention moteur `RenamePlayer` est traitée par `Lobby/Renaming` avec `NicknameRules`, dans toutes les phases et que le joueur soit connecté ou non. Le pseudo actuel du joueur n'est pas un doublon de lui-même : une variante de casse ou d'accents le renomme, le pseudo identique est accepté sans nouvelle version ni diffusion. Journalisation `Information` du renommage (« Player {PlayerId} renamed {Nickname} by the game master »).
+- Réalisation : côté client, `GameMasterSession.rename` envoie l'intention et traduit la réponse (`renamed`, code de refus, ou `unreachable` si la connexion est perdue ou la réponse vide). `gm/LobbyConsole.svelte` affiche le nombre de joueurs inscrits et connectés, puis une liste en une colonne : pseudo, état (icône Wi-Fi, barrée si déconnecté, et libellé « Connecté » ou « Déconnecté »), bouton « Renommer » de 48 px. `gm/RenameForm.svelte` s'ouvre dans la ligne, prérempli et sélectionné, un seul à la fois ; il affiche la raison d'un refus sous le champ tant qu'il contient le pseudo refusé, conserve la saisie si la connexion tombe, et les boutons restent désactivés tant que la connexion n'est pas rétablie et le snapshot rafraîchi. Échap ou « Annuler » le ferme.
+- Réalisation : la vérification avant envoi du pseudo (`nickname.ts`) passe de `player/` à `shared/`, partagée par l'inscription et le renommage. L'icône de connexion devient `shared/components/ConnectionIcon.svelte`, utilisée par la TV et le GM. Le téléphone mémorise le pseudo de chaque snapshot reçu : après un renommage, le formulaire d'inscription est prérempli avec le nouveau.
+- Réalisation : un joueur déconnecté renommé voit son nouveau pseudo dès qu'il reçoit un snapshot ; la reconnexion par jeton qui le lui renverra est l'objet de US-E05-01.
+- Réalisation : tests du moteur (`RenamingTests` : renommage, joueur déconnecté, partie lancée, variante de son propre pseudo, pseudo identique, pseudo pris, invalide, joueur inconnu ; `SnapshotsTests` : liste du GM, pseudo renommé dans les trois projections, non-fuite), tests d'intégration du hub (`RenamePlayerTests` : diffusion du nouveau pseudo vers la TV, le GM et le téléphone, joueur déconnecté, refus sans diffusion, joueur inconnu, pseudo identique, intention ignorée sans authentification GM ou en tant que TV, message malformé), Vitest (`gameMasterSession.test.ts`, `playerSession.test.ts`) et Playwright (`e2e/gm.spec.ts`, sur iPhone, Pixel et desktop : renommage refusé puis accepté, vérifié sur la console, la TV et le téléphone ; joueur affiché déconnecté après son départ).
+- Réalisation : la vérification sur de vrais appareils (iPhone et Android) reste à faire.
 
 **Hors périmètre**
 - Exclusion d'un joueur (décision 4 du README).
