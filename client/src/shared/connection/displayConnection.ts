@@ -5,7 +5,7 @@ import type { SnapshotStore } from './snapshotStore.svelte';
 /**
  * Connects the page as the TV screen, which needs no secret, and keeps `store` up to date with
  * every snapshot the server sends: the current one right after the announcement, then one per
- * change. Returns a function that disconnects.
+ * change. Announces again whenever the connection comes back. Returns a function that disconnects.
  */
 export function connectDisplay(
     store: SnapshotStore<DisplaySnapshot>,
@@ -15,11 +15,14 @@ export function connectDisplay(
         store.accept(snapshot);
     });
 
+    // An unreachable server leaves the TV screen on its neutral display, never on an error.
+    const announce = () =>
+        connection.invoke('Announce', { role: 'Display', gameMasterCode: null }).catch(() => {});
+
+    connection.onReconnected(announce);
     connection
         .start()
-        .then(() => connection.invoke('Announce', { role: 'Display', gameMasterCode: null }))
-        // An unreachable server leaves the TV screen on its neutral display, never on an error.
-        // Reconnecting is the job of E05.
+        .then(announce)
         .catch(() => {});
 
     return () => {

@@ -9,6 +9,9 @@ function fakeTransport(answer: unknown = null) {
         invoke: vi.fn<(method: string, ...args: unknown[]) => Promise<unknown>>(async () => answer),
         on: vi.fn(),
         off: vi.fn(),
+        onreconnecting: vi.fn<(callback: (error?: Error) => void) => void>(),
+        onreconnected: vi.fn<(callback: (connectionId?: string) => void) => void>(),
+        onclose: vi.fn<(callback: (error?: Error) => void) => void>(),
     };
     // SignalR types invoke as generic in its answer, which a mock cannot express.
     const transport: HubTransport = {
@@ -67,5 +70,24 @@ describe('createGameConnection', () => {
         expect(name).toBe('Moved');
         expect(handler).toHaveBeenCalledWith(3, 'left');
         expect(mocks.off).toHaveBeenCalledWith('Moved', callback);
+    });
+
+    it('reports when the connection is lost, restored and closed', () => {
+        const { transport, mocks } = fakeTransport();
+        const connection = createGameConnection(transport);
+        const reconnecting = vi.fn();
+        const reconnected = vi.fn();
+        const closed = vi.fn();
+
+        connection.onReconnecting(reconnecting);
+        connection.onReconnected(reconnected);
+        connection.onClose(closed);
+        mocks.onreconnecting.mock.calls[0]?.[0](new Error('lost'));
+        mocks.onreconnected.mock.calls[0]?.[0]('new-id');
+        mocks.onclose.mock.calls[0]?.[0]();
+
+        expect(reconnecting).toHaveBeenCalledOnce();
+        expect(reconnected).toHaveBeenCalledOnce();
+        expect(closed).toHaveBeenCalledOnce();
     });
 });

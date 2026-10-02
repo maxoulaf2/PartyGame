@@ -9,6 +9,7 @@ const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
 function fakeConnection(startFails = false) {
     const handlers = new Map<string, (snapshot: DisplaySnapshot) => void>();
     const unsubscribe = vi.fn();
+    let reconnected = () => {};
     const connection = {
         start: vi.fn(() => (startFails ? Promise.reject(new Error('offline')) : Promise.resolve())),
         stop: vi.fn(() => Promise.resolve()),
@@ -17,10 +18,15 @@ function fakeConnection(startFails = false) {
             handlers.set(message, handler);
             return unsubscribe;
         }),
+        onReconnecting: vi.fn(),
+        onReconnected: vi.fn((callback: () => void) => {
+            reconnected = callback;
+        }),
+        onClose: vi.fn(),
     };
     // The fake only implements what connectDisplay uses, with loose signatures.
     const typed = connection as unknown as GameConnection<IGameClient>;
-    return { connection, typed, handlers, unsubscribe };
+    return { connection, typed, handlers, unsubscribe, reconnect: () => reconnected() };
 }
 
 describe('connectDisplay', () => {
@@ -35,6 +41,20 @@ describe('connectDisplay', () => {
                 gameMasterCode: null,
             }),
         );
+    });
+
+    it('announces the page again when the connection comes back', async () => {
+        const { connection, typed, reconnect } = fakeConnection();
+
+        connectDisplay(new SnapshotStore<DisplaySnapshot>(), typed);
+        await vi.waitFor(() => expect(connection.invoke).toHaveBeenCalledOnce());
+        reconnect();
+
+        expect(connection.invoke).toHaveBeenCalledTimes(2);
+        expect(connection.invoke).toHaveBeenLastCalledWith('Announce', {
+            role: 'Display',
+            gameMasterCode: null,
+        });
     });
 
     it('hands the display snapshots to the store', () => {
