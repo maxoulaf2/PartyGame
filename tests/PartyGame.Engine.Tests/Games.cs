@@ -12,7 +12,9 @@ internal static class Games
 
     public static readonly GameEngine Engine = new();
 
-    public static GameState NewLobby() => GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")));
+    public const string JoinAddress = "192.168.1.42";
+
+    public static GameState NewLobby() => GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress);
 
     public static GameContext Context(int seed = 42) => new(Now, new Random(seed));
 

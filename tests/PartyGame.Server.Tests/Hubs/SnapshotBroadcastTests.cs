@@ -46,7 +46,9 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
 
         // Then
         await FlushAsync(connection);
-        Assert.Equal([new DisplaySnapshot(GameId, 1, Phase.Lobby, PlayerCount: 0)], received.Display);
+        var snapshot = Assert.Single(received.Display);
+        Assert.Equal((GameId, 1, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
+        Assert.Empty(snapshot.Players);
         Assert.Single(received.Json);
     }
 
@@ -105,13 +107,10 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(unidentified));
+        Assert.Equal([1, 2, 3], toDisplay.Display.Select(s => s.Version));
         Assert.Equal(
-            [
-                new DisplaySnapshot(GameId, 1, Phase.Lobby, PlayerCount: 0),
-                new DisplaySnapshot(GameId, 2, Phase.Lobby, PlayerCount: 1),
-                new DisplaySnapshot(GameId, 3, Phase.Lobby, PlayerCount: 2),
-            ],
-            toDisplay.Display);
+            [[], ["Zoé"], ["Zoé", "Max"]],
+            toDisplay.Display.Select(s => s.Players.Select(p => p.Nickname).ToArray()));
         Assert.Equal([1, 2, 3], toGameMaster.GameMaster.Select(s => s.Version));
         Assert.Equal([new PlayerSnapshot(GameId, 3, Phase.Lobby, zoeId, "Zoé", PlayerCount: 2)], toZoe.Player);
 
@@ -120,6 +119,26 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
         Assert.Equal(toGameMaster.GameMaster.Count, toGameMaster.Json.Count);
         Assert.Equal(toZoe.Player.Count, toZoe.Json.Count);
         Assert.Empty(toUnidentified.Json);
+    }
+
+    [Fact]
+    public async Task ConnectionLost_DisplayAnnounced_ReceivesThePlayerAsDisconnected()
+    {
+        // Given
+        await using var display = await HubClients.ConnectAsync(_factory);
+        using var toDisplay = new ReceivedSnapshots(display);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync("Zoé", player: 1);
+        await JoinAsync("Max", player: 2);
+
+        // When
+        var outcome = await _factory.Services.GetRequiredService<IGameInputWriter>().SubmitAsync(new PlayerConnectionLost(PlayerIdOf(1)), Ct);
+
+        // Then
+        Assert.Equal(InputStatus.Accepted, outcome.Status);
+        await FlushAsync(display);
+        var latest = toDisplay.Display.MaxBy(s => s.Version)!;
+        Assert.Equal([("Zoé", false), ("Max", true)], latest.Players.Select(p => (p.Nickname, p.IsConnected)));
     }
 
     [Fact]

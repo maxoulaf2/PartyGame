@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { gameMasterCode, gameServerPort } from './e2e/gameServer.ts';
+import { advertisedAddress, gameMasterCode, gameServerPort } from './e2e/gameServer.ts';
 
 const port = 4173;
 const mobilePages = /(player|gm)\.spec\.ts/;
@@ -34,7 +34,7 @@ export default defineConfig({
         // The real server behind the preview proxy, for the hub. Started once the build has
         // rewritten its web root.
         {
-            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode}`,
+            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode} --Network:AdvertisedAddress=${advertisedAddress}`,
             cwd: '..',
             url: `http://localhost:${gameServerPort}/health`,
             reuseExistingServer: false,

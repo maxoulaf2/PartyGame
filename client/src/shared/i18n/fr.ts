@@ -33,6 +33,9 @@ export const fr = {
             one: '{count} joueur inscrit',
             other: '{count} joueurs inscrits',
         },
+        playerListLabel: 'Joueurs inscrits',
+        // Read by screen readers next to the icon of a player whose phone is disconnected.
+        disconnected: 'déconnecté',
     },
     gm: {
         waiting: 'Console du game master : connexion en cours…',

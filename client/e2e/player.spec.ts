@@ -2,14 +2,7 @@ import { expect, test, type Browser, type Page, type TestInfo } from '@playwrigh
 import { playerNicknameKey, playerTokenKey } from '../src/shared/connection/codeStorage.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { trackExternalRequests } from './localRequests.ts';
-
-/**
- * A nickname no other test can take: every test and browser project joins the same server.
- * Short enough to stay within the 16 visible characters.
- */
-function uniqueNickname(name: string): string {
-    return `${name} ${Math.random().toString(36).slice(2, 7)}`;
-}
+import { uniqueNickname } from './players.ts';
 
 /** Records every message the page receives on its WebSocket, as raw JSON. */
 function trackHubFrames(page: Page): string[] {

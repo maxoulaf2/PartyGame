@@ -17,9 +17,6 @@ internal static class ServerPaths
 
     public static readonly IReadOnlyList<PathString> Reserved = [Api, Hub, Media, Assets, Health];
 
-    /// <summary>Connection information for the TV screen (<c>JoinInfo</c>).</summary>
-    public static readonly string Join = $"{Api}/join";
-
     /// <summary>The SignalR hub every client connects to (<c>GameHub</c>).</summary>
     public static readonly string GameHub = $"{Hub}/game";
 
