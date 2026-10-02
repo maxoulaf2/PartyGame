@@ -6,8 +6,10 @@
 import type { DisplaySnapshot } from './DisplaySnapshot';
 import type { GameMasterSnapshot } from './GameMasterSnapshot';
 import type { PlayerSnapshot } from './PlayerSnapshot';
+import type { Welcome } from './Welcome';
 
 export interface IGameClient {
+    ReceiveWelcome(welcome: Welcome): void;
     ReceiveDisplaySnapshot(snapshot: DisplaySnapshot): void;
     ReceiveGameMasterSnapshot(snapshot: GameMasterSnapshot): void;
     ReceivePlayerSnapshot(snapshot: PlayerSnapshot): void;

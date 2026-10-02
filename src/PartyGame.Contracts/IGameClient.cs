@@ -7,6 +7,11 @@ namespace PartyGame.Contracts;
 public interface IGameClient
 {
     /// <summary>
+    /// What the server tells every connection as soon as it is established, including a restored one.
+    /// </summary>
+    Task ReceiveWelcome(Welcome welcome);
+
+    /// <summary>
     /// The current state of the game for the TV screen, sent after each change and right after the announcement.
     /// </summary>
     Task ReceiveDisplaySnapshot(DisplaySnapshot snapshot);
