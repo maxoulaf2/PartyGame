@@ -3,22 +3,15 @@ import { fr } from '../src/shared/i18n/fr.ts';
 import { serveJoinInfo } from './joinInfo.ts';
 import { trackExternalRequests } from './localRequests.ts';
 
-const screens = [
-    { path: '/display/', text: fr.display.waiting },
-    { path: '/gm/', text: fr.gm.waiting },
-];
+test('/display/ shows its waiting text without external requests', async ({ page }) => {
+    const external = trackExternalRequests(page);
+    await serveJoinInfo(page);
 
-for (const { path, text } of screens) {
-    test(`${path} shows its waiting text without external requests`, async ({ page }) => {
-        const external = trackExternalRequests(page);
-        await serveJoinInfo(page);
+    await page.goto('/display/');
 
-        await page.goto(path);
-
-        await expect(page.getByText(text)).toBeVisible();
-        expect(external).toEqual([]);
-    });
-}
+    await expect(page.getByText(fr.display.waiting)).toBeVisible();
+    expect(external).toEqual([]);
+});
 
 test('/display/ shows a neutral message when the server knows no address', async ({ page }) => {
     await serveJoinInfo(page, { address: null });

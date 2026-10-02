@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { gameMasterCode, gameServerPort } from './e2e/gameServer.ts';
 
 const port = 4173;
+const mobilePages = /(player|gm)\.spec\.ts/;
 
 export default defineConfig({
     testDir: './e2e',
@@ -10,9 +12,10 @@ export default defineConfig({
         baseURL: `http://localhost:${port}`,
     },
     projects: [
-        // Player pages must work on both mobile targets.
-        { name: 'ios-safari', use: { ...devices['iPhone 15'] }, testMatch: /player\.spec\.ts/ },
-        { name: 'android-chrome', use: { ...devices['Pixel 7'] }, testMatch: /player\.spec\.ts/ },
+        // Player pages must work on both mobile targets, and so must the GM console, often driven
+        // from a phone.
+        { name: 'ios-safari', use: { ...devices['iPhone 15'] }, testMatch: mobilePages },
+        { name: 'android-chrome', use: { ...devices['Pixel 7'] }, testMatch: mobilePages },
         // The TV screen and the GM console run on desktop browsers.
         {
             name: 'desktop-chrome',
@@ -20,10 +23,22 @@ export default defineConfig({
             testIgnore: /player\.spec\.ts/,
         },
     ],
-    // Tests run against the production build, which is what phones will load.
-    webServer: {
-        command: `npm run build && npm run preview -- --port ${port} --strictPort`,
-        url: `http://localhost:${port}`,
-        reuseExistingServer: false,
-    },
+    webServer: [
+        // Tests run against the production build, which is what phones will load.
+        {
+            command: `npm run build && npm run preview -- --port ${port} --strictPort`,
+            url: `http://localhost:${port}`,
+            reuseExistingServer: false,
+            env: { PARTYGAME_SERVER_URL: `http://localhost:${gameServerPort}` },
+        },
+        // The real server behind the preview proxy, for the hub. Started once the build has
+        // rewritten its web root.
+        {
+            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode}`,
+            cwd: '..',
+            url: `http://localhost:${gameServerPort}/health`,
+            reuseExistingServer: false,
+            timeout: 180_000,
+        },
+    ],
 });
