@@ -13,13 +13,14 @@ public sealed class GameStateTests
         var gameId = new GameId(Guid.NewGuid());
 
         // When
-        var state = GameState.Create(gameId, "192.168.1.42");
+        var state = GameState.Create(gameId, "192.168.1.42", Games.JoinAddressCandidates);
 
         // Then
         Assert.Equal(gameId, state.GameId);
         Assert.Equal(1, state.Version);
         Assert.Equal(GamePhase.Lobby, state.Phase);
         Assert.Equal("192.168.1.42", state.JoinAddress);
+        Assert.Equal(Games.JoinAddressCandidates, state.JoinAddressCandidates);
         Assert.Empty(state.Players);
         Assert.Empty(state.PlayerTokens);
     }
@@ -39,6 +40,7 @@ public sealed class GameStateTests
         Assert.Equal(state.Version, restored.Version);
         Assert.Equal(state.Phase, restored.Phase);
         Assert.Equal(state.JoinAddress, restored.JoinAddress);
+        Assert.Equal(state.JoinAddressCandidates, restored.JoinAddressCandidates);
         Assert.Equal(state.Players, restored.Players);
         Assert.Equal(state.PlayerTokens.OrderBy(t => t.Key.Value), restored.PlayerTokens.OrderBy(t => t.Key.Value));
     }

@@ -4,6 +4,7 @@
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
+    import AddressControl from './AddressControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import StartControl from './StartControl.svelte';
 
@@ -29,6 +30,8 @@
         {countText(fr.gm.playersJoined, snapshot.players.length)}{#if snapshot.players.length > 0}
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
+
+    <AddressControl {snapshot} {session} {fresh} />
 
     <StartControl {snapshot} {session} {fresh} />
 

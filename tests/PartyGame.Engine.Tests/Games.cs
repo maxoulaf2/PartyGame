@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Engine.Inputs;
 
@@ -14,7 +15,14 @@ internal static class Games
 
     public const string JoinAddress = "192.168.1.42";
 
-    public static GameState NewLobby() => GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress);
+    public const string OtherAddress = "10.0.0.2";
+
+    /// <summary>A host on the Wi-Fi of the venue and on a wired network without gateway.</summary>
+    public static readonly ImmutableArray<JoinAddressCandidate> JoinAddressCandidates =
+        [new(JoinAddress, "Wi-Fi"), new(OtherAddress, "Ethernet")];
+
+    public static GameState NewLobby() =>
+        GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress, JoinAddressCandidates);
 
     public static GameContext Context(int seed = 42) => new(Now, new Random(seed));
 
@@ -24,6 +32,8 @@ internal static class Games
     public static RenamePlayer Rename(int player, string nickname) => new(PlayerIdOf(player), nickname, Now);
 
     public static StartGame Start() => new(Now);
+
+    public static ChooseAdvertisedAddress ChooseAddress(string address) => new(address, Now);
 
     public static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));
 

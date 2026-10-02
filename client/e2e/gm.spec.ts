@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
-import type { GameId } from '../src/shared/contracts';
+import type { GameId, GameMasterSnapshot } from '../src/shared/contracts';
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { serveGameMasterSnapshot } from './fakeHub.ts';
@@ -18,6 +18,29 @@ async function openConsole(page: Page): Promise<void> {
     );
     await page.goto('/gm/');
     await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
+}
+
+/** A lobby without any player, on a host whose networks are `candidates`. */
+function fakeLobby(
+    candidates: GameMasterSnapshot['joinAddressCandidates'] = [
+        { address: '192.168.1.42', interfaceName: 'Wi-Fi' },
+    ],
+): GameMasterSnapshot {
+    return {
+        gameId: '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId,
+        version: 1,
+        phase: 'Lobby',
+        players: [],
+        minimumPlayerCount: 1,
+        joinAddress: candidates[0]?.address ?? null,
+        joinAddressCandidates: candidates,
+    };
+}
+
+function addressOption(address: string, origin: string): string {
+    return fr.gm.address.option
+        .replace('{address}', () => address)
+        .replace('{origin}', () => origin);
 }
 
 function withNickname(text: string, nickname: string): string {
@@ -151,16 +174,50 @@ test('/gm/ shows a player whose phone left as disconnected', async ({ page, brow
 test('/gm/ cannot start a game without any player, and says how many are needed', async ({
     page,
 }) => {
-    await serveGameMasterSnapshot(page, {
-        gameId: '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId,
-        version: 1,
-        phase: 'Lobby',
-        players: [],
-        minimumPlayerCount: 1,
-    });
+    await serveGameMasterSnapshot(page, fakeLobby());
 
     await openConsole(page);
 
     await expect(page.getByRole('button', { name: fr.gm.start.action })).toBeDisabled();
     await expect(page.getByText(countText(fr.gm.start.minimumPlayers, 1))).toBeVisible();
+});
+
+test('/gm/ shows the advertised address without a choice when the host has one network', async ({
+    page,
+}) => {
+    await serveGameMasterSnapshot(page, fakeLobby());
+
+    await openConsole(page);
+
+    await expect(page.getByText(addressOption('192.168.1.42', 'Wi-Fi'))).toBeVisible();
+    await expect(page.getByRole('combobox')).toHaveCount(0);
+});
+
+test('/gm/ lets the game master choose the address among the networks of the host', async ({
+    page,
+}) => {
+    const hub = await serveGameMasterSnapshot(
+        page,
+        fakeLobby([
+            { address: '192.168.50.7', interfaceName: null },
+            { address: '192.168.1.42', interfaceName: 'Wi-Fi' },
+            { address: '10.0.0.2', interfaceName: 'Ethernet' },
+        ]),
+    );
+
+    await openConsole(page);
+
+    const select = page.getByLabel(fr.gm.address.label);
+    await expect(select).toHaveValue('192.168.50.7');
+    await expect(select.getByRole('option')).toHaveText([
+        addressOption('192.168.50.7', fr.gm.address.configured),
+        addressOption('192.168.1.42', 'Wi-Fi'),
+        addressOption('10.0.0.2', 'Ethernet'),
+    ]);
+
+    await select.selectOption('10.0.0.2');
+
+    await expect(select).toHaveValue('10.0.0.2');
+    await expect(select).toBeEnabled();
+    expect(hub.chosen).toEqual(['10.0.0.2']);
 });

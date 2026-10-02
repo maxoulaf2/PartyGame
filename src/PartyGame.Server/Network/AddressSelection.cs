@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using System.Net;
+using PartyGame.Engine;
 
 namespace PartyGame.Server.Network;
 
@@ -16,4 +18,16 @@ internal sealed record AddressSelection(
     bool IsOnActiveInterface)
 {
     public IEnumerable<AddressCandidate> OtherCandidates => Candidates.Where(candidate => !candidate.Address.Equals(Address));
+
+    /// <summary>
+    /// The addresses the game master may advertise instead: every candidate, preceded by the configured address when no
+    /// candidate holds it, so that it can be chosen back after another one.
+    /// </summary>
+    public ImmutableArray<JoinAddressCandidate> ToJoinAddressCandidates()
+    {
+        var candidates = Candidates.Select(candidate => new JoinAddressCandidate(candidate.Address.ToString(), candidate.InterfaceName));
+        return Address is not null && !Candidates.Any(candidate => candidate.Address.Equals(Address))
+            ? [new JoinAddressCandidate(Address.ToString(), InterfaceName: null), .. candidates]
+            : [.. candidates];
+    }
 }

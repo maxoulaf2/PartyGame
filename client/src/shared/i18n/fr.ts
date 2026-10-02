@@ -62,6 +62,16 @@ export const fr = {
             other: '{count} connectés',
         },
         playerListLabel: 'Joueurs inscrits',
+        address: {
+            label: 'Adresse des joueurs',
+            // One address the QR code may encode, with the network it belongs to.
+            option: '{address} ({origin})',
+            // Origin of an address imposed by Network:AdvertisedAddress that no interface holds.
+            configured: 'imposée par la configuration',
+            hint: 'Le QR code de l’écran TV encode cette adresse : choisissez celle du Wi-Fi des joueurs.',
+            none: 'Aucune adresse de réseau local : connectez ce PC au Wi-Fi, puis relancez le serveur.',
+            failed: 'Le changement d’adresse n’a pas abouti : réessayez.',
+        },
         start: {
             action: 'Lancer la partie',
             // Shown while too few players are registered. The minimum is at least 1, never 0.

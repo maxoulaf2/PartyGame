@@ -13,9 +13,18 @@ namespace PartyGame.Contracts;
 /// <param name="MinimumPlayerCount">
 /// Number of registered players, connected or not, below which the game cannot be started.
 /// </param>
+/// <param name="JoinAddress">
+/// The address currently encoded in the QR code of the TV screen, or <see langword="null"/> when the server knows none.
+/// </param>
+/// <param name="JoinAddressCandidates">
+/// The addresses the game master may choose from instead, best first. Only this projection holds them: the TV screen
+/// gets the chosen address alone.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
     Phase Phase,
     ImmutableArray<GameMasterPlayer> Players,
-    int MinimumPlayerCount);
+    int MinimumPlayerCount,
+    string? JoinAddress,
+    ImmutableArray<GameMasterJoinAddress> JoinAddressCandidates);

@@ -6,9 +6,13 @@
 export type * from './Announcement';
 export type * from './AnnouncementRefusal';
 export type * from './AnnouncementResult';
+export type * from './ChooseAdvertisedAddressRefusal';
+export type * from './ChooseAdvertisedAddressRequest';
+export type * from './ChooseAdvertisedAddressResult';
 export type * from './DisplayPlayer';
 export type * from './DisplaySnapshot';
 export type * from './GameId';
+export type * from './GameMasterJoinAddress';
 export type * from './GameMasterPlayer';
 export type * from './GameMasterSnapshot';
 export type * from './IGameClient';

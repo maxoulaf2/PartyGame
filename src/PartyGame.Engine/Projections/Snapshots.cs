@@ -36,7 +36,9 @@ public static class Snapshots
             state.Version,
             PhaseOf(state),
             [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected))],
-            Launch.MinimumPlayerCount);
+            Launch.MinimumPlayerCount,
+            state.JoinAddress,
+            [.. state.JoinAddressCandidates.Select(c => new GameMasterJoinAddress(c.Address, c.InterfaceName))]);
     }
 
     /// <summary>

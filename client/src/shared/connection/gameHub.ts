@@ -2,6 +2,8 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import type {
     Announcement,
     AnnouncementResult,
+    ChooseAdvertisedAddressRequest,
+    ChooseAdvertisedAddressResult,
     IGameClient,
     JoinRequest,
     JoinResult,
@@ -23,6 +25,10 @@ export interface GameHubMethods {
     // Null when the server ignores the intent: the connection is not authenticated as game master.
     RenamePlayer: { args: [request: RenamePlayerRequest]; result: RenamePlayerResult | null };
     StartGame: { args: []; result: StartGameResult | null };
+    ChooseAdvertisedAddress: {
+        args: [request: ChooseAdvertisedAddressRequest];
+        result: ChooseAdvertisedAddressResult | null;
+    };
 }
 
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */
