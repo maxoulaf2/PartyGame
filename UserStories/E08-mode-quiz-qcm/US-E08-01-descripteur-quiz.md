@@ -1,6 +1,6 @@
 ### US-E08-01 — Descripteur d'une manche de quiz
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'**auteur de pack
 **je veux** décrire une manche de quiz QCM dans `pack.json`, guidé par le schéma et par une documentation complète
@@ -32,6 +32,13 @@ Auteur et GM : un descripteur incohérent rend le pack invalide, avec un problè
 - L'image est un `MediaPath` : son existence, son extension et sa casse sont vérifiées par US-E06-02.
 - Les images du pack d'exemple sont créées pour l'occasion, sans droits de tiers, et restent légères.
 - Les textes du pack d'exemple sont en français : c'est du contenu destiné aux joueurs.
+- Réalisation : `QuizRoundDescriptor` (`answerSeconds`, `points`, `speedBonus`, `shuffleChoices`, `questions`), `QuizQuestion` et `QuizChoice` dans `PartyGame.Contracts.Packs`. Les valeurs par défaut sont des initialiseurs C# : une propriété facultative absente prend sa valeur par défaut, et `null` est refusé, sauf pour `image` et `answerSeconds` d'une question, où il équivaut à l'absence. Les bornes et valeurs par défaut sont des constantes de `QuizRoundDescriptor`, reprises par les attributs.
+- Réalisation : `MediaPath`, `readonly record struct` lu comme une simple chaîne par `TypedIdJsonConverterFactory`, est introduit ici (prévu par US-E06-02). `JsonSchemaExporter` ne voit pas au travers d'un convertisseur et produisait un schéma vide : `PackSchemaGenerator` traduit désormais tout identifiant typé en `"type": "string"` (ou `["string", "null"]` s'il est facultatif). `title` porte `[JsonPropertyOrder(-1)]` pour figurer avant les propriétés du quiz dans le schéma.
+- Réalisation : décision 8 du README. `PackProblem` (code, fichier, chemin JSON, paramètres nommés) et l'énumération `PackProblemCode`, prévus par US-E06-02, sont introduits ici avec les trois codes du quiz, et générés en TypeScript. `IGameMode` gagne `Validate(descriptor, path)`, abstraite dans `GameMode<TDescriptor, TState>` : le chemin de l'activité (`$.rounds[1]`) est fourni par l'appelant, et chaque problème est localisé dessous, dans `pack.json` (`PackDescriptor.FileName`).
+- Réalisation : `QuizMode` (`PartyGame.Engine.Modes.Quiz`) est enregistré dans `AddGameModes()`. Sa vérification est complète ; son déroulé est provisoire jusqu'à US-E08-02 : la manche (`QuizRound`, vide) se termine dès son démarrage, et `Handle` rejette toute entrée. `RoundsTests` remplace donc le mode quiz par `TestQuizMode` (`RemoveAll<IGameMode>`).
+- Réalisation : la clé de comparaison des pseudos est extraite dans `TextComparison.Key` (espaces rognés et réduits, accents retirés, majuscules), commune aux pseudos et aux propositions. `QuizChoiceDuplicated` porte le paramètre `choice`, le texte de la seconde proposition.
+- Réalisation : pack d'exemple `packs/quiz-exemple/` (deux manches de 5 questions, deux images PNG dessinées pour l'occasion, de 4 et 5 Ko). Tant que le serveur ne charge pas les packs (US-E06-02), `SampleQuizPackTests` (tests du moteur) le vérifie de la même façon : lecture stricte, contraintes de chaque objet, cohérence du mode, existence et casse des images, et contenu attendu. `RepositoryRoot` passe dans `tests/Shared` pour cela.
+- Réalisation : tests `QuizRoundDescriptorTests` (Contracts : pack complet, valeurs par défaut, propriétés manquantes, mal typées ou inconnues, chaque borne), `QuizModeTests` (Engine : chaque problème, chemins, doublons à la casse, aux accents et aux espaces près, problèmes multiples, démarrage provisoire) et `PackSchemaGeneratorTests` (identifiant typé).
 
 **Hors périmètre**
 - Les propositions illustrées, les réponses multiples et le vrai ou faux.
