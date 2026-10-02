@@ -3,6 +3,7 @@
     import ConnectionIndicator from '../shared/components/ConnectionIndicator.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
     import type { DisplaySnapshot } from '../shared/contracts';
+    import { watchBuild } from '../shared/connection/buildCheck';
     import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
     import { connectDisplay } from '../shared/connection/displayConnection';
@@ -19,12 +20,14 @@
 
     onMount(() => {
         const stopStatus = status.start();
-        // Before the connection starts, so as not to miss the first one.
+        // Before the connection starts, so as not to miss the first one, nor the welcome.
         const stopClock = clock.start();
+        const stopBuild = watchBuild(connection);
         const disconnect = connectDisplay(game, connection);
         return () => {
             stopStatus();
             stopClock();
+            stopBuild();
             disconnect();
         };
     });

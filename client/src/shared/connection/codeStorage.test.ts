@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localCodeStorage } from './codeStorage';
+import { localCodeStorage, sessionCodeStorage } from './codeStorage';
 
 function memoryStorage(): Storage {
     const items = new Map<string, string>();
@@ -52,5 +52,25 @@ describe('localCodeStorage', () => {
         expect(() => storage.save('123456')).not.toThrow();
         expect(storage.load()).toBeNull();
         expect(() => storage.clear()).not.toThrow();
+    });
+});
+
+describe('sessionCodeStorage', () => {
+    it('keeps a value under its key until cleared', () => {
+        const backing = memoryStorage();
+        const storage = sessionCodeStorage('test.build', backing);
+
+        storage.save('b2');
+        expect(backing.getItem('test.build')).toBe('b2');
+        expect(storage.load()).toBe('b2');
+        storage.clear();
+        expect(storage.load()).toBeNull();
+    });
+
+    it('keeps nothing when the browser blocks storage', () => {
+        const storage = sessionCodeStorage('test.build', blockedStorage());
+
+        storage.save('b2');
+        expect(storage.load()).toBeNull();
     });
 });

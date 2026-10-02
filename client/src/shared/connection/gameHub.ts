@@ -17,6 +17,7 @@ import type {
     ResumeSessionRequest,
     ResumeSessionResult,
     ClockSyncResult,
+    StaleBuildReport,
     StartGameResult,
 } from '../contracts';
 
@@ -39,6 +40,7 @@ export interface GameHubMethods {
         result: ChooseAdvertisedAddressResult | null;
     };
     SyncClock: { args: []; result: ClockSyncResult };
+    ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };
 }
 
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */
