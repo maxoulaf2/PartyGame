@@ -10,6 +10,8 @@ const server = process.env.PARTYGAME_SERVER_URL ?? 'http://localhost:5000';
 
 export default defineConfig({
     plugins: [svelte(), canonicalPages(['display', 'gm'])],
+    // Tests load the client build of Svelte, as the pages do (see test.environment).
+    resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
     build: {
         // The .NET server serves the client from its web root.
         outDir: page('../src/PartyGame.Server/wwwroot'),
@@ -37,5 +39,10 @@ export default defineConfig({
     },
     test: {
         include: ['src/**/*.test.ts'],
+        // Runes behave as in the pages, effects included: modules are compiled for the client, and
+        // `svelte` is resolved by Vite with the browser condition rather than imported by Node,
+        // which would load its server build, where effects never run.
+        environment: './vite/svelteClientEnvironment.ts',
+        server: { deps: { inline: ['svelte'] } },
     },
 });
