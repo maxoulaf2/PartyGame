@@ -1,6 +1,6 @@
 ### US-E06-04 — Médias du pack servis sur le réseau local
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** public
 **je veux** que les images d'un pack s'affichent sur la TV sans délai et sans rien dévoiler à l'avance
@@ -23,6 +23,10 @@ Public : une image qui ne se charge pas (fichier supprimé pendant la partie) la
 - Réponse par `Results.File(..., enableRangeProcessing: true)` ou équivalent. Un en-tête de cache longue durée est possible, puisqu'un identifiant désigne toujours le même fichier pendant une partie.
 - Le chemin du fichier servi provient uniquement de la correspondance de l'état, jamais de l'URL : aucun parcours de dossier n'est possible.
 - Cette US prépare l'audio sur l'écran TV (E14), qui réutilise le même service.
+- Réalisation : moteur. `PackMedia` (dans `GameState.Media`) associe chaque identifiant (`MediaId`, 128 bits aléatoires en base64url, 22 caractères) au chemin écrit dans le descripteur. `Launch` le tire avec `context.Random` au lancement, une fois pour toute la partie : un identifiant sert le même fichier jusqu'au bout, et une partie rejouée retrouve les mêmes. La liste des médias d'un pack (`CatalogPack.Media`, chaque chemin une fois) vient du chargement (`LoadedPack.Media`, déjà relevée par `DescriptorReader`) : le moteur n'a pas à connaître les propriétés `MediaPath` de chaque mode. Un mode obtient l'URL d'un média par `game.Media.UrlOf(chemin)`, la seule référence qu'une projection puisse contenir ; un chemin inconnu est un bug (exception).
+- Réalisation : serveur. `PackMediaFiles` sert `GET` et `HEAD` sur `/media/{id}` (`MapPackMedia`) : le fichier vient de l'état seul (dossier des packs, pack joué, chemin du média), avec une vérification supplémentaire qu'il reste dans le dossier du pack. `Results.File` avec `enableRangeProcessing` et la date de modification, `Content-Type` par `FileExtensionContentTypeProvider`, `Cache-Control: private, max-age=86400, immutable`. Un identifiant inconnu, donc tout identifiant avant le lancement, ou un chemin à la place de l'identifiant donne un `404` sans contenu. Un fichier supprimé pendant la partie donne aussi un `404`, avec un log `Warning`. `ServerPaths.Media` reprend `PackMedia.UrlPrefix`.
+- Réalisation : tests. Moteur : `PackMediaTests` (identifiants distincts, sûrs dans une URL, sans rien du nom du fichier, reproductibles), `LaunchTests` (identifiants du seul pack joué, aucun si le lancement est refusé, conservés d'une manche à l'autre), `GameStateTests` (persistance), et dans `SnapshotsTests` l'URL d'une image dans la vue `Display` du mode de test et l'absence de tout chemin de média dans les projections des trois rôles, à chaque phase. Contenu : la liste des médias d'un pack valide, vide pour un pack invalide. Serveur : `Packs/PackMediaTests` (réponse complète et `Content-Type` en PNG, WebP et JPEG, réponse partielle `206`, `404` d'un identifiant inconnu, d'un chemin, d'un autre pack, d'une autre partie, avant le lancement et d'un fichier supprimé, et aucun chemin dans les identifiants ni dans les snapshots).
+- Limite connue, à trancher si besoin : les identifiants viennent du générateur du moteur, dont la graine (`Random.Shared.Next()`) ne fait que 32 bits. Ils ne révèlent rien à un joueur curieux, mais quelqu'un qui retrouverait la graine par force brute, à partir des identifiants de manche visibles dans les snapshots, pourrait prédire l'ordre de tirage. Option possible : tirer les identifiants des médias par `RandomNumberGenerator` côté serveur, et les passer au moteur par le contexte.
 
 **Hors périmètre**
 - L'affichage de l'image d'une question (US-E08-02).
