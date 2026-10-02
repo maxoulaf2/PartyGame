@@ -15,7 +15,12 @@ public static class Snapshots
     public static DisplaySnapshot ForDisplay(GameState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return new DisplaySnapshot(state.GameId, state.Version, PhaseOf(state), state.Players.Length);
+        return new DisplaySnapshot(
+            state.GameId,
+            state.Version,
+            PhaseOf(state),
+            state.JoinAddress,
+            [.. state.Players.Select(p => new DisplayPlayer(p.Id, p.Nickname, p.IsConnected))]);
     }
 
     /// <summary>

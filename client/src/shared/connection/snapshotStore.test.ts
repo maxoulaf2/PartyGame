@@ -5,8 +5,9 @@ import { SnapshotStore, supersedes } from './snapshotStore.svelte';
 const gameA = 'a6f9619f-8b86-d011-b42d-00cf4fc964ff' as GameId;
 const gameB = 'b6f9619f-8b86-d011-b42d-00cf4fc964ff' as GameId;
 
-function snapshot(version: number, gameId: GameId = gameA, playerCount = 0): DisplaySnapshot {
-    return { gameId, version, phase: 'Lobby', playerCount };
+/** `host` tells apart snapshots of the same version that differ in content. */
+function snapshot(version: number, gameId: GameId = gameA, host = 1): DisplaySnapshot {
+    return { gameId, version, phase: 'Lobby', joinAddress: `10.0.0.${host}`, players: [] };
 }
 
 describe('supersedes', () => {

@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { DisplaySnapshot, GameId, IGameClient } from '../contracts';
+import type { DisplaySnapshot, GameId, IGameClient, PlayerId } from '../contracts';
 import { connectDisplay } from './displayConnection';
 import type { GameConnection } from './gameHub';
 import { SnapshotStore } from './snapshotStore.svelte';
 
 const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
+const playerId = '00000001-0000-0000-0000-000000000000' as PlayerId;
 
 function fakeConnection(startFails = false) {
     const handlers = new Map<string, (snapshot: DisplaySnapshot) => void>();
@@ -66,10 +67,11 @@ describe('connectDisplay', () => {
             gameId,
             version: 2,
             phase: 'Lobby',
-            playerCount: 3,
+            joinAddress: '192.168.1.42',
+            players: [{ id: playerId, nickname: 'Zoé', isConnected: true }],
         });
 
-        expect(store.current?.playerCount).toBe(3);
+        expect(store.current?.players.map((player) => player.nickname)).toEqual(['Zoé']);
     });
 
     it('stays quiet when the server cannot be reached', async () => {

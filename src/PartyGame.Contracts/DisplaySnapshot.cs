@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace PartyGame.Contracts;
 
 /// <summary>
@@ -7,5 +9,14 @@ namespace PartyGame.Contracts;
 /// <param name="GameId">The game the snapshot belongs to. A client that receives another one starts over.</param>
 /// <param name="Version">Increases by one with each change of the game, so that a client ignores older snapshots.</param>
 /// <param name="Phase">Current phase of the game.</param>
-/// <param name="PlayerCount">Number of registered players.</param>
-public sealed record DisplaySnapshot(GameId GameId, long Version, Phase Phase, int PlayerCount);
+/// <param name="JoinAddress">
+/// The IPv4 address phones join at, encoded in the QR code, or <see langword="null"/> when the server knows none. The
+/// client adds the port of the page it loaded, which is the one phones must use as well.
+/// </param>
+/// <param name="Players">Registered players, in order of arrival, so that nobody moves when another one joins.</param>
+public sealed record DisplaySnapshot(
+    GameId GameId,
+    long Version,
+    Phase Phase,
+    string? JoinAddress,
+    ImmutableArray<DisplayPlayer> Players);

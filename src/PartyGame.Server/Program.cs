@@ -32,7 +32,6 @@ try
 
     app.UseFrontEnd();
     app.MapHealthChecks(ServerPaths.Health);
-    app.MapJoinInfo();
     app.MapGameHub();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);

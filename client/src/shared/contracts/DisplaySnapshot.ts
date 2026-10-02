@@ -3,6 +3,7 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { DisplayPlayer } from './DisplayPlayer';
 import type { GameId } from './GameId';
 import type { Phase } from './Phase';
 
@@ -10,5 +11,6 @@ export interface DisplaySnapshot {
     readonly gameId: GameId;
     readonly version: number;
     readonly phase: Phase;
-    readonly playerCount: number;
+    readonly joinAddress: string | null;
+    readonly players: readonly DisplayPlayer[];
 }

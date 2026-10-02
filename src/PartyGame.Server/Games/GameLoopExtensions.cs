@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PartyGame.Contracts;
 using PartyGame.Engine;
+using PartyGame.Server.Network;
 
 namespace PartyGame.Server.Games;
 
@@ -18,9 +19,10 @@ internal static class GameLoopExtensions
         builder.Services.TryAddSingleton<TimerScheduler>();
         builder.Services.TryAddSingleton<IEffectExecutor, EffectExecutor>();
 
-        // The engine has no randomness of its own: the identifier of the game and the seed come from here.
+        // The engine has no randomness of its own: the identifier of the game and the seed come from here. Neither does it
+        // know the network: the address phones join at comes from the selection made at startup.
         builder.Services.AddSingleton(services => new GameLoop(
-            GameState.Create(new GameId(Guid.NewGuid())),
+            GameState.Create(new GameId(Guid.NewGuid()), services.GetRequiredService<AddressSelection>().Address?.ToString()),
             Random.Shared.Next(),
             services.GetRequiredService<GameInputQueue>(),
             services.GetRequiredService<IGameEngine>(),

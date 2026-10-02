@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Serialization;
+using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Projections;
 
 namespace PartyGame.Engine.Tests.Projections;
@@ -14,16 +15,54 @@ public sealed class SnapshotsTests
     };
 
     [Fact]
-    public void ForDisplay_LobbyWithPlayers_ShowsGameVersionPhaseAndPlayerCount()
+    public void ForDisplay_LobbyWithPlayers_ShowsJoinAddressAndPlayersInOrderOfArrival()
     {
         // Given
-        var state = Games.LobbyWith("Zoé", "Max") with { Version = 7 };
+        var state = Games.LobbyWith("Zoé", "Max", "Léa") with { Version = 7 };
 
         // When
         var snapshot = Snapshots.ForDisplay(state);
 
         // Then
-        Assert.Equal(new DisplaySnapshot(state.GameId, 7, Phase.Lobby, PlayerCount: 2), snapshot);
+        Assert.Equal(state.GameId, snapshot.GameId);
+        Assert.Equal(7, snapshot.Version);
+        Assert.Equal(Phase.Lobby, snapshot.Phase);
+        Assert.Equal(Games.JoinAddress, snapshot.JoinAddress);
+        Assert.Equal(
+            [
+                new DisplayPlayer(Games.PlayerIdOf(1), "Zoé", IsConnected: true),
+                new DisplayPlayer(Games.PlayerIdOf(2), "Max", IsConnected: true),
+                new DisplayPlayer(Games.PlayerIdOf(3), "Léa", IsConnected: true),
+            ],
+            snapshot.Players);
+    }
+
+    [Fact]
+    public void ForDisplay_DisconnectedPlayer_StaysListedAsDisconnected()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé", "Max");
+        state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(1)), Games.Context()).State;
+
+        // When
+        var snapshot = Snapshots.ForDisplay(state);
+
+        // Then
+        Assert.Equal([("Zoé", false), ("Max", true)], snapshot.Players.Select(p => (p.Nickname, p.IsConnected)));
+    }
+
+    [Fact]
+    public void ForDisplay_NoJoinAddress_ShowsNone()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé") with { JoinAddress = null };
+
+        // When
+        var snapshot = Snapshots.ForDisplay(state);
+
+        // Then
+        Assert.Null(snapshot.JoinAddress);
+        Assert.Single(snapshot.Players);
     }
 
     [Fact]
@@ -119,8 +158,8 @@ public sealed class SnapshotsTests
         // When
         var snapshot = Snapshots.ForDisplay(state);
 
-        // Then
-        Assert.Equal(Snapshots.ForDisplay(withoutSecrets), snapshot);
+        // Then: compared as JSON, since the list of players has no value equality
+        Assert.Equal(Serialize(Snapshots.ForDisplay(withoutSecrets)), Serialize(snapshot));
     }
 
     private static string Serialize(object snapshot) =>

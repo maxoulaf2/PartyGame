@@ -1,7 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Options;
-using PartyGame.Contracts;
 
 namespace PartyGame.Server.Network;
 
@@ -29,21 +28,6 @@ internal static class NetworkExtensions
         builder.Services.AddSingleton(SelectAddress);
 
         return builder;
-    }
-
-    /// <summary>
-    /// Serves the address for the TV screen at <c>GET /api/join</c>. Nothing else: the candidates
-    /// stay on the operator console, since anybody on the network can call this endpoint.
-    /// </summary>
-    public static WebApplication MapJoinInfo(this WebApplication app)
-    {
-        app.MapGet(ServerPaths.Join, (AddressSelection selection, HttpResponse response) =>
-        {
-            response.Headers.CacheControl = "no-store";
-            return new JoinInfo(selection.Address?.ToString());
-        });
-
-        return app;
     }
 
     private static AddressSelection SelectAddress(IServiceProvider services)

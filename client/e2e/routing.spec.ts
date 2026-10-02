@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import { fr } from '../src/shared/i18n/fr.ts';
-import { serveJoinInfo } from './joinInfo.ts';
 
 // Addresses typed by hand by the operator: a missing slash or another case still opens the right page.
 const addresses = [
@@ -12,7 +11,6 @@ const addresses = [
 
 for (const { typed, page: canonical, text } of addresses) {
     test(`${typed} opens ${canonical}`, async ({ page }) => {
-        await serveJoinInfo(page);
         await page.goto(typed);
 
         await expect(page).toHaveURL(canonical);

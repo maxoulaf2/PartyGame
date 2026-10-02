@@ -3,6 +3,10 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export interface JoinInfo {
-    readonly address: string | null;
+import type { PlayerId } from './PlayerId';
+
+export interface DisplayPlayer {
+    readonly id: PlayerId;
+    readonly nickname: string;
+    readonly isConnected: boolean;
 }

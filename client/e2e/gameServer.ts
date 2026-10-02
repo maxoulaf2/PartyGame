@@ -6,3 +6,9 @@ export const gameServerPort = 5199;
 
 /** Fixed by `GameMaster:Code`: tests type it like a game master reading the server console. */
 export const gameMasterCode = '246810';
+
+/**
+ * Imposed by `Network:AdvertisedAddress`, since the detected one depends on the machine: the TV
+ * screen encodes it in its QR code.
+ */
+export const advertisedAddress = '192.168.1.42';

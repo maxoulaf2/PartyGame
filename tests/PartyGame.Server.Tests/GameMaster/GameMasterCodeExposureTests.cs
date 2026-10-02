@@ -21,7 +21,6 @@ public sealed class GameMasterCodeExposureTests : IDisposable
     [InlineData("/")]
     [InlineData("/display/")]
     [InlineData("/gm/")]
-    [InlineData("/api/join")]
     [InlineData("/health")]
     public async Task Get_AnyServedResponse_NeverContainsTheCode(string path)
     {
