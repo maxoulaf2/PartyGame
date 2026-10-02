@@ -7,6 +7,7 @@
         playerNicknameKey,
         playerTokenKey,
     } from '../shared/connection/codeStorage';
+    import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { createGameConnection } from '../shared/connection/gameHub';
     import { PlayerSession } from '../shared/connection/playerSession.svelte';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
@@ -15,14 +16,24 @@
     import LobbyScreen from './LobbyScreen.svelte';
 
     const game = new SnapshotStore<PlayerSnapshot>();
+    const connection = createGameConnection();
     const session = new PlayerSession(
         game,
         localCodeStorage(playerTokenKey),
         localCodeStorage(playerNicknameKey),
-        createGameConnection(),
+        connection,
     );
+    const clock = new ClockSync(connection);
 
-    onMount(() => session.start());
+    onMount(() => {
+        // Before the session starts the connection, so as not to miss the first one.
+        const stopClock = clock.start();
+        const stopSession = session.start();
+        return () => {
+            stopClock();
+            stopSession();
+        };
+    });
 </script>
 
 {#if session.joined && game.current}

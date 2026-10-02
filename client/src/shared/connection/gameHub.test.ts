@@ -169,6 +169,24 @@ describe('createGameConnection', () => {
         expect(restored).toHaveBeenCalledOnce();
     });
 
+    it('reports every established connection: the first, then each restored one', async () => {
+        const fake = fakeTransport();
+        const connection = createGameConnection(fake.transport, fakeWake().source);
+        const connected = vi.fn();
+        connection.onConnected(connected);
+
+        await connection.start();
+        expect(connected).toHaveBeenCalledOnce();
+        fake.loseConnection();
+        fake.reconnect();
+        expect(connected).toHaveBeenCalledTimes(2);
+        fake.failStarts(1);
+        fake.close();
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        expect(connected).toHaveBeenCalledTimes(3);
+    });
+
     it('keeps trying to start until the server answers', async () => {
         const fake = fakeTransport();
         fake.failStarts(8);

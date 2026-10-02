@@ -16,6 +16,7 @@ import type {
     RenamePlayerResult,
     ResumeSessionRequest,
     ResumeSessionResult,
+    ClockSyncResult,
     StartGameResult,
 } from '../contracts';
 
@@ -37,6 +38,7 @@ export interface GameHubMethods {
         args: [request: ChooseAdvertisedAddressRequest];
         result: ChooseAdvertisedAddressResult | null;
     };
+    SyncClock: { args: []; result: ClockSyncResult };
 }
 
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */
@@ -90,6 +92,11 @@ export interface GameConnection<Messages = IGameClient> {
     ): Promise<GameHubMethods[M]['result']>;
     /** Handles a message of the server. Returns a function that stops handling it. */
     on<M extends keyof Messages & string>(message: M, handler: Messages[M]): () => void;
+    /**
+     * Called whenever a connection is established: the first one, then each restored one, after
+     * the `onReconnected` callbacks.
+     */
+    onConnected(callback: () => void): void;
     /** Called when the connection is lost; attempts to restore it go on until one succeeds. */
     onReconnecting(callback: () => void): void;
     /**
@@ -106,6 +113,7 @@ export function createGameConnection<Messages = IGameClient>(
 ): GameConnection<Messages> {
     const lostCallbacks: (() => void)[] = [];
     const restoredCallbacks: (() => void)[] = [];
+    const connectedCallbacks: (() => void)[] = [];
     const notify = (callbacks: (() => void)[]) => {
         for (const callback of callbacks) {
             callback();
@@ -157,7 +165,7 @@ export function createGameConnection<Messages = IGameClient>(
         restarting = true;
         try {
             if (await connect()) {
-                notify(restoredCallbacks);
+                notifyRestored();
             }
         } finally {
             restarting = false;
@@ -177,8 +185,13 @@ export function createGameConnection<Messages = IGameClient>(
         }
     }
 
+    function notifyRestored() {
+        notify(restoredCallbacks);
+        notify(connectedCallbacks);
+    }
+
     transport.onreconnecting(() => notify(lostCallbacks));
-    transport.onreconnected(() => notify(restoredCallbacks));
+    transport.onreconnected(notifyRestored);
     transport.onclose(() => {
         if (stopped) {
             return;
@@ -194,6 +207,7 @@ export function createGameConnection<Messages = IGameClient>(
             if (!(await connect())) {
                 throw new Error('Connection stopped before it was established.');
             }
+            notify(connectedCallbacks);
         },
         stop: () => {
             stopped = true;
@@ -214,6 +228,9 @@ export function createGameConnection<Messages = IGameClient>(
         },
         onReconnected: (callback) => {
             restoredCallbacks.push(callback);
+        },
+        onConnected: (callback) => {
+            connectedCallbacks.push(callback);
         },
     };
 }
