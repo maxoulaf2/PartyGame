@@ -36,7 +36,7 @@ Joueur : serveur injoignable, le bouton reste désactivé et l'indicateur de rec
 - Réalisation : `player/JoinForm.svelte` affiche le message sous le champ tant qu'il contient le pseudo refusé, conserve la saisie et redonne le focus ; `player/LobbyScreen.svelte` affiche « Tu es inscrit sous le nom … ». Champ en 1,25 rem (pas de zoom iOS), zones tactiles de 48 px.
 - Réalisation : tant que US-E05-01 n'est pas livrée, un rechargement ramène au formulaire, prérempli avec le dernier pseudo, que le joueur précédent occupe toujours : il faut en choisir un autre. Après une reconnexion SignalR, la nouvelle connexion ne reçoit plus les snapshots du joueur.
 - Réalisation : tests du moteur (`PresenceTests`, `RegistrationTests`), tests d'intégration du hub (`JoinGameTests` : inscription, refus, concurrence sur un même pseudo, message malformé, jeton absent des snapshots et des logs, présence à la déconnexion), Vitest (`playerSession.test.ts`, `nickname.test.ts`) et Playwright (`e2e/player.spec.ts`, sur iPhone et Pixel : trois joueurs dans trois contextes, pseudo pris, pseudo trop long, absence de zoom). Les tests de l'écran TV qui supposaient un serveur sans joueur s'appuient désormais sur l'invitation à rejoindre.
-- Réalisation : la vérification sur de vrais appareils (iPhone et Android) reste à faire.
+- Réalisation : vérifié sur un vrai téléphone, sur le serveur .NET servant le front construit : saisie du pseudo, inscription, écran du lobby.
 
 **Hors périmètre**
 - Reconnexion par jeton après une veille ou un rechargement (US-E05-01).
