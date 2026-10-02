@@ -30,5 +30,7 @@ export type * from './ResumeSessionRefusal';
 export type * from './ResumeSessionRequest';
 export type * from './ResumeSessionResult';
 export type * from './Role';
+export type * from './StaleBuildReport';
 export type * from './StartGameRefusal';
 export type * from './StartGameResult';
+export type * from './Welcome';

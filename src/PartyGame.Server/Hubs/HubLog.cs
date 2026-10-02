@@ -49,6 +49,9 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Game started by the game master with {PlayerCount} players")]
     public static partial void GameStarted(this ILogger logger, int playerCount);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Connection {ConnectionId} still runs client build {ClientBuildId} after reloading to get build {ServerBuildId}: a cache or a proxy keeps serving the old pages")]
+    public static partial void StaleBuildReported(this ILogger logger, string connectionId, string clientBuildId, string? serverBuildId);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Address {Address} advertised to phones, chosen by the game master")]
     public static partial void AdvertisedAddressChosen(this ILogger logger, string address);
 }

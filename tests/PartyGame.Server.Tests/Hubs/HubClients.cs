@@ -14,7 +14,15 @@ internal static class HubClients
     /// <summary>
     /// Starts a connection restricted to WebSockets: it only succeeds if the hub accepts that transport.
     /// </summary>
-    public static async Task<HubConnection> ConnectAsync(WebApplicationFactory<Program> factory, string path = "/hub/game")
+    /// <param name="factory">The test server.</param>
+    /// <param name="path">Where the hub listens.</param>
+    /// <param name="beforeStart">
+    /// Registers handlers before the connection starts, for the messages the hub sends as soon as it is established.
+    /// </param>
+    public static async Task<HubConnection> ConnectAsync(
+        WebApplicationFactory<Program> factory,
+        string path = "/hub/game",
+        Action<HubConnection>? beforeStart = null)
     {
         var server = factory.Server;
         var connection = new HubConnectionBuilder()
@@ -28,6 +36,7 @@ internal static class HubClients
             .AddJsonProtocol(options => ContractJsonOptions.Apply(options.PayloadSerializerOptions))
             .Build();
 
+        beforeStart?.Invoke(connection);
         await connection.StartAsync(TestContext.Current.CancellationToken);
         return connection;
     }

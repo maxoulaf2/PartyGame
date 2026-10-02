@@ -8,6 +8,7 @@
         playerNicknameKey,
         playerTokenKey,
     } from '../shared/connection/codeStorage';
+    import { watchBuild } from '../shared/connection/buildCheck';
     import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
     import { createGameConnection } from '../shared/connection/gameHub';
@@ -30,12 +31,14 @@
 
     onMount(() => {
         const stopStatus = status.start();
-        // Before the session starts the connection, so as not to miss the first one.
+        // Before the session starts the connection, so as not to miss the first one, nor the welcome.
         const stopClock = clock.start();
+        const stopBuild = watchBuild(connection);
         const stopSession = session.start();
         return () => {
             stopStatus();
             stopClock();
+            stopBuild();
             stopSession();
         };
     });

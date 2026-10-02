@@ -33,6 +33,19 @@ public sealed class FrontEndTests : IDisposable
     }
 
     [Fact]
+    public async Task Get_BuildFile_MustBeRevalidated()
+    {
+        WriteClientBuild();
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync(new Uri("/build.json", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoCache);
+    }
+
+    [Fact]
     public async Task Get_FingerprintedAsset_IsCachedImmutably()
     {
         WriteClientBuild();
@@ -209,6 +222,7 @@ public sealed class FrontEndTests : IDisposable
         Write("display/index.html", "display page");
         Write("gm/index.html", "gm page");
         Write("assets/player-Bz1c35Cc.js", "console.log('player');");
+        Write("build.json", """{ "buildId": "abc" }""");
     }
 
     private void Write(string relativePath, string content)

@@ -70,6 +70,8 @@ public sealed class SnapshotBroadcasterTests
 
         private sealed class GroupClient(RecordingHubContext hub, string group) : IGameClient
         {
+            public Task ReceiveWelcome(Welcome welcome) => throw new NotSupportedException();
+
             public Task ReceiveDisplaySnapshot(DisplaySnapshot snapshot) => Send();
 
             public Task ReceiveGameMasterSnapshot(GameMasterSnapshot snapshot) => Send();

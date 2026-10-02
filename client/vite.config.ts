@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vitest/config';
+import { buildIdentifier } from './vite/buildIdentifier.ts';
 import { canonicalPages } from './vite/canonicalPages.ts';
 
 const page = (path: string): string => fileURLToPath(new URL(path, import.meta.url));
@@ -9,7 +10,7 @@ const page = (path: string): string => fileURLToPath(new URL(path, import.meta.u
 const server = process.env.PARTYGAME_SERVER_URL ?? 'http://localhost:5000';
 
 export default defineConfig({
-    plugins: [svelte(), canonicalPages(['display', 'gm'])],
+    plugins: [svelte(), canonicalPages(['display', 'gm']), buildIdentifier()],
     // Tests load the client build of Svelte, as the pages do (see test.environment).
     resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
     build: {

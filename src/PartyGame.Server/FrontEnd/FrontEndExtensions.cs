@@ -10,8 +10,20 @@ internal static class FrontEndExtensions
     private static readonly string[] _folderPages = ["/display/", "/gm/"];
 
     /// <summary>
+    /// Registers the <see cref="FrontEndBuild"/> the web root holds, read once at startup by <see cref="UseFrontEnd"/>.
+    /// </summary>
+    public static WebApplicationBuilder AddFrontEnd(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton(services => FrontEndBuild.Read(
+            services.GetRequiredService<IWebHostEnvironment>().WebRootFileProvider,
+            services.GetRequiredService<ILogger<FrontEndBuild>>()));
+        return builder;
+    }
+
+    /// <summary>
     /// Serves the client built by <c>npm run build</c> from the web root. Pages are always revalidated
     /// so that a new build reaches phones on their next load, while fingerprinted assets are cached for good.
+    /// Pages left open on an older build reload themselves when the hub tells them the <see cref="FrontEndBuild"/> served.
     /// Page URLs tolerate a missing trailing slash and a different case, and a browser opening an unknown
     /// page is sent to the player page: a mistyped address never shows an error.
     /// </summary>
@@ -20,6 +32,12 @@ internal static class FrontEndExtensions
         if (!app.Environment.WebRootFileProvider.GetFileInfo("index.html").Exists)
         {
             app.Logger.FrontEndBuildMissing(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"));
+        }
+
+        // Read now rather than at the first connection, so that the operator sees at startup which build is served.
+        if (app.Services.GetRequiredService<FrontEndBuild>().Id is { } buildId)
+        {
+            app.Logger.FrontEndBuildServed(buildId);
         }
 
         app.Use(RedirectToCanonicalPage);
@@ -80,14 +98,10 @@ internal static class FrontEndExtensions
 
     private static void SetCacheControl(StaticFileResponseContext context)
     {
-        var response = context.Context.Response;
-        if (context.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
-        {
-            response.Headers.CacheControl = "no-cache";
-        }
-        else if (context.Context.Request.Path.StartsWithSegments(ServerPaths.Assets, StringComparison.Ordinal))
-        {
-            response.Headers.CacheControl = "public, max-age=31536000, immutable";
-        }
+        // Only fingerprinted assets change name with each build: anything else, pages and build.json included, is
+        // revalidated, so that browsers never keep an outdated copy under the same name.
+        context.Context.Response.Headers.CacheControl = context.Context.Request.Path.StartsWithSegments(ServerPaths.Assets, StringComparison.Ordinal)
+            ? "public, max-age=31536000, immutable"
+            : "no-cache";
     }
 }
