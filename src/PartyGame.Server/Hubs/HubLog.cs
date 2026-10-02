@@ -30,6 +30,16 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} lost their last connection")]
     public static partial void PlayerDisconnected(this ILogger logger, Guid playerId);
 
+    // The token is never logged, known or not.
+    [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} resumed their session on connection {ConnectionId}")]
+    public static partial void SessionResumed(this ILogger logger, Guid playerId, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} refused: unknown token")]
+    public static partial void SessionUnknown(this ILogger logger, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} ignored: it already identified a player")]
+    public static partial void ResumeRepeated(this ILogger logger, string connectionId);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "JoinGame from connection {ConnectionId} ignored: it already registered a player")]
     public static partial void JoinRepeated(this ILogger logger, string connectionId);
 

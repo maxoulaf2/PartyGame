@@ -9,7 +9,8 @@ namespace PartyGame.Server.Games;
 internal interface IGameInputWriter
 {
     /// <summary>
-    /// Enqueues an input whose outcome the producer does not wait for.
+    /// Enqueues an input whose outcome the producer does not wait for. The input is queued before this method returns:
+    /// inputs written one call after the other are handled in that order, even when their tasks are awaited later.
     /// </summary>
     /// <exception cref="OperationCanceledException">The loop is stopped, or <paramref name="cancellationToken"/> is cancelled.</exception>
     ValueTask WriteAsync(GameInput input, CancellationToken cancellationToken);
