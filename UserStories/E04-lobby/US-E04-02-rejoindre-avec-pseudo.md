@@ -1,6 +1,6 @@
 ### US-E04-02 — Rejoindre la partie avec un pseudo
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** choisir un pseudo sur mon téléphone et rejoindre la partie
@@ -28,6 +28,15 @@ Joueur : serveur injoignable, le bouton reste désactivé et l'indicateur de rec
 - Présence : un joueur inscrit est marqué connecté. Quand sa dernière connexion se ferme, le hub dépose une entrée `PlayerConnectionLost` ; la reconnexion (US-E05-01) le marque de nouveau connecté. Cet état alimente les listes de la TV et du GM.
 - Le dernier pseudo utilisé est aussi mémorisé, pour préremplir le champ si le jeton n'est plus reconnu (US-E05-01).
 - Tous les textes et la traduction des codes de refus sont dans `fr.ts`.
+- Réalisation : contrats `JoinRequest(nickname)` et `JoinResult(refusal, playerId, token)`, codes `JoinRefusal` : `NicknameInvalid`, `NicknameTaken`, `AlreadyJoined` (la connexion a déjà inscrit un joueur), `JoinFailed` (bug du moteur, ou connexion fermée pendant l'inscription) et `MessageInvalid`. Le hub expose `JoinGame` ; le motif `PlayerAlreadyJoined` du moteur, qui supposerait une collision d'identifiants, devient `JoinFailed`.
+- Réalisation : le hub place la connexion dans le groupe du joueur avant de déposer l'inscription, pour ne manquer aucune diffusion, et l'en retire en cas de refus. L'inscription est déposée sans annulation liée à la connexion : une fois dans la file, elle peut être acceptée, et la connexion doit alors être suivie. Après acceptation, le hub envoie aussi le snapshot courant à l'appelant, comme pour une annonce.
+- Réalisation : présence. `Player.IsConnected` est vrai à l'inscription. `PlayerConnections` (hub, hors de l'état) compte les connexions de chaque joueur ; `OnDisconnectedAsync` dépose `PlayerConnectionLost` quand la dernière se ferme, et le moteur marque le joueur déconnecté (refus `PlayerUnknown` et `PlayerAlreadyDisconnected`). Une connexion fermée pendant le traitement de l'inscription est rattrapée par le hub. Les projections n'exposent pas encore la présence : c'est l'objet de US-E04-03 et US-E04-04.
+- Réalisation : journalisation `Information` de l'arrivée (« Player {PlayerId} joined as {Nickname} ») et de la perte de la dernière connexion ; le jeton n'est jamais journalisé (vérifié par test).
+- Réalisation : côté client, `PlayerSession` (`shared/connection/playerSession.svelte.ts`) envoie l'inscription, conserve le jeton sous `partygame.player.token` et le dernier pseudo sous `partygame.player.nickname` (`localCodeStorage`), et alimente le store du snapshot `Player`. `player/nickname.ts` signale avant envoi un pseudo vide (bouton désactivé), trop long (graphèmes comptés avec `Intl.Segmenter`) ou contenant des caractères de contrôle ; les cas plus fins (caractères invisibles) sont laissés au serveur.
+- Réalisation : `player/JoinForm.svelte` affiche le message sous le champ tant qu'il contient le pseudo refusé, conserve la saisie et redonne le focus ; `player/LobbyScreen.svelte` affiche « Tu es inscrit sous le nom … ». Champ en 1,25 rem (pas de zoom iOS), zones tactiles de 48 px.
+- Réalisation : tant que US-E05-01 n'est pas livrée, un rechargement ramène au formulaire, prérempli avec le dernier pseudo, que le joueur précédent occupe toujours : il faut en choisir un autre. Après une reconnexion SignalR, la nouvelle connexion ne reçoit plus les snapshots du joueur.
+- Réalisation : tests du moteur (`PresenceTests`, `RegistrationTests`), tests d'intégration du hub (`JoinGameTests` : inscription, refus, concurrence sur un même pseudo, message malformé, jeton absent des snapshots et des logs, présence à la déconnexion), Vitest (`playerSession.test.ts`, `nickname.test.ts`) et Playwright (`e2e/player.spec.ts`, sur iPhone et Pixel : trois joueurs dans trois contextes, pseudo pris, pseudo trop long, absence de zoom). Les tests de l'écran TV qui supposaient un serveur sans joueur s'appuient désormais sur l'invitation à rejoindre.
+- Réalisation : la vérification sur de vrais appareils (iPhone et Android) reste à faire.
 
 **Hors périmètre**
 - Reconnexion par jeton après une veille ou un rechargement (US-E05-01).

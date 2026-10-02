@@ -3,13 +3,14 @@ import { fr } from '../src/shared/i18n/fr.ts';
 import { serveJoinInfo } from './joinInfo.ts';
 import { trackExternalRequests } from './localRequests.ts';
 
-test('/display/ shows its waiting text without external requests', async ({ page }) => {
+// Its invitation rather than the player count, which the player tests change on the shared server.
+test('/display/ invites players to join without external requests', async ({ page }) => {
     const external = trackExternalRequests(page);
     await serveJoinInfo(page);
 
     await page.goto('/display/');
 
-    await expect(page.getByText(fr.display.waiting)).toBeVisible();
+    await expect(page.getByText(fr.display.scanToJoin)).toBeVisible();
     expect(external).toEqual([]);
 });
 

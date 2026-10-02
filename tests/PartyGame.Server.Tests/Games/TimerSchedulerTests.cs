@@ -176,7 +176,7 @@ public sealed class TimerSchedulerTests : IDisposable
         var dueAt = new DateTimeOffset(2026, 10, 1, 20, 0, 30, TimeSpan.Zero);
         var engine = new ScriptedEngine((state, input, context) => input switch
         {
-            TimerElapsed elapsed => new Transition(state with { Players = state.Players.Add(new Player(default, elapsed.TimerId.Value)) }, []),
+            TimerElapsed elapsed => new Transition(state with { Players = state.Players.Add(new Player(default, elapsed.TimerId.Value, IsConnected: true)) }, []),
             TestInput { Value: 1 } => new Transition(state, [new ScheduleTimer(_countdown, dueAt)]),
             _ => ScriptedEngine.AddPlayer(state, input, context),
         });

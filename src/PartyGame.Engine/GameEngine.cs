@@ -19,6 +19,7 @@ public sealed class GameEngine : IGameEngine
         return input switch
         {
             JoinGame join => Registration.Join(state, join),
+            PlayerConnectionLost lost => Presence.ConnectionLost(state, lost),
 
             // No phase schedules a timer yet: any timer that elapses is obsolete.
             TimerElapsed => Transition.Rejected(state, RejectionReason.UnexpectedTimer),

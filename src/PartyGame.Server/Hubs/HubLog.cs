@@ -22,4 +22,14 @@ internal static partial class HubLog
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Snapshot not sent to group {Group}")]
     public static partial void SnapshotNotSent(this ILogger logger, Exception exception, string group);
+
+    // The token is never logged: it is the only proof of who a player is.
+    [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} joined as {Nickname}")]
+    public static partial void PlayerJoined(this ILogger logger, Guid playerId, string nickname);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} lost their last connection")]
+    public static partial void PlayerDisconnected(this ILogger logger, Guid playerId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "JoinGame from connection {ConnectionId} ignored: it already registered a player")]
+    public static partial void JoinRepeated(this ILogger logger, string connectionId);
 }

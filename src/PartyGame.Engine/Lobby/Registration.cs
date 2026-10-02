@@ -27,7 +27,7 @@ internal static class Registration
 
         var newState = state with
         {
-            Players = state.Players.Add(new Player(join.PlayerId, nickname)),
+            Players = state.Players.Add(new Player(join.PlayerId, nickname, IsConnected: true)),
             PlayerTokens = state.PlayerTokens.Add(join.Token, join.PlayerId),
         };
         return new Transition(newState, []);

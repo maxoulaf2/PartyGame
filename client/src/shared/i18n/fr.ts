@@ -6,6 +6,20 @@ export const fr = {
     },
     player: {
         waiting: 'Bienvenue ! La partie va bientôt commencer.',
+        started: 'La partie est lancée : garde un œil sur l’écran !',
+        registeredAs: 'Tu es inscrit sous le nom {nickname}',
+        join: {
+            title: 'Choisis ton pseudo',
+            label: 'Pseudo',
+            submit: 'Rejoindre',
+            problems: {
+                tooLong: 'Ton pseudo ne peut pas dépasser 16 caractères.',
+                invalidCharacters: 'Ton pseudo contient des caractères non autorisés.',
+                invalid: 'Ce pseudo n’est pas accepté : de 1 à 16 caractères visibles.',
+                taken: 'Ce pseudo est déjà pris : choisis-en un autre.',
+                failed: 'L’inscription n’a pas abouti : réessaie.',
+            },
+        },
     },
     display: {
         waiting: 'En attente des joueurs…',

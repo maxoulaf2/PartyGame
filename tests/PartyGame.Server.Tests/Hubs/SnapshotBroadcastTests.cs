@@ -161,7 +161,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
         connection.InvokeAsync<AnnouncementResult>(GameHub.Announce, new Announcement(role, code), Ct);
 
     /// <summary>
-    /// Registers a player through the queue, as the hub will (US-E04-02). Returns once the loop has broadcast the change.
+    /// Registers a player through the queue, as the hub does, with a known token. Returns once the loop has broadcast the change.
     /// </summary>
     private async Task<PlayerId> JoinAsync(string nickname, int player)
     {
@@ -172,7 +172,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
     }
 
     /// <summary>
-    /// Puts a connection in the group of a player, as the hub will once the player identifies (US-E04-02).
+    /// Puts a connection in the group of a player, as the hub does once the player registers.
     /// </summary>
     private Task AddToPlayerGroupAsync(HubConnection connection, PlayerId playerId) =>
         _factory.Services.GetRequiredService<IHubContext<GameHub, IGameClient>>()

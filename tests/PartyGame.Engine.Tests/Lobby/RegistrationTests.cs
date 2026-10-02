@@ -15,7 +15,7 @@ public sealed class RegistrationTests
         // Then
         Assert.Null(transition.Rejection);
         Assert.Empty(transition.Effects);
-        Assert.Equal([new Player(Games.PlayerIdOf(1), "Zoé"), new Player(join.PlayerId, "Max")], transition.State.Players);
+        Assert.Equal([new Player(Games.PlayerIdOf(1), "Zoé", IsConnected: true), new Player(join.PlayerId, "Max", IsConnected: true)], transition.State.Players);
         Assert.Equal(join.PlayerId, transition.State.PlayerTokens[join.Token]);
     }
 
