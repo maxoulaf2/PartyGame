@@ -1,0 +1,8 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["/packs/*/pack.json"],
+      "url": "./schemas/pack.schema.json"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// Fails when the TypeScript types in src/shared/contracts no longer match PartyGame.Contracts.
+// Fails when the TypeScript types in src/shared/contracts, or schemas/pack.schema.json, no longer match PartyGame.Contracts.
 // `dotnet test` runs the same check and is the reference: here it is skipped when the .NET SDK is missing,
 // so that the client stays checkable without it.
 import { spawnSync } from 'node:child_process';
@@ -21,6 +21,8 @@ const result = spawnSync(
         'quiet',
         '--',
         'src/shared/contracts',
+        '--schema',
+        '../schemas/pack.schema.json',
         '--verify',
     ],
     { stdio: 'inherit' },

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Descripteur d'un pack de contenu PartyGame : le fichier pack.json à la racine du dossier du pack.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Chemin du schéma JSON, pour l'autocomplétion dans l'éditeur. Ignoré par le serveur.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "formatVersion": {
+      "description": "Version du format du descripteur. Seule la version 1 est prise en charge.",
+      "type": "integer",
+      "const": 1
+    },
+    "title": {
+      "description": "Titre du pack, affiché au game master lors du choix du pack, puis à tous pendant la partie.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "description": {
+      "description": "Présentation facultative du pack, destinée au game master.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 200
+    },
+    "rounds": {
+      "description": "Activités du pack, jouées dans cet ordre : chacune est une manche de la partie.",
+      "type": "array",
+      "items": {
+        "description": "Activité du pack, jouée comme une manche. Son type désigne le mode de jeu qui la joue.",
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "anyOf": [
+          {
+            "description": "Manche de quiz à choix multiples.",
+            "properties": {
+              "type": {
+                "description": "Manche de quiz à choix multiples.",
+                "const": "quiz"
+              },
+              "title": {
+                "description": "Titre de la manche, affiché à tous.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              }
+            },
+            "required": [
+              "title"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "formatVersion",
+    "title",
+    "rounds"
+  ],
+  "additionalProperties": false
+}
