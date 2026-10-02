@@ -1,0 +1,275 @@
+import { describe, expect, it, vi } from 'vitest';
+import type { AnnouncementResult, GameId, GameMasterSnapshot, IGameClient } from '../contracts';
+import type { CodeStorage } from './codeStorage';
+import type { GameConnection } from './gameHub';
+import { GameMasterSession, isCodeComplete } from './gameMasterSession.svelte';
+import { SnapshotStore } from './snapshotStore.svelte';
+
+const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
+const goodCode = '123456';
+
+function memoryStorage(initial: string | null = null): CodeStorage & { value: string | null } {
+    const storage = {
+        value: initial,
+        load: () => storage.value,
+        save: (code: string) => {
+            storage.value = code;
+        },
+        clear: () => {
+            storage.value = null;
+        },
+    };
+    return storage;
+}
+
+/** A server that accepts one code only, and whose connection can drop and come back. */
+function fakeServer(options: { startFails?: boolean } = {}) {
+    let code = goodCode;
+    let reachable = true;
+    const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
+    const callbacks = { reconnecting: () => {}, reconnected: () => {}, close: () => {} };
+    const connection = {
+        start: vi.fn(() =>
+            options.startFails ? Promise.reject(new Error('offline')) : Promise.resolve(),
+        ),
+        stop: vi.fn(() => Promise.resolve()),
+        invoke: vi.fn(
+            async (
+                _method: string,
+                announcement: { gameMasterCode: string | null },
+            ): Promise<AnnouncementResult> => {
+                if (!reachable) {
+                    throw new Error('disconnected');
+                }
+                return {
+                    refusal: announcement.gameMasterCode === code ? null : 'GameMasterCodeInvalid',
+                };
+            },
+        ),
+        on: vi.fn((message: string, handler: (snapshot: GameMasterSnapshot) => void) => {
+            handlers.set(message, handler);
+            return () => handlers.delete(message);
+        }),
+        onReconnecting: vi.fn((callback: () => void) => {
+            callbacks.reconnecting = callback;
+        }),
+        onReconnected: vi.fn((callback: () => void) => {
+            callbacks.reconnected = callback;
+        }),
+        onClose: vi.fn((callback: () => void) => {
+            callbacks.close = callback;
+        }),
+    };
+    // The fake only implements what the session uses, with loose signatures.
+    const typed = connection as unknown as GameConnection<IGameClient>;
+    return {
+        connection,
+        typed,
+        send: (snapshot: GameMasterSnapshot) =>
+            handlers.get('ReceiveGameMasterSnapshot')?.(snapshot),
+        drop: () => {
+            reachable = false;
+            callbacks.reconnecting();
+        },
+        restore: () => {
+            reachable = true;
+            callbacks.reconnected();
+        },
+        restartWithCode: (newCode: string) => {
+            code = newCode;
+        },
+        becomeUnreachable: () => {
+            reachable = false;
+        },
+    };
+}
+
+function snapshot(version: number): GameMasterSnapshot {
+    return { gameId, version, phase: 'Lobby', playerCount: 2 };
+}
+
+async function startedSession(storage: CodeStorage, server = fakeServer()) {
+    const store = new SnapshotStore<GameMasterSnapshot>();
+    const session = new GameMasterSession(store, storage, server.typed);
+    session.start();
+    await vi.waitFor(() => expect(session.connected).toBe(true));
+    return { session, store, server };
+}
+
+describe('isCodeComplete', () => {
+    it.each(['123456', ' 123456 ', '000000'])('accepts %j', (code) => {
+        expect(isCodeComplete(code)).toBe(true);
+    });
+
+    it.each(['', '12345', '1234567', '12 456', 'abcdef', '１２３４５６'])('refuses %j', (code) => {
+        expect(isCodeComplete(code)).toBe(false);
+    });
+});
+
+describe('GameMasterSession', () => {
+    it('asks for the code when none is remembered, without announcing', async () => {
+        const { session, server } = await startedSession(memoryStorage());
+
+        expect(session.access).toBe('codeRequired');
+        expect(session.problem).toBeNull();
+        expect(server.connection.invoke).not.toHaveBeenCalled();
+    });
+
+    it('grants access and remembers the trimmed code once the server accepts it', async () => {
+        const storage = memoryStorage();
+        const { session, server } = await startedSession(storage);
+
+        const outcome = await session.submit(' 123456 ');
+
+        expect(outcome).toBe('granted');
+        expect(session.access).toBe('granted');
+        expect(storage.value).toBe(goodCode);
+        expect(server.connection.invoke).toHaveBeenCalledWith('Announce', {
+            role: 'GameMaster',
+            gameMasterCode: goodCode,
+        });
+    });
+
+    it('keeps the form while a typed code is being checked', async () => {
+        const { session } = await startedSession(memoryStorage());
+
+        const outcome = session.submit('654321');
+
+        expect(session.access).toBe('codeRequired');
+        await outcome;
+    });
+
+    it('reports a wrong code as invalid and remembers nothing', async () => {
+        const storage = memoryStorage();
+        const { session } = await startedSession(storage);
+
+        const outcome = await session.submit('654321');
+
+        expect(outcome).toBe('refused');
+        expect(session.access).toBe('codeRequired');
+        expect(session.problem).toBe('invalid');
+        expect(storage.value).toBeNull();
+    });
+
+    it('clears the problem once the right code follows a wrong one', async () => {
+        const { session } = await startedSession(memoryStorage());
+
+        await session.submit('654321');
+        await session.submit(goodCode);
+
+        expect(session.access).toBe('granted');
+        expect(session.problem).toBeNull();
+    });
+
+    it('presents the remembered code at connection, without showing the form', async () => {
+        const server = fakeServer();
+        const session = new GameMasterSession(
+            new SnapshotStore<GameMasterSnapshot>(),
+            memoryStorage(goodCode),
+            server.typed,
+        );
+
+        expect(session.access).toBe('checking');
+        session.start();
+
+        await vi.waitFor(() => expect(session.access).toBe('granted'));
+        expect(server.connection.invoke).toHaveBeenCalledOnce();
+    });
+
+    it('asks for the code again when the remembered one has expired, and forgets it', async () => {
+        const storage = memoryStorage('111111');
+        const { session } = await startedSession(storage);
+
+        await vi.waitFor(() => expect(session.access).toBe('codeRequired'));
+        expect(session.problem).toBe('expired');
+        expect(storage.value).toBeNull();
+    });
+
+    it('presents the code again when the connection comes back, keeping the console', async () => {
+        const { session, store, server } = await startedSession(memoryStorage(goodCode));
+        await vi.waitFor(() => expect(session.access).toBe('granted'));
+        server.send(snapshot(1));
+
+        server.drop();
+        expect(session.connected).toBe(false);
+        expect(store.fresh).toBe(false);
+        server.restore();
+
+        expect(session.access).toBe('granted');
+        expect(session.connected).toBe(true);
+        await vi.waitFor(() => expect(server.connection.invoke).toHaveBeenCalledTimes(2));
+        expect(session.access).toBe('granted');
+    });
+
+    it('asks for the code when the server restarted with a new one meanwhile', async () => {
+        const storage = memoryStorage(goodCode);
+        const { session, server } = await startedSession(storage);
+        await vi.waitFor(() => expect(session.access).toBe('granted'));
+
+        server.drop();
+        server.restartWithCode('999999');
+        server.restore();
+
+        await vi.waitFor(() => expect(session.access).toBe('codeRequired'));
+        expect(session.problem).toBe('expired');
+        expect(storage.value).toBeNull();
+    });
+
+    it('sends nothing while the server cannot be reached', async () => {
+        const server = fakeServer({ startFails: true });
+        const session = new GameMasterSession(
+            new SnapshotStore<GameMasterSnapshot>(),
+            memoryStorage(),
+            server.typed,
+        );
+
+        session.start();
+        await vi.waitFor(() => expect(server.connection.start).toHaveBeenCalled());
+        const outcome = await session.submit(goodCode);
+
+        expect(outcome).toBe('unreachable');
+        expect(session.connected).toBe(false);
+        expect(server.connection.invoke).not.toHaveBeenCalled();
+    });
+
+    it('sends nothing until the code has 6 digits', async () => {
+        const { session, server } = await startedSession(memoryStorage());
+
+        const outcome = await session.submit('12345');
+
+        expect(outcome).toBe('unreachable');
+        expect(server.connection.invoke).not.toHaveBeenCalled();
+    });
+
+    it('lets the code be typed again when the connection drops during the check', async () => {
+        const { session, server } = await startedSession(memoryStorage());
+
+        server.becomeUnreachable();
+        const outcome = await session.submit(goodCode);
+
+        expect(outcome).toBe('unreachable');
+        expect(session.access).toBe('codeRequired');
+        expect(session.problem).toBeNull();
+    });
+
+    it('hands the game master snapshots to the store', async () => {
+        const { store, server } = await startedSession(memoryStorage(goodCode));
+
+        server.send(snapshot(4));
+
+        expect(store.current?.version).toBe(4);
+    });
+
+    it('stops handling snapshots and disconnects when disposed', () => {
+        const store = new SnapshotStore<GameMasterSnapshot>();
+        const server = fakeServer();
+        const session = new GameMasterSession(store, memoryStorage(), server.typed);
+
+        const disconnect = session.start();
+        disconnect();
+        server.send(snapshot(1));
+
+        expect(store.current).toBeNull();
+        expect(server.connection.stop).toHaveBeenCalledOnce();
+    });
+});

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import type { JoinInfo } from '../src/shared/contracts';
 
-/** The preview server has no .NET server behind its proxy: the TV screen gets its join info from here. */
+/** The address the server detects depends on the machine: the TV screen gets a fixed one from here. */
 export async function serveJoinInfo(
     page: Page,
     info: JoinInfo = { address: '192.168.1.42' },

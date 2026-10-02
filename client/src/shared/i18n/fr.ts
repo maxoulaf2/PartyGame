@@ -21,6 +21,21 @@ export const fr = {
         },
     },
     gm: {
-        waiting: 'Console du game master : en attente de la partie.',
+        waiting: 'Console du game master : connexion en cours…',
+        consoleTitle: 'Console du game master',
+        code: {
+            title: 'Code game master',
+            instructions: 'Saisissez le code à 6 chiffres affiché dans la console du serveur.',
+            label: 'Code à 6 chiffres',
+            submit: 'Valider',
+            // Neutral on purpose: says nothing about which digits are wrong.
+            invalid: 'Code incorrect',
+            expired: 'Le code a changé : relisez-le dans la console du serveur.',
+        },
+        playersJoined: {
+            zero: 'Aucun joueur inscrit pour l’instant',
+            one: '{count} joueur inscrit',
+            other: '{count} joueurs inscrits',
+        },
     },
 } as const;

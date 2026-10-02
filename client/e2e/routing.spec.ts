@@ -6,8 +6,8 @@ import { serveJoinInfo } from './joinInfo.ts';
 const addresses = [
     { typed: '/display', page: '/display/', text: fr.display.waiting },
     { typed: '/Display/', page: '/display/', text: fr.display.waiting },
-    { typed: '/gm', page: '/gm/', text: fr.gm.waiting },
-    { typed: '/GM', page: '/gm/', text: fr.gm.waiting },
+    { typed: '/gm', page: '/gm/', text: fr.gm.code.title },
+    { typed: '/GM', page: '/gm/', text: fr.gm.code.title },
 ];
 
 for (const { typed, page: canonical, text } of addresses) {
