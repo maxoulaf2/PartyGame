@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
@@ -14,6 +15,8 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
     public static readonly TimerId Countdown = new("fake-countdown");
 
     public static readonly TimeSpan CountdownDuration = TimeSpan.FromSeconds(20);
+
+    public override ImmutableArray<PackProblem> Validate(FakeRoundDescriptor descriptor, string path) => [];
 
     public override RoundTransition Start(FakeRoundDescriptor descriptor, GameState game, GameContext context)
     {

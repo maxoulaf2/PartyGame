@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using PartyGame.Contracts.Packs;
+using PartyGame.Tests.Shared;
 
 namespace PartyGame.TypeGen.Tests;
 

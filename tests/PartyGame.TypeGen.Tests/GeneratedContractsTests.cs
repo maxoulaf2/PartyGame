@@ -1,4 +1,5 @@
 using PartyGame.Contracts.Packs;
+using PartyGame.Tests.Shared;
 
 namespace PartyGame.TypeGen.Tests;
 

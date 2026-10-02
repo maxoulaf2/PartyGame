@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Inputs;
@@ -17,6 +18,9 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     /// <inheritdoc />
     public Type DescriptorType => typeof(TDescriptor);
 
+    /// <inheritdoc cref="IGameMode.Validate" />
+    public abstract ImmutableArray<PackProblem> Validate(TDescriptor descriptor, string path);
+
     /// <inheritdoc cref="IGameMode.Start" />
     public abstract RoundTransition Start(TDescriptor descriptor, GameState game, GameContext context);
 
@@ -31,6 +35,9 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
 
     /// <inheritdoc cref="IGameMode.ProjectForGameMaster" />
     public abstract GameMasterRoundView ProjectForGameMaster(TState round, GameState game);
+
+    ImmutableArray<PackProblem> IGameMode.Validate(RoundDescriptor descriptor, string path) =>
+        Validate((TDescriptor)descriptor, path);
 
     RoundTransition IGameMode.Start(RoundDescriptor descriptor, GameState game, GameContext context) =>
         Start((TDescriptor)descriptor, game, context);

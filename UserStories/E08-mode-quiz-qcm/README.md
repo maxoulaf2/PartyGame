@@ -7,7 +7,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E08-01](US-E08-01-descripteur-quiz.md) | Descripteur d'une manche de quiz | À faire | US-E06-01, US-E07-01 |
+| [US-E08-01](US-E08-01-descripteur-quiz.md) | Descripteur d'une manche de quiz | Terminée | US-E06-01, US-E07-01 |
 | [US-E08-02](US-E08-02-presentation-question.md) | Présentation de la question | À faire | US-E06-04, US-E07-02, US-E07-03, US-E08-01 |
 | [US-E08-03](US-E08-03-reponses-et-compte-a-rebours.md) | Réponses ouvertes et compte à rebours | À faire | US-E08-02 |
 | [US-E08-04](US-E08-04-revelation.md) | Révélation de la bonne réponse | À faire | US-E08-03 |
@@ -25,6 +25,7 @@ Toutes les décisions qui bloquaient l'épopée sont prises. Les valeurs numéri
 5. **Joueur arrivé en cours de partie :** il participe à toute question dont les réponses s'ouvrent après son inscription, et commence à 0 point (E09). La règle définitive reste à trancher en phase 6. Option écartée : répondre à la question déjà ouverte.
 6. **Propositions :** de 2 à 4 par question, exactement une bonne, chacune distinguée par une lettre (A à D), une forme et une couleur, jamais par la couleur seule. L'ordre est celui du descripteur, sauf si la manche demande un mélange (`shuffleChoices`), reproductible grâce à `context.Random`.
 7. **Images :** une question peut avoir une image, affichée sur la TV seulement. Les téléphones n'affichent aucun média.
+8. **Mode quiz enregistré avant de jouer ses questions** (décidé pendant US-E08-01) : la vérification d'un descripteur appartient au mode (`IGameMode`), et le chargement des packs (US-E06-02) en a besoin avant que les questions soient jouées (US-E08-02). `QuizMode` est donc créé et enregistré dès US-E08-01, avec sa vérification complète et un déroulé provisoire : la manche se termine dès son démarrage. `PackProblem` et `IGameMode.Validate`, prévus par US-E06-02, sont introduits en même temps, avec les seuls codes du quiz. Option écartée : des règles du quiz dans une classe à part, que US-E06-02 aurait dû relier au chargement sans mode enregistré.
 
 ## Tests E2E
 

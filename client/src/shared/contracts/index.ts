@@ -24,6 +24,8 @@ export type * from './JoinRefusal';
 export type * from './JoinRequest';
 export type * from './JoinResult';
 export type * from './NextRoundRequest';
+export type * from './PackProblem';
+export type * from './PackProblemCode';
 export type * from './Phase';
 export type * from './PlayerId';
 export type * from './PlayerRoundIntent';

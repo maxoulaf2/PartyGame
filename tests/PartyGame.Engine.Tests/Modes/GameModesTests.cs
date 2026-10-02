@@ -27,7 +27,7 @@ public sealed class GameModesTests
     {
         // Given
         var modes = new GameModes([new FakeMode()]);
-        var quiz = new QuizRoundDescriptor { Title = "Quiz" };
+        var quiz = new QuizRoundDescriptor { Title = "Quiz", Questions = [] };
 
         // When
         var found = modes.TryFind(quiz, out var mode);

@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
+using PartyGame.Engine.Text;
 
 namespace PartyGame.Engine.Lobby;
 
@@ -100,7 +101,7 @@ public static class NicknameRules
         ArgumentNullException.ThrowIfNull(first);
         ArgumentNullException.ThrowIfNull(second);
 
-        return string.Equals(ComparisonKey(first), ComparisonKey(second), StringComparison.Ordinal);
+        return string.Equals(TextComparison.Key(first), TextComparison.Key(second), StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -129,18 +130,4 @@ public static class NicknameRules
         return true;
     }
 
-    private static string ComparisonKey(string nickname)
-    {
-        var decomposed = nickname.Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(decomposed.Length);
-        foreach (var character in decomposed)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
-            {
-                builder.Append(character);
-            }
-        }
-
-        return builder.ToString().ToUpperInvariant();
-    }
 }

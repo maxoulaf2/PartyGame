@@ -23,6 +23,11 @@ public sealed record PackDescriptor
     public const int CurrentFormatVersion = 1;
 
     /// <summary>
+    /// The name of the descriptor file, at the root of the folder of the pack.
+    /// </summary>
+    public const string FileName = "pack.json";
+
+    /// <summary>
     /// The location of the JSON Schema, for the editor only: the server ignores it.
     /// </summary>
     [JsonPropertyName("$schema")]

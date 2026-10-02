@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
@@ -30,11 +31,13 @@ public sealed class RoundsTests : IAsyncDisposable
             .UseSetting("GameMaster:Code", Code)
             .ConfigureTestServices(services =>
             {
+                // The test mode replaces the quiz mode, whose questions are not played yet.
+                services.RemoveAll<IGameMode>();
                 services.AddSingleton<IGameMode, TestQuizMode>();
                 services.AddSingleton(provider => new GameLoop(
                     GameState.Create(new GameId(Guid.NewGuid()), "192.168.1.42", []) with
                     {
-                        Rounds = [new QuizRoundDescriptor { Title = "Échauffement" }, new QuizRoundDescriptor { Title = "Finale" }],
+                        Rounds = [new QuizRoundDescriptor { Title = "Échauffement", Questions = [] }, new QuizRoundDescriptor { Title = "Finale", Questions = [] }],
                     },
                     seed: 42,
                     provider.GetRequiredService<GameInputQueue>(),

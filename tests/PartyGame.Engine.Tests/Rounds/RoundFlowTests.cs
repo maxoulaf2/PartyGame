@@ -82,7 +82,7 @@ public sealed class RoundFlowTests
     public void Handle_StartGameWithAnActivityWithoutMode_IsRejected()
     {
         // Given: no mode plays quiz rounds in these tests
-        var state = Games.LobbyWith("Zoé") with { Rounds = [Games.TwoRounds[0], new QuizRoundDescriptor { Title = "Quiz" }] };
+        var state = Games.LobbyWith("Zoé") with { Rounds = [Games.TwoRounds[0], new QuizRoundDescriptor { Title = "Quiz", Questions = [] }] };
 
         // When
         var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());

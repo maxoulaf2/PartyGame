@@ -1,0 +1,113 @@
+{
+  "$schema": "../../schemas/pack.schema.json",
+  "formatVersion": 1,
+  "title": "Quiz d'exemple",
+  "description": "Dix questions en deux manches, pour découvrir le quiz à choix multiples.",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Culture générale",
+      "speedBonus": 500,
+      "questions": [
+        {
+          "text": "Quelle est la capitale de l'Australie ?",
+          "choices": [
+            { "text": "Sydney" },
+            { "text": "Melbourne" },
+            { "text": "Canberra", "correct": true },
+            { "text": "Perth" }
+          ]
+        },
+        {
+          "text": "Quel pays a ce drapeau ?",
+          "image": "images/drapeau.png",
+          "choices": [
+            { "text": "Irlande" },
+            { "text": "Italie", "correct": true },
+            { "text": "Mexique" },
+            { "text": "Hongrie" }
+          ]
+        },
+        {
+          "text": "Combien de joueurs une équipe de football aligne-t-elle sur le terrain ?",
+          "choices": [
+            { "text": "9" },
+            { "text": "10" },
+            { "text": "11", "correct": true },
+            { "text": "12" }
+          ]
+        },
+        {
+          "text": "Qui a peint « La Joconde » ?",
+          "choices": [
+            { "text": "Léonard de Vinci", "correct": true },
+            { "text": "Michel-Ange" },
+            { "text": "Raphaël" }
+          ]
+        },
+        {
+          "text": "Lequel de ces événements historiques est le plus ancien ?",
+          "answerSeconds": 30,
+          "choices": [
+            { "text": "La prise de la Bastille" },
+            { "text": "Le couronnement de Charlemagne", "correct": true },
+            { "text": "La bataille de Marignan" },
+            { "text": "La chute de Constantinople" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "Sciences et nature",
+      "answerSeconds": 15,
+      "shuffleChoices": true,
+      "questions": [
+        {
+          "text": "Combien de côtés a cette figure ?",
+          "image": "images/figure.png",
+          "choices": [
+            { "text": "5" },
+            { "text": "6", "correct": true },
+            { "text": "7" },
+            { "text": "8" }
+          ]
+        },
+        {
+          "text": "Quelle planète est la plus proche du Soleil ?",
+          "choices": [
+            { "text": "Mercure", "correct": true },
+            { "text": "Vénus" },
+            { "text": "Mars" },
+            { "text": "Terre" }
+          ]
+        },
+        {
+          "text": "Quel est le symbole chimique de l'or ?",
+          "choices": [
+            { "text": "Or" },
+            { "text": "Au", "correct": true },
+            { "text": "Ag" },
+            { "text": "Fe" }
+          ]
+        },
+        {
+          "text": "La baleine est un poisson.",
+          "choices": [
+            { "text": "Vrai" },
+            { "text": "Faux", "correct": true }
+          ]
+        },
+        {
+          "text": "Combien de pattes a une araignée ?",
+          "choices": [
+            { "text": "6" },
+            { "text": "8", "correct": true },
+            { "text": "10" },
+            { "text": "12" }
+          ]
+        }
+      ]
+    }
+  ]
+}
