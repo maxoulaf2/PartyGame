@@ -54,4 +54,7 @@ internal static partial class HubLog
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Address {Address} advertised to phones, chosen by the game master")]
     public static partial void AdvertisedAddressChosen(this ILogger logger, string address);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Round intent from connection {ConnectionId} ignored: it identified no player")]
+    public static partial void RoundIntentWithoutPlayer(this ILogger logger, string connectionId);
 }

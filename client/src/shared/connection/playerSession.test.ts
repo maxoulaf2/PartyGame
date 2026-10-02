@@ -31,7 +31,16 @@ function memoryStorage(initial: string | null = null): CodeStorage & { value: st
 }
 
 function snapshot(version: number, nickname = 'Zoé'): PlayerSnapshot {
-    return { gameId, version, phase: 'Lobby', playerId, nickname, playerCount: 1 };
+    return {
+        gameId,
+        version,
+        phase: 'Lobby',
+        playerId,
+        nickname,
+        playerCount: 1,
+        round: null,
+        roundView: null,
+    };
 }
 
 type Request = { nickname: string } | { token: string };

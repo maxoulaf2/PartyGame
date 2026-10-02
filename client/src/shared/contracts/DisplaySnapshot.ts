@@ -4,8 +4,10 @@
 // </auto-generated>
 
 import type { DisplayPlayer } from './DisplayPlayer';
+import type { DisplayRoundView } from './DisplayRoundView';
 import type { GameId } from './GameId';
 import type { Phase } from './Phase';
+import type { RoundInfo } from './RoundInfo';
 
 export interface DisplaySnapshot {
     readonly gameId: GameId;
@@ -13,4 +15,6 @@ export interface DisplaySnapshot {
     readonly phase: Phase;
     readonly joinAddress: string | null;
     readonly players: readonly DisplayPlayer[];
+    readonly round: RoundInfo | null;
+    readonly roundView: DisplayRoundView | null;
 }

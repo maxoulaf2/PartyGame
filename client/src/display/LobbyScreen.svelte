@@ -17,7 +17,8 @@
     );
     const status = $derived(countText(fr.display.playersJoined, snapshot.players.length));
     // Registration stays open once started: the QR code and the list stay for late arrivals.
-    const started = $derived(snapshot.phase === 'Started');
+    // Provisional screen for every phase after the lobby, until the views of the modes (US-E07-02).
+    const started = $derived(snapshot.phase !== 'Lobby');
 </script>
 
 <main>

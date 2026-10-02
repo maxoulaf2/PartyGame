@@ -34,6 +34,8 @@ function fakeLobby(
         minimumPlayerCount: 1,
         joinAddress: candidates[0]?.address ?? null,
         joinAddressCandidates: candidates,
+        round: null,
+        roundView: null,
     };
 }
 

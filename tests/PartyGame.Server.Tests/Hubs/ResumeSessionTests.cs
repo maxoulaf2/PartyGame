@@ -55,7 +55,7 @@ public sealed class ResumeSessionTests : IAsyncDisposable
         Assert.Equal([HubGroups.Player(playerId)], await GroupsOfAsync(phone, playerId));
         await Task.WhenAll(FlushAsync(phone), FlushAsync(display), FlushAsync(gameMaster));
         Assert.Equal(
-            new PlayerSnapshot(Game.State.GameId, Game.State.Version, Phase.Lobby, playerId, "Zoé", PlayerCount: 1),
+            new PlayerSnapshot(Game.State.GameId, Game.State.Version, Phase.Lobby, playerId, "Zoé", PlayerCount: 1, Round: null, RoundView: null),
             toPhone.Player.MaxBy(s => s.Version));
         Assert.True(toDisplay.Display.MaxBy(s => s.Version)!.Players.Single().IsConnected);
         Assert.True(toGameMaster.GameMaster.MaxBy(s => s.Version)!.Players.Single().IsConnected);
@@ -81,7 +81,8 @@ public sealed class ResumeSessionTests : IAsyncDisposable
         // Then
         Assert.Equal(playerId, result.PlayerId);
         await FlushAsync(phone);
-        Assert.Equal(Phase.Started, toPhone.Player.MaxBy(s => s.Version)!.Phase);
+        // Without any pack chosen yet (US-E06-03), the game has no round: it is finished as soon as it starts.
+        Assert.Equal(Phase.Finished, toPhone.Player.MaxBy(s => s.Version)!.Phase);
     }
 
     [Fact]

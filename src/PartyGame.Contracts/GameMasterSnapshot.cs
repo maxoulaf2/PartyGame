@@ -20,6 +20,13 @@ namespace PartyGame.Contracts;
 /// The addresses the game master may choose from instead, best first. Only this projection holds them: the TV screen
 /// gets the chosen address alone.
 /// </param>
+/// <param name="Round">
+/// The round in progress, or the round that just finished between two rounds and once the game is finished, or
+/// <see langword="null"/> before the first round.
+/// </param>
+/// <param name="RoundView">
+/// What the game mode of the round in progress shows on the console, or <see langword="null"/> outside a round.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -27,4 +34,6 @@ public sealed record GameMasterSnapshot(
     ImmutableArray<GameMasterPlayer> Players,
     int MinimumPlayerCount,
     string? JoinAddress,
-    ImmutableArray<GameMasterJoinAddress> JoinAddressCandidates);
+    ImmutableArray<GameMasterJoinAddress> JoinAddressCandidates,
+    RoundInfo? Round,
+    GameMasterRoundView? RoundView);

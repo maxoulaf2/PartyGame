@@ -23,13 +23,15 @@ public sealed class GameStateTests
         Assert.Equal(Games.JoinAddressCandidates, state.JoinAddressCandidates);
         Assert.Empty(state.Players);
         Assert.Empty(state.PlayerTokens);
+        Assert.Empty(state.Rounds);
+        Assert.Null(state.CurrentRound);
     }
 
     [Fact]
     public void Serialize_StateWithPlayers_RoundTripsUnchanged()
     {
         // Given
-        var state = Games.LobbyWith("Zoé", "Max") with { Phase = GamePhase.Started, Version = 42 };
+        var state = Games.LobbyWith("Zoé", "Max") with { Phase = GamePhase.Finished, Version = 42 };
 
         // When
         var json = JsonSerializer.Serialize(state, ContractJsonOptions.Default);

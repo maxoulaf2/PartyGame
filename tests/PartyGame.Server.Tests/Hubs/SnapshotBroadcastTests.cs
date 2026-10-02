@@ -114,7 +114,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
             [[], ["Zoé"], ["Zoé", "Max"]],
             toDisplay.Display.Select(s => s.Players.Select(p => p.Nickname).ToArray()));
         Assert.Equal([1, 2, 3], toGameMaster.GameMaster.Select(s => s.Version));
-        Assert.Equal([new PlayerSnapshot(GameId, 3, Phase.Lobby, zoeId, "Zoé", PlayerCount: 2)], toZoe.Player);
+        Assert.Equal([new PlayerSnapshot(GameId, 3, Phase.Lobby, zoeId, "Zoé", PlayerCount: 2, Round: null, RoundView: null)], toZoe.Player);
 
         // Each connection gets the projection of its role only.
         Assert.Equal(toDisplay.Display.Count, toDisplay.Json.Count);

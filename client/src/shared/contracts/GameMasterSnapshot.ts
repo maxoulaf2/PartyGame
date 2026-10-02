@@ -6,7 +6,9 @@
 import type { GameId } from './GameId';
 import type { GameMasterJoinAddress } from './GameMasterJoinAddress';
 import type { GameMasterPlayer } from './GameMasterPlayer';
+import type { GameMasterRoundView } from './GameMasterRoundView';
 import type { Phase } from './Phase';
+import type { RoundInfo } from './RoundInfo';
 
 export interface GameMasterSnapshot {
     readonly gameId: GameId;
@@ -16,4 +18,6 @@ export interface GameMasterSnapshot {
     readonly minimumPlayerCount: number;
     readonly joinAddress: string | null;
     readonly joinAddressCandidates: readonly GameMasterJoinAddress[];
+    readonly round: RoundInfo | null;
+    readonly roundView: GameMasterRoundView | null;
 }

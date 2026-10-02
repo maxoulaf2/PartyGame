@@ -41,14 +41,14 @@ public sealed class RenamingTests
     public void Handle_RenamePlayerAfterStart_RenamesPlayer()
     {
         // Given
-        var state = Games.LobbyWith("Zoé") with { Phase = GamePhase.Started };
+        var state = Games.InPhase(GamePhase.Finished, "Zoé");
 
         // When
         var transition = Games.Engine.Handle(state, Games.Rename(1, "Léa"), Games.Context());
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(GamePhase.Started, transition.State.Phase);
+        Assert.Equal(GamePhase.Finished, transition.State.Phase);
         Assert.Equal("Léa", Assert.Single(transition.State.Players).Nickname);
     }
 

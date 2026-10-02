@@ -36,14 +36,14 @@ public sealed class RegistrationTests
     public void Handle_JoinGameAfterStart_RegistersPlayer()
     {
         // Given
-        var state = Games.LobbyWith("Zoé") with { Phase = GamePhase.Started };
+        var state = Games.InPhase(GamePhase.BetweenRounds, "Zoé");
 
         // When
         var transition = Games.Engine.Handle(state, Games.Join("Max", player: 2), Games.Context());
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(GamePhase.Started, transition.State.Phase);
+        Assert.Equal(GamePhase.BetweenRounds, transition.State.Phase);
         Assert.Equal(2, transition.State.Players.Length);
     }
 

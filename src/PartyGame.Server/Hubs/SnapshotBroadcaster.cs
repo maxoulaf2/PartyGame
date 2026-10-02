@@ -13,20 +13,23 @@ namespace PartyGame.Server.Hubs;
 /// <remarks>
 /// A failed send is logged and skipped: the client keeps its last snapshot and gets the current one when it comes back.
 /// </remarks>
-internal sealed class SnapshotBroadcaster(IHubContext<GameHub, IGameClient> hub, ILogger<SnapshotBroadcaster> logger)
+internal sealed class SnapshotBroadcaster(
+    IHubContext<GameHub, IGameClient> hub,
+    Snapshots snapshots,
+    ILogger<SnapshotBroadcaster> logger)
     : IGameStateListener
 {
     public async ValueTask OnStateChangedAsync(GameState state, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        await SendAsync(HubGroups.Display, client => client.ReceiveDisplaySnapshot(Snapshots.ForDisplay(state)), cancellationToken)
+        await SendAsync(HubGroups.Display, client => client.ReceiveDisplaySnapshot(snapshots.ForDisplay(state)), cancellationToken)
             .ConfigureAwait(false);
-        await SendAsync(HubGroups.GameMaster, client => client.ReceiveGameMasterSnapshot(Snapshots.ForGameMaster(state)), cancellationToken)
+        await SendAsync(HubGroups.GameMaster, client => client.ReceiveGameMasterSnapshot(snapshots.ForGameMaster(state)), cancellationToken)
             .ConfigureAwait(false);
         foreach (var player in state.Players)
         {
-            await SendAsync(HubGroups.Player(player.Id), client => client.ReceivePlayerSnapshot(Snapshots.ForPlayer(state, player)), cancellationToken)
+            await SendAsync(HubGroups.Player(player.Id), client => client.ReceivePlayerSnapshot(snapshots.ForPlayer(state, player)), cancellationToken)
                 .ConfigureAwait(false);
         }
     }

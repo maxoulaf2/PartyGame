@@ -6,6 +6,8 @@
 import type { GameId } from './GameId';
 import type { Phase } from './Phase';
 import type { PlayerId } from './PlayerId';
+import type { PlayerRoundView } from './PlayerRoundView';
+import type { RoundInfo } from './RoundInfo';
 
 export interface PlayerSnapshot {
     readonly gameId: GameId;
@@ -14,4 +16,6 @@ export interface PlayerSnapshot {
     readonly playerId: PlayerId;
     readonly nickname: string;
     readonly playerCount: number;
+    readonly round: RoundInfo | null;
+    readonly roundView: PlayerRoundView | null;
 }

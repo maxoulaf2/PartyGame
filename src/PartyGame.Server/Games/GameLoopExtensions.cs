@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PartyGame.Contracts;
 using PartyGame.Engine;
+using PartyGame.Engine.Projections;
 using PartyGame.Server.Network;
 
 namespace PartyGame.Server.Games;
@@ -8,12 +9,16 @@ namespace PartyGame.Server.Games;
 internal static class GameLoopExtensions
 {
     /// <summary>
-    /// Runs the single game of this server in a <see cref="GameLoop"/>, and exposes its queue to the producers of inputs.
+    /// Runs the single game of this server in a <see cref="GameLoop"/> with the registered game modes, and exposes its
+    /// queue to the producers of inputs.
     /// </summary>
     public static WebApplicationBuilder AddGameLoop(this WebApplicationBuilder builder)
     {
         builder.Services.TryAddSingleton(TimeProvider.System);
+        builder.Services.AddGameModes();
         builder.Services.TryAddSingleton<IGameEngine, GameEngine>();
+        builder.Services.TryAddSingleton<Snapshots>();
+        builder.Services.AddSingleton<IGameStateListener, RoundProgressLog>();
         builder.Services.TryAddSingleton<GameInputQueue>();
         builder.Services.TryAddSingleton<IGameInputWriter>(services => services.GetRequiredService<GameInputQueue>());
         builder.Services.TryAddSingleton<TimerScheduler>();

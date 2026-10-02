@@ -25,6 +25,15 @@ internal static partial class GameLoopLog
     [LoggerMessage(Level = LogLevel.Error, Message = "Effect {EffectType} has no executor")]
     public static partial void EffectNotSupported(this ILogger logger, string effectType);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Round {RoundNumber} of {RoundCount} started: {RoundTitle} ({Descriptor})")]
+    public static partial void RoundStarted(this ILogger logger, int roundNumber, int roundCount, string roundTitle, string descriptor);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Round {RoundNumber} of {RoundCount} finished")]
+    public static partial void RoundFinished(this ILogger logger, int roundNumber, int roundCount);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Game finished")]
+    public static partial void GameFinished(this ILogger logger);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Timer {TimerId} elapsed but its input could not be enqueued")]
     public static partial void TimerInputLost(this ILogger logger, Exception exception, string timerId);
 }

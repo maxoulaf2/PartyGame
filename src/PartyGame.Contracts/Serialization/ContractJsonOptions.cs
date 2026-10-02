@@ -34,6 +34,9 @@ public static class ContractJsonOptions
         options.RespectNullableAnnotations = true;
         options.RespectRequiredConstructorParameters = true;
 
+        // The "type" of a polymorphic message may come anywhere in its object, wherever the client code put it.
+        options.AllowOutOfOrderMetadataProperties = true;
+
         // Enum members are written as named in C#, which is what the generated string unions contain.
         options.Converters.Add(new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false));
     }

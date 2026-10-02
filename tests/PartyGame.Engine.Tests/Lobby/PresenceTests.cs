@@ -74,11 +74,10 @@ public sealed class PresenceTests
     }
 
     [Fact]
-    public void Handle_PlayerConnectionRestoredAfterStart_MarksPlayerConnectedAgain()
+    public void Handle_PlayerConnectionRestoredDuringARound_MarksPlayerConnectedAgain()
     {
         // Given
-        var state = Games.LobbyWith("Zoé", "Max");
-        state = Games.Engine.Handle(state, Games.Start(), Games.Context()).State;
+        var state = Games.InPhase(GamePhase.Round, "Zoé", "Max");
         state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(1)), Games.Context()).State;
 
         // When
@@ -86,7 +85,7 @@ public sealed class PresenceTests
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(GamePhase.Started, transition.State.Phase);
+        Assert.Equal(GamePhase.Round, transition.State.Phase);
         Assert.True(transition.State.Players[0].IsConnected);
     }
 

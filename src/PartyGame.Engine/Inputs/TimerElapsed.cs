@@ -1,3 +1,5 @@
+using PartyGame.Contracts;
+
 namespace PartyGame.Engine.Inputs;
 
 /// <summary>
@@ -9,4 +11,11 @@ namespace PartyGame.Engine.Inputs;
 /// The due time of the <see cref="Effects.ScheduleTimer"/> that elapsed, so that the engine can tell the input of a replaced
 /// timer from the one of the timer it now waits for, since both have the same identifier.
 /// </param>
-public sealed record TimerElapsed(TimerId TimerId, DateTimeOffset DueAt) : GameInput;
+public sealed record TimerElapsed(TimerId TimerId, DateTimeOffset DueAt) : GameInput
+{
+    /// <summary>
+    /// The round that scheduled the timer, copied from <see cref="Effects.ScheduleTimer.RoundId"/>. The engine rejects the
+    /// timer of a round that is over before its game mode sees it.
+    /// </summary>
+    public RoundId? RoundId { get; init; }
+}
