@@ -100,6 +100,57 @@ public sealed class SnapshotsTests
     }
 
     [Fact]
+    public void ForGameMaster_SeveralCandidates_ShowsTheAdvertisedAddressAndEveryCandidate()
+    {
+        // Given
+        var state = Games.NewLobby();
+
+        // When
+        var snapshot = Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.Equal(Games.JoinAddress, snapshot.JoinAddress);
+        Assert.Equal(
+            [new GameMasterJoinAddress(Games.JoinAddress, "Wi-Fi"), new GameMasterJoinAddress(Games.OtherAddress, "Ethernet")],
+            snapshot.JoinAddressCandidates);
+    }
+
+    [Fact]
+    public void ForDisplayAndGameMaster_AddressChosen_ShowTheChosenAddress()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé");
+
+        // When
+        state = Games.Engine.Handle(state, Games.ChooseAddress(Games.OtherAddress), Games.Context()).State;
+
+        // Then
+        Assert.Equal(Games.OtherAddress, Snapshots.ForDisplay(state).JoinAddress);
+        Assert.Equal(Games.OtherAddress, Snapshots.ForGameMaster(state).JoinAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public void ForDisplayAndPlayer_AnyPhase_ContainNoOtherCandidateNorInterfaceName(GamePhase phase, Phase _)
+    {
+        // Given: only the game master may see the networks of the host
+        var state = Games.LobbyWith("Zoé", "Max") with { Phase = phase };
+
+        // When
+        var projections = new List<object> { Snapshots.ForDisplay(state) };
+        projections.AddRange(state.Players.Select(p => Snapshots.ForPlayer(state, p)));
+
+        // Then
+        foreach (var json in projections.Select(Serialize))
+        {
+            Assert.DoesNotContain(Games.OtherAddress, json, StringComparison.Ordinal);
+            Assert.DoesNotContain("Wi-Fi", json, StringComparison.Ordinal);
+            Assert.DoesNotContain("Ethernet", json, StringComparison.Ordinal);
+            Assert.DoesNotContain("candidate", json, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public void ForEachRole_RenamedPlayer_ShowsTheNewNickname()
     {
         // Given
@@ -189,7 +240,7 @@ public sealed class SnapshotsTests
     {
         // Given: everything the TV screen may not show is removed from the state
         var state = Games.LobbyWith("Zoé", "Max") with { Phase = phase };
-        var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear() };
+        var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear(), JoinAddressCandidates = [] };
 
         // When
         var snapshot = Snapshots.ForDisplay(state);

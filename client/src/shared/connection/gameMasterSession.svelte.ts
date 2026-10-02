@@ -1,4 +1,5 @@
 import type {
+    ChooseAdvertisedAddressRefusal,
     GameMasterSnapshot,
     PlayerId,
     RenamePlayerRefusal,
@@ -36,6 +37,12 @@ export type RenameOutcome = 'renamed' | 'unreachable' | RenamePlayerRefusal;
  * (connection lost, or the console no longer authenticated).
  */
 export type StartOutcome = 'started' | 'unreachable' | StartGameRefusal;
+
+/**
+ * What became of an address the game master chose: advertised, refused by the server, or not sent
+ * (connection lost, or the console no longer authenticated).
+ */
+export type AddressOutcome = 'chosen' | 'unreachable' | ChooseAdvertisedAddressRefusal;
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -160,6 +167,29 @@ export class GameMasterSession {
             return 'unreachable';
         }
         return result.refusal ?? 'started';
+    }
+
+    /**
+     * Chooses the address encoded in the QR code, among the candidates of the snapshot. The server
+     * alone decides whether it is one of them; the new address reaches the console and the TV
+     * screen through the next snapshots.
+     */
+    async chooseAddress(address: string): Promise<AddressOutcome> {
+        if (!this.#connected || this.#access !== 'granted') {
+            return 'unreachable';
+        }
+
+        let result;
+        try {
+            result = await this.#connection.invoke('ChooseAdvertisedAddress', { address });
+        } catch {
+            return 'unreachable';
+        }
+        // No answer: the server ignored the intent, the code is being checked again.
+        if (result === null) {
+            return 'unreachable';
+        }
+        return result.refusal ?? 'chosen';
     }
 
     #onConnected(): void {

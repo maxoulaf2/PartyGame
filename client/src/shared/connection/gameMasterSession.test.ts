@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type {
     AnnouncementResult,
+    ChooseAdvertisedAddressResult,
     GameId,
     GameMasterSnapshot,
     IGameClient,
@@ -33,12 +34,13 @@ function memoryStorage(initial: string | null = null): CodeStorage & { value: st
 
 /**
  * A server that accepts one code only, and whose connection can drop and come back. A rename gets
- * `renameAnswer`, a start `startAnswer`.
+ * `renameAnswer`, a start `startAnswer`, an address choice `addressAnswer`.
  */
 function fakeServer(options: { startFails?: boolean } = {}) {
     let code = goodCode;
     let renameAnswer: RenamePlayerResult | null = { refusal: null };
     let startAnswer: StartGameResult | null = { refusal: null };
+    let addressAnswer: ChooseAdvertisedAddressResult | null = { refusal: null };
     let reachable = true;
     const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
     const callbacks = { reconnecting: () => {}, reconnected: () => {}, close: () => {} };
@@ -51,7 +53,13 @@ function fakeServer(options: { startFails?: boolean } = {}) {
             async (
                 method: string,
                 announcement: { gameMasterCode: string | null },
-            ): Promise<AnnouncementResult | RenamePlayerResult | StartGameResult | null> => {
+            ): Promise<
+                | AnnouncementResult
+                | RenamePlayerResult
+                | StartGameResult
+                | ChooseAdvertisedAddressResult
+                | null
+            > => {
                 if (!reachable) {
                     throw new Error('disconnected');
                 }
@@ -60,6 +68,9 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                 }
                 if (method === 'StartGame') {
                     return startAnswer;
+                }
+                if (method === 'ChooseAdvertisedAddress') {
+                    return addressAnswer;
                 }
                 return {
                     refusal: announcement.gameMasterCode === code ? null : 'GameMasterCodeInvalid',
@@ -107,11 +118,22 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         answerStartsWith: (answer: StartGameResult | null) => {
             startAnswer = answer;
         },
+        answerAddressChoicesWith: (answer: ChooseAdvertisedAddressResult | null) => {
+            addressAnswer = answer;
+        },
     };
 }
 
 function snapshot(version: number): GameMasterSnapshot {
-    return { gameId, version, phase: 'Lobby', players: [], minimumPlayerCount: 1 };
+    return {
+        gameId,
+        version,
+        phase: 'Lobby',
+        players: [],
+        minimumPlayerCount: 1,
+        joinAddress: '192.168.1.42',
+        joinAddressCandidates: [{ address: '192.168.1.42', interfaceName: 'Wi-Fi' }],
+    };
 }
 
 async function startedSession(storage: CodeStorage, server = fakeServer()) {
@@ -400,6 +422,57 @@ describe('GameMasterSession', () => {
             expect(await session.startGame()).toBe('unreachable');
 
             expect(server.connection.invoke).not.toHaveBeenCalledWith('StartGame');
+        });
+    });
+
+    describe('chooseAddress', () => {
+        it('sends the chosen address, and reports it advertised', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.chooseAddress('10.0.0.2');
+
+            expect(outcome).toBe('chosen');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ChooseAdvertisedAddress', {
+                address: '10.0.0.2',
+            });
+        });
+
+        it.each(['AddressUnknown', 'ChoiceFailed', 'MessageInvalid'] as const)(
+            'reports the refusal %s of the server',
+            async (refusal) => {
+                const { session, server } = await grantedSession();
+                server.answerAddressChoicesWith({ refusal });
+
+                expect(await session.chooseAddress('10.0.0.2')).toBe(refusal);
+            },
+        );
+
+        it('reports an ignored choice as unreachable, the code being checked again', async () => {
+            const { session, server } = await grantedSession();
+            server.answerAddressChoicesWith(null);
+
+            expect(await session.chooseAddress('10.0.0.2')).toBe('unreachable');
+        });
+
+        it('reports a choice lost with the connection as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.becomeUnreachable();
+
+            expect(await session.chooseAddress('10.0.0.2')).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.chooseAddress('10.0.0.2')).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.chooseAddress('10.0.0.2')).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'ChooseAdvertisedAddress',
+                expect.anything(),
+            );
         });
     });
 });

@@ -11,7 +11,7 @@ namespace PartyGame.Server.Tests.Games;
 /// </summary>
 internal sealed class LoopHarness : IAsyncDisposable
 {
-    public static readonly GameState InitialState = GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), "192.168.1.42");
+    public static readonly GameState InitialState = GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), "192.168.1.42", []);
 
     private LoopHarness(
         ScriptedEngine engine,

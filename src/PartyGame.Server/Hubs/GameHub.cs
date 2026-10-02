@@ -39,6 +39,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="StartGameAsync"/>, as the clients call it.</summary>
     public const string StartGame = nameof(StartGame);
 
+    /// <summary>SignalR target of <see cref="ChooseAdvertisedAddressAsync"/>, as the clients call it.</summary>
+    public const string ChooseAdvertisedAddress = nameof(ChooseAdvertisedAddress);
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
@@ -209,6 +212,37 @@ internal sealed class GameHub(
 
         logger.GameStarted(game.State.Players.Length);
         return new StartGameResult(Refusal: null);
+    }
+
+    /// <summary>
+    /// Changes the address encoded in the QR code at the request of the game master, among the candidates detected at
+    /// startup. The choice is not written to the configuration: a restart forgets it. The new address reaches the TV
+    /// screen through the snapshots.
+    /// </summary>
+    /// <param name="message">A <see cref="ChooseAdvertisedAddressRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(ChooseAdvertisedAddress)]
+    public async Task<ChooseAdvertisedAddressResult> ChooseAdvertisedAddressAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ChooseAdvertisedAddressRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ChooseAdvertisedAddress, Context.ConnectionId, invalidPath);
+            return new ChooseAdvertisedAddressResult(ChooseAdvertisedAddressRefusal.MessageInvalid);
+        }
+
+        // Not cancelled with the connection: once enqueued, the choice may be accepted whoever is left to hear the answer.
+        var outcome = await inputs
+            .SubmitAsync(new Engine.Inputs.ChooseAdvertisedAddress(request.Address, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status != InputStatus.Accepted)
+        {
+            return new ChooseAdvertisedAddressResult(outcome.Rejection == RejectionReason.AddressUnknown
+                ? ChooseAdvertisedAddressRefusal.AddressUnknown
+                : ChooseAdvertisedAddressRefusal.ChoiceFailed);
+        }
+
+        logger.AdvertisedAddressChosen(request.Address);
+        return new ChooseAdvertisedAddressResult(Refusal: null);
     }
 
     /// <summary>

@@ -12,7 +12,16 @@ interface ClientMessage {
     type?: number;
     target?: string;
     invocationId?: string;
+    arguments?: unknown[];
 }
+
+/** What the fake hub does with an invocation: the result to answer, after `snapshots` if any. */
+interface Answer {
+    result: object | null;
+    snapshots?: object[];
+}
+
+type Invocations = Partial<Record<string, (args: unknown[]) => Answer>>;
 
 function send(socket: { send(message: string): void }, message: object): void {
     socket.send(JSON.stringify(message) + separator);
@@ -30,13 +39,37 @@ export function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Pro
 /**
  * Stands in for the game hub of the GM console, which then receives `snapshot` in answer to its
  * announcement, whatever the code: lets a test show states the shared server cannot reach on
- * demand, such as a lobby without any player.
+ * demand, such as a lobby without any player, or a host on several networks.
+ *
+ * An address choice is handled as the server does: a candidate is advertised in a new snapshot,
+ * anything else is refused. `chosen` records every address the console sent.
  */
-export function serveGameMasterSnapshot(page: Page, snapshot: GameMasterSnapshot): Promise<void> {
-    return serveSnapshot(page, 'ReceiveGameMasterSnapshot', snapshot);
+export async function serveGameMasterSnapshot(
+    page: Page,
+    snapshot: GameMasterSnapshot,
+): Promise<{ chosen: string[] }> {
+    const chosen: string[] = [];
+    let current = snapshot;
+    await serveSnapshot(page, 'ReceiveGameMasterSnapshot', snapshot, {
+        ChooseAdvertisedAddress: ([request]) => {
+            const { address } = request as { address: string };
+            chosen.push(address);
+            if (!current.joinAddressCandidates.some((c) => c.address === address)) {
+                return { result: { refusal: 'AddressUnknown' } };
+            }
+            current = { ...current, version: current.version + 1, joinAddress: address };
+            return { result: { refusal: null }, snapshots: [current] };
+        },
+    });
+    return { chosen };
 }
 
-async function serveSnapshot(page: Page, target: string, snapshot: object): Promise<void> {
+async function serveSnapshot(
+    page: Page,
+    target: string,
+    snapshot: object,
+    invocations: Invocations = {},
+): Promise<void> {
     await page.route(negotiateUrl, (route) =>
         route.fulfill({
             json: {
@@ -68,6 +101,19 @@ async function serveSnapshot(page: Page, target: string, snapshot: object): Prom
                         type: 3,
                         invocationId: message.invocationId,
                         result: { refusal: null },
+                    });
+                } else if (message.type === 1 && message.target !== undefined) {
+                    const answer = invocations[message.target]?.(message.arguments ?? []);
+                    if (answer === undefined) {
+                        continue;
+                    }
+                    for (const next of answer.snapshots ?? []) {
+                        send(socket, { type: 1, target, arguments: [next] });
+                    }
+                    send(socket, {
+                        type: 3,
+                        invocationId: message.invocationId,
+                        result: answer.result,
                     });
                 }
             }

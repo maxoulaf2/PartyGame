@@ -4,6 +4,7 @@
 // </auto-generated>
 
 import type { GameId } from './GameId';
+import type { GameMasterJoinAddress } from './GameMasterJoinAddress';
 import type { GameMasterPlayer } from './GameMasterPlayer';
 import type { Phase } from './Phase';
 
@@ -13,4 +14,6 @@ export interface GameMasterSnapshot {
     readonly phase: Phase;
     readonly players: readonly GameMasterPlayer[];
     readonly minimumPlayerCount: number;
+    readonly joinAddress: string | null;
+    readonly joinAddressCandidates: readonly GameMasterJoinAddress[];
 }

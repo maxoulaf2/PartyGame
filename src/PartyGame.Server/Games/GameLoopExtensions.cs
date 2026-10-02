@@ -20,16 +20,21 @@ internal static class GameLoopExtensions
         builder.Services.TryAddSingleton<IEffectExecutor, EffectExecutor>();
 
         // The engine has no randomness of its own: the identifier of the game and the seed come from here. Neither does it
-        // know the network: the address phones join at comes from the selection made at startup.
-        builder.Services.AddSingleton(services => new GameLoop(
-            GameState.Create(new GameId(Guid.NewGuid()), services.GetRequiredService<AddressSelection>().Address?.ToString()),
-            Random.Shared.Next(),
-            services.GetRequiredService<GameInputQueue>(),
-            services.GetRequiredService<IGameEngine>(),
-            services.GetRequiredService<TimeProvider>(),
-            services.GetRequiredService<IEffectExecutor>(),
-            services.GetServices<IGameStateListener>(),
-            services.GetRequiredService<ILogger<GameLoop>>()));
+        // know the network: the address phones join at, and those the game master may choose instead, come from the
+        // selection made at startup. A choice of the game master lives in the state only, and is forgotten on restart.
+        builder.Services.AddSingleton(services =>
+        {
+            var selection = services.GetRequiredService<AddressSelection>();
+            return new GameLoop(
+                GameState.Create(new GameId(Guid.NewGuid()), selection.Address?.ToString(), selection.ToJoinAddressCandidates()),
+                Random.Shared.Next(),
+                services.GetRequiredService<GameInputQueue>(),
+                services.GetRequiredService<IGameEngine>(),
+                services.GetRequiredService<TimeProvider>(),
+                services.GetRequiredService<IEffectExecutor>(),
+                services.GetServices<IGameStateListener>(),
+                services.GetRequiredService<ILogger<GameLoop>>());
+        });
         builder.Services.AddHostedService(services => services.GetRequiredService<GameLoop>());
 
         return builder;

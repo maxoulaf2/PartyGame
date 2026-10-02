@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.NetworkInformation;
+using PartyGame.Engine;
 using PartyGame.Server.Network;
 using static PartyGame.Server.Tests.Network.TestInterfaces;
 
@@ -189,5 +190,45 @@ public sealed class AddressSelectorTests
     public void IsPrivate_Address_MatchesRfc1918Ranges(string address, bool expected)
     {
         Assert.Equal(expected, AddressSelector.IsPrivate(IPAddress.Parse(address)));
+    }
+
+    [Fact]
+    public void ToJoinAddressCandidates_Detected_ListsEveryCandidateBestFirstWithItsInterface()
+    {
+        var selection = AddressSelector.Select([Ethernet("10.0.0.2", hasGateway: false), Wifi("192.168.1.42")], configured: null);
+
+        Assert.Equal(
+            [new JoinAddressCandidate("192.168.1.42", "Wi-Fi"), new JoinAddressCandidate("10.0.0.2", "Ethernet")],
+            selection.ToJoinAddressCandidates());
+    }
+
+    [Fact]
+    public void ToJoinAddressCandidates_ConfiguredOffCandidates_PutsItFirstWithoutInterface()
+    {
+        var selection = AddressSelector.Select([Wifi("192.168.1.42")], configured: IPAddress.Parse("192.168.50.7"));
+
+        Assert.Equal(
+            [new JoinAddressCandidate("192.168.50.7", InterfaceName: null), new JoinAddressCandidate("192.168.1.42", "Wi-Fi")],
+            selection.ToJoinAddressCandidates());
+    }
+
+    [Fact]
+    public void ToJoinAddressCandidates_ConfiguredAmongCandidates_ListsItOnceWithItsInterface()
+    {
+        var selection = AddressSelector.Select(
+            [Wifi("192.168.1.42"), Ethernet("10.0.0.2", hasGateway: false)],
+            configured: IPAddress.Parse("10.0.0.2"));
+
+        Assert.Equal(
+            [new JoinAddressCandidate("192.168.1.42", "Wi-Fi"), new JoinAddressCandidate("10.0.0.2", "Ethernet")],
+            selection.ToJoinAddressCandidates());
+    }
+
+    [Fact]
+    public void ToJoinAddressCandidates_NoAddress_IsEmpty()
+    {
+        var selection = AddressSelector.Select([], configured: null);
+
+        Assert.Empty(selection.ToJoinAddressCandidates());
     }
 }

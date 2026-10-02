@@ -28,4 +28,7 @@ public enum RejectionReason
 
     /// <summary>The game is already started: a start is only allowed from the lobby.</summary>
     GameAlreadyStarted,
+
+    /// <summary>The address is not one of the candidates the server offers to the game master.</summary>
+    AddressUnknown,
 }
