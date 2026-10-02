@@ -52,4 +52,71 @@ public sealed class PresenceTests
         Assert.Empty(transition.Effects);
         Assert.Equal(RejectionReason.PlayerUnknown, transition.Rejection);
     }
+
+    [Fact]
+    public void Handle_PlayerConnectionRestored_MarksOnlyThatPlayerConnectedAgain()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé", "Max");
+        state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(1)), Games.Context()).State;
+        state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(2)), Games.Context()).State;
+
+        // When
+        var transition = Games.Engine.Handle(state, new PlayerConnectionRestored(Games.PlayerIdOf(2)), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(
+            [new Player(Games.PlayerIdOf(1), "Zoé", IsConnected: false), new Player(Games.PlayerIdOf(2), "Max", IsConnected: true)],
+            transition.State.Players);
+        Assert.Equal(state.PlayerTokens, transition.State.PlayerTokens);
+    }
+
+    [Fact]
+    public void Handle_PlayerConnectionRestoredAfterStart_MarksPlayerConnectedAgain()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé", "Max");
+        state = Games.Engine.Handle(state, Games.Start(), Games.Context()).State;
+        state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(1)), Games.Context()).State;
+
+        // When
+        var transition = Games.Engine.Handle(state, new PlayerConnectionRestored(Games.PlayerIdOf(1)), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        Assert.Equal(GamePhase.Started, transition.State.Phase);
+        Assert.True(transition.State.Players[0].IsConnected);
+    }
+
+    [Fact]
+    public void Handle_PlayerConnectionRestoredWhileConnected_IsRejectedAsAlreadyConnected()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé");
+
+        // When
+        var transition = Games.Engine.Handle(state, new PlayerConnectionRestored(Games.PlayerIdOf(1)), Games.Context());
+
+        // Then
+        Assert.Same(state, transition.State);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(RejectionReason.PlayerAlreadyConnected, transition.Rejection);
+    }
+
+    [Fact]
+    public void Handle_PlayerConnectionRestoredOfUnknownPlayer_IsRejected()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé");
+
+        // When
+        var transition = Games.Engine.Handle(state, new PlayerConnectionRestored(Games.PlayerIdOf(9)), Games.Context());
+
+        // Then
+        Assert.Same(state, transition.State);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(RejectionReason.PlayerUnknown, transition.Rejection);
+    }
 }

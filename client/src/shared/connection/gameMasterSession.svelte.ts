@@ -100,15 +100,11 @@ export class GameMasterSession {
             this.#connected = false;
             this.#store.markStale();
         });
-        this.#connection.onClose(() => {
-            this.#connected = false;
-            this.#store.markStale();
-        });
         this.#connection.onReconnected(() => this.#onConnected());
         this.#connection
             .start()
             .then(() => this.#onConnected())
-            // An unreachable server leaves the form disabled, never shows an error.
+            // Only a stop ends the attempts: nothing left to show.
             .catch(() => {});
 
         return () => {

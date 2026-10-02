@@ -23,6 +23,9 @@ public enum RejectionReason
     /// <summary>The player is already shown as disconnected.</summary>
     PlayerAlreadyDisconnected,
 
+    /// <summary>The player is already shown as connected.</summary>
+    PlayerAlreadyConnected,
+
     /// <summary>The game cannot start with fewer players than the minimum.</summary>
     NotEnoughPlayers,
 

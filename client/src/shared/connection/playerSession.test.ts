@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { GameId, IGameClient, JoinResult, PlayerId, PlayerSnapshot } from '../contracts';
+import type {
+    GameId,
+    IGameClient,
+    JoinResult,
+    PlayerId,
+    PlayerSnapshot,
+    ResumeSessionResult,
+} from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
 import { PlayerSession } from './playerSession.svelte';
@@ -27,26 +34,42 @@ function snapshot(version: number, nickname = 'Zoé'): PlayerSnapshot {
     return { gameId, version, phase: 'Lobby', playerId, nickname, playerCount: 1 };
 }
 
-/** A server that registers any nickname except those already taken, and can become unreachable. */
-function fakeServer(options: { startFails?: boolean; taken?: string[] } = {}) {
+type Request = { nickname: string } | { token: string };
+
+/**
+ * A server that registers any nickname except those already taken, recognizes the tokens it
+ * issued, and can become unreachable or restart.
+ */
+function fakeServer(options: { startFails?: boolean; taken?: string[]; known?: string[] } = {}) {
     let reachable = true;
+    let version = 2;
+    const known = new Set(options.known);
     const handlers = new Map<string, (snapshot: PlayerSnapshot) => void>();
-    const callbacks = { reconnecting: () => {}, reconnected: () => {}, close: () => {} };
+    const callbacks = { reconnecting: () => {}, reconnected: () => {} };
     const connection = {
         start: vi.fn(() =>
             options.startFails ? Promise.reject(new Error('offline')) : Promise.resolve(),
         ),
         stop: vi.fn(() => Promise.resolve()),
         invoke: vi.fn(
-            async (_method: string, request: { nickname: string }): Promise<JoinResult> => {
+            async (method: string, request: Request): Promise<JoinResult | ResumeSessionResult> => {
                 if (!reachable) {
                     throw new Error('disconnected');
+                }
+                if ('token' in request) {
+                    if (!known.has(request.token)) {
+                        return { refusal: 'SessionUnknown', playerId: null };
+                    }
+                    // Like the hub: the current snapshot reaches the phone before the answer.
+                    handlers.get('ReceivePlayerSnapshot')?.(snapshot(version));
+                    return { refusal: null, playerId };
                 }
                 if (options.taken?.includes(request.nickname)) {
                     return { refusal: 'NicknameTaken', playerId: null, token: null };
                 }
-                // Like the hub: the snapshot reaches the phone before the answer.
-                handlers.get('ReceivePlayerSnapshot')?.(snapshot(2, request.nickname));
+                known.add(token);
+                version++;
+                handlers.get('ReceivePlayerSnapshot')?.(snapshot(version, request.nickname));
                 return { refusal: null, playerId, token };
             },
         ),
@@ -59,9 +82,6 @@ function fakeServer(options: { startFails?: boolean; taken?: string[] } = {}) {
         }),
         onReconnected: vi.fn((callback: () => void) => {
             callbacks.reconnected = callback;
-        }),
-        onClose: vi.fn((callback: () => void) => {
-            callbacks.close = callback;
         }),
     };
     // The fake only implements what the session uses, with loose signatures.
@@ -78,12 +98,19 @@ function fakeServer(options: { startFails?: boolean; taken?: string[] } = {}) {
             reachable = true;
             callbacks.reconnected();
         },
+        /** Forgets every token, as a restarted server does. */
+        restart: () => {
+            known.clear();
+        },
     };
 }
 
-async function startedSession(server = fakeServer(), nicknames = memoryStorage()) {
+async function startedSession(
+    server = fakeServer(),
+    nicknames = memoryStorage(),
+    tokens = memoryStorage(),
+) {
     const store = new SnapshotStore<PlayerSnapshot>();
-    const tokens = memoryStorage();
     const session = new PlayerSession(store, tokens, nicknames, server.typed);
     session.start();
     await vi.waitFor(() => expect(session.connected).toBe(true));
@@ -94,6 +121,7 @@ describe('PlayerSession', () => {
     it('waits for a nickname without sending anything', async () => {
         const { session, server } = await startedSession();
 
+        expect(session.status).toBe('registering');
         expect(session.joined).toBe(false);
         expect(session.rememberedNickname).toBe('');
         expect(server.connection.invoke).not.toHaveBeenCalled();
@@ -182,9 +210,100 @@ describe('PlayerSession', () => {
         const { session, store, server, nicknames } = await startedSession();
         await session.join('Zoé');
 
-        server.send(snapshot(3, 'Léa'));
+        server.send(snapshot(4, 'Léa'));
 
         expect(store.current?.nickname).toBe('Léa');
         expect(nicknames.value).toBe('Léa');
+    });
+
+    describe('with a kept token', () => {
+        it('resumes the session at startup without showing the form', async () => {
+            const server = fakeServer({ known: [token] });
+            const store = new SnapshotStore<PlayerSnapshot>();
+            const session = new PlayerSession(
+                store,
+                memoryStorage(token),
+                memoryStorage('Zoé'),
+                server.typed,
+            );
+
+            expect(session.status).toBe('resuming');
+            session.start();
+
+            await vi.waitFor(() => expect(session.status).toBe('joined'));
+            expect(server.connection.invoke).toHaveBeenCalledWith('ResumeSession', { token });
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'JoinGame',
+                expect.anything(),
+            );
+            expect(store.current?.nickname).toBe('Zoé');
+            expect(store.fresh).toBe(true);
+        });
+
+        it('presents the token again on every new connection', async () => {
+            const { session, store, server } = await startedSession();
+            await session.join('Zoé');
+
+            server.drop();
+            server.restore();
+
+            await vi.waitFor(() =>
+                expect(server.connection.invoke).toHaveBeenLastCalledWith('ResumeSession', {
+                    token,
+                }),
+            );
+            expect(session.joined).toBe(true);
+            await vi.waitFor(() => expect(store.fresh).toBe(true));
+        });
+
+        it('forgets an unknown token and shows the form with the last nickname', async () => {
+            const { session, server, tokens, nicknames } = await startedSession();
+            await session.join('Zoé');
+
+            server.drop();
+            server.restart();
+            server.restore();
+
+            await vi.waitFor(() => expect(session.status).toBe('registering'));
+            expect(tokens.value).toBeNull();
+            expect(nicknames.value).toBe('Zoé');
+            expect(session.rememberedNickname).toBe('Zoé');
+            expect(await session.join('Zoé')).toBe('joined');
+        });
+
+        it('keeps the token when the connection drops during the resumption', async () => {
+            const server = fakeServer({ known: [token] });
+            server.connection.invoke.mockRejectedValueOnce(new Error('disconnected'));
+            const { session, tokens } = await startedSession(
+                server,
+                memoryStorage('Zoé'),
+                memoryStorage(token),
+            );
+            await vi.waitFor(() => expect(server.connection.invoke).toHaveBeenCalledOnce());
+
+            expect(session.status).toBe('resuming');
+            expect(tokens.value).toBe(token);
+
+            server.drop();
+            server.restore();
+            await vi.waitFor(() => expect(session.status).toBe('joined'));
+        });
+
+        it('keeps the token when the server fails to resume the session', async () => {
+            const server = fakeServer({ known: [token] });
+            server.connection.invoke.mockResolvedValueOnce({
+                refusal: 'ResumeFailed',
+                playerId: null,
+            });
+            const { session, tokens } = await startedSession(
+                server,
+                memoryStorage('Zoé'),
+                memoryStorage(token),
+            );
+            await vi.waitFor(() => expect(server.connection.invoke).toHaveBeenCalledOnce());
+
+            expect(session.status).toBe('resuming');
+            expect(tokens.value).toBe(token);
+        });
     });
 });

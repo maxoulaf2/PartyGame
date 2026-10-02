@@ -43,7 +43,7 @@ function fakeServer(options: { startFails?: boolean } = {}) {
     let addressAnswer: ChooseAdvertisedAddressResult | null = { refusal: null };
     let reachable = true;
     const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
-    const callbacks = { reconnecting: () => {}, reconnected: () => {}, close: () => {} };
+    const callbacks = { reconnecting: () => {}, reconnected: () => {} };
     const connection = {
         start: vi.fn(() =>
             options.startFails ? Promise.reject(new Error('offline')) : Promise.resolve(),
@@ -86,9 +86,6 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         }),
         onReconnected: vi.fn((callback: () => void) => {
             callbacks.reconnected = callback;
-        }),
-        onClose: vi.fn((callback: () => void) => {
-            callbacks.close = callback;
         }),
     };
     // The fake only implements what the session uses, with loose signatures.

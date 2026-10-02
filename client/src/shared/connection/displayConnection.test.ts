@@ -23,7 +23,6 @@ function fakeConnection(startFails = false) {
         onReconnected: vi.fn((callback: () => void) => {
             reconnected = callback;
         }),
-        onClose: vi.fn(),
     };
     // The fake only implements what connectDisplay uses, with loose signatures.
     const typed = connection as unknown as GameConnection<IGameClient>;

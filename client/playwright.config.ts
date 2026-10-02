@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { advertisedAddress, gameMasterCode, gameServerPort } from './e2e/gameServer.ts';
 
 const port = 4173;
-const mobilePages = /(player|gm)\.spec\.ts/;
+const mobilePages = /(player|gm|reconnection)\.spec\.ts/;
 // Tests that change the shared server for every other test: starting the game, the address.
 const serverWide = /(launch|address)\.spec\.ts/;
 
@@ -22,7 +22,7 @@ export default defineConfig({
         {
             name: 'desktop-chrome',
             use: { ...devices['Desktop Chrome'] },
-            testIgnore: [/player\.spec\.ts/, serverWide],
+            testIgnore: [/(player|reconnection)\.spec\.ts/, serverWide],
         },
         // Starting the game cannot be undone on the shared server, and a new address changes every
         // QR code: once every other test is done.

@@ -9,7 +9,8 @@ namespace PartyGame.Server.Games;
 /// </summary>
 internal sealed class GameInputQueue : IGameInputWriter
 {
-    // Unbounded: an intent must never be dropped, and the volume of a party game cannot exhaust memory.
+    // Unbounded: an intent must never be dropped, and the volume of a party game cannot exhaust memory. A write then
+    // never waits for room, so it is queued before WriteAsync returns, as IGameInputWriter promises.
     private readonly Channel<QueuedInput> _channel =
         Channel.CreateUnbounded<QueuedInput>(new UnboundedChannelOptions { SingleReader = true });
 

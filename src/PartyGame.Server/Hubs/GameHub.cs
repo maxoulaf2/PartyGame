@@ -4,7 +4,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using PartyGame.Contracts;
 using PartyGame.Engine;
-using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Projections;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
@@ -32,6 +31,9 @@ internal sealed class GameHub(
 
     /// <summary>SignalR target of <see cref="JoinGameAsync"/>, as the clients call it.</summary>
     public const string JoinGame = nameof(JoinGame);
+
+    /// <summary>SignalR target of <see cref="ResumeSessionAsync"/>, as the clients call it.</summary>
+    public const string ResumeSession = nameof(ResumeSession);
 
     /// <summary>SignalR target of <see cref="RenamePlayerAsync"/>, as the clients call it.</summary>
     public const string RenamePlayer = nameof(RenamePlayer);
@@ -134,7 +136,7 @@ internal sealed class GameHub(
         }
 
         Context.SetPlayerId(playerId);
-        playerConnections.Add(playerId, Context.ConnectionId);
+        playerConnections.Register(playerId, Context.ConnectionId);
         if (Context.ConnectionAborted.IsCancellationRequested)
         {
             // The connection closed while the loop handled the registration: OnDisconnectedAsync may have run before the
@@ -149,6 +151,58 @@ internal sealed class GameHub(
         logger.PlayerJoined(playerId.Value, player.Nickname);
         await Clients.Caller.ReceivePlayerSnapshot(Snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new JoinResult(Refusal: null, playerId, token.Value);
+    }
+
+    /// <summary>
+    /// Makes this connection the one of the player the token identifies, after a reload, a sleep or a lost network: it
+    /// gets their snapshots from then on, starting with the current one, and the player is shown connected again. The
+    /// identity comes from the token alone, never from a connection identifier.
+    /// </summary>
+    /// <remarks>
+    /// The token is looked up in the state without going through the loop: tokens are never removed, and the state read
+    /// is immutable. Only the change of presence goes through the loop.
+    /// </remarks>
+    /// <param name="message">A <see cref="ResumeSessionRequest"/>.</param>
+    [HubMethodName(ResumeSession)]
+    public async Task<ResumeSessionResult> ResumeSessionAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ResumeSessionRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ResumeSession, Context.ConnectionId, invalidPath);
+            return new ResumeSessionResult(ResumeSessionRefusal.MessageInvalid, PlayerId: null);
+        }
+
+        if (Context.GetPlayerId() is not null)
+        {
+            logger.ResumeRepeated(Context.ConnectionId);
+            return new ResumeSessionResult(ResumeSessionRefusal.AlreadyIdentified, PlayerId: null);
+        }
+
+        if (!game.State.PlayerTokens.TryGetValue(new PlayerToken(request.Token), out var playerId))
+        {
+            logger.SessionUnknown(Context.ConnectionId);
+            return new ResumeSessionResult(ResumeSessionRefusal.SessionUnknown, PlayerId: null);
+        }
+
+        // In the group before the loop shows the player connected, so that no snapshot sent meanwhile is missed.
+        await Groups.AddToGroupAsync(Context.ConnectionId, HubGroups.Player(playerId), Context.ConnectionAborted).ConfigureAwait(false);
+        Context.SetPlayerId(playerId);
+        await playerConnections.ResumeAsync(playerId, Context.ConnectionId).ConfigureAwait(false);
+        if (Context.ConnectionAborted.IsCancellationRequested)
+        {
+            // The connection closed meanwhile: OnDisconnectedAsync may have run before the connection was tracked, and
+            // the player must not stay shown as connected.
+            await ReportConnectionLostAsync(playerId).ConfigureAwait(false);
+            return new ResumeSessionResult(ResumeSessionRefusal.ResumeFailed, PlayerId: null);
+        }
+
+        // Read once in the group: a change made since is broadcast as well, and the phone keeps the newest. Players are
+        // never removed, so the player of a known token is there.
+        var state = game.State;
+        var player = state.Players.First(p => p.Id == playerId);
+        logger.SessionResumed(playerId.Value, Context.ConnectionId);
+        await Clients.Caller.ReceivePlayerSnapshot(Snapshots.ForPlayer(state, player)).ConfigureAwait(false);
+        return new ResumeSessionResult(Refusal: null, playerId);
     }
 
     /// <summary>
@@ -263,19 +317,20 @@ internal sealed class GameHub(
 
     private async Task ReportConnectionLostAsync(PlayerId playerId)
     {
-        if (!playerConnections.Remove(playerId, Context.ConnectionId))
-        {
-            return; // another connection of the player is still open, or this one was already reported
-        }
-
-        logger.PlayerDisconnected(playerId.Value);
+        bool wasLast;
         try
         {
-            await inputs.WriteAsync(new PlayerConnectionLost(playerId), CancellationToken.None).ConfigureAwait(false);
+            // False when another connection of the player is still open, or this one was already reported.
+            wasLast = await playerConnections.DisconnectAsync(playerId, Context.ConnectionId).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            // The server is stopping: nobody is left to show the player as disconnected.
+            return; // the server is stopping: nobody is left to show the player as disconnected
+        }
+
+        if (wasLast)
+        {
+            logger.PlayerDisconnected(playerId.Value);
         }
     }
 

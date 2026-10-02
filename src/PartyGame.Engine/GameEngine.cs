@@ -20,6 +20,7 @@ public sealed class GameEngine : IGameEngine
         {
             JoinGame join => Registration.Join(state, join),
             PlayerConnectionLost lost => Presence.ConnectionLost(state, lost),
+            PlayerConnectionRestored restored => Presence.ConnectionRestored(state, restored),
             RenamePlayer rename => Renaming.Rename(state, rename),
             StartGame start => Launch.Start(state, start),
             ChooseAdvertisedAddress choice => AddressChoice.Choose(state, choice),

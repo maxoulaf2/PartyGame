@@ -7,12 +7,21 @@ import type { SnapshotStore } from './snapshotStore.svelte';
 export type JoinOutcome = 'joined' | 'unreachable' | JoinRefusal;
 
 /**
- * The registration of a phone. The player picks a nickname, the server registers them and answers
- * a token, kept on the phone with the nickname. Snapshots go to `store`; the server sends them to
- * this connection once the player is registered.
+ * Where the phone stands:
+ * - `registering`: the player has no token, or the server no longer knows it: the form is shown;
+ * - `resuming`: a token is kept, and the server has not recognized it yet;
+ * - `joined`: the server registered or recognized the player and sends their snapshots.
+ */
+export type PlayerStatus = 'registering' | 'resuming' | 'joined';
+
+/**
+ * The identity of a phone. The player picks a nickname once, the server registers them and
+ * answers a token, kept on the phone with the nickname. At every connection afterwards, including
+ * after a reload, a sleep or a lost network, the phone presents the token to be recognized as the
+ * same player. Snapshots go to `store`; the server sends them once the player is identified.
  */
 export class PlayerSession {
-    #joined = $state(false);
+    #status = $state<PlayerStatus>('registering');
     #connected = $state(false);
 
     readonly #store: SnapshotStore<PlayerSnapshot>;
@@ -30,11 +39,17 @@ export class PlayerSession {
         this.#token = token;
         this.#nickname = nickname;
         this.#connection = connection;
+        // A kept token is presented without showing the form, which would only flash.
+        this.#status = token.load() === null ? 'registering' : 'resuming';
     }
 
-    /** Whether the server registered this phone as a player. */
+    get status(): PlayerStatus {
+        return this.#status;
+    }
+
+    /** Whether the server registered or recognized this phone as a player. */
     get joined(): boolean {
-        return this.#joined;
+        return this.#status === 'joined';
     }
 
     /** Whether the server can be reached: a nickname cannot be submitted until it can. */
@@ -47,7 +62,7 @@ export class PlayerSession {
         return this.#nickname.load() ?? '';
     }
 
-    /** Connects to the server. Returns a function that disconnects. */
+    /** Connects to the server and presents the kept token, if any. Returns a function that disconnects. */
     start(): () => void {
         const unsubscribe = this.#connection.on('ReceivePlayerSnapshot', (snapshot) => {
             // The game master may rename the player: the form is filled with the current nickname.
@@ -55,22 +70,15 @@ export class PlayerSession {
                 this.#nickname.save(snapshot.nickname);
             }
         });
-        const lost = () => {
+        this.#connection.onReconnecting(() => {
             this.#connected = false;
             this.#store.markStale();
-        };
-        this.#connection.onReconnecting(lost);
-        this.#connection.onClose(lost);
-        // Identifying again with the token on the new connection is US-E05-01.
-        this.#connection.onReconnected(() => {
-            this.#connected = true;
         });
+        this.#connection.onReconnected(() => this.#onConnected());
         this.#connection
             .start()
-            .then(() => {
-                this.#connected = true;
-            })
-            // An unreachable server leaves the form disabled, never shows an error.
+            .then(() => this.#onConnected())
+            // Only a stop ends the attempts: nothing left to show.
             .catch(() => {});
 
         return () => {
@@ -81,7 +89,7 @@ export class PlayerSession {
 
     /** Sends the nickname the player typed. The server alone decides whether it is valid and free. */
     async join(nickname: string): Promise<JoinOutcome> {
-        if (!this.#connected || this.#joined) {
+        if (!this.#connected || this.#status !== 'registering') {
             return 'unreachable';
         }
 
@@ -102,7 +110,34 @@ export class PlayerSession {
 
         this.#token.save(result.token);
         this.#nickname.save(nickname.trim());
-        this.#joined = true;
+        this.#status = 'joined';
         return 'joined';
+    }
+
+    #onConnected(): void {
+        this.#connected = true;
+        const token = this.#token.load();
+        if (token !== null) {
+            void this.#resume(token);
+        }
+    }
+
+    async #resume(token: string): Promise<void> {
+        let refusal;
+        try {
+            ({ refusal } = await this.#connection.invoke('ResumeSession', { token }));
+        } catch {
+            // The connection dropped meanwhile: the token is presented again when it is back.
+            return;
+        }
+
+        if (refusal === null) {
+            this.#status = 'joined';
+        } else if (refusal === 'SessionUnknown') {
+            // A restarted server or an old evening: the player registers again, nickname filled.
+            this.#token.clear();
+            this.#status = 'registering';
+        }
+        // Any other refusal is transient: the token is presented again at the next connection.
     }
 }
