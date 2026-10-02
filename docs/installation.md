@@ -17,7 +17,7 @@ Le script vérifie que tout est en ordre avant de lancer le serveur, et s'arrêt
 - le front est reconstruit (`npm run build`) si ses sources ou `PartyGame.Contracts` ont changé depuis le dernier build, après avoir vérifié que les types TypeScript générés sont à jour. Une empreinte des sources est conservée dans `wwwroot/.build-stamp` : un build lancé par un autre moyen est donc refait au lancement suivant ;
 - le port est libre, et aucun réseau n'est déclaré « public » dans Windows (voir le pare-feu plus bas).
 
-Paramètres : `-Port 5001` pour changer de port, `-GameMasterCode 123456` pour imposer le code GM (développement seulement), `-Rebuild` pour forcer la reconstruction du front. `Get-Help .\scripts\start.ps1 -Detailed` les décrit.
+Paramètres : `-Port 5001` pour changer de port, `-GameMasterCode 123456` pour imposer le code GM (développement seulement), `-Rebuild` pour forcer la reconstruction du front. `Get-Help .\scripts\start.ps1 -Detailed` les décrit. Le script charge les packs du dossier `packs/` du dépôt (voir « Dossier des packs »).
 
 Sans le script, l'équivalent manuel est :
 
@@ -40,6 +40,9 @@ Une fois prêt, le serveur affiche dans la console une bannière qui donne tout 
   Écran TV            : http://192.168.1.42:5000/display/
   Game master         : http://192.168.1.42:5000/gm/
   Code game master    : 482913
+
+  Packs (C:\PartyGame\packs) :
+    quiz-exemple        : « Quiz d'exemple », 2 manches, valide
 ==============================================================
 ```
 
@@ -80,6 +83,22 @@ Si le PC est relié à plusieurs réseaux (Ethernet et Wi-Fi par exemple), la ba
 L'adresse imposée est retenue telle quelle. Si aucune interface active ne la porte, le serveur démarre quand même mais l'indique dans la bannière et dans les logs. Une valeur qui n'est pas une adresse IPv4 (`192.168.1.42`) arrête le serveur au démarrage.
 
 L'adresse est calculée une seule fois : après un changement de réseau, relancer le serveur. Si le PC n'est connecté à aucun réseau, le serveur démarre, la bannière invite à connecter le PC au Wi-Fi, et l'écran TV affiche un message d'attente à la place du QR code.
+
+## Dossier des packs
+
+Au démarrage, avant d'accepter la moindre connexion, le serveur charge et vérifie entièrement chaque pack du dossier des packs : chaque sous-dossier qui contient un fichier `pack.json` (nom exact, en minuscules) est un pack, et son identifiant est le nom du sous-dossier. Les autres sous-dossiers sont ignorés. Le descripteur est lu une seule fois : une modification de `pack.json` n'est prise en compte qu'au redémarrage.
+
+La bannière liste les packs, avec pour chacun son titre, son nombre de manches et son état : valide, ou invalide avec le nombre de problèmes. Chaque problème est détaillé dans le journal, en `WRN`, avec le fichier, le chemin dans le descripteur (par exemple `$.rounds[1].questions[4].choices`) et ses paramètres. Un pack invalide n'empêche jamais le démarrage : il ne pourra simplement pas être choisi. Un dossier des packs absent ou vide non plus : la bannière le signale.
+
+Le dossier se règle par le paramètre `Packs:Directory`. Par défaut, c'est le dossier `packs` à côté de l'exécutable du serveur. Un chemin relatif est lui aussi relatif au dossier de l'exécutable, et non au dossier courant. `scripts/start.ps1` indique le dossier `packs/` du dépôt, sauf si la variable d'environnement `Packs__Directory` en désigne un autre.
+
+| Moyen | Exemple |
+|---|---|
+| Fichier `appsettings.json` du serveur | `"Packs": { "Directory": "D:\\Soirees\\packs" }` |
+| Variable d'environnement | `Packs__Directory=D:\Soirees\packs` (PowerShell : `$env:Packs__Directory = "D:\Soirees\packs"`) |
+| Argument de ligne de commande | `dotnet run --project src/PartyGame.Server -- --Packs:Directory=D:\Soirees\packs` |
+
+Les médias référencés par un pack doivent se trouver dans son dossier, avec exactement la même casse que dans `pack.json` : Windows ne la distingue pas, mais le Raspberry Pi si, et le serveur la vérifie partout pour qu'un pack préparé sur un PC fonctionne aussi sur le Pi.
 
 ## Changer de port
 
