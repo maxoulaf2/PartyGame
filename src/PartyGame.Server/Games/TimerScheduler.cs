@@ -75,7 +75,7 @@ internal sealed class TimerScheduler(IGameInputWriter inputs, TimeProvider timeP
         }
     }
 
-    private static TimerElapsed Elapsed(ScheduleTimer request) => new(request.TimerId, request.DueAt);
+    private static TimerElapsed Elapsed(ScheduleTimer request) => new(request.TimerId, request.DueAt) { RoundId = request.RoundId };
 
     private void Remove(TimerId timerId)
     {

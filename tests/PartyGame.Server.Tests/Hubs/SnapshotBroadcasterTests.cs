@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.Modes;
+using PartyGame.Engine.Projections;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Tests.Games;
 
@@ -16,8 +18,9 @@ public sealed class SnapshotBroadcasterTests
         // Given
         var hub = new RecordingHubContext(failingGroup: HubGroups.Display);
         var logger = new RecordingLogger<SnapshotBroadcaster>();
-        var broadcaster = new SnapshotBroadcaster(hub, logger);
-        var state = new GameEngine().Handle(
+        var modes = new GameModes([]);
+        var broadcaster = new SnapshotBroadcaster(hub, new Snapshots(modes), logger);
+        var state = new GameEngine(modes).Handle(
             LoopHarness.InitialState,
             new JoinGame(new PlayerId(Guid.NewGuid()), new PlayerToken("token"), "Zoé", DateTimeOffset.UnixEpoch),
             new GameContext(DateTimeOffset.UnixEpoch, new Random(42))).State;

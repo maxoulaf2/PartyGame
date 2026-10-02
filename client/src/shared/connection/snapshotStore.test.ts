@@ -7,7 +7,15 @@ const gameB = 'b6f9619f-8b86-d011-b42d-00cf4fc964ff' as GameId;
 
 /** `host` tells apart snapshots of the same version that differ in content. */
 function snapshot(version: number, gameId: GameId = gameA, host = 1): DisplaySnapshot {
-    return { gameId, version, phase: 'Lobby', joinAddress: `10.0.0.${host}`, players: [] };
+    return {
+        gameId,
+        version,
+        phase: 'Lobby',
+        joinAddress: `10.0.0.${host}`,
+        players: [],
+        round: null,
+        roundView: null,
+    };
 }
 
 describe('supersedes', () => {

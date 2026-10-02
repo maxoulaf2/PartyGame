@@ -33,6 +33,8 @@ function fakeSnapshot(
         phase,
         joinAddress,
         players,
+        round: null,
+        roundView: null,
     };
 }
 
@@ -103,7 +105,8 @@ test('/display/ shows players as they join, then dims those who leave', async ({
     await Promise.all(phones.slice(1).map((phone) => phone.context().close()));
 });
 
-for (const phase of ['Lobby', 'Started'] as const) {
+// Without any pack chosen yet (US-E06-03), a started game has no round: it is finished at once.
+for (const phase of ['Lobby', 'Finished'] as const) {
     test(`/display/ fits 20 long nicknames on a 1080p screen in phase ${phase}, readable and clear of the edges`, async ({
         page,
     }) => {
@@ -139,7 +142,7 @@ for (const phase of ['Lobby', 'Started'] as const) {
             page.getByRole('img', { name: fr.display.qrCodeLabel }),
             page.getByText(expectedUrl),
             page.getByRole('heading', { name: fr.app.name }),
-            ...(phase === 'Started' ? [page.getByText(fr.display.started)] : []),
+            ...(phase === 'Finished' ? [page.getByText(fr.display.started)] : []),
         ]) {
             expectWithinSafeArea(await element.boundingBox(), viewport);
         }

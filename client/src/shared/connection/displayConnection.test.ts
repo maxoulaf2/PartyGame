@@ -78,6 +78,8 @@ describe('connectDisplay', () => {
             phase: 'Lobby',
             joinAddress: '192.168.1.42',
             players: [{ id: playerId, nickname: 'Zoé', isConnected: true }],
+            round: null,
+            roundView: null,
         });
 
         expect(store.current?.players.map((player) => player.nickname)).toEqual(['Zoé']);
@@ -93,6 +95,8 @@ describe('connectDisplay', () => {
             phase: 'Lobby',
             joinAddress: '192.168.1.42',
             players: [],
+            round: null,
+            roundView: null,
         };
         handlers.get('ReceiveDisplaySnapshot')?.(shown);
 

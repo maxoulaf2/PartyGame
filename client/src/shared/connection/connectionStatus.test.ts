@@ -7,7 +7,15 @@ import { SnapshotStore } from './snapshotStore.svelte';
 const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
 
 function snapshot(version: number): DisplaySnapshot {
-    return { gameId, version, phase: 'Lobby', joinAddress: '10.0.0.1', players: [] };
+    return {
+        gameId,
+        version,
+        phase: 'Lobby',
+        joinAddress: '10.0.0.1',
+        players: [],
+        round: null,
+        roundView: null,
+    };
 }
 
 /** A page synchronized as long as its snapshot is fresh, as the TV screen is. */

@@ -11,7 +11,7 @@ internal static class HubMessage
 {
     /// <summary>
     /// Reads a message, or tells where it stops matching <typeparamref name="T"/>: a missing field, a wrong type, an unknown
-    /// enum member.
+    /// enum member, a polymorphic message with a missing or unknown <c>type</c>.
     /// </summary>
     /// <param name="message">The message as received.</param>
     /// <param name="value">The message read, when it has the expected shape.</param>
@@ -30,6 +30,13 @@ internal static class HubMessage
         {
             value = null;
             invalidPath = ex.Path ?? "$";
+            return false;
+        }
+        catch (NotSupportedException)
+        {
+            // What System.Text.Json throws for a polymorphic message without its "type": it cannot pick a derived type.
+            value = null;
+            invalidPath = "$";
             return false;
         }
 

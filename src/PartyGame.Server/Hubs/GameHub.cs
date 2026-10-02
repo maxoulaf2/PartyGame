@@ -22,6 +22,7 @@ namespace PartyGame.Server.Hubs;
 internal sealed class GameHub(
     GameMasterCode gameMasterCode,
     GameLoop game,
+    Snapshots snapshots,
     IGameInputWriter inputs,
     PlayerConnections playerConnections,
     FrontEndBuild frontEndBuild,
@@ -45,6 +46,15 @@ internal sealed class GameHub(
 
     /// <summary>SignalR target of <see cref="ChooseAdvertisedAddressAsync"/>, as the clients call it.</summary>
     public const string ChooseAdvertisedAddress = nameof(ChooseAdvertisedAddress);
+
+    /// <summary>SignalR target of <see cref="NextRoundAsync"/>, as the clients call it.</summary>
+    public const string NextRound = nameof(NextRound);
+
+    /// <summary>SignalR target of <see cref="SendRoundIntentAsync"/>, as the clients call it.</summary>
+    public const string SendRoundIntent = nameof(SendRoundIntent);
+
+    /// <summary>SignalR target of <see cref="SendGameMasterRoundIntentAsync"/>, as the clients call it.</summary>
+    public const string SendGameMasterRoundIntent = nameof(SendGameMasterRoundIntent);
 
     /// <summary>SignalR target of <see cref="ReadClock"/>, as the clients call it.</summary>
     public const string SyncClock = nameof(SyncClock);
@@ -110,8 +120,8 @@ internal sealed class GameHub(
         // Read once in the group: a change made since is broadcast to it as well, and the client keeps the newest version.
         var state = game.State;
         await (announcement.Role == Role.Display
-            ? Clients.Caller.ReceiveDisplaySnapshot(Snapshots.ForDisplay(state))
-            : Clients.Caller.ReceiveGameMasterSnapshot(Snapshots.ForGameMaster(state))).ConfigureAwait(false);
+            ? Clients.Caller.ReceiveDisplaySnapshot(snapshots.ForDisplay(state))
+            : Clients.Caller.ReceiveGameMasterSnapshot(snapshots.ForGameMaster(state))).ConfigureAwait(false);
         return _accepted;
     }
 
@@ -173,7 +183,7 @@ internal sealed class GameHub(
         var state = game.State;
         var player = state.Players.First(p => p.Id == playerId);
         logger.PlayerJoined(playerId.Value, player.Nickname);
-        await Clients.Caller.ReceivePlayerSnapshot(Snapshots.ForPlayer(state, player)).ConfigureAwait(false);
+        await Clients.Caller.ReceivePlayerSnapshot(snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new JoinResult(Refusal: null, playerId, token.Value);
     }
 
@@ -225,7 +235,7 @@ internal sealed class GameHub(
         var state = game.State;
         var player = state.Players.First(p => p.Id == playerId);
         logger.SessionResumed(playerId.Value, Context.ConnectionId);
-        await Clients.Caller.ReceivePlayerSnapshot(Snapshots.ForPlayer(state, player)).ConfigureAwait(false);
+        await Clients.Caller.ReceivePlayerSnapshot(snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new ResumeSessionResult(Refusal: null, playerId);
     }
 
@@ -321,6 +331,78 @@ internal sealed class GameHub(
 
         logger.AdvertisedAddressChosen(request.Address);
         return new ChooseAdvertisedAddressResult(Refusal: null);
+    }
+
+    /// <summary>
+    /// Starts the next round at the request of the game master, between two rounds. The loop alone decides whether the
+    /// request still names the round that just finished, so that a double tap or two consoles start the next round only
+    /// once. Nothing is answered: the snapshots show the round in progress either way.
+    /// </summary>
+    /// <param name="message">A <see cref="NextRoundRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(NextRound)]
+    public async Task NextRoundAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<NextRoundRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(NextRound, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.NextRound(request.AfterRound, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Hands what a player does in the round in progress to its game mode, through the loop. Every game mode goes through
+    /// this method: its intents are the types derived from <see cref="PlayerRoundIntent"/>. The call returns once the loop
+    /// has handled the intent; whether it was accepted shows in the snapshots.
+    /// </summary>
+    /// <param name="message">A <see cref="PlayerRoundIntent"/>, of the type its <c>type</c> names.</param>
+    [HubMethodName(SendRoundIntent)]
+    public async Task SendRoundIntentAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<PlayerRoundIntent>(message, out var intent, out var invalidPath))
+        {
+            logger.MessageMalformed(SendRoundIntent, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (Context.GetPlayerId() is not { } playerId)
+        {
+            // Only the connection of a player may act for them: the identity comes from the session, never the message.
+            logger.RoundIntentWithoutPlayer(Context.ConnectionId);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the intent may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.PlayerRoundInput(playerId, intent, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Hands what the game master does in the round in progress to its game mode, through the loop. Every game mode goes
+    /// through this method: its intents are the types derived from <see cref="GameMasterRoundIntent"/>. The call returns
+    /// once the loop has handled the intent; whether it was accepted shows in the snapshots.
+    /// </summary>
+    /// <param name="message">A <see cref="GameMasterRoundIntent"/>, of the type its <c>type</c> names.</param>
+    [GameMasterOnly]
+    [HubMethodName(SendGameMasterRoundIntent)]
+    public async Task SendGameMasterRoundIntentAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<GameMasterRoundIntent>(message, out var intent, out var invalidPath))
+        {
+            logger.MessageMalformed(SendGameMasterRoundIntent, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the intent may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.GameMasterRoundInput(intent, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
     /// <summary>

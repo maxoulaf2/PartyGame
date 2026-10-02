@@ -31,7 +31,7 @@ Opérateur : un pack invalide n'empêche jamais le démarrage. Il est signalé d
 - Problèmes décrits dans `PartyGame.Contracts` (`PackProblem` : code, fichier, chemin, paramètres), sans texte destiné à un humain. Ils seront transmis au GM et traduits par le client (US-E06-03). Codes par exemple : `PackJsonInvalid`, `PackPropertyMissing`, `PackPropertyUnknown`, `PackValueOutOfRange`, `PackRoundTypeUnknown`, `PackMediaMissing`, `PackMediaOutsidePack`, `PackMediaTypeUnsupported`, `PackMediaCaseMismatch`, `PackLoadFailed`.
 - Une erreur de syntaxe se lit dans `JsonException` (`Path`, `LineNumber`, `BytePositionInLine`). Les contraintes simples se vérifient à partir des mêmes attributs que le schéma (ADR 0004).
 - Un type dédié aux chemins de médias (`MediaPath`, chaîne sur le fil) permet à `Content` de trouver tous les médias d'un descripteur sans connaître les modes. Les chemins sont relatifs au dossier du pack, avec `/` pour séparateur. Extensions prises en charge en phase 2 : `.jpg`, `.jpeg`, `.png`, `.webp`.
-- La cohérence propre à un mode est vérifiée par le mode lui-même (`IGameMode`, US-E07-01), qui retourne des `PackProblem`. `Content` ne référence pas le moteur : le serveur lui fournit les vérifications des modes enregistrés.
+- La cohérence propre à un mode est vérifiée par le mode lui-même (`IGameMode`, US-E07-01), qui retourne des `PackProblem`. US-E07-01 a laissé cette méthode de côté : elle est ajoutée à `IGameMode` (et à `GameMode<TDescriptor, TState>`) avec `PackProblem`. `Content` ne référence pas le moteur : le serveur lui fournit les vérifications des modes enregistrés.
 - Logs : `Information` pour chaque pack chargé, `Warning` pour chaque problème (contenu invalide, pas un bug), `Error` pour une exception.
 
 **Hors périmètre**

@@ -50,11 +50,12 @@ public sealed class StartGameTests : IAsyncDisposable
 
         // Then
         Assert.Equal(new StartGameResult(Refusal: null), result);
-        Assert.Equal(GamePhase.Started, Game.State.Phase);
+        // Without any pack chosen yet (US-E06-03), the game has no round: it is finished as soon as it starts.
+        Assert.Equal(GamePhase.Finished, Game.State.Phase);
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
-        Assert.Equal(Phase.Started, toDisplay.Display[^1].Phase);
-        Assert.Equal(Phase.Started, toGameMaster.GameMaster[^1].Phase);
-        Assert.Equal(Phase.Started, toZoe.Player[^1].Phase);
+        Assert.Equal(Phase.Finished, toDisplay.Display[^1].Phase);
+        Assert.Equal(Phase.Finished, toGameMaster.GameMaster[^1].Phase);
+        Assert.Equal(Phase.Finished, toZoe.Player[^1].Phase);
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Game started", StringComparison.Ordinal));
     }
 
@@ -139,7 +140,7 @@ public sealed class StartGameTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(max));
-        Assert.Equal((Phase.Started, "Max"), (toMax.Player[^1].Phase, toMax.Player[^1].Nickname));
+        Assert.Equal((Phase.Finished, "Max"), (toMax.Player[^1].Phase, toMax.Player[^1].Nickname));
         Assert.Equal(["Zoé", "Max"], toDisplay.Display[^1].Players.Select(p => p.Nickname));
         Assert.Equal(["Zoé", "Max"], toGameMaster.GameMaster[^1].Players.Select(p => p.Nickname));
     }

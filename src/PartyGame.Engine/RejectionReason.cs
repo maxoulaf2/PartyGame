@@ -34,4 +34,19 @@ public enum RejectionReason
 
     /// <summary>The address is not one of the candidates the server offers to the game master.</summary>
     AddressUnknown,
+
+    /// <summary>An activity of the pack has no registered game mode to play it: the game cannot start.</summary>
+    GameModeMissing,
+
+    /// <summary>An intent aimed at a round arrived while no round is in progress.</summary>
+    NotInRound,
+
+    /// <summary>
+    /// The input names another round than the one in progress, or than the one that just finished: it is obsolete, for
+    /// instance sent twice or by a second game master console, or aimed at the wrong round.
+    /// </summary>
+    RoundMismatch,
+
+    /// <summary>The next round is asked for while the game is not between two rounds.</summary>
+    NotBetweenRounds,
 }

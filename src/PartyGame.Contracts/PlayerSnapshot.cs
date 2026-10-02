@@ -10,4 +10,20 @@ namespace PartyGame.Contracts;
 /// <param name="PlayerId">The player the snapshot is meant for.</param>
 /// <param name="Nickname">Nickname of this player.</param>
 /// <param name="PlayerCount">Number of registered players.</param>
-public sealed record PlayerSnapshot(GameId GameId, long Version, Phase Phase, PlayerId PlayerId, string Nickname, int PlayerCount);
+/// <param name="Round">
+/// The round in progress, or the round that just finished between two rounds and once the game is finished, or
+/// <see langword="null"/> before the first round.
+/// </param>
+/// <param name="RoundView">
+/// What the game mode of the round in progress shows on the phone of this player, or <see langword="null"/> outside a
+/// round. A player who joins during a round gets it too: the game mode decides whether they take part.
+/// </param>
+public sealed record PlayerSnapshot(
+    GameId GameId,
+    long Version,
+    Phase Phase,
+    PlayerId PlayerId,
+    string Nickname,
+    int PlayerCount,
+    RoundInfo? Round,
+    PlayerRoundView? RoundView);

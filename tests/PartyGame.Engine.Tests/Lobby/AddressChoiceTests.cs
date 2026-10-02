@@ -33,17 +33,17 @@ public sealed class AddressChoiceTests
     }
 
     [Fact]
-    public void Handle_ChooseAfterStart_AdvertisesTheAddressAndStaysStarted()
+    public void Handle_ChooseDuringARound_AdvertisesTheAddressAndKeepsTheRound()
     {
         // Given: registration stays open once the game is started
-        var state = Games.Engine.Handle(Games.LobbyWith("Zoé"), Games.Start(), Games.Context()).State;
+        var state = Games.InPhase(GamePhase.Round, "Zoé");
 
         // When
         var transition = Games.Engine.Handle(state, Games.ChooseAddress(Games.OtherAddress), Games.Context());
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal((GamePhase.Started, Games.OtherAddress), (transition.State.Phase, transition.State.JoinAddress));
+        Assert.Equal((GamePhase.Round, Games.OtherAddress), (transition.State.Phase, transition.State.JoinAddress));
     }
 
     [Fact]

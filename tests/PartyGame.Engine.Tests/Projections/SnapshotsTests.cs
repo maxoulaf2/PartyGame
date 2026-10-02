@@ -1,8 +1,6 @@
-using System.Text.Json;
 using PartyGame.Contracts;
-using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Inputs;
-using PartyGame.Engine.Projections;
+using PartyGame.Engine.Tests.Rounds;
 
 namespace PartyGame.Engine.Tests.Projections;
 
@@ -11,7 +9,9 @@ public sealed class SnapshotsTests
     public static TheoryData<GamePhase, Phase> Phases => new()
     {
         { GamePhase.Lobby, Phase.Lobby },
-        { GamePhase.Started, Phase.Started },
+        { GamePhase.Round, Phase.Round },
+        { GamePhase.BetweenRounds, Phase.BetweenRounds },
+        { GamePhase.Finished, Phase.Finished },
     };
 
     [Fact]
@@ -21,7 +21,7 @@ public sealed class SnapshotsTests
         var state = Games.LobbyWith("Zoé", "Max", "Léa") with { Version = 7 };
 
         // When
-        var snapshot = Snapshots.ForDisplay(state);
+        var snapshot = Games.Snapshots.ForDisplay(state);
 
         // Then
         Assert.Equal(state.GameId, snapshot.GameId);
@@ -45,7 +45,7 @@ public sealed class SnapshotsTests
         state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(1)), Games.Context()).State;
 
         // When
-        var snapshot = Snapshots.ForDisplay(state);
+        var snapshot = Games.Snapshots.ForDisplay(state);
 
         // Then
         Assert.Equal([("Zoé", false), ("Max", true)], snapshot.Players.Select(p => (p.Nickname, p.IsConnected)));
@@ -58,7 +58,7 @@ public sealed class SnapshotsTests
         var state = Games.LobbyWith("Zoé") with { JoinAddress = null };
 
         // When
-        var snapshot = Snapshots.ForDisplay(state);
+        var snapshot = Games.Snapshots.ForDisplay(state);
 
         // Then
         Assert.Null(snapshot.JoinAddress);
@@ -73,7 +73,7 @@ public sealed class SnapshotsTests
         state = Games.Engine.Handle(state, new PlayerConnectionLost(Games.PlayerIdOf(2)), Games.Context()).State;
 
         // When
-        var snapshot = Snapshots.ForGameMaster(state);
+        var snapshot = Games.Snapshots.ForGameMaster(state);
 
         // Then
         Assert.Equal((state.GameId, 7, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
@@ -93,7 +93,7 @@ public sealed class SnapshotsTests
         var state = Games.NewLobby();
 
         // When
-        var snapshot = Snapshots.ForGameMaster(state);
+        var snapshot = Games.Snapshots.ForGameMaster(state);
 
         // Then
         Assert.Equal(1, snapshot.MinimumPlayerCount);
@@ -106,7 +106,7 @@ public sealed class SnapshotsTests
         var state = Games.NewLobby();
 
         // When
-        var snapshot = Snapshots.ForGameMaster(state);
+        var snapshot = Games.Snapshots.ForGameMaster(state);
 
         // Then
         Assert.Equal(Games.JoinAddress, snapshot.JoinAddress);
@@ -125,8 +125,8 @@ public sealed class SnapshotsTests
         state = Games.Engine.Handle(state, Games.ChooseAddress(Games.OtherAddress), Games.Context()).State;
 
         // Then
-        Assert.Equal(Games.OtherAddress, Snapshots.ForDisplay(state).JoinAddress);
-        Assert.Equal(Games.OtherAddress, Snapshots.ForGameMaster(state).JoinAddress);
+        Assert.Equal(Games.OtherAddress, Games.Snapshots.ForDisplay(state).JoinAddress);
+        Assert.Equal(Games.OtherAddress, Games.Snapshots.ForGameMaster(state).JoinAddress);
     }
 
     [Theory]
@@ -134,11 +134,11 @@ public sealed class SnapshotsTests
     public void ForDisplayAndPlayer_AnyPhase_ContainNoOtherCandidateNorInterfaceName(GamePhase phase, Phase _)
     {
         // Given: only the game master may see the networks of the host
-        var state = Games.LobbyWith("Zoé", "Max") with { Phase = phase };
+        var state = Games.InPhase(phase, "Zoé", "Max");
 
         // When
-        var projections = new List<object> { Snapshots.ForDisplay(state) };
-        projections.AddRange(state.Players.Select(p => Snapshots.ForPlayer(state, p)));
+        var projections = new List<object> { Games.Snapshots.ForDisplay(state) };
+        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
 
         // Then
         foreach (var json in projections.Select(Serialize))
@@ -160,9 +160,9 @@ public sealed class SnapshotsTests
         state = Games.Engine.Handle(state, Games.Rename(2, "Maxime"), Games.Context()).State;
 
         // Then
-        Assert.Equal(["Zoé", "Maxime"], Snapshots.ForDisplay(state).Players.Select(p => p.Nickname));
-        Assert.Equal(["Zoé", "Maxime"], Snapshots.ForGameMaster(state).Players.Select(p => p.Nickname));
-        Assert.Equal("Maxime", Snapshots.ForPlayer(state, state.Players[1]).Nickname);
+        Assert.Equal(["Zoé", "Maxime"], Games.Snapshots.ForDisplay(state).Players.Select(p => p.Nickname));
+        Assert.Equal(["Zoé", "Maxime"], Games.Snapshots.ForGameMaster(state).Players.Select(p => p.Nickname));
+        Assert.Equal("Maxime", Games.Snapshots.ForPlayer(state, state.Players[1]).Nickname);
     }
 
     [Fact]
@@ -172,10 +172,12 @@ public sealed class SnapshotsTests
         var state = Games.LobbyWith("Zoé", "Max") with { Version = 7 };
 
         // When
-        var snapshot = Snapshots.ForPlayer(state, state.Players[1]);
+        var snapshot = Games.Snapshots.ForPlayer(state, state.Players[1]);
 
         // Then
-        Assert.Equal(new PlayerSnapshot(state.GameId, 7, Phase.Lobby, Games.PlayerIdOf(2), "Max", PlayerCount: 2), snapshot);
+        Assert.Equal(
+            new PlayerSnapshot(state.GameId, 7, Phase.Lobby, Games.PlayerIdOf(2), "Max", PlayerCount: 2, Round: null, RoundView: null),
+            snapshot);
     }
 
     [Theory]
@@ -183,14 +185,14 @@ public sealed class SnapshotsTests
     public void ForEachRole_AnyPhase_ShowsThatPhase(GamePhase phase, Phase expected)
     {
         // Given
-        var state = Games.LobbyWith("Zoé") with { Phase = phase };
+        var state = Games.InPhase(phase, "Zoé");
 
         // When
         Phase[] projected =
         [
-            Snapshots.ForDisplay(state).Phase,
-            Snapshots.ForGameMaster(state).Phase,
-            Snapshots.ForPlayer(state, state.Players[0]).Phase,
+            Games.Snapshots.ForDisplay(state).Phase,
+            Games.Snapshots.ForGameMaster(state).Phase,
+            Games.Snapshots.ForPlayer(state, state.Players[0]).Phase,
         ];
 
         // Then
@@ -202,11 +204,11 @@ public sealed class SnapshotsTests
     public void ForEachRole_AnyPhase_ContainsNoPlayerToken(GamePhase phase, Phase _)
     {
         // Given
-        var state = Games.LobbyWith("Zoé", "Max", "Léa") with { Phase = phase };
+        var state = Games.InPhase(phase, "Zoé", "Max", "Léa");
 
         // When
-        var projections = new List<object> { Snapshots.ForDisplay(state), Snapshots.ForGameMaster(state) };
-        projections.AddRange(state.Players.Select(p => Snapshots.ForPlayer(state, p)));
+        var projections = new List<object> { Games.Snapshots.ForDisplay(state), Games.Snapshots.ForGameMaster(state) };
+        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
 
         // Then
         foreach (var json in projections.Select(Serialize))
@@ -220,11 +222,11 @@ public sealed class SnapshotsTests
     public void ForPlayer_AnyPhase_ContainsNothingAboutOtherPlayers(GamePhase phase, Phase _)
     {
         // Given
-        var state = Games.LobbyWith("Zoé", "Max", "Léa") with { Phase = phase };
+        var state = Games.InPhase(phase, "Zoé", "Max", "Léa");
         var player = state.Players[1];
 
         // When
-        var json = Serialize(Snapshots.ForPlayer(state, player));
+        var json = Serialize(Games.Snapshots.ForPlayer(state, player));
 
         // Then
         foreach (var other in state.Players.Where(p => p != player))
@@ -239,14 +241,14 @@ public sealed class SnapshotsTests
     public void ForDisplay_AnyPhase_IsTheSameAsWithoutSecrets(GamePhase phase, Phase _)
     {
         // Given: everything the TV screen may not show is removed from the state
-        var state = Games.LobbyWith("Zoé", "Max") with { Phase = phase };
+        var state = Games.InPhase(phase, "Zoé", "Max");
         var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear(), JoinAddressCandidates = [] };
 
         // When
-        var snapshot = Snapshots.ForDisplay(state);
+        var snapshot = Games.Snapshots.ForDisplay(state);
 
         // Then: compared as JSON, since the list of players has no value equality
-        Assert.Equal(Serialize(Snapshots.ForDisplay(withoutSecrets)), Serialize(snapshot));
+        Assert.Equal(Serialize(Games.Snapshots.ForDisplay(withoutSecrets)), Serialize(snapshot));
     }
 
     [Theory]
@@ -254,16 +256,91 @@ public sealed class SnapshotsTests
     public void ForGameMaster_AnyPhase_IsTheSameAsWithoutSecrets(GamePhase phase, Phase _)
     {
         // Given: the tokens are the only secret the game master may not see
-        var state = Games.LobbyWith("Zoé", "Max") with { Phase = phase };
+        var state = Games.InPhase(phase, "Zoé", "Max");
         var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear() };
 
         // When
-        var snapshot = Snapshots.ForGameMaster(state);
+        var snapshot = Games.Snapshots.ForGameMaster(state);
 
         // Then
-        Assert.Equal(Serialize(Snapshots.ForGameMaster(withoutSecrets)), Serialize(snapshot));
+        Assert.Equal(Serialize(Games.Snapshots.ForGameMaster(withoutSecrets)), Serialize(snapshot));
     }
 
-    private static string Serialize(object snapshot) =>
-        JsonSerializer.Serialize(snapshot, snapshot.GetType(), ContractJsonOptions.Default);
+    [Fact]
+    public void ForEachRole_Lobby_ShowsNoRound()
+    {
+        // Given
+        var state = Games.InPhase(GamePhase.Lobby, "Zoé");
+
+        // When
+        (RoundInfo? Round, object? View)[] projected =
+        [
+            (Games.Snapshots.ForDisplay(state).Round, Games.Snapshots.ForDisplay(state).RoundView),
+            (Games.Snapshots.ForGameMaster(state).Round, Games.Snapshots.ForGameMaster(state).RoundView),
+            (Games.Snapshots.ForPlayer(state, state.Players[0]).Round, Games.Snapshots.ForPlayer(state, state.Players[0]).RoundView),
+        ];
+
+        // Then
+        Assert.All(projected, p => Assert.Equal((null, null), p));
+    }
+
+    [Fact]
+    public void ForEachRole_Round_ShowsTheRoundAndTheViewOfItsMode()
+    {
+        // Given
+        var state = Games.InPhase(GamePhase.Round, "Zoé", "Max");
+        state = Games.Accepted(state, Games.PlayerActs(state, player: 1, "answers A"));
+        var expected = new RoundInfo(state.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement");
+
+        // When
+        var display = Games.Snapshots.ForDisplay(state);
+        var gameMaster = Games.Snapshots.ForGameMaster(state);
+        var player = Games.Snapshots.ForPlayer(state, state.Players[1]);
+
+        // Then
+        Assert.Equal((expected, new FakeDisplayView("Échauffement", 2)), (display.Round, display.RoundView));
+        Assert.Equal(expected, gameMaster.Round);
+        Assert.Equal(
+            ["start with 2 players", $"player {Games.PlayerIdOf(1).Value} answers A"],
+            Assert.IsType<FakeGameMasterView>(gameMaster.RoundView).Inputs);
+        Assert.Equal((expected, new FakePlayerView("Max", 2)), (player.Round, player.RoundView));
+    }
+
+    [Fact]
+    public void ForPlayer_PlayerWhoJoinedDuringTheRound_ShowsTheViewOfTheRound()
+    {
+        // Given
+        var state = Games.InPhase(GamePhase.Round, "Zoé");
+        state = Games.Accepted(state, Games.Join("Max", player: 2));
+
+        // When
+        var snapshot = Games.Snapshots.ForPlayer(state, state.Players[1]);
+
+        // Then
+        Assert.Equal(new FakePlayerView("Max", 1), snapshot.RoundView);
+        Assert.Equal(state.CurrentRound!.Id, snapshot.Round!.RoundId);
+    }
+
+    [Theory]
+    [InlineData(GamePhase.BetweenRounds, 1, "Échauffement")]
+    [InlineData(GamePhase.Finished, 2, "Finale")]
+    public void ForEachRole_OutsideARound_ShowsTheLastRoundWithoutView(GamePhase phase, int number, string title)
+    {
+        // Given
+        var state = Games.InPhase(phase, "Zoé");
+        var expected = new RoundInfo(state.CurrentRound!.Id, number, Count: 2, title);
+
+        // When
+        (RoundInfo? Round, object? View)[] projected =
+        [
+            (Games.Snapshots.ForDisplay(state).Round, Games.Snapshots.ForDisplay(state).RoundView),
+            (Games.Snapshots.ForGameMaster(state).Round, Games.Snapshots.ForGameMaster(state).RoundView),
+            (Games.Snapshots.ForPlayer(state, state.Players[0]).Round, Games.Snapshots.ForPlayer(state, state.Players[0]).RoundView),
+        ];
+
+        // Then
+        Assert.All(projected, p => Assert.Equal((expected, null), p));
+    }
+
+    private static string Serialize(object snapshot) => FakeJson.Serialize(snapshot);
 }

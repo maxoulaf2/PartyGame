@@ -1,0 +1,48 @@
+using PartyGame.Contracts;
+using PartyGame.Contracts.Packs;
+using PartyGame.Engine.Inputs;
+
+namespace PartyGame.Engine.Modes;
+
+/// <summary>
+/// Base of the game modes, typed by the descriptor of their activities and by the state of their rounds, so that a mode
+/// never casts what the engine hands it.
+/// </summary>
+/// <typeparam name="TDescriptor">The descriptor of the activities the mode plays.</typeparam>
+/// <typeparam name="TState">The state of a round of the mode.</typeparam>
+public abstract class GameMode<TDescriptor, TState> : IGameMode
+    where TDescriptor : RoundDescriptor
+    where TState : RoundState
+{
+    /// <inheritdoc />
+    public Type DescriptorType => typeof(TDescriptor);
+
+    /// <inheritdoc cref="IGameMode.Start" />
+    public abstract RoundTransition Start(TDescriptor descriptor, GameState game, GameContext context);
+
+    /// <inheritdoc cref="IGameMode.Handle" />
+    public abstract RoundTransition Handle(TState round, GameInput input, GameState game, GameContext context);
+
+    /// <inheritdoc cref="IGameMode.ProjectForPlayer" />
+    public abstract PlayerRoundView ProjectForPlayer(TState round, GameState game, Player player);
+
+    /// <inheritdoc cref="IGameMode.ProjectForDisplay" />
+    public abstract DisplayRoundView ProjectForDisplay(TState round, GameState game);
+
+    /// <inheritdoc cref="IGameMode.ProjectForGameMaster" />
+    public abstract GameMasterRoundView ProjectForGameMaster(TState round, GameState game);
+
+    RoundTransition IGameMode.Start(RoundDescriptor descriptor, GameState game, GameContext context) =>
+        Start((TDescriptor)descriptor, game, context);
+
+    RoundTransition IGameMode.Handle(RoundState round, GameInput input, GameState game, GameContext context) =>
+        Handle((TState)round, input, game, context);
+
+    PlayerRoundView IGameMode.ProjectForPlayer(RoundState round, GameState game, Player player) =>
+        ProjectForPlayer((TState)round, game, player);
+
+    DisplayRoundView IGameMode.ProjectForDisplay(RoundState round, GameState game) => ProjectForDisplay((TState)round, game);
+
+    GameMasterRoundView IGameMode.ProjectForGameMaster(RoundState round, GameState game) =>
+        ProjectForGameMaster((TState)round, game);
+}

@@ -8,8 +8,12 @@ public enum GamePhase
     /// <summary>Players join and wait for the game master to start the game.</summary>
     Lobby,
 
-    /// <summary>
-    /// The game is running. Provisional: E07 replaces it with the rounds of the pack.
-    /// </summary>
-    Started,
+    /// <summary>A round is in progress: the engine hands the inputs aimed at it to its game mode.</summary>
+    Round,
+
+    /// <summary>A round just finished, and the game master has yet to ask for the next one.</summary>
+    BetweenRounds,
+
+    /// <summary>The last round is over.</summary>
+    Finished,
 }

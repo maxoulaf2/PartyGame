@@ -8,8 +8,12 @@ public enum Phase
     /// <summary>Players join and wait for the game master to start the game.</summary>
     Lobby,
 
-    /// <summary>
-    /// The game is running. Provisional: the rounds of the pack replace it (E07).
-    /// </summary>
-    Started,
+    /// <summary>A round of the pack is in progress, played by its game mode.</summary>
+    Round,
+
+    /// <summary>A round just finished, and the game master has yet to start the next one.</summary>
+    BetweenRounds,
+
+    /// <summary>The last round of the pack is over.</summary>
+    Finished,
 }

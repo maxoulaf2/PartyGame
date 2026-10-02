@@ -1,5 +1,7 @@
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Lobby;
+using PartyGame.Engine.Modes;
+using PartyGame.Engine.Rounds;
 
 namespace PartyGame.Engine;
 
@@ -7,7 +9,8 @@ namespace PartyGame.Engine;
 /// The rules of the game, as a pure function: no I/O, no clock, no randomness of its own.
 /// The game loop calls it for each input, one at a time.
 /// </summary>
-public sealed class GameEngine : IGameEngine
+/// <param name="modes">The game modes that play the rounds of the packs.</param>
+public sealed class GameEngine(GameModes modes) : IGameEngine
 {
     /// <inheritdoc />
     public Transition Handle(GameState state, GameInput input, GameContext context)
@@ -22,11 +25,14 @@ public sealed class GameEngine : IGameEngine
             PlayerConnectionLost lost => Presence.ConnectionLost(state, lost),
             PlayerConnectionRestored restored => Presence.ConnectionRestored(state, restored),
             RenamePlayer rename => Renaming.Rename(state, rename),
-            StartGame start => Launch.Start(state, start),
+            StartGame start => Launch.Start(state, start, modes, context),
             ChooseAdvertisedAddress choice => AddressChoice.Choose(state, choice),
+            NextRound next => RoundFlow.Next(state, next, modes, context),
+            PlayerRoundInput player => RoundFlow.HandlePlayerIntent(state, player, modes, context),
+            GameMasterRoundInput gameMaster => RoundFlow.HandleGameMasterIntent(state, gameMaster, modes, context),
 
-            // No phase schedules a timer yet: any timer that elapses is obsolete.
-            TimerElapsed => Transition.Rejected(state, RejectionReason.UnexpectedTimer),
+            // Only rounds schedule timers so far.
+            TimerElapsed timer => RoundFlow.HandleTimer(state, timer, modes, context),
 
             _ => throw new NotSupportedException($"Input {input.GetType().Name} is not handled by the engine."),
         };

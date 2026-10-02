@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
+using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
@@ -41,6 +42,23 @@ public sealed class TimerSchedulerTests : IDisposable
         // Then
         Assert.Empty(beforeDueAt);
         Assert.Equal([new TimerElapsed(_countdown, dueAt)], _inputs.Inputs);
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(0)]
+    public async Task ScheduleAsync_TimerOfARound_EnqueuesTimerElapsedOfThatRound(int delaySeconds)
+    {
+        // Given: a timer the engine marked with its round, due later or already
+        var round = new RoundId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff"));
+        var dueAt = _time.GetUtcNow().AddSeconds(delaySeconds);
+
+        // When
+        await _timers.ScheduleAsync(new ScheduleTimer(_countdown, dueAt) { RoundId = round }, Ct);
+        _time.Advance(TimeSpan.FromMinutes(1));
+
+        // Then
+        Assert.Equal([new TimerElapsed(_countdown, dueAt) { RoundId = round }], _inputs.Inputs);
     }
 
     [Fact]
