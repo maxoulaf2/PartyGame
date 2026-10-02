@@ -48,6 +48,8 @@ Une intention invalide (réponse hors délai, second buzz, mauvaise phase) est u
 
 Chaque intention porte un `ClientSeq`, un entier croissant propre à chaque joueur et conservé avec son jeton dans le `localStorage`. Le serveur ignore toute intention dont le `ClientSeq` est inférieur ou égal au dernier traité pour ce joueur. Un client peut donc renvoyer sans risque ses intentions non acquittées après une reconnexion.
 
+Les intentions du GM, qui n'a pas de jeton, ne portent pas de `ClientSeq` : chacune nomme l'étape qu'elle fait avancer (manche, question, phase), et le moteur rejette comme obsolète celle qui ne correspond plus à l'étape courante. Un renvoi, un double appui ou deux consoles GM qui agissent en même temps ne font donc jamais avancer la partie deux fois.
+
 ### Projections et diffusion
 
 - Les DTO de snapshot vivent dans `PartyGame.Contracts`. L'état du moteur n'est jamais sérialisé directement vers un client.

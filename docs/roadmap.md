@@ -103,7 +103,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 **Critère de sortie :** une partie de 10 questions jouée de bout en bout par trois joueurs. Les tests de non-fuite passent pour chaque phase et chaque rôle.
 
-**À trancher :** barème (points fixes ou bonus de rapidité), temps de réponse global ou défini par question, affichage ou non du choix de chaque joueur à la révélation.
+**À trancher :** barème (points fixes ou bonus de rapidité), temps de réponse global ou défini par question, affichage ou non du choix de chaque joueur à la révélation. Tranché : voir les README des épopées E06 à E09 et l'[ADR 0004](adr/0004-format-et-modele-des-packs.md).
 
 ---
 
@@ -168,6 +168,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 ### E17 — Outils de création de contenu
 - Commande en ligne de commande pour valider un pack sans lancer de partie.
+- Packs au format zip, en plus des dossiers.
 - Mode aperçu, pour faire défiler chaque question d'un pack sur l'écran TV.
 - Guide de rédaction des packs dans `docs/`, et un pack d'exemple couvrant tous les modes.
 - Documentation de chaque mode dans `docs/modes/<mode>.md`.
@@ -186,6 +187,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 ### E19 — Contrôles avancés du GM
 - Pause et reprise de la partie.
+- Nouvelle partie sans redémarrer le serveur.
 - Ajustement manuel des scores et gestion des arrivées en cours de partie.
 - Saut de manche et réordonnancement en direct.
 
