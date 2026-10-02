@@ -69,7 +69,7 @@ L'adresse des joueurs est celle que l'écran TV encode dans son QR code. Le serv
 - il écarte les interfaces virtuelles (Hyper-V `vEthernet`, WSL, Docker, VirtualBox, VMware) et les VPN (WireGuard, Tailscale, ZeroTier, OpenVPN…), ainsi que les adresses en lien local (`169.254.x.x`) ou en CGNAT (`100.64.x.x` à `100.127.x.x`) ;
 - s'il reste plusieurs candidates, il préfère celle qui a une passerelle par défaut (la box ou le routeur), puis la plus petite adresse : le choix ne change pas d'un démarrage à l'autre tant que le réseau ne change pas.
 
-Si le PC est relié à plusieurs réseaux (Ethernet et Wi-Fi par exemple), la bannière liste les autres adresses possibles. Pour en imposer une, relancer le serveur avec le paramètre `Network:AdvertisedAddress` :
+Si le PC est relié à plusieurs réseaux (Ethernet et Wi-Fi par exemple), la bannière liste les autres adresses possibles. Le plus simple est alors de choisir la bonne depuis la console du game master (« Adresse des joueurs ») : le QR code de l'écran TV change aussitôt, sans redémarrage. Ce choix est oublié au redémarrage du serveur. Pour imposer une adresse de façon durable, relancer le serveur avec le paramètre `Network:AdvertisedAddress` :
 
 | Moyen | Exemple |
 |---|---|
