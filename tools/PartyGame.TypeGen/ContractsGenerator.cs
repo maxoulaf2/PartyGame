@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using PartyGame.Contracts;
+using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Serialization;
 
 namespace PartyGame.TypeGen;
@@ -17,15 +18,15 @@ internal static class ContractsGenerator
 
     /// <summary>
     /// Generates the TypeScript files of every public type of the contracts assembly,
-    /// except the serialization infrastructure.
+    /// except the serialization infrastructure and the pack descriptors, which the clients never receive.
     /// </summary>
     public static ImmutableArray<GeneratedFile> Generate(Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
-        var infrastructure = typeof(ContractJsonOptions).Namespace;
+        string?[] excluded = [typeof(ContractJsonOptions).Namespace, typeof(PackDescriptor).Namespace];
         var roots = assembly.GetExportedTypes()
-            .Where(t => t.Namespace != infrastructure)
+            .Where(t => !excluded.Contains(t.Namespace))
             .OrderBy(t => t.FullName, StringComparer.Ordinal);
 
         return Generate(roots);
