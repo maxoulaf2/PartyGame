@@ -221,16 +221,17 @@ test('the GM console locks its controls during an outage and unlocks them once b
     );
     const network = await relayWebSockets(page);
     await page.goto('/gm/');
-    const start = page.getByRole('button', { name: fr.gm.start.action });
+    // Unlike the start, enabled whatever the pack chosen by the other tests.
+    const reload = page.getByRole('button', { name: fr.gm.packs.reload });
     const rename = page.getByRole('button', {
         name: fr.gm.rename.actionFor.replace('{nickname}', () => nickname),
     });
-    await expect(start).toBeEnabled();
+    await expect(reload).toBeEnabled();
     await expect(rename).toBeEnabled();
 
     await goOffline(page, network);
 
-    await expect(start).toBeDisabled();
+    await expect(reload).toBeDisabled();
     await expect(rename).toBeDisabled();
     await expectNoticeAfterDelay(page);
     await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
@@ -238,7 +239,7 @@ test('the GM console locks its controls during an outage and unlocks them once b
     await page.context().setOffline(false);
 
     await expect(page.getByText(fr.connection.reconnecting)).toBeHidden({ timeout: 15_000 });
-    await expect(start).toBeEnabled();
+    await expect(reload).toBeEnabled();
     await expect(rename).toBeEnabled();
 
     await player.context().close();

@@ -20,7 +20,14 @@
 
     const playerCount = $derived(snapshot.players.length);
     const enoughPlayers = $derived(playerCount >= snapshot.minimumPlayerCount);
-    const canStart = $derived(interactive && !sending && enoughPlayers);
+    const packChosen = $derived(snapshot.selectedPackId !== null);
+    const canStart = $derived(interactive && !sending && enoughPlayers && packChosen);
+    // Every reason why the game cannot start yet, read with the button.
+    const hints = $derived(
+        [packChosen ? null : 'start-pack-hint', enoughPlayers ? null : 'start-players-hint'].filter(
+            (id) => id !== null,
+        ),
+    );
 
     async function start() {
         if (!canStart) {
@@ -30,7 +37,7 @@
         const outcome = await session.startGame();
         sending = false;
         confirming = false;
-        // Too few players or already started: the snapshot shows it. A lost connection is for the
+        // Too few players, no pack or already started: the snapshot shows it. A lost connection is for the
         // connection indicator to show.
         failed = outcome === 'StartFailed';
     }
@@ -41,7 +48,7 @@
         <button
             type="button"
             disabled={!canStart}
-            aria-describedby={enoughPlayers ? undefined : 'start-hint'}
+            aria-describedby={hints.length > 0 ? hints.join(' ') : undefined}
             onclick={() => {
                 failed = false;
                 confirming = true;
@@ -49,11 +56,15 @@
         >
             {fr.gm.start.action}
         </button>
+        {#if !packChosen}
+            <p id="start-pack-hint" class="hint">{fr.gm.start.packRequired}</p>
+        {/if}
         {#if !enoughPlayers}
-            <p id="start-hint" class="hint">
+            <p id="start-players-hint" class="hint">
                 {countText(fr.gm.start.minimumPlayers, snapshot.minimumPlayerCount)}
             </p>
-        {:else if failed}
+        {/if}
+        {#if failed && hints.length === 0}
             <p class="problem" role="alert">{fr.gm.start.failed}</p>
         {/if}
     </section>

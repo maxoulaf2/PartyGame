@@ -176,7 +176,7 @@ test('/gm/ shows a player whose phone left as disconnected', async ({ page, brow
     await expect(row).toContainText(fr.gm.disconnected);
 });
 
-test('/gm/ cannot start a game without any player, and says how many are needed', async ({
+test('/gm/ cannot start a game without any player nor pack, and says what is missing', async ({
     page,
 }) => {
     await serveGameMasterSnapshot(page, fakeLobby());
@@ -185,6 +185,19 @@ test('/gm/ cannot start a game without any player, and says how many are needed'
 
     await expect(page.getByRole('button', { name: fr.gm.start.action })).toBeDisabled();
     await expect(page.getByText(countText(fr.gm.start.minimumPlayers, 1))).toBeVisible();
+    await expect(page.getByText(fr.gm.start.packRequired)).toBeVisible();
+});
+
+test('/gm/ says when no pack was found, with the folder it read', async ({ page }) => {
+    await serveGameMasterSnapshot(page, fakeLobby());
+
+    await openConsole(page);
+
+    await expect(page.getByText(fr.gm.packs.none, { exact: true })).toBeVisible();
+    await expect(
+        page.getByText(fr.gm.packs.directory.replace('{directory}', () => '/srv/partygame/packs')),
+    ).toBeVisible();
+    await expect(page.getByRole('radio')).toHaveCount(0);
 });
 
 test('/gm/ shows the advertised address without a choice when the host has one network', async ({

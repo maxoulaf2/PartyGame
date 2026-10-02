@@ -16,6 +16,12 @@
         snapshot.joinAddress ? composeJoinUrl(snapshot.joinAddress, location) : null,
     );
     const status = $derived(countText(fr.display.playersJoined, snapshot.players.length));
+    // A function as replacement: a title such as « $& » must show as written in the pack.
+    const packTitle = $derived(
+        snapshot.packTitle === null
+            ? null
+            : fr.display.packTitle.replace('{title}', () => snapshot.packTitle ?? ''),
+    );
     // Registration stays open once started: the QR code and the list stay for late arrivals.
     // Provisional screen for every phase after the lobby, until the views of the modes (US-E07-02).
     const started = $derived(snapshot.phase !== 'Lobby');
@@ -37,6 +43,9 @@
     </section>
     <section class="lobby">
         <h1>{fr.app.name}</h1>
+        {#if packTitle !== null}
+            <p class="pack">{packTitle}</p>
+        {/if}
         {#if started}
             <p class="started">{fr.display.started}</p>
         {/if}
@@ -105,6 +114,12 @@
 
     .status {
         color: var(--color-text-muted);
+    }
+
+    .pack {
+        font-size: 1.5em;
+        font-weight: 700;
+        overflow-wrap: anywhere;
     }
 
     .started {

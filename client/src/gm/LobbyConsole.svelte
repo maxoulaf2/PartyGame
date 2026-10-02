@@ -5,6 +5,7 @@
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
     import AddressControl from './AddressControl.svelte';
+    import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import StartControl from './StartControl.svelte';
 
@@ -31,6 +32,8 @@
     </p>
 
     <AddressControl {snapshot} {session} {interactive} />
+
+    <PackControl {snapshot} {session} {interactive} />
 
     <StartControl {snapshot} {session} {interactive} />
 

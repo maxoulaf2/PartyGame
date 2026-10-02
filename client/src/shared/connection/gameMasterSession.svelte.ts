@@ -2,11 +2,13 @@ import type {
     ChooseAdvertisedAddressRefusal,
     GameMasterSnapshot,
     PlayerId,
+    ReloadPacksRefusal,
     RenamePlayerRefusal,
+    SelectPackRefusal,
     StartGameRefusal,
 } from '../contracts';
 import type { CodeStorage } from './codeStorage';
-import type { GameConnection } from './gameHub';
+import type { GameConnection, GameHubMethods } from './gameHub';
 import type { SnapshotStore } from './snapshotStore.svelte';
 
 /**
@@ -43,6 +45,22 @@ export type StartOutcome = 'started' | 'unreachable' | StartGameRefusal;
  * (connection lost, or the console no longer authenticated).
  */
 export type AddressOutcome = 'chosen' | 'unreachable' | ChooseAdvertisedAddressRefusal;
+
+/**
+ * What became of a pack the game master chose: selected, refused by the server, or not sent
+ * (connection lost, or the console no longer authenticated).
+ */
+export type SelectPackOutcome = 'selected' | 'unreachable' | SelectPackRefusal;
+
+/**
+ * What became of a reload of the packs the game master asked for: done, refused by the server, or
+ * not sent (connection lost, or the console no longer authenticated).
+ */
+export type ReloadPacksOutcome = 'reloaded' | 'unreachable' | ReloadPacksRefusal;
+
+/** The hub methods the game master alone may call: the server ignores them otherwise. */
+type GameMasterMethod =
+    'RenamePlayer' | 'StartGame' | 'ChooseAdvertisedAddress' | 'SelectPack' | 'ReloadPacks';
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -134,21 +152,8 @@ export class GameMasterSession {
      * nickname reaches the console through the next snapshot.
      */
     async rename(playerId: PlayerId, nickname: string): Promise<RenameOutcome> {
-        if (!this.#connected || this.#access !== 'granted') {
-            return 'unreachable';
-        }
-
-        let result;
-        try {
-            result = await this.#connection.invoke('RenamePlayer', { playerId, nickname });
-        } catch {
-            return 'unreachable';
-        }
-        // No answer: the server ignored the intent, the code is being checked again.
-        if (result === null) {
-            return 'unreachable';
-        }
-        return result.refusal ?? 'renamed';
+        const result = await this.#request('RenamePlayer', { playerId, nickname });
+        return result === null ? 'unreachable' : (result.refusal ?? 'renamed');
     }
 
     /**
@@ -156,21 +161,8 @@ export class GameMasterSession {
      * console through the next snapshot.
      */
     async startGame(): Promise<StartOutcome> {
-        if (!this.#connected || this.#access !== 'granted') {
-            return 'unreachable';
-        }
-
-        let result;
-        try {
-            result = await this.#connection.invoke('StartGame');
-        } catch {
-            return 'unreachable';
-        }
-        // No answer: the server ignored the intent, the code is being checked again.
-        if (result === null) {
-            return 'unreachable';
-        }
-        return result.refusal ?? 'started';
+        const result = await this.#request('StartGame');
+        return result === null ? 'unreachable' : (result.refusal ?? 'started');
     }
 
     /**
@@ -179,21 +171,45 @@ export class GameMasterSession {
      * screen through the next snapshots.
      */
     async chooseAddress(address: string): Promise<AddressOutcome> {
-        if (!this.#connected || this.#access !== 'granted') {
-            return 'unreachable';
-        }
+        const result = await this.#request('ChooseAdvertisedAddress', { address });
+        return result === null ? 'unreachable' : (result.refusal ?? 'chosen');
+    }
 
-        let result;
+    /**
+     * Chooses the pack of the game, among the valid packs of the snapshot. The server alone decides
+     * whether it can be chosen; the selection reaches every console and the TV screen through the
+     * next snapshots.
+     */
+    async selectPack(packId: string): Promise<SelectPackOutcome> {
+        const result = await this.#request('SelectPack', { packId });
+        return result === null ? 'unreachable' : (result.refusal ?? 'selected');
+    }
+
+    /**
+     * Has the server read the packs again from its disk, once the game master fixed one. The new
+     * catalog reaches every console through the next snapshots.
+     */
+    async reloadPacks(): Promise<ReloadPacksOutcome> {
+        const result = await this.#request('ReloadPacks');
+        return result === null ? 'unreachable' : (result.refusal ?? 'reloaded');
+    }
+
+    /**
+     * Calls a game master method, and resolves to its answer, or to null when it could not be sent
+     * or the server ignored it (the code is being checked again).
+     */
+    async #request<M extends GameMasterMethod>(
+        method: M,
+        ...args: GameHubMethods[M]['args']
+    ): Promise<GameHubMethods[M]['result']> {
+        if (!this.#connected || this.#access !== 'granted') {
+            return null;
+        }
         try {
-            result = await this.#connection.invoke('ChooseAdvertisedAddress', { address });
+            return await this.#connection.invoke(method, ...args);
         } catch {
-            return 'unreachable';
+            return null;
         }
-        // No answer: the server ignored the intent, the code is being checked again.
-        if (result === null) {
-            return 'unreachable';
-        }
-        return result.refusal ?? 'chosen';
     }
 
     #onConnected(): void {

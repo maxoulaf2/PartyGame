@@ -6,7 +6,9 @@ import type {
     GameMasterSnapshot,
     IGameClient,
     PlayerId,
+    ReloadPacksResult,
     RenamePlayerResult,
+    SelectPackResult,
     StartGameResult,
 } from '../contracts';
 import type { CodeStorage } from './codeStorage';
@@ -34,13 +36,16 @@ function memoryStorage(initial: string | null = null): CodeStorage & { value: st
 
 /**
  * A server that accepts one code only, and whose connection can drop and come back. A rename gets
- * `renameAnswer`, a start `startAnswer`, an address choice `addressAnswer`.
+ * `renameAnswer`, a start `startAnswer`, an address choice `addressAnswer`, a pack choice
+ * `packAnswer`, a reload `reloadAnswer`.
  */
 function fakeServer(options: { startFails?: boolean } = {}) {
     let code = goodCode;
     let renameAnswer: RenamePlayerResult | null = { refusal: null };
     let startAnswer: StartGameResult | null = { refusal: null };
     let addressAnswer: ChooseAdvertisedAddressResult | null = { refusal: null };
+    let packAnswer: SelectPackResult | null = { refusal: null };
+    let reloadAnswer: ReloadPacksResult | null = { refusal: null };
     let reachable = true;
     const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
     const callbacks = { reconnecting: () => {}, reconnected: () => {} };
@@ -58,6 +63,8 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                 | RenamePlayerResult
                 | StartGameResult
                 | ChooseAdvertisedAddressResult
+                | SelectPackResult
+                | ReloadPacksResult
                 | null
             > => {
                 if (!reachable) {
@@ -71,6 +78,12 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                 }
                 if (method === 'ChooseAdvertisedAddress') {
                     return addressAnswer;
+                }
+                if (method === 'SelectPack') {
+                    return packAnswer;
+                }
+                if (method === 'ReloadPacks') {
+                    return reloadAnswer;
                 }
                 return {
                     refusal: announcement.gameMasterCode === code ? null : 'GameMasterCodeInvalid',
@@ -117,6 +130,12 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         },
         answerAddressChoicesWith: (answer: ChooseAdvertisedAddressResult | null) => {
             addressAnswer = answer;
+        },
+        answerPackChoicesWith: (answer: SelectPackResult | null) => {
+            packAnswer = answer;
+        },
+        answerReloadsWith: (answer: ReloadPacksResult | null) => {
+            reloadAnswer = answer;
         },
     };
 }
@@ -499,6 +518,96 @@ describe('GameMasterSession', () => {
                 'ChooseAdvertisedAddress',
                 expect.anything(),
             );
+        });
+    });
+
+    describe('selectPack', () => {
+        it('sends the chosen pack, and reports it selected', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.selectPack('soiree');
+
+            expect(outcome).toBe('selected');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('SelectPack', {
+                packId: 'soiree',
+            });
+        });
+
+        it.each([
+            'PackUnknown',
+            'PackInvalid',
+            'AlreadyStarted',
+            'SelectionFailed',
+            'MessageInvalid',
+        ] as const)('reports the refusal %s of the server', async (refusal) => {
+            const { session, server } = await grantedSession();
+            server.answerPackChoicesWith({ refusal });
+
+            expect(await session.selectPack('soiree')).toBe(refusal);
+        });
+
+        it('reports an ignored or lost choice as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.answerPackChoicesWith(null);
+            expect(await session.selectPack('soiree')).toBe('unreachable');
+
+            server.becomeUnreachable();
+            expect(await session.selectPack('soiree')).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.selectPack('soiree')).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.selectPack('soiree')).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'SelectPack',
+                expect.anything(),
+            );
+        });
+    });
+
+    describe('reloadPacks', () => {
+        it('sends the intent without any message, and reports the reload', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.reloadPacks();
+
+            expect(outcome).toBe('reloaded');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ReloadPacks');
+        });
+
+        it.each(['AlreadyStarted', 'ReloadFailed'] as const)(
+            'reports the refusal %s of the server',
+            async (refusal) => {
+                const { session, server } = await grantedSession();
+                server.answerReloadsWith({ refusal });
+
+                expect(await session.reloadPacks()).toBe(refusal);
+            },
+        );
+
+        it('reports an ignored or lost reload as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.answerReloadsWith(null);
+            expect(await session.reloadPacks()).toBe('unreachable');
+
+            server.becomeUnreachable();
+            expect(await session.reloadPacks()).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.reloadPacks()).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.reloadPacks()).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith('ReloadPacks');
         });
     });
 });

@@ -40,6 +40,8 @@ export const fr = {
             other: '{count} joueurs inscrits',
         },
         playerListLabel: 'Joueurs inscrits',
+        // The title of the pack chosen by the game master, shown in the lobby.
+        packTitle: 'Au programme : {title}',
         // Read by screen readers next to the icon of a player whose phone is disconnected.
         disconnected: 'déconnecté',
         // Provisional: the first round of the pack replaces this screen (E07).
@@ -78,8 +80,91 @@ export const fr = {
             none: 'Aucune adresse de réseau local : connectez ce PC au Wi-Fi, puis relancez le serveur.',
             failed: 'Le changement d’adresse n’a pas abouti : réessayez.',
         },
+        packs: {
+            title: 'Pack de la partie',
+            directory: 'Dossier des packs : {directory}',
+            none: 'Aucun pack trouvé',
+            noneHint:
+                'Un pack est un sous-dossier qui contient un fichier pack.json. Ajoutez-en un, puis actualisez.',
+            listLabel: 'Packs disponibles',
+            untitled: 'Pack sans titre',
+            folder: 'Dossier {folder}',
+            valid: 'Valide',
+            invalid: {
+                zero: 'Invalide',
+                one: 'Invalide : {count} problème',
+                other: 'Invalide : {count} problèmes',
+            },
+            roundCount: {
+                zero: 'Aucune manche',
+                one: '{count} manche',
+                other: '{count} manches',
+            },
+            // One round of a pack, with the game mode that plays it.
+            round: '{title} ({mode})',
+            showProblems: 'Voir les problèmes',
+            // Where a problem is: the file of the pack, then the JSON path within it, as written.
+            location: '{file}, {path}',
+            reload: 'Actualiser les packs',
+            reloading: 'Actualisation…',
+            reloadHint: 'Après avoir modifié un pack sur le disque, actualisez pour le revérifier.',
+            reloadFailed: 'L’actualisation n’a pas abouti : réessayez.',
+            selectFailed: 'Le choix du pack n’a pas abouti : réessayez.',
+            // Once the game is started, its pack is fixed.
+            played: 'Pack : {title}',
+            // The game modes, by the type of activity of the packs; an unknown one shows as is.
+            modes: {
+                quiz: 'Quiz QCM',
+            },
+            // What a value should be, inserted in the message of PackValueTypeInvalid.
+            valueTypes: {
+                string: 'un texte entre guillemets',
+                integer: 'un nombre entier',
+                number: 'un nombre',
+                boolean: 'true ou false',
+                array: 'une liste entre crochets [ ]',
+                object: 'un objet entre accolades { }',
+            },
+            // One message per PackProblemCode, with its parameters between braces. The bounds
+            // of a length or a count come as one or both of min and max.
+            problems: {
+                PackJsonInvalid:
+                    'JSON mal formé, ligne {line}, colonne {column} : vérifiez les virgules, guillemets et accolades autour.',
+                PackPropertyMissing: 'Propriété obligatoire absente : {property}',
+                PackPropertyUnknown: 'Propriété inconnue : {property} (faute de frappe ?)',
+                PackValueTypeInvalid: 'Valeur incorrecte : il faut {expected}.',
+                PackValueOutOfRange: 'Valeur hors limites : de {min} à {max}',
+                PackTextLengthOutOfRange: {
+                    between: 'Longueur du texte incorrecte : de {min} à {max} caractères',
+                    atLeast: 'Texte trop court : longueur minimale {min}',
+                    atMost: 'Texte trop long : longueur maximale {max}',
+                },
+                PackItemCountOutOfRange: {
+                    between: 'Nombre d’éléments incorrect : de {min} à {max}',
+                    atLeast: 'Pas assez d’éléments : au moins {min}',
+                    atMost: 'Trop d’éléments : au plus {max}',
+                },
+                PackRoundTypeUnknown: 'Type d’activité inconnu : « {type} »',
+                PackMediaPathInvalid:
+                    'Chemin de média mal écrit : {media} (séparez les dossiers par /, sans caractère spécial)',
+                PackMediaOutsidePack: 'Média hors du dossier du pack : {media}',
+                PackMediaTypeUnsupported: 'Format de média non pris en charge : {media}',
+                PackMediaMissing: 'Média introuvable : {media}',
+                PackMediaCaseMismatch:
+                    'Majuscules et minuscules différentes du fichier : {media} au lieu de {actual}',
+                PackLoadFailed:
+                    'Le pack n’a pas pu être chargé à cause d’une erreur inattendue, détaillée dans le journal du serveur.',
+                QuizCorrectChoiceMissing:
+                    'Question sans bonne réponse : marquez une proposition avec "correct": true',
+                QuizCorrectChoiceDuplicated:
+                    'Question avec plusieurs bonnes réponses : une seule proposition doit avoir "correct": true',
+                QuizChoiceDuplicated: 'Proposition en double : « {choice} »',
+            },
+        },
         start: {
             action: 'Lancer la partie',
+            // Shown while no pack is chosen.
+            packRequired: 'Choisissez un pack',
             // Shown while too few players are registered. The minimum is at least 1, never 0.
             minimumPlayers: {
                 zero: 'La partie peut être lancée sans joueur.',
