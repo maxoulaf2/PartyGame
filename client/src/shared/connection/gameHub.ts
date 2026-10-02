@@ -7,6 +7,7 @@ import type {
     JoinResult,
     RenamePlayerRequest,
     RenamePlayerResult,
+    StartGameResult,
 } from '../contracts';
 
 /** Where the .NET server exposes its SignalR hub (`ServerPaths.GameHub`). */
@@ -21,6 +22,7 @@ export interface GameHubMethods {
     JoinGame: { args: [request: JoinRequest]; result: JoinResult };
     // Null when the server ignores the intent: the connection is not authenticated as game master.
     RenamePlayer: { args: [request: RenamePlayerRequest]; result: RenamePlayerResult | null };
+    StartGame: { args: []; result: StartGameResult | null };
 }
 
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */

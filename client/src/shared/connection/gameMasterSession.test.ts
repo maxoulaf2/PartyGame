@@ -6,6 +6,7 @@ import type {
     IGameClient,
     PlayerId,
     RenamePlayerResult,
+    StartGameResult,
 } from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
@@ -32,11 +33,12 @@ function memoryStorage(initial: string | null = null): CodeStorage & { value: st
 
 /**
  * A server that accepts one code only, and whose connection can drop and come back. A rename gets
- * `renameAnswer`.
+ * `renameAnswer`, a start `startAnswer`.
  */
 function fakeServer(options: { startFails?: boolean } = {}) {
     let code = goodCode;
     let renameAnswer: RenamePlayerResult | null = { refusal: null };
+    let startAnswer: StartGameResult | null = { refusal: null };
     let reachable = true;
     const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
     const callbacks = { reconnecting: () => {}, reconnected: () => {}, close: () => {} };
@@ -49,12 +51,15 @@ function fakeServer(options: { startFails?: boolean } = {}) {
             async (
                 method: string,
                 announcement: { gameMasterCode: string | null },
-            ): Promise<AnnouncementResult | RenamePlayerResult | null> => {
+            ): Promise<AnnouncementResult | RenamePlayerResult | StartGameResult | null> => {
                 if (!reachable) {
                     throw new Error('disconnected');
                 }
                 if (method === 'RenamePlayer') {
                     return renameAnswer;
+                }
+                if (method === 'StartGame') {
+                    return startAnswer;
                 }
                 return {
                     refusal: announcement.gameMasterCode === code ? null : 'GameMasterCodeInvalid',
@@ -99,11 +104,14 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         answerRenamesWith: (answer: RenamePlayerResult | null) => {
             renameAnswer = answer;
         },
+        answerStartsWith: (answer: StartGameResult | null) => {
+            startAnswer = answer;
+        },
     };
 }
 
 function snapshot(version: number): GameMasterSnapshot {
-    return { gameId, version, phase: 'Lobby', players: [] };
+    return { gameId, version, phase: 'Lobby', players: [], minimumPlayerCount: 1 };
 }
 
 async function startedSession(storage: CodeStorage, server = fakeServer()) {
@@ -112,6 +120,12 @@ async function startedSession(storage: CodeStorage, server = fakeServer()) {
     session.start();
     await vi.waitFor(() => expect(session.connected).toBe(true));
     return { session, store, server };
+}
+
+async function grantedSession() {
+    const started = await startedSession(memoryStorage(goodCode));
+    await vi.waitFor(() => expect(started.session.access).toBe('granted'));
+    return started;
 }
 
 describe('isCodeComplete', () => {
@@ -292,12 +306,6 @@ describe('GameMasterSession', () => {
     });
 
     describe('rename', () => {
-        async function grantedSession() {
-            const started = await startedSession(memoryStorage(goodCode));
-            await vi.waitFor(() => expect(started.session.access).toBe('granted'));
-            return started;
-        }
-
         it('sends the player and the nickname as typed, and reports the rename', async () => {
             const { session, server } = await grantedSession();
 
@@ -346,6 +354,52 @@ describe('GameMasterSession', () => {
                 'RenamePlayer',
                 expect.anything(),
             );
+        });
+    });
+
+    describe('startGame', () => {
+        it('sends the intent without any message, and reports the start', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.startGame();
+
+            expect(outcome).toBe('started');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('StartGame');
+        });
+
+        it.each(['NotEnoughPlayers', 'AlreadyStarted', 'StartFailed'] as const)(
+            'reports the refusal %s of the server',
+            async (refusal) => {
+                const { session, server } = await grantedSession();
+                server.answerStartsWith({ refusal });
+
+                expect(await session.startGame()).toBe(refusal);
+            },
+        );
+
+        it('reports an ignored start as unreachable, the code being checked again', async () => {
+            const { session, server } = await grantedSession();
+            server.answerStartsWith(null);
+
+            expect(await session.startGame()).toBe('unreachable');
+        });
+
+        it('reports a start lost with the connection as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.becomeUnreachable();
+
+            expect(await session.startGame()).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.startGame()).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.startGame()).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith('StartGame');
         });
     });
 });

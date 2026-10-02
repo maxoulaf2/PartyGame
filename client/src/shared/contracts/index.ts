@@ -22,3 +22,5 @@ export type * from './RenamePlayerRefusal';
 export type * from './RenamePlayerRequest';
 export type * from './RenamePlayerResult';
 export type * from './Role';
+export type * from './StartGameRefusal';
+export type * from './StartGameResult';

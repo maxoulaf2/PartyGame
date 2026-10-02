@@ -21,6 +21,7 @@ public sealed class GameEngine : IGameEngine
             JoinGame join => Registration.Join(state, join),
             PlayerConnectionLost lost => Presence.ConnectionLost(state, lost),
             RenamePlayer rename => Renaming.Rename(state, rename),
+            StartGame start => Launch.Start(state, start),
 
             // No phase schedules a timer yet: any timer that elapses is obsolete.
             TimerElapsed => Transition.Rejected(state, RejectionReason.UnexpectedTimer),

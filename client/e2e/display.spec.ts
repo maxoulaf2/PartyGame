@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { DisplayPlayer, DisplaySnapshot, GameId, PlayerId } from '../src/shared/contracts';
+import type {
+    DisplayPlayer,
+    DisplaySnapshot,
+    GameId,
+    Phase,
+    PlayerId,
+} from '../src/shared/contracts';
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { serveDisplaySnapshot } from './fakeHub.ts';
@@ -19,11 +25,12 @@ function playerList(page: Page) {
 function fakeSnapshot(
     players: readonly DisplayPlayer[],
     joinAddress: string | null = advertisedAddress,
+    phase: Phase = 'Lobby',
 ): DisplaySnapshot {
     return {
         gameId: '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId,
         version: 1,
-        phase: 'Lobby',
+        phase,
         joinAddress,
         players,
     };
@@ -96,46 +103,53 @@ test('/display/ shows players as they join, then dims those who leave', async ({
     await Promise.all(phones.slice(1).map((phone) => phone.context().close()));
 });
 
-test('/display/ fits 20 long nicknames on a 1080p screen, readable and clear of the edges', async ({
-    page,
-}) => {
-    const players = Array.from({ length: 20 }, (_, index) =>
-        fakePlayer(index + 1, `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`, index !== 3),
-    );
-    expect(players.every((player) => [...player.nickname].length === 16)).toBe(true);
-    await serveDisplaySnapshot(page, fakeSnapshot(players));
-
-    await page.goto('/display/');
-
-    const viewport = page.viewportSize();
-    if (!viewport) {
-        throw new Error('The test needs a fixed viewport');
-    }
-    await expect(playerList(page).locator('li')).toHaveCount(20);
-    await expect(page.getByText(countText(fr.display.playersJoined, 20))).toBeVisible();
-    for (const player of players) {
-        const nickname = playerList(page).getByText(player.nickname, { exact: true });
-        await expect(nickname).toBeVisible();
-        expectWithinSafeArea(await nickname.boundingBox(), viewport);
-        // About 3 cm high on a 55" TV: readable from 3 m.
-        const fontSize = await nickname.evaluate((element) =>
-            parseFloat(getComputedStyle(element).fontSize),
+for (const phase of ['Lobby', 'Started'] as const) {
+    test(`/display/ fits 20 long nicknames on a 1080p screen in phase ${phase}, readable and clear of the edges`, async ({
+        page,
+    }) => {
+        const players = Array.from({ length: 20 }, (_, index) =>
+            fakePlayer(
+                index + 1,
+                `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`,
+                index !== 3,
+            ),
         );
-        expect(fontSize).toBeGreaterThanOrEqual(30);
-    }
-    for (const element of [
-        page.getByRole('img', { name: fr.display.qrCodeLabel }),
-        page.getByText(expectedUrl),
-        page.getByRole('heading', { name: fr.app.name }),
-    ]) {
-        expectWithinSafeArea(await element.boundingBox(), viewport);
-    }
-    const overflows = await page.evaluate(() => {
-        const root = document.documentElement;
-        return root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth;
+        expect(players.every((player) => [...player.nickname].length === 16)).toBe(true);
+        await serveDisplaySnapshot(page, fakeSnapshot(players, advertisedAddress, phase));
+
+        await page.goto('/display/');
+
+        const viewport = page.viewportSize();
+        if (!viewport) {
+            throw new Error('The test needs a fixed viewport');
+        }
+        await expect(playerList(page).locator('li')).toHaveCount(20);
+        await expect(page.getByText(countText(fr.display.playersJoined, 20))).toBeVisible();
+        for (const player of players) {
+            const nickname = playerList(page).getByText(player.nickname, { exact: true });
+            await expect(nickname).toBeVisible();
+            expectWithinSafeArea(await nickname.boundingBox(), viewport);
+            // About 3 cm high on a 55" TV: readable from 3 m.
+            const fontSize = await nickname.evaluate((element) =>
+                parseFloat(getComputedStyle(element).fontSize),
+            );
+            expect(fontSize).toBeGreaterThanOrEqual(30);
+        }
+        for (const element of [
+            page.getByRole('img', { name: fr.display.qrCodeLabel }),
+            page.getByText(expectedUrl),
+            page.getByRole('heading', { name: fr.app.name }),
+            ...(phase === 'Started' ? [page.getByText(fr.display.started)] : []),
+        ]) {
+            expectWithinSafeArea(await element.boundingBox(), viewport);
+        }
+        const overflows = await page.evaluate(() => {
+            const root = document.documentElement;
+            return root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth;
+        });
+        expect(overflows).toBe(false);
     });
-    expect(overflows).toBe(false);
-});
+}
 
 test('/display/ keeps the player list when the server knows no address', async ({ page }) => {
     await serveDisplaySnapshot(page, fakeSnapshot([fakePlayer(1, 'Zoé')], null));

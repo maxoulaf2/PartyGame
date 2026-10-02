@@ -10,4 +10,12 @@ namespace PartyGame.Contracts;
 /// <param name="Version">Increases by one with each change of the game, so that a client ignores older snapshots.</param>
 /// <param name="Phase">Current phase of the game.</param>
 /// <param name="Players">Registered players, in order of arrival, so that nobody moves when another one joins.</param>
-public sealed record GameMasterSnapshot(GameId GameId, long Version, Phase Phase, ImmutableArray<GameMasterPlayer> Players);
+/// <param name="MinimumPlayerCount">
+/// Number of registered players, connected or not, below which the game cannot be started.
+/// </param>
+public sealed record GameMasterSnapshot(
+    GameId GameId,
+    long Version,
+    Phase Phase,
+    ImmutableArray<GameMasterPlayer> Players,
+    int MinimumPlayerCount);

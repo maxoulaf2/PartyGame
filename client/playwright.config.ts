@@ -3,6 +3,7 @@ import { advertisedAddress, gameMasterCode, gameServerPort } from './e2e/gameSer
 
 const port = 4173;
 const mobilePages = /(player|gm)\.spec\.ts/;
+const launch = /launch\.spec\.ts/;
 
 export default defineConfig({
     testDir: './e2e',
@@ -20,7 +21,14 @@ export default defineConfig({
         {
             name: 'desktop-chrome',
             use: { ...devices['Desktop Chrome'] },
-            testIgnore: /player\.spec\.ts/,
+            testIgnore: [/player\.spec\.ts/, launch],
+        },
+        // Starting the game cannot be undone on the shared server: once every other test is done.
+        {
+            name: 'launch',
+            use: { ...devices['Desktop Chrome'] },
+            testMatch: launch,
+            dependencies: ['ios-safari', 'android-chrome', 'desktop-chrome'],
         },
     ],
     webServer: [

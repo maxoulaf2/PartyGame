@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { DisplaySnapshot } from '../src/shared/contracts';
+import type { DisplaySnapshot, GameMasterSnapshot } from '../src/shared/contracts';
 
 // The JSON protocol of SignalR ends each message with the 0x1e record separator.
 const separator = '\u001e';
@@ -23,7 +23,20 @@ function send(socket: { send(message: string): void }, message: object): void {
  * announcement: lets a test show states the shared server cannot reach on demand, such as 20
  * players or no address at all.
  */
-export async function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Promise<void> {
+export function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Promise<void> {
+    return serveSnapshot(page, 'ReceiveDisplaySnapshot', snapshot);
+}
+
+/**
+ * Stands in for the game hub of the GM console, which then receives `snapshot` in answer to its
+ * announcement, whatever the code: lets a test show states the shared server cannot reach on
+ * demand, such as a lobby without any player.
+ */
+export function serveGameMasterSnapshot(page: Page, snapshot: GameMasterSnapshot): Promise<void> {
+    return serveSnapshot(page, 'ReceiveGameMasterSnapshot', snapshot);
+}
+
+async function serveSnapshot(page: Page, target: string, snapshot: object): Promise<void> {
     await page.route(negotiateUrl, (route) =>
         route.fulfill({
             json: {
@@ -48,7 +61,7 @@ export async function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot
                 } else if (message.type === 1 && message.target === 'Announce') {
                     send(socket, {
                         type: 1,
-                        target: 'ReceiveDisplaySnapshot',
+                        target,
                         arguments: [snapshot],
                     });
                     send(socket, {

@@ -5,6 +5,7 @@
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
     import RenameForm from './RenameForm.svelte';
+    import StartControl from './StartControl.svelte';
 
     interface Props {
         snapshot: GameMasterSnapshot;
@@ -28,6 +29,8 @@
         {countText(fr.gm.playersJoined, snapshot.players.length)}{#if snapshot.players.length > 0}
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
+
+    <StartControl {snapshot} {session} {fresh} />
 
     {#if snapshot.players.length > 0}
         <ul aria-label={fr.gm.playerListLabel}>

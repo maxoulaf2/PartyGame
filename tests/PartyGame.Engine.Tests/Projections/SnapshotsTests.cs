@@ -87,6 +87,19 @@ public sealed class SnapshotsTests
     }
 
     [Fact]
+    public void ForGameMaster_AnyState_ShowsTheMinimumPlayerCountToStart()
+    {
+        // Given
+        var state = Games.NewLobby();
+
+        // When
+        var snapshot = Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.Equal(1, snapshot.MinimumPlayerCount);
+    }
+
+    [Fact]
     public void ForEachRole_RenamedPlayer_ShowsTheNewNickname()
     {
         // Given
