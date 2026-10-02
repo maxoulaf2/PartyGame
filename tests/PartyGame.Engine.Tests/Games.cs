@@ -21,6 +21,8 @@ internal static class Games
     public static JoinGame Join(string nickname, int player = 1) =>
         new(PlayerIdOf(player), new PlayerToken($"token-{player}"), nickname, Now);
 
+    public static RenamePlayer Rename(int player, string nickname) => new(PlayerIdOf(player), nickname, Now);
+
     public static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));
 
     /// <summary>
