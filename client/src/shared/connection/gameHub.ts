@@ -1,4 +1,9 @@
-import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/signalr';
+import {
+    HubConnectionBuilder,
+    HubConnectionState,
+    LogLevel,
+    type HubConnection,
+} from '@microsoft/signalr';
 import type {
     Announcement,
     AnnouncementResult,
@@ -9,6 +14,8 @@ import type {
     JoinResult,
     RenamePlayerRequest,
     RenamePlayerResult,
+    ResumeSessionRequest,
+    ResumeSessionResult,
     StartGameResult,
 } from '../contracts';
 
@@ -22,6 +29,7 @@ export const gameHubUrl = '/hub/game';
 export interface GameHubMethods {
     Announce: { args: [announcement: Announcement]; result: AnnouncementResult };
     JoinGame: { args: [request: JoinRequest]; result: JoinResult };
+    ResumeSession: { args: [request: ResumeSessionRequest]; result: ResumeSessionResult };
     // Null when the server ignores the intent: the connection is not authenticated as game master.
     RenamePlayer: { args: [request: RenamePlayerRequest]; result: RenamePlayerResult | null };
     StartGame: { args: []; result: StartGameResult | null };
@@ -34,15 +42,46 @@ export interface GameHubMethods {
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */
 export type HubTransport = Pick<
     HubConnection,
-    'start' | 'stop' | 'invoke' | 'on' | 'off' | 'onreconnecting' | 'onreconnected' | 'onclose'
+    | 'start'
+    | 'stop'
+    | 'invoke'
+    | 'on'
+    | 'off'
+    | 'onreconnecting'
+    | 'onreconnected'
+    | 'onclose'
+    | 'state'
 >;
+
+/**
+ * Delays before the attempts to restore a lost connection: quick at first, then every 10 s,
+ * forever. A party never gives up on a phone, however long the outage.
+ */
+export const reconnectDelays: readonly number[] = [0, 1_000, 2_000, 5_000, 10_000];
+
+/** The delay before the attempt that follows `previousAttempts` failed ones. */
+export function reconnectDelay(previousAttempts: number): number {
+    return reconnectDelays[Math.min(previousAttempts, reconnectDelays.length - 1)] ?? 10_000;
+}
+
+/**
+ * Signals that the page may have its network back: it came back to the foreground, or the
+ * browser went online. Returns a function that stops listening.
+ */
+export type WakeSource = (callback: () => void) => () => void;
 
 /**
  * The connection of a page to the game hub, typed by the contracts. The only way components talk
  * to the server: none of them imports `@microsoft/signalr`.
+ *
+ * Once started, it never gives up: a lost connection is restored automatically, however long the
+ * outage, and at once when the page comes back to the foreground (Safari on iOS suspends
+ * WebSockets in the background).
  */
 export interface GameConnection<Messages = IGameClient> {
+    /** Connects, trying again until it succeeds. Rejects only if stopped meanwhile. */
     start(): Promise<void>;
+    /** Disconnects for good: nothing is restored afterwards. */
     stop(): Promise<void>;
     /** Calls a hub method and resolves to its answer. */
     invoke<M extends keyof GameHubMethods>(
@@ -51,24 +90,118 @@ export interface GameConnection<Messages = IGameClient> {
     ): Promise<GameHubMethods[M]['result']>;
     /** Handles a message of the server. Returns a function that stops handling it. */
     on<M extends keyof Messages & string>(message: M, handler: Messages[M]): () => void;
-    /** Called when the connection is lost and an attempt to restore it begins. */
+    /** Called when the connection is lost; attempts to restore it go on until one succeeds. */
     onReconnecting(callback: () => void): void;
     /**
      * Called when a lost connection is restored. The server sees a brand new connection: the page
-     * must announce itself again to get back its role and its snapshots.
+     * must announce or identify itself again to get back its role and its snapshots.
      */
     onReconnected(callback: () => void): void;
-    /** Called when the connection is lost for good, or stopped. */
-    onClose(callback: () => void): void;
 }
 
 /** Creates the connection of the page to the game hub, not started yet. */
 export function createGameConnection<Messages = IGameClient>(
     transport: HubTransport = buildHubConnection(),
+    wake: WakeSource = pageWakeSource,
 ): GameConnection<Messages> {
+    const lostCallbacks: (() => void)[] = [];
+    const restoredCallbacks: (() => void)[] = [];
+    const notify = (callbacks: (() => void)[]) => {
+        for (const callback of callbacks) {
+            callback();
+        }
+    };
+
+    let stopped = true;
+    let restarting = false;
+    // Ends the wait before the next attempt of `connect`, to try at once.
+    let skipWait: (() => void) | null = null;
+    let stopWaking: (() => void) | null = null;
+
+    const wait = (delay: number) =>
+        new Promise<void>((resolve) => {
+            const done = () => {
+                clearTimeout(timer);
+                skipWait = null;
+                resolve();
+            };
+            const timer = setTimeout(done, delay);
+            skipWait = done;
+        });
+
+    /** Starts the transport, trying again until it succeeds. Resolves to false if stopped first. */
+    async function connect(): Promise<boolean> {
+        for (let attempt = 0; !stopped; attempt++) {
+            if (attempt > 0) {
+                await wait(reconnectDelay(attempt - 1));
+                if (stopped) {
+                    break;
+                }
+            }
+            try {
+                await transport.start();
+                return true;
+            } catch {
+                // Server or network unreachable: the next attempt follows.
+            }
+        }
+        return false;
+    }
+
+    // The automatic reconnection of SignalR never gives up (see buildHubConnection), but the
+    // server may still close the connection, and `tryNow` stops it on purpose: start it over.
+    async function restart() {
+        if (restarting) {
+            return;
+        }
+        restarting = true;
+        try {
+            if (await connect()) {
+                notify(restoredCallbacks);
+            }
+        } finally {
+            restarting = false;
+        }
+    }
+
+    function tryNow() {
+        if (stopped) {
+            return;
+        }
+        if (skipWait) {
+            skipWait();
+        } else if (transport.state === HubConnectionState.Reconnecting) {
+            // SignalR cannot shorten the delay it waits for: stopping it closes the connection,
+            // which `restart` starts over at once.
+            transport.stop().catch(() => {});
+        }
+    }
+
+    transport.onreconnecting(() => notify(lostCallbacks));
+    transport.onreconnected(() => notify(restoredCallbacks));
+    transport.onclose(() => {
+        if (stopped) {
+            return;
+        }
+        notify(lostCallbacks);
+        void restart();
+    });
+
     return {
-        start: () => transport.start(),
-        stop: () => transport.stop(),
+        start: async () => {
+            stopped = false;
+            stopWaking ??= wake(tryNow);
+            if (!(await connect())) {
+                throw new Error('Connection stopped before it was established.');
+            }
+        },
+        stop: () => {
+            stopped = true;
+            stopWaking?.();
+            stopWaking = null;
+            skipWait?.();
+            return transport.stop();
+        },
         invoke: (method, ...args) => transport.invoke(method, ...args),
         on: (message, handler) => {
             // SignalR types handlers loosely; the contracts give them their real signature.
@@ -76,18 +209,39 @@ export function createGameConnection<Messages = IGameClient>(
             transport.on(message, callback);
             return () => transport.off(message, callback);
         },
-        onReconnecting: (callback) => transport.onreconnecting(() => callback()),
-        onReconnected: (callback) => transport.onreconnected(() => callback()),
-        onClose: (callback) => transport.onclose(() => callback()),
+        onReconnecting: (callback) => {
+            lostCallbacks.push(callback);
+        },
+        onReconnected: (callback) => {
+            restoredCallbacks.push(callback);
+        },
     };
 }
+
+/** Wakes the connection when the page comes back to the foreground or the browser goes online. */
+const pageWakeSource: WakeSource = (callback) => {
+    const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            callback();
+        }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('online', callback);
+    return () => {
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        window.removeEventListener('online', callback);
+    };
+};
 
 function buildHubConnection(): HubConnection {
     return (
         new HubConnectionBuilder()
             .withUrl(gameHubUrl)
-            // Default policy for now; retrying forever and restarting after a close is US-E05-01.
-            .withAutomaticReconnect()
+            // Never gives up, unlike the default policy and its four attempts.
+            .withAutomaticReconnect({
+                nextRetryDelayInMilliseconds: ({ previousRetryCount }) =>
+                    reconnectDelay(previousRetryCount),
+            })
             // Connection noise stays out of the console; failures are still reported.
             .configureLogging(LogLevel.Warning)
             .build()

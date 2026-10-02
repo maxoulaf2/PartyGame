@@ -8,6 +8,8 @@ export const fr = {
         waiting: 'Bienvenue ! La partie va bientôt commencer.',
         started: 'La partie est lancée : garde un œil sur l’écran !',
         registeredAs: 'Tu es inscrit sous le nom {nickname}',
+        // Shown while a phone that joined before waits to be recognized by the server.
+        resuming: 'Retour dans la partie…',
         join: {
             title: 'Choisis ton pseudo',
             label: 'Pseudo',
