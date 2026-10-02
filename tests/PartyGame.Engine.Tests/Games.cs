@@ -48,8 +48,36 @@ internal static class Games
     public static GameState NewLobby() =>
         GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress, JoinAddressCandidates, Catalog);
 
+    /// <summary>
+    /// A valid pack of the given rounds, with the media files they reference, as the loading lists them.
+    /// </summary>
     public static CatalogPack ValidPack(string id, string title, ImmutableArray<RoundDescriptor> rounds) =>
-        new(id, title, rounds.Length, new PackDescriptor { FormatVersion = 1, Title = title, Rounds = rounds }, []);
+        new(id, title, rounds.Length, new PackDescriptor { FormatVersion = 1, Title = title, Rounds = rounds }, [])
+        {
+            Media = [.. rounds.OfType<FakeRoundDescriptor>().Select(round => round.Image).OfType<MediaPath>().Distinct()],
+        };
+
+    /// <summary>The image of the first round of <see cref="IllustratedPack"/>.</summary>
+    public static readonly MediaPath Flag = new("images/drapeau-japon.png");
+
+    /// <summary>The image of the second round of <see cref="IllustratedPack"/>.</summary>
+    public static readonly MediaPath Monument = new("monuments/tour-eiffel.jpg");
+
+    /// <summary>A pack of two rounds, each illustrated by an image of its own.</summary>
+    public static CatalogPack IllustratedPack(string id = "illustre") =>
+        ValidPack(
+            id,
+            "Soirée illustrée",
+            [new FakeRoundDescriptor { Title = "Échauffement", Image = Flag }, new FakeRoundDescriptor { Title = "Finale", Image = Monument }]);
+
+    /// <summary>
+    /// A lobby with the given players, where <see cref="IllustratedPack"/> is chosen.
+    /// </summary>
+    public static GameState IllustratedLobbyWith(params string[] nicknames)
+    {
+        var pack = IllustratedPack();
+        return Accepted(Accepted(LobbyWith(nicknames), Loaded(Pack, pack)), Select(pack.Id));
+    }
 
     /// <summary>A pack with a missing media file and a question without correct choice.</summary>
     public static CatalogPack InvalidPack(string id, string title = "Pack cassé") =>

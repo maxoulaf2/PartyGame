@@ -14,6 +14,9 @@ internal static class PackCatalogs
         ArgumentNullException.ThrowIfNull(library);
         return new PackCatalog(
             library.Directory,
-            [.. library.Packs.Select(pack => new CatalogPack(pack.Id, pack.Title, pack.RoundCount, pack.Descriptor, pack.Problems))]);
+            [.. library.Packs.Select(pack => new CatalogPack(pack.Id, pack.Title, pack.RoundCount, pack.Descriptor, pack.Problems)
+            {
+                Media = pack.Media,
+            })]);
     }
 }

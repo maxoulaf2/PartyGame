@@ -27,4 +27,10 @@ public sealed record CatalogPack(
     [JsonIgnore] // read from the descriptor, which is persisted
     [MemberNotNullWhen(true, nameof(Descriptor))]
     public bool IsValid => Descriptor is not null;
+
+    /// <summary>
+    /// The media files the descriptor of a valid pack references, each path once: the game draws an identifier for each
+    /// when it starts. Empty when the pack is invalid.
+    /// </summary>
+    public ImmutableArray<MediaPath> Media { get; init; } = [];
 }

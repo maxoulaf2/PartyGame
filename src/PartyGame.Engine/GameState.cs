@@ -37,6 +37,10 @@ namespace PartyGame.Engine;
 /// The descriptor of the pack the game plays, copied from <paramref name="Catalog"/> when the game starts: from then on, the
 /// game depends neither on the catalog nor on the disk. <see langword="null"/> in the lobby.
 /// </param>
+/// <param name="Media">
+/// The media files of <paramref name="Pack"/> by their identifier, drawn when the game starts: the server serves them by
+/// these identifiers only. Empty in the lobby. Secret: a projection contains the URL of a media file, never its path.
+/// </param>
 /// <param name="CurrentRound">
 /// The round in progress, or the last one played between two rounds and once the game is finished, or
 /// <see langword="null"/> before the first round.
@@ -56,6 +60,7 @@ public sealed record GameState(
     PackCatalog Catalog,
     string? SelectedPackId,
     PackDescriptor? Pack,
+    PackMedia Media,
     PlayedRound? CurrentRound)
 {
     /// <summary>
@@ -89,6 +94,7 @@ public sealed record GameState(
                 catalog,
                 SelectedPackId: null,
                 Pack: null,
+                PackMedia.Empty,
                 CurrentRound: null),
             catalog);
 }
