@@ -36,6 +36,7 @@ try
     app.UseFrontEnd();
     app.MapHealthChecks(ServerPaths.Health);
     app.MapGameHub();
+    app.MapPackMedia();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
     var packs = app.LoadPacks();

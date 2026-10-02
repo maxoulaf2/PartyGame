@@ -20,6 +20,40 @@ internal static class TestPacks
     public static string Broken(string title) => Descriptor(title, [Round("Manche cassée", correct: false)]);
 
     /// <summary>
+    /// A valid pack of a single quiz round, with one question illustrated by each image, in this order.
+    /// </summary>
+    public static string IllustratedQuiz(string title, params string[] images) =>
+        Descriptor(
+            title,
+            [
+                new
+                {
+                    type = "quiz",
+                    title = "Manche illustrée",
+                    questions = images.Select(image => new
+                    {
+                        text = "Question ?",
+                        image,
+                        choices = new[] { new { text = "Oui", correct = true }, new { text = "Non", correct = false } },
+                    }),
+                },
+            ]);
+
+    /// <summary>
+    /// Writes a media file of the pack <paramref name="id"/>, creating its folders.
+    /// </summary>
+    /// <param name="directory">The pack directory.</param>
+    /// <param name="id">The identifier of the pack: the name of its folder.</param>
+    /// <param name="media">The path of the file in the pack, with <c>/</c> as separator.</param>
+    /// <param name="content">The content of the file.</param>
+    public static void WriteMedia(string directory, string id, string media, byte[] content)
+    {
+        var path = Path.Combine([directory, id, .. media.Split('/')]);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, content);
+    }
+
+    /// <summary>
     /// Writes <paramref name="descriptor"/> as the <c>pack.json</c> of the pack <paramref name="id"/>, creating its folder.
     /// </summary>
     public static void Write(string directory, string id, string descriptor)

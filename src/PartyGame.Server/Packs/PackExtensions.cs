@@ -19,11 +19,25 @@ internal static class PackExtensions
         builder.Services.AddGameModes();
         builder.Services.AddSingleton<PackLibraryLoader>();
         builder.Services.AddSingleton<PackReloader>();
+        builder.Services.AddSingleton<PackMediaFiles>();
 
         // The packs as loaded at startup: the banner lists them, and the game starts with them.
         builder.Services.AddSingleton(services => services.GetRequiredService<PackLibraryLoader>().Load());
 
         return builder;
+    }
+
+    /// <summary>
+    /// Serves the media files of the pack of the game under <see cref="ServerPaths.Media"/>, by their identifier, with
+    /// support for range requests so that an excerpt can start in the middle of a track.
+    /// </summary>
+    public static WebApplication MapPackMedia(this WebApplication app)
+    {
+        app.MapMethods(
+            $"{ServerPaths.Media}/{{id}}",
+            [HttpMethods.Get, HttpMethods.Head],
+            (string id, PackMediaFiles media, HttpResponse response) => media.Serve(id, response));
+        return app;
     }
 
     /// <summary>

@@ -1,3 +1,5 @@
+using PartyGame.Engine;
+
 namespace PartyGame.Server;
 
 /// <summary>
@@ -8,7 +10,7 @@ internal static class ServerPaths
 {
     public static readonly PathString Api = "/api";
     public static readonly PathString Hub = "/hub";
-    public static readonly PathString Media = "/media";
+    public static readonly PathString Media = PackMedia.UrlPrefix;
 
     /// <summary>Where Vite emits the fingerprinted scripts, styles and fonts of the client build.</summary>
     public static readonly PathString Assets = "/assets";
