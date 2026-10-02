@@ -36,7 +36,7 @@ Un serveur ASP.NET Core sert à la fois le front (fichiers statiques) et un hub 
 Un pack est un dossier (les zip arrivent en E17) contenant un descripteur `pack.json` et ses médias (MP3, images). Des exemples se trouvent dans `packs/`.
 
 - Chaque activité du descripteur a un champ `type` qui désigne son mode de jeu (désérialisation polymorphe avec System.Text.Json).
-- Le schéma de référence est `schemas/pack.schema.json`. Il est généré depuis les types C# du descripteur, à chaque évolution de leur format.
+- Le schéma de référence est `schemas/pack.schema.json`. Il est généré depuis les types C# du descripteur (`PartyGame.Contracts.Packs`) par `npm run generate:contracts`, à chaque évolution de leur format. `.vscode/settings.json` l'associe aux fichiers `packs/*/pack.json`.
 - Un pack est entièrement validé au chargement : structure, existence des médias référencés, cohérence des données. Une partie ne doit jamais échouer en cours de route à cause du contenu. Les erreurs sont remontées au GM avant le lancement, avec un message précis (fichier, chemin dans le descripteur, problème).
 - Les médias sont servis avec prise en charge des requêtes partielles (Range), pour pouvoir démarrer un extrait au milieu d'un morceau.
 
@@ -98,7 +98,7 @@ npm run dev        # port 5173 sur toutes les interfaces : pages /, /display/, /
                    # PARTYGAME_SERVER_URL change la cible du proxy (défaut http://localhost:5000)
 npm run build      # sortie dans src/PartyGame.Server/wwwroot (non versionné), servie par le serveur .NET
 npm run check      # types générés à jour (si dotnet est présent) + svelte-check + tsc + ESLint + Prettier
-npm run generate:contracts   # régénère src/shared/contracts depuis PartyGame.Contracts (SDK .NET requis)
+npm run generate:contracts   # régénère src/shared/contracts et schemas/pack.schema.json depuis PartyGame.Contracts (SDK .NET requis)
 npm run format     # reformatage Prettier
 npm run test       # Vitest
 npm run e2e        # Playwright sur le build : iPhone (WebKit), Pixel (Chromium), desktop

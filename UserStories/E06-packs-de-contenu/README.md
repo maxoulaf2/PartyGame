@@ -7,7 +7,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E06-01](US-E06-01-format-et-schema.md) | Format du descripteur et schéma généré | Prête | — |
+| [US-E06-01](US-E06-01-format-et-schema.md) | Format du descripteur et schéma généré | Terminée | — |
 | [US-E06-02](US-E06-02-chargement-et-validation.md) | Chargement et validation des packs au démarrage | À faire | US-E06-01, US-E08-01 |
 | [US-E06-03](US-E06-03-choix-du-pack.md) | Choix du pack par le GM et erreurs de pack | À faire | US-E06-02 |
 | [US-E06-04](US-E06-04-service-des-medias.md) | Médias du pack servis sur le réseau local | À faire | US-E06-03 |
