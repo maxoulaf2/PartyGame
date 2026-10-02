@@ -36,6 +36,8 @@ export const fr = {
         playerListLabel: 'Joueurs inscrits',
         // Read by screen readers next to the icon of a player whose phone is disconnected.
         disconnected: 'déconnecté',
+        // Provisional: the first round of the pack replaces this screen (E07).
+        started: 'La partie commence !',
     },
     gm: {
         waiting: 'Console du game master : connexion en cours…',
@@ -60,6 +62,26 @@ export const fr = {
             other: '{count} connectés',
         },
         playerListLabel: 'Joueurs inscrits',
+        start: {
+            action: 'Lancer la partie',
+            // Shown while too few players are registered. The minimum is at least 1, never 0.
+            minimumPlayers: {
+                zero: 'La partie peut être lancée sans joueur.',
+                one: 'Il faut au moins {count} joueur inscrit pour lancer la partie.',
+                other: 'Il faut au moins {count} joueurs inscrits pour lancer la partie.',
+            },
+            confirmTitle: 'Lancer la partie ?',
+            confirmMessage: {
+                zero: 'La partie commencera sans joueur. Les retardataires pourront encore rejoindre.',
+                one: 'La partie commencera avec {count} joueur. Les retardataires pourront encore rejoindre.',
+                other: 'La partie commencera avec {count} joueurs. Les retardataires pourront encore rejoindre.',
+            },
+            confirm: 'Lancer',
+            cancel: 'Annuler',
+            failed: 'Le lancement n’a pas abouti : réessayez.',
+        },
+        // Provisional: the rounds of the pack replace this state (E07).
+        started: 'Partie en cours',
         connected: 'Connecté',
         disconnected: 'Déconnecté',
         rename: {

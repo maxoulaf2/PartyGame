@@ -16,6 +16,8 @@
         snapshot.joinAddress ? composeJoinUrl(snapshot.joinAddress, location) : null,
     );
     const status = $derived(countText(fr.display.playersJoined, snapshot.players.length));
+    // Registration stays open once started: the QR code and the list stay for late arrivals.
+    const started = $derived(snapshot.phase === 'Started');
 </script>
 
 <main>
@@ -34,6 +36,9 @@
     </section>
     <section class="lobby">
         <h1>{fr.app.name}</h1>
+        {#if started}
+            <p class="started">{fr.display.started}</p>
+        {/if}
         <p class="status">{status}</p>
         <PlayerList players={snapshot.players} />
     </section>
@@ -99,5 +104,11 @@
 
     .status {
         color: var(--color-text-muted);
+    }
+
+    .started {
+        font-size: var(--font-size-title);
+        font-weight: 700;
+        line-height: 1.1;
     }
 </style>

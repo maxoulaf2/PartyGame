@@ -23,6 +23,8 @@ internal static class Games
 
     public static RenamePlayer Rename(int player, string nickname) => new(PlayerIdOf(player), nickname, Now);
 
+    public static StartGame Start() => new(Now);
+
     public static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));
 
     /// <summary>

@@ -36,6 +36,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="RenamePlayerAsync"/>, as the clients call it.</summary>
     public const string RenamePlayer = nameof(RenamePlayer);
 
+    /// <summary>SignalR target of <see cref="StartGameAsync"/>, as the clients call it.</summary>
+    public const string StartGame = nameof(StartGame);
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
@@ -179,6 +182,33 @@ internal sealed class GameHub(
         var renamed = game.State.Players.First(p => p.Id == request.PlayerId);
         logger.PlayerRenamed(request.PlayerId.Value, renamed.Nickname);
         return new RenamePlayerResult(Refusal: null);
+    }
+
+    /// <summary>
+    /// Starts the game at the request of the game master. The loop alone decides whether it can start, so that two game
+    /// masters tapping at once start it only once; the new phase reaches every client through the snapshots.
+    /// </summary>
+    /// <remarks>No message: there is nothing to tell but the intent itself.</remarks>
+    [GameMasterOnly]
+    [HubMethodName(StartGame)]
+    public async Task<StartGameResult> StartGameAsync()
+    {
+        // Not cancelled with the connection: once enqueued, the start may be accepted whoever is left to hear the answer.
+        var outcome = await inputs
+            .SubmitAsync(new Engine.Inputs.StartGame(timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status != InputStatus.Accepted)
+        {
+            return new StartGameResult(outcome.Rejection switch
+            {
+                RejectionReason.NotEnoughPlayers => StartGameRefusal.NotEnoughPlayers,
+                RejectionReason.GameAlreadyStarted => StartGameRefusal.AlreadyStarted,
+                _ => StartGameRefusal.StartFailed,
+            });
+        }
+
+        logger.GameStarted(game.State.Players.Length);
+        return new StartGameResult(Refusal: null);
     }
 
     /// <summary>

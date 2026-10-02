@@ -12,4 +12,5 @@ export interface GameMasterSnapshot {
     readonly version: number;
     readonly phase: Phase;
     readonly players: readonly GameMasterPlayer[];
+    readonly minimumPlayerCount: number;
 }

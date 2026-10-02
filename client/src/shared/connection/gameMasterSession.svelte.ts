@@ -1,4 +1,9 @@
-import type { GameMasterSnapshot, PlayerId, RenamePlayerRefusal } from '../contracts';
+import type {
+    GameMasterSnapshot,
+    PlayerId,
+    RenamePlayerRefusal,
+    StartGameRefusal,
+} from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
 import type { SnapshotStore } from './snapshotStore.svelte';
@@ -25,6 +30,12 @@ export type SubmitOutcome = 'granted' | 'refused' | 'unreachable';
  * (connection lost, or the console no longer authenticated).
  */
 export type RenameOutcome = 'renamed' | 'unreachable' | RenamePlayerRefusal;
+
+/**
+ * What became of a start the game master asked for: done, refused by the server, or not sent
+ * (connection lost, or the console no longer authenticated).
+ */
+export type StartOutcome = 'started' | 'unreachable' | StartGameRefusal;
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -127,6 +138,28 @@ export class GameMasterSession {
             return 'unreachable';
         }
         return result.refusal ?? 'renamed';
+    }
+
+    /**
+     * Starts the game. The server alone decides whether it can start; the new phase reaches the
+     * console through the next snapshot.
+     */
+    async startGame(): Promise<StartOutcome> {
+        if (!this.#connected || this.#access !== 'granted') {
+            return 'unreachable';
+        }
+
+        let result;
+        try {
+            result = await this.#connection.invoke('StartGame');
+        } catch {
+            return 'unreachable';
+        }
+        // No answer: the server ignored the intent, the code is being checked again.
+        if (result === null) {
+            return 'unreachable';
+        }
+        return result.refusal ?? 'started';
     }
 
     #onConnected(): void {

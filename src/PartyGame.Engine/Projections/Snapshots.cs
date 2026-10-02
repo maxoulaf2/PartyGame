@@ -1,4 +1,5 @@
 using PartyGame.Contracts;
+using PartyGame.Engine.Lobby;
 
 namespace PartyGame.Engine.Projections;
 
@@ -34,7 +35,8 @@ public static class Snapshots
             state.GameId,
             state.Version,
             PhaseOf(state),
-            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected))]);
+            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected))],
+            Launch.MinimumPlayerCount);
     }
 
     /// <summary>

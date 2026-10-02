@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
+import type { GameId } from '../src/shared/contracts';
+import { countText } from '../src/shared/i18n/countText.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { serveGameMasterSnapshot } from './fakeHub.ts';
 import { gameMasterCode } from './gameServer.ts';
 import { trackExternalRequests } from './localRequests.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
@@ -143,4 +146,21 @@ test('/gm/ shows a player whose phone left as disconnected', async ({ page, brow
     await phone.context().close();
 
     await expect(row).toContainText(fr.gm.disconnected);
+});
+
+test('/gm/ cannot start a game without any player, and says how many are needed', async ({
+    page,
+}) => {
+    await serveGameMasterSnapshot(page, {
+        gameId: '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId,
+        version: 1,
+        phase: 'Lobby',
+        players: [],
+        minimumPlayerCount: 1,
+    });
+
+    await openConsole(page);
+
+    await expect(page.getByRole('button', { name: fr.gm.start.action })).toBeDisabled();
+    await expect(page.getByText(countText(fr.gm.start.minimumPlayers, 1))).toBeVisible();
 });
