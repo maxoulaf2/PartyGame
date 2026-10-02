@@ -8,7 +8,7 @@
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E05-01](US-E05-01-reconnexion-par-jeton.md) | Reconnexion automatique par jeton | Terminée | US-E04-02 |
-| [US-E05-02](US-E05-02-indicateur-et-verrouillage.md) | Indicateur de coupure et interactions verrouillées | À faire | US-E05-01 |
+| [US-E05-02](US-E05-02-indicateur-et-verrouillage.md) | Indicateur de coupure et interactions verrouillées | Terminée | US-E05-01 |
 | [US-E05-03](US-E05-03-synchronisation-horloge.md) | Synchronisation d'horloge avec le serveur | Terminée | US-E03-04 |
 | [US-E05-04](US-E05-04-rechargement-nouvelle-version.md) | Rechargement automatique sur nouvelle version | À faire | US-E03-04 |
 
