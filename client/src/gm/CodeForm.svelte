@@ -7,20 +7,25 @@
 
     interface Props {
         session: GameMasterSession;
+        /** Whether the page is synchronized with the server: the form is disabled otherwise. */
+        interactive: boolean;
     }
 
-    let { session }: Props = $props();
+    let { session, interactive }: Props = $props();
 
     let code = $state('');
     let sending = $state(false);
     let input: HTMLInputElement | undefined = $state();
 
-    // The form has nothing else to do: ready to type as soon as it shows.
+    // The form has nothing else to do: ready to type as soon as it shows, and again once a lost
+    // connection is back, the disabled field having lost the focus.
     $effect(() => {
-        input?.focus();
+        if (interactive) {
+            input?.focus();
+        }
     });
 
-    const canSubmit = $derived(session.connected && !sending && isCodeComplete(code));
+    const canSubmit = $derived(interactive && !sending && isCodeComplete(code));
     const message = $derived(
         session.problem === 'invalid'
             ? fr.gm.code.invalid
@@ -59,6 +64,7 @@
             pattern="[0-9 ]*"
             autocomplete="one-time-code"
             spellcheck="false"
+            disabled={!interactive}
             aria-invalid={message !== null}
             aria-describedby={message ? 'gm-code-problem' : undefined}
         />
@@ -117,6 +123,10 @@
         font-size: 1.5em;
         letter-spacing: 0.3em;
         text-align: center;
+    }
+
+    input:disabled {
+        opacity: 0.6;
     }
 
     input:focus-visible {

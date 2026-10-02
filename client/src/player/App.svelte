@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import ConnectionIndicator from '../shared/components/ConnectionIndicator.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
     import type { PlayerSnapshot } from '../shared/contracts';
     import {
@@ -8,6 +9,7 @@
         playerTokenKey,
     } from '../shared/connection/codeStorage';
     import { ClockSync } from '../shared/connection/clockSync.svelte';
+    import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
     import { createGameConnection } from '../shared/connection/gameHub';
     import { PlayerSession } from '../shared/connection/playerSession.svelte';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
@@ -24,12 +26,15 @@
         connection,
     );
     const clock = new ClockSync(connection);
+    const status = new ConnectionStatus(() => session.synchronized);
 
     onMount(() => {
+        const stopStatus = status.start();
         // Before the session starts the connection, so as not to miss the first one.
         const stopClock = clock.start();
         const stopSession = session.start();
         return () => {
+            stopStatus();
             stopClock();
             stopSession();
         };
@@ -42,5 +47,7 @@
     <!-- A phone that joined before waits for the server to recognize it, never on the form. -->
     <WaitingScreen title={fr.app.name} message={fr.player.resuming} />
 {:else}
-    <JoinForm {session} />
+    <JoinForm {session} interactive={status.interactive} />
 {/if}
+
+<ConnectionIndicator {status} />

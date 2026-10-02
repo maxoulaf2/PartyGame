@@ -6,9 +6,11 @@
 
     interface Props {
         session: PlayerSession;
+        /** Whether the page is synchronized with the server: the form is disabled otherwise. */
+        interactive: boolean;
     }
 
-    let { session }: Props = $props();
+    let { session, interactive }: Props = $props();
 
     // Filled once with the nickname this phone last joined with, if any, then the player's to edit.
     let nickname = $state(untrack(() => session.rememberedNickname));
@@ -18,7 +20,7 @@
     let input: HTMLInputElement | undefined = $state();
 
     const problem = $derived(checkNickname(nickname));
-    const canSubmit = $derived(session.connected && !sending && problem === null);
+    const canSubmit = $derived(interactive && !sending && problem === null);
 
     const problems = fr.player.join.problems;
     const message = $derived.by(() => {
@@ -69,6 +71,7 @@
             autocapitalize="words"
             spellcheck="false"
             enterkeyhint="go"
+            disabled={!interactive}
             aria-invalid={message !== null}
             aria-describedby={message ? 'nickname-problem' : undefined}
         />
@@ -118,6 +121,10 @@
         color: var(--color-text);
         /* At least 16 px: Safari on iOS zooms into a smaller field when it gets the focus. */
         font-size: 1.25rem;
+    }
+
+    input:disabled {
+        opacity: 0.6;
     }
 
     input:focus-visible {

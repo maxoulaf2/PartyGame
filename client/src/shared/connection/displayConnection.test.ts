@@ -10,6 +10,7 @@ const playerId = '00000001-0000-0000-0000-000000000000' as PlayerId;
 function fakeConnection(startFails = false) {
     const handlers = new Map<string, (snapshot: DisplaySnapshot) => void>();
     const unsubscribe = vi.fn();
+    let reconnecting = () => {};
     let reconnected = () => {};
     const connection = {
         start: vi.fn(() => (startFails ? Promise.reject(new Error('offline')) : Promise.resolve())),
@@ -19,14 +20,23 @@ function fakeConnection(startFails = false) {
             handlers.set(message, handler);
             return unsubscribe;
         }),
-        onReconnecting: vi.fn(),
+        onReconnecting: vi.fn((callback: () => void) => {
+            reconnecting = callback;
+        }),
         onReconnected: vi.fn((callback: () => void) => {
             reconnected = callback;
         }),
     };
     // The fake only implements what connectDisplay uses, with loose signatures.
     const typed = connection as unknown as GameConnection<IGameClient>;
-    return { connection, typed, handlers, unsubscribe, reconnect: () => reconnected() };
+    return {
+        connection,
+        typed,
+        handlers,
+        unsubscribe,
+        lose: () => reconnecting(),
+        reconnect: () => reconnected(),
+    };
 }
 
 describe('connectDisplay', () => {
@@ -71,6 +81,27 @@ describe('connectDisplay', () => {
         });
 
         expect(store.current?.players.map((player) => player.nickname)).toEqual(['Zoé']);
+    });
+
+    it('keeps the last snapshot, marked stale, while the connection is lost', () => {
+        const { typed, handlers, lose } = fakeConnection();
+        const store = new SnapshotStore<DisplaySnapshot>();
+        connectDisplay(store, typed);
+        const shown: DisplaySnapshot = {
+            gameId,
+            version: 2,
+            phase: 'Lobby',
+            joinAddress: '192.168.1.42',
+            players: [],
+        };
+        handlers.get('ReceiveDisplaySnapshot')?.(shown);
+
+        lose();
+
+        expect(store.current).toBe(shown);
+        expect(store.fresh).toBe(false);
+        handlers.get('ReceiveDisplaySnapshot')?.(shown);
+        expect(store.fresh).toBe(true);
     });
 
     it('stays quiet when the server cannot be reached', async () => {

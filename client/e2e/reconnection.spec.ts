@@ -6,9 +6,14 @@ import {
     type TestInfo,
     type WebSocketRoute,
 } from '@playwright/test';
-import { playerNicknameKey, playerTokenKey } from '../src/shared/connection/codeStorage.ts';
+import {
+    gameMasterCodeKey,
+    playerNicknameKey,
+    playerTokenKey,
+} from '../src/shared/connection/codeStorage.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
-import { uniqueNickname } from './players.ts';
+import { gameMasterCode } from './gameServer.ts';
+import { joinOnNewPhone, uniqueNickname } from './players.ts';
 
 /** A phone of the model of the project, with storage of its own. */
 async function newPhone(browser: Browser, testInfo: TestInfo): Promise<Page> {
@@ -134,4 +139,149 @@ test('a phone with a token the server does not know registers again, nickname fi
 
     await expect(page.getByLabel(fr.player.join.label)).toHaveValue('Zoé');
     await expect.poll(() => tokenOf(page)).toBeNull();
+});
+
+/** Cuts the page from the server, as a phone going out of Wi-Fi range. */
+async function goOffline(page: Page, network: { cut(): Promise<void> }): Promise<void> {
+    await page.context().setOffline(true);
+    await network.cut();
+}
+
+/**
+ * Checks the notice of an outage: absent for its first seconds, shown once it lasts longer than
+ * 3 s. Called right after the cut.
+ */
+async function expectNoticeAfterDelay(page: Page): Promise<void> {
+    const notice = page.getByText(fr.connection.reconnecting);
+    await expect(notice).toBeHidden();
+    await page.waitForTimeout(2_000);
+    await expect(notice).toBeHidden();
+    await expect(notice).toBeVisible({ timeout: 5_000 });
+}
+
+test('a phone tells of a long outage, locks the form and keeps the nickname typed', async ({
+    page,
+}) => {
+    const network = await relayWebSockets(page);
+    await page.goto('/');
+    const field = page.getByLabel(fr.player.join.label);
+    const submit = page.getByRole('button', { name: fr.player.join.submit });
+    await field.fill('Zoé');
+    await expect(submit).toBeEnabled();
+
+    await goOffline(page, network);
+
+    await expect(field).toBeDisabled();
+    await expect(submit).toBeDisabled();
+    await expectNoticeAfterDelay(page);
+    await expect(field).toHaveValue('Zoé');
+
+    await page.context().setOffline(false);
+
+    await expect(page.getByText(fr.connection.reconnecting)).toBeHidden({ timeout: 15_000 });
+    await expect(field).toBeEnabled();
+    await expect(field).toHaveValue('Zoé');
+    await expect(submit).toBeEnabled();
+});
+
+test('a phone in the lobby tells of a long outage until it is back', async ({
+    browser,
+}, testInfo) => {
+    const nickname = uniqueNickname('Léa');
+    const phone = await newPhone(browser, testInfo);
+    const network = await relayWebSockets(phone);
+    await join(phone, nickname);
+
+    await goOffline(phone, network);
+
+    await expectNoticeAfterDelay(phone);
+    // The last display stays on screen, the notice shifting nothing.
+    await expect(phone.getByText(registeredAs(nickname))).toBeVisible();
+
+    await phone.context().setOffline(false);
+
+    await expect(phone.getByText(fr.connection.reconnecting)).toBeHidden({ timeout: 15_000 });
+    await expect(phone.getByText(registeredAs(nickname))).toBeVisible();
+
+    await phone.context().close();
+});
+
+test('the GM console locks its controls during an outage and unlocks them once back', async ({
+    page,
+    browser,
+    baseURL,
+}) => {
+    const nickname = uniqueNickname('Tom');
+    const player = await joinOnNewPhone(browser, baseURL, nickname);
+    await page.addInitScript(
+        ([key, code]) => {
+            localStorage.setItem(key, code);
+        },
+        [gameMasterCodeKey, gameMasterCode] as const,
+    );
+    const network = await relayWebSockets(page);
+    await page.goto('/gm/');
+    const start = page.getByRole('button', { name: fr.gm.start.action });
+    const rename = page.getByRole('button', {
+        name: fr.gm.rename.actionFor.replace('{nickname}', () => nickname),
+    });
+    await expect(start).toBeEnabled();
+    await expect(rename).toBeEnabled();
+
+    await goOffline(page, network);
+
+    await expect(start).toBeDisabled();
+    await expect(rename).toBeDisabled();
+    await expectNoticeAfterDelay(page);
+    await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
+
+    await page.context().setOffline(false);
+
+    await expect(page.getByText(fr.connection.reconnecting)).toBeHidden({ timeout: 15_000 });
+    await expect(start).toBeEnabled();
+    await expect(rename).toBeEnabled();
+
+    await player.context().close();
+});
+
+test('the GM code form keeps the code being typed during an outage', async ({ page }) => {
+    const network = await relayWebSockets(page);
+    await page.goto('/gm/');
+    const field = page.getByLabel(fr.gm.code.label);
+    await expect(field).toBeEnabled();
+    await field.fill('2468');
+
+    await goOffline(page, network);
+
+    await expect(field).toBeDisabled();
+    await expect(field).toHaveValue('2468');
+
+    await page.context().setOffline(false);
+
+    await expect(field).toBeEnabled({ timeout: 15_000 });
+    await expect(field).toHaveValue('2468');
+});
+
+test('the TV screen keeps its display during a long outage, with a notice', async ({
+    browser,
+    baseURL,
+}) => {
+    const display = await (await browser.newContext({ baseURL })).newPage();
+    const network = await relayWebSockets(display);
+    await display.goto('/display/');
+    const invite = display.getByText(fr.display.scanToJoin);
+    await expect(invite).toBeVisible();
+
+    await goOffline(display, network);
+
+    await expectNoticeAfterDelay(display);
+    await expect(invite).toBeVisible();
+    await expect(display.getByRole('heading', { name: fr.app.name })).toBeVisible();
+
+    await display.context().setOffline(false);
+
+    await expect(display.getByText(fr.connection.reconnecting)).toBeHidden({ timeout: 15_000 });
+    await expect(invite).toBeVisible();
+
+    await display.context().close();
 });

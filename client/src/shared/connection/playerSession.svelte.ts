@@ -57,6 +57,14 @@ export class PlayerSession {
         return this.#connected;
     }
 
+    /**
+     * Whether the page shows the state of the server since the connection was last established:
+     * connected, and either on the form, which waits for no snapshot, or with a fresh snapshot.
+     */
+    get synchronized(): boolean {
+        return this.#connected && (this.#status === 'registering' || this.#store.fresh);
+    }
+
     /** The last nickname this phone joined with, to fill the form again, or an empty string. */
     get rememberedNickname(): string {
         return this.#nickname.load() ?? '';

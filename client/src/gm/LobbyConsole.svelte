@@ -11,17 +11,16 @@
     interface Props {
         snapshot: GameMasterSnapshot;
         session: GameMasterSession;
-        /** Whether `snapshot` reflects the server since the connection was last established. */
-        fresh: boolean;
+        /** Whether the page is synchronized with the server: everything is disabled otherwise. */
+        interactive: boolean;
     }
 
-    let { snapshot, session, fresh }: Props = $props();
+    let { snapshot, session, interactive }: Props = $props();
 
     // One rename at a time: the player whose form is open, followed by identifier through renames.
     let renaming = $state<PlayerId | null>(null);
 
     const connectedCount = $derived(snapshot.players.filter((p) => p.isConnected).length);
-    const canAct = $derived(session.connected && fresh);
 </script>
 
 <main>
@@ -31,9 +30,9 @@
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
 
-    <AddressControl {snapshot} {session} {fresh} />
+    <AddressControl {snapshot} {session} {interactive} />
 
-    <StartControl {snapshot} {session} {fresh} />
+    <StartControl {snapshot} {session} {interactive} />
 
     {#if snapshot.players.length > 0}
         <ul aria-label={fr.gm.playerListLabel}>
@@ -49,7 +48,7 @@
                         {#if renaming !== player.id}
                             <button
                                 type="button"
-                                disabled={!canAct}
+                                disabled={!interactive}
                                 aria-label={fr.gm.rename.actionFor.replace(
                                     '{nickname}',
                                     () => player.nickname,
@@ -61,7 +60,12 @@
                         {/if}
                     </div>
                     {#if renaming === player.id}
-                        <RenameForm {player} {session} {fresh} onclose={() => (renaming = null)} />
+                        <RenameForm
+                            {player}
+                            {session}
+                            {interactive}
+                            onclose={() => (renaming = null)}
+                        />
                     {/if}
                 </li>
             {/each}

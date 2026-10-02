@@ -4,6 +4,10 @@ export const fr = {
     app: {
         name: 'PartyGame',
     },
+    connection: {
+        // Shown on every page once the server has been out of reach for a few seconds.
+        reconnecting: 'Reconnexion…',
+    },
     player: {
         waiting: 'Bienvenue ! La partie va bientôt commencer.',
         started: 'La partie est lancée : garde un œil sur l’écran !',

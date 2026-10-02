@@ -252,6 +252,30 @@ describe('GameMasterSession', () => {
         expect(session.access).toBe('granted');
     });
 
+    it('is synchronized on the code form as soon as connected', async () => {
+        const { session } = await startedSession(memoryStorage());
+
+        expect(session.access).toBe('codeRequired');
+        expect(session.synchronized).toBe(true);
+    });
+
+    it('is synchronized on the console only with a fresh snapshot', async () => {
+        const { session, server } = await grantedSession();
+        expect(session.synchronized).toBe(false);
+        server.send(snapshot(1));
+        expect(session.synchronized).toBe(true);
+
+        server.drop();
+        expect(session.synchronized).toBe(false);
+        server.restore();
+        await vi.waitFor(() => expect(server.connection.invoke).toHaveBeenCalledTimes(2));
+        // Connected and granted again, but still showing the snapshot from before the outage.
+        expect(session.synchronized).toBe(false);
+
+        server.send(snapshot(2));
+        expect(session.synchronized).toBe(true);
+    });
+
     it('asks for the code when the server restarted with a new one meanwhile', async () => {
         const storage = memoryStorage(goodCode);
         const { session, server } = await startedSession(storage);
