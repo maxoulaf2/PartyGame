@@ -65,13 +65,24 @@ public sealed class GameModes
         }
 
         // The descriptor type is declared on RoundDescriptor, but its mode is not registered.
-        var type = typeof(RoundDescriptor).GetCustomAttributes<JsonDerivedTypeAttribute>()
-            .FirstOrDefault(derived => derived.DerivedType == descriptor.GetType())?.TypeDiscriminator?.ToString() ?? string.Empty;
         return [new PackProblem(
             PackProblemCode.PackRoundTypeUnknown,
             PackDescriptor.FileName,
             $"{path}.type",
-            ImmutableDictionary<string, string>.Empty.Add("type", type))];
+            ImmutableDictionary<string, string>.Empty.Add("type", TypeOf(descriptor)))];
+    }
+
+    /// <summary>
+    /// The <c>type</c> of an activity, as written in the descriptor, such as <c>quiz</c>: it names the game mode that plays
+    /// the activity, to the author of the pack as to the game master.
+    /// </summary>
+    /// <param name="descriptor">The activity of the pack.</param>
+    /// <returns>The discriminator its type declares on <see cref="RoundDescriptor"/>, or an empty string if none.</returns>
+    public static string TypeOf(RoundDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return typeof(RoundDescriptor).GetCustomAttributes<JsonDerivedTypeAttribute>()
+            .FirstOrDefault(derived => derived.DerivedType == descriptor.GetType())?.TypeDiscriminator?.ToString() ?? string.Empty;
     }
 
     /// <summary>

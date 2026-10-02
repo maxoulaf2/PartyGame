@@ -34,6 +34,9 @@ function fakeLobby(
         minimumPlayerCount: 1,
         joinAddress: candidates[0]?.address ?? null,
         joinAddressCandidates: candidates,
+        packCatalog: { directory: '/srv/partygame/packs', packs: [] },
+        selectedPackId: null,
+        packTitle: null,
         round: null,
         roundView: null,
     };

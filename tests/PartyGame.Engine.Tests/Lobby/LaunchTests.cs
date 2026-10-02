@@ -22,6 +22,54 @@ public sealed class LaunchTests
     }
 
     [Fact]
+    public void Handle_StartGame_CopiesTheSelectedPackIntoTheGame()
+    {
+        // Given
+        var other = Games.ValidPack("autre", "Autre soirée", [Games.TwoRounds[1]]);
+        var state = Games.Accepted(Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded(Games.Pack, other)), Games.Select(other.Id));
+
+        // When
+        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+
+        // Then: the game no longer depends on the catalog
+        Assert.Null(transition.Rejection);
+        Assert.Same(other.Descriptor, transition.State.Pack);
+        Assert.Equal(other.Descriptor!.Rounds, transition.State.Rounds);
+        Assert.Equal(other.Id, transition.State.SelectedPackId);
+    }
+
+    [Fact]
+    public void Handle_StartGameWithoutSelectedPack_IsRejected()
+    {
+        // Given: several valid packs, and none chosen yet
+        var state = Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded());
+        state = Games.Accepted(state, Games.Loaded(Games.Pack, Games.ValidPack("autre", "Autre soirée", Games.TwoRounds)));
+
+        // When
+        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+
+        // Then
+        Assert.Same(state, transition.State);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(RejectionReason.PackNotSelected, transition.Rejection);
+    }
+
+    [Fact]
+    public void Handle_StartGameWithoutAnyPack_IsRejected()
+    {
+        // Given
+        var state = Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded());
+
+        // When
+        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+
+        // Then
+        Assert.Same(state, transition.State);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(RejectionReason.PackNotSelected, transition.Rejection);
+    }
+
+    [Fact]
     public void Handle_StartGameWithOnlyDisconnectedPlayers_StartsTheGame()
     {
         // Given

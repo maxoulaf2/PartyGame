@@ -46,8 +46,14 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} renamed {Nickname} by the game master")]
     public static partial void PlayerRenamed(this ILogger logger, Guid playerId, string nickname);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Game started by the game master with {PlayerCount} players")]
-    public static partial void GameStarted(this ILogger logger, int playerCount);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Game started by the game master with {PlayerCount} players and pack {PackId} ({PackTitle})")]
+    public static partial void GameStarted(this ILogger logger, int playerCount, string packId, string packTitle);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Pack {PackId} chosen by the game master")]
+    public static partial void PackSelected(this ILogger logger, string packId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Packs reloaded by the game master: {PackCount} packs, {ValidPackCount} valid")]
+    public static partial void PacksReloaded(this ILogger logger, int packCount, int validPackCount);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Connection {ConnectionId} still runs client build {ClientBuildId} after reloading to get build {ServerBuildId}: a cache or a proxy keeps serving the old pages")]
     public static partial void StaleBuildReported(this ILogger logger, string connectionId, string clientBuildId, string? serverBuildId);

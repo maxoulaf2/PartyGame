@@ -33,6 +33,7 @@ function fakeSnapshot(
         phase,
         joinAddress,
         players,
+        packTitle: null,
         round: null,
         roundView: null,
     };

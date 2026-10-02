@@ -20,6 +20,14 @@ namespace PartyGame.Contracts;
 /// The addresses the game master may choose from instead, best first. Only this projection holds them: the TV screen
 /// gets the chosen address alone.
 /// </param>
+/// <param name="PackCatalog">
+/// The packs the game master may choose from, with the problems of the invalid ones, in the lobby only: once the game is
+/// started, its pack is fixed and the catalog is <see langword="null"/>.
+/// </param>
+/// <param name="SelectedPackId">
+/// The identifier of the pack chosen for the game, or <see langword="null"/> while none is: the game cannot start then.
+/// </param>
+/// <param name="PackTitle">The title of the pack chosen for the game, or <see langword="null"/> while none is.</param>
 /// <param name="Round">
 /// The round in progress, or the round that just finished between two rounds and once the game is finished, or
 /// <see langword="null"/> before the first round.
@@ -35,5 +43,8 @@ public sealed record GameMasterSnapshot(
     int MinimumPlayerCount,
     string? JoinAddress,
     ImmutableArray<GameMasterJoinAddress> JoinAddressCandidates,
+    GameMasterPackCatalog? PackCatalog,
+    string? SelectedPackId,
+    string? PackTitle,
     RoundInfo? Round,
     GameMasterRoundView? RoundView);

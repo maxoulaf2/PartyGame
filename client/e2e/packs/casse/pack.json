@@ -1,0 +1,17 @@
+{
+  "formatVersion": 1,
+  "title": "Pack cassé",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Monuments",
+      "questions": [
+        {
+          "text": "Quel monument voit-on ?",
+          "image": "images/tour-eiffel.jpg",
+          "choices": [{ "text": "La tour Eiffel" }, { "text": "Big Ben" }]
+        }
+      ]
+    }
+  ]
+}

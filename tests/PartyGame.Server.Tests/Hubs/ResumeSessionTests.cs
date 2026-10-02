@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using PartyGame.Contracts;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
+using PartyGame.Server.Packs;
+using PartyGame.Server.Tests.Packs;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -13,13 +15,17 @@ public sealed class ResumeSessionTests : IAsyncDisposable
     private const string Code = "482913";
 
     private readonly TempDirectory _logs = new();
+    private readonly TempDirectory _packs = new();
     private readonly WebApplicationFactory<Program> _factory;
 
     public ResumeSessionTests()
     {
+        // The only pack of the directory, chosen at once, so that the game can start.
+        TestPacks.Write(_packs.Path, "soiree", TestPacks.Quiz("Soirée test", "Manche"));
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting("LogFiles:Directory", _logs.Path)
-            .UseSetting("GameMaster:Code", Code));
+            .UseSetting("GameMaster:Code", Code)
+            .UseSetting(PacksOptions.DirectorySetting, _packs.Path));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -30,6 +36,7 @@ public sealed class ResumeSessionTests : IAsyncDisposable
     {
         await _factory.DisposeAsync();
         _logs.Dispose();
+        _packs.Dispose();
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using PartyGame.Contracts;
+using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Tests.Rounds;
 
@@ -151,6 +152,130 @@ public sealed class SnapshotsTests
     }
 
     [Fact]
+    public void ForGameMaster_Lobby_ShowsEveryPackWithTheRoundsOfTheValidOnesAndTheProblemsOfTheInvalidOnes()
+    {
+        // Given
+        var invalid = Games.InvalidPack("casse");
+        var state = Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded(invalid, Games.Pack));
+
+        // When
+        var snapshot = Games.Snapshots.ForGameMaster(state);
+
+        // Then
+        var catalog = Assert.IsType<GameMasterPackCatalog>(snapshot.PackCatalog);
+        Assert.Equal(Games.PackDirectory, catalog.Directory);
+        Assert.Equal(2, catalog.Packs.Length);
+        var shownInvalid = catalog.Packs[0];
+        Assert.Equal(("casse", "Pack cassé", 1, false), (shownInvalid.Id, shownInvalid.Title, shownInvalid.RoundCount, shownInvalid.IsValid));
+        Assert.Empty(shownInvalid.Rounds);
+        Assert.Equal(invalid.Problems, shownInvalid.Problems);
+        var shownValid = catalog.Packs[1];
+        Assert.Equal((Games.PackId, "Soirée test", 2, true), (shownValid.Id, shownValid.Title, shownValid.RoundCount, shownValid.IsValid));
+        Assert.Equal([new GameMasterPackRound("Échauffement", ""), new GameMasterPackRound("Finale", "")], shownValid.Rounds);
+        Assert.Empty(shownValid.Problems);
+        Assert.Equal((Games.PackId, "Soirée test"), (snapshot.SelectedPackId, snapshot.PackTitle));
+    }
+
+    [Fact]
+    public void ForGameMaster_QuizRound_ShowsTheTypeOfTheActivityAsItsMode()
+    {
+        // Given: the fake activities of the tests declare no type
+        var quiz = Games.ValidPack("quiz", "Quiz", [new QuizRoundDescriptor { Title = "Culture", Questions = [] }]);
+        var state = Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded(quiz));
+
+        // When
+        var snapshot = Games.Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.Equal([new GameMasterPackRound("Culture", "quiz")], Assert.Single(snapshot.PackCatalog!.Packs).Rounds);
+    }
+
+    [Fact]
+    public void ForGameMasterAndDisplay_NoPackChosen_ShowNoTitle()
+    {
+        // Given
+        var state = Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded(Games.InvalidPack("casse")));
+
+        // When
+        var gameMaster = Games.Snapshots.ForGameMaster(state);
+        var display = Games.Snapshots.ForDisplay(state);
+
+        // Then
+        Assert.Equal((null, null), (gameMaster.SelectedPackId, gameMaster.PackTitle));
+        Assert.Null(display.PackTitle);
+    }
+
+    [Theory]
+    [InlineData(GamePhase.Round)]
+    [InlineData(GamePhase.BetweenRounds)]
+    [InlineData(GamePhase.Finished)]
+    public void ForGameMaster_OnceStarted_ShowsThePackOfTheGameButNoCatalog(GamePhase phase)
+    {
+        // Given
+        var state = Games.InPhase(phase, "Zoé");
+
+        // When
+        var snapshot = Games.Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.Null(snapshot.PackCatalog);
+        Assert.Equal((Games.PackId, "Soirée test"), (snapshot.SelectedPackId, snapshot.PackTitle));
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public void ForDisplay_AnyPhase_ShowsTheTitleOfThePackOfTheGame(GamePhase phase, Phase _)
+    {
+        // Given
+        var state = Games.InPhase(phase, "Zoé");
+
+        // When
+        var snapshot = Games.Snapshots.ForDisplay(state);
+
+        // Then
+        Assert.Equal("Soirée test", snapshot.PackTitle);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public void ForDisplayAndPlayer_AnyPhase_ContainNothingOfThePacksButTheTitleOfTheChosenOne(GamePhase phase, Phase _)
+    {
+        // Given: the other packs, their problems and the folder of the packs are for the game master only
+        var other = Games.ValidPack("pack-voisin", "Titre voisin", [new FakeRoundDescriptor { Title = "Manche voisine" }]);
+        var state = Games.Accepted(Games.LobbyWith("Zoé", "Max"), Games.Loaded(Games.Pack, other, Games.InvalidPack("pack-casse", "Titre cassé")));
+        state = Games.PlayedUpTo(phase, state);
+
+        // When
+        var projections = new List<object> { Games.Snapshots.ForDisplay(state) };
+        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
+
+        // Then
+        foreach (var json in projections.Select(Serialize))
+        {
+            string[] secrets =
+            [
+                "pack-voisin", "Titre voisin", "Manche voisine", "pack-casse", "Titre cassé", "tour-eiffel", "$.rounds",
+                nameof(PackProblemCode.PackMediaMissing), Games.PackDirectory, Games.PackId, "catalog", "problem",
+            ];
+            Assert.All(secrets, secret => Assert.DoesNotContain(secret, json, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    [Fact]
+    public void ForDisplayAndPlayer_Lobby_ContainNoRoundOfTheChosenPack()
+    {
+        // Given: the rounds of the pack are discovered as they are played
+        var state = Games.LobbyWith("Zoé");
+
+        // When
+        string[] json = [Serialize(Games.Snapshots.ForDisplay(state)), Serialize(Games.Snapshots.ForPlayer(state, state.Players[0]))];
+
+        // Then
+        Assert.All(json, j => Assert.DoesNotContain("Échauffement", j, StringComparison.Ordinal));
+        Assert.All(json, j => Assert.DoesNotContain("Finale", j, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ForEachRole_RenamedPlayer_ShowsTheNewNickname()
     {
         // Given
@@ -240,9 +365,14 @@ public sealed class SnapshotsTests
     [MemberData(nameof(Phases))]
     public void ForDisplay_AnyPhase_IsTheSameAsWithoutSecrets(GamePhase phase, Phase _)
     {
-        // Given: everything the TV screen may not show is removed from the state
+        // Given: everything the TV screen may not show is removed from the state, down to the title of the chosen pack
         var state = Games.InPhase(phase, "Zoé", "Max");
-        var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear(), JoinAddressCandidates = [] };
+        var withoutSecrets = state with
+        {
+            PlayerTokens = state.PlayerTokens.Clear(),
+            JoinAddressCandidates = [],
+            Catalog = new PackCatalog(string.Empty, [new CatalogPack(Games.PackId, Games.Pack.Title, RoundCount: null, Descriptor: null, [])]),
+        };
 
         // When
         var snapshot = Games.Snapshots.ForDisplay(state);

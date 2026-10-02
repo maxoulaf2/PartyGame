@@ -64,25 +64,11 @@ public sealed class RoundFlowTests
     }
 
     [Fact]
-    public void Handle_StartGameWithoutRounds_FinishesTheGame()
-    {
-        // Given: no pack chosen yet
-        var state = Games.LobbyWith("Zoé");
-
-        // When
-        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
-
-        // Then
-        Assert.Null(transition.Rejection);
-        Assert.Empty(transition.Effects);
-        Assert.Equal(state with { Phase = GamePhase.Finished }, transition.State);
-    }
-
-    [Fact]
     public void Handle_StartGameWithAnActivityWithoutMode_IsRejected()
     {
         // Given: no mode plays quiz rounds in these tests
-        var state = Games.LobbyWith("Zoé") with { Rounds = [Games.TwoRounds[0], new QuizRoundDescriptor { Title = "Quiz", Questions = [] }] };
+        var mixed = Games.ValidPack("mixte", "Mixte", [Games.TwoRounds[0], new QuizRoundDescriptor { Title = "Quiz", Questions = [] }]);
+        var state = Games.Accepted(Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded(Games.Pack, mixed)), Games.Select("mixte"));
 
         // When
         var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());

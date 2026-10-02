@@ -78,6 +78,7 @@ describe('connectDisplay', () => {
             phase: 'Lobby',
             joinAddress: '192.168.1.42',
             players: [{ id: playerId, nickname: 'Zoé', isConnected: true }],
+            packTitle: null,
             round: null,
             roundView: null,
         });
@@ -95,6 +96,7 @@ describe('connectDisplay', () => {
             phase: 'Lobby',
             joinAddress: '192.168.1.42',
             players: [],
+            packTitle: null,
             round: null,
             roundView: null,
         };

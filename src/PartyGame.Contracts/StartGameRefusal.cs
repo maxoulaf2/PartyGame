@@ -8,6 +8,9 @@ public enum StartGameRefusal
     /// <summary>Fewer players are registered than <see cref="GameMasterSnapshot.MinimumPlayerCount"/>.</summary>
     NotEnoughPlayers,
 
+    /// <summary>No pack is chosen: the game would have nothing to play.</summary>
+    PackNotSelected,
+
     /// <summary>The game is already started, for instance by a double tap or by a second game master.</summary>
     AlreadyStarted,
 

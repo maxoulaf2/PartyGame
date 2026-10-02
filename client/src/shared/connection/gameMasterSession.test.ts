@@ -130,6 +130,9 @@ function snapshot(version: number): GameMasterSnapshot {
         minimumPlayerCount: 1,
         joinAddress: '192.168.1.42',
         joinAddressCandidates: [{ address: '192.168.1.42', interfaceName: 'Wi-Fi' }],
+        packCatalog: { directory: '/srv/packs', packs: [] },
+        selectedPackId: null,
+        packTitle: null,
         round: null,
         roundView: null,
     };

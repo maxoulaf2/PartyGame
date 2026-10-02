@@ -1,8 +1,10 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using PartyGame.Content;
 using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Projections;
 using PartyGame.Server.Network;
+using PartyGame.Server.Packs;
 
 namespace PartyGame.Server.Games;
 
@@ -26,12 +28,17 @@ internal static class GameLoopExtensions
 
         // The engine has no randomness of its own: the identifier of the game and the seed come from here. Neither does it
         // know the network: the address phones join at, and those the game master may choose instead, come from the
-        // selection made at startup. A choice of the game master lives in the state only, and is forgotten on restart.
+        // selection made at startup. A choice of the game master lives in the state only, and is forgotten on restart. The
+        // packs, loaded before the server listens, are in the state from the start: no console ever sees an empty catalog.
         builder.Services.AddSingleton(services =>
         {
             var selection = services.GetRequiredService<AddressSelection>();
             return new GameLoop(
-                GameState.Create(new GameId(Guid.NewGuid()), selection.Address?.ToString(), selection.ToJoinAddressCandidates()),
+                GameState.Create(
+                    new GameId(Guid.NewGuid()),
+                    selection.Address?.ToString(),
+                    selection.ToJoinAddressCandidates(),
+                    services.GetRequiredService<PackLibrary>().ToCatalog()),
                 Random.Shared.Next(),
                 services.GetRequiredService<GameInputQueue>(),
                 services.GetRequiredService<IGameEngine>(),

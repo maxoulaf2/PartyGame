@@ -30,12 +30,42 @@ internal static class Games
     public static readonly ImmutableArray<JoinAddressCandidate> JoinAddressCandidates =
         [new(JoinAddress, "Wi-Fi"), new(OtherAddress, "Ethernet")];
 
-    /// <summary>A pack of two activities played by <see cref="FakeMode"/>.</summary>
+    /// <summary>Two activities played by <see cref="FakeMode"/>.</summary>
     public static readonly ImmutableArray<RoundDescriptor> TwoRounds =
         [new FakeRoundDescriptor { Title = "Échauffement" }, new FakeRoundDescriptor { Title = "Finale" }];
 
+    public const string PackDirectory = "/srv/partygame/packs";
+
+    /// <summary>The identifier of <see cref="Pack"/>, the only pack of <see cref="Catalog"/>.</summary>
+    public const string PackId = "soiree";
+
+    /// <summary>A pack of <see cref="TwoRounds"/>.</summary>
+    public static readonly CatalogPack Pack = ValidPack(PackId, "Soirée test", TwoRounds);
+
+    /// <summary>A catalog with a single valid pack, <see cref="Pack"/>, which a new game chooses at once.</summary>
+    public static readonly PackCatalog Catalog = new(PackDirectory, [Pack]);
+
     public static GameState NewLobby() =>
-        GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress, JoinAddressCandidates);
+        GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress, JoinAddressCandidates, Catalog);
+
+    public static CatalogPack ValidPack(string id, string title, ImmutableArray<RoundDescriptor> rounds) =>
+        new(id, title, rounds.Length, new PackDescriptor { FormatVersion = 1, Title = title, Rounds = rounds }, []);
+
+    /// <summary>A pack with a missing media file and a question without correct choice.</summary>
+    public static CatalogPack InvalidPack(string id, string title = "Pack cassé") =>
+        new(
+            id,
+            title,
+            RoundCount: 1,
+            Descriptor: null,
+            [
+                new PackProblem(PackProblemCode.PackMediaMissing, PackDescriptor.FileName, "$.rounds[0].questions[0].image", ImmutableDictionary<string, string>.Empty.Add("media", "images/tour-eiffel.jpg")),
+                new PackProblem(PackProblemCode.QuizCorrectChoiceMissing, PackDescriptor.FileName, "$.rounds[0].questions[1]", ImmutableDictionary<string, string>.Empty),
+            ]);
+
+    public static SelectPack Select(string packId) => new(packId, Now);
+
+    public static PacksLoaded Loaded(params CatalogPack[] packs) => new(new PackCatalog(PackDirectory, [.. packs]));
 
     public static GameContext Context(int seed = 42) => new(Now, new Random(seed));
 
@@ -73,18 +103,23 @@ internal static class Games
     }
 
     /// <summary>
-    /// A game of <see cref="TwoRounds"/> with the given players, in the given phase: the first round in progress, between
+    /// A game of <see cref="Pack"/> with the given players, in the given phase: the first round in progress, between
     /// the two rounds, or finished.
     /// </summary>
-    public static GameState InPhase(GamePhase phase, params string[] nicknames)
+    public static GameState InPhase(GamePhase phase, params string[] nicknames) => PlayedUpTo(phase, LobbyWith(nicknames));
+
+    /// <summary>
+    /// Plays a lobby whose selected pack has two rounds up to the given phase: the first round in progress, between the two
+    /// rounds, or finished.
+    /// </summary>
+    public static GameState PlayedUpTo(GamePhase phase, GameState lobby)
     {
-        var state = LobbyWith(nicknames) with { Rounds = TwoRounds };
         if (phase == GamePhase.Lobby)
         {
-            return state;
+            return lobby;
         }
 
-        state = Accepted(state, Start());
+        var state = Accepted(lobby, Start());
         if (phase == GamePhase.Round)
         {
             return state;

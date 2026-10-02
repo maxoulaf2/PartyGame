@@ -14,6 +14,10 @@ namespace PartyGame.Contracts;
 /// client adds the port of the page it loaded, which is the one phones must use as well.
 /// </param>
 /// <param name="Players">Registered players, in order of arrival, so that nobody moves when another one joins.</param>
+/// <param name="PackTitle">
+/// The title of the pack chosen for the game, or <see langword="null"/> while none is. The only thing the TV screen
+/// knows of the packs: never their list, nor their content before it is played.
+/// </param>
 /// <param name="Round">
 /// The round in progress, or the round that just finished between two rounds and once the game is finished, or
 /// <see langword="null"/> before the first round.
@@ -27,5 +31,6 @@ public sealed record DisplaySnapshot(
     Phase Phase,
     string? JoinAddress,
     ImmutableArray<DisplayPlayer> Players,
+    string? PackTitle,
     RoundInfo? Round,
     DisplayRoundView? RoundView);

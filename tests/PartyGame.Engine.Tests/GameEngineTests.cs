@@ -1,6 +1,6 @@
 using System.Text.Json;
-using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.Tests.Rounds;
 
 namespace PartyGame.Engine.Tests;
 
@@ -50,8 +50,8 @@ public sealed class GameEngineTests
 
         // Then
         Assert.Equal(
-            JsonSerializer.Serialize(first.State, ContractJsonOptions.Default),
-            JsonSerializer.Serialize(second.State, ContractJsonOptions.Default));
+            JsonSerializer.Serialize(first.State, FakeJson.Options),
+            JsonSerializer.Serialize(second.State, FakeJson.Options));
         Assert.Equal(first.Effects, second.Effects);
         Assert.Equal(first.Rejection, second.Rejection);
     }

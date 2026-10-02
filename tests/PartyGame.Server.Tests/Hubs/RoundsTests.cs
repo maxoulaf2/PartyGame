@@ -4,15 +4,15 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using PartyGame.Contracts;
-using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Quiz;
 using PartyGame.Contracts.Serialization;
 using PartyGame.Engine;
 using PartyGame.Engine.Modes;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
+using PartyGame.Server.Packs;
+using PartyGame.Server.Tests.Packs;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -21,31 +21,22 @@ public sealed class RoundsTests : IAsyncDisposable
     private const string Code = "482913";
 
     private readonly TempDirectory _logs = new();
+    private readonly TempDirectory _packs = new();
     private readonly WebApplicationFactory<Program> _factory;
 
     public RoundsTests()
     {
-        // Until the game master chooses a pack (US-E06-03), the game gets its rounds here, played by a test mode.
+        // The only pack of the directory, chosen at once: its rounds are played by a test mode.
+        TestPacks.Write(_packs.Path, "soiree", TestPacks.Quiz("Soirée test", "Échauffement", "Finale"));
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting("LogFiles:Directory", _logs.Path)
             .UseSetting("GameMaster:Code", Code)
+            .UseSetting(PacksOptions.DirectorySetting, _packs.Path)
             .ConfigureTestServices(services =>
             {
                 // The test mode replaces the quiz mode, whose questions are not played yet.
                 services.RemoveAll<IGameMode>();
                 services.AddSingleton<IGameMode, TestQuizMode>();
-                services.AddSingleton(provider => new GameLoop(
-                    GameState.Create(new GameId(Guid.NewGuid()), "192.168.1.42", []) with
-                    {
-                        Rounds = [new QuizRoundDescriptor { Title = "Échauffement", Questions = [] }, new QuizRoundDescriptor { Title = "Finale", Questions = [] }],
-                    },
-                    seed: 42,
-                    provider.GetRequiredService<GameInputQueue>(),
-                    provider.GetRequiredService<IGameEngine>(),
-                    provider.GetRequiredService<TimeProvider>(),
-                    provider.GetRequiredService<IEffectExecutor>(),
-                    provider.GetServices<IGameStateListener>(),
-                    provider.GetRequiredService<ILogger<GameLoop>>()));
             }));
     }
 
@@ -57,6 +48,7 @@ public sealed class RoundsTests : IAsyncDisposable
     {
         await _factory.DisposeAsync();
         _logs.Dispose();
+        _packs.Dispose();
     }
 
     [Fact]

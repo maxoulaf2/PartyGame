@@ -13,6 +13,7 @@ function snapshot(version: number): DisplaySnapshot {
         phase: 'Lobby',
         joinAddress: '10.0.0.1',
         players: [],
+        packTitle: null,
         round: null,
         roundView: null,
     };

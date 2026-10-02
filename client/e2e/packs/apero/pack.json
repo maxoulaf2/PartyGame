@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "title": "Quiz de l’apéro",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Mise en bouche",
+      "questions": [
+        {
+          "text": "Quelle est la capitale de l’Italie ?",
+          "choices": [{ "text": "Rome", "correct": true }, { "text": "Milan" }]
+        }
+      ]
+    }
+  ]
+}
