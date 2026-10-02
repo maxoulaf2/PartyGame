@@ -1,6 +1,6 @@
 ### US-E04-01 — Accès à l'interface GM par le code
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** saisir une seule fois le code affiché dans la console pour accéder aux commandes de la partie
@@ -25,6 +25,12 @@ GM : serveur injoignable pendant la saisie, le bouton reste désactivé et l'ind
 - Le champ accepte les espaces autour (la vérification les tolère) et refuse la validation tant qu'il ne contient pas 6 chiffres.
 - Tous les textes sont dans `fr.ts`. Les erreurs arrivent du serveur sous forme de codes (`GameMasterCodeInvalid`) traduits par le client.
 - Zones tactiles d'au moins 48 px et `touch-action: manipulation` : le GM pilote souvent depuis un téléphone.
+- Réalisation : `GameMasterSession` (`shared/connection/gameMasterSession.svelte.ts`) porte l'authentification : état d'accès (`codeRequired`, `checking`, `granted`), motif du refus (`invalid` pour un code saisi, `expired` pour un code mémorisé refusé) et état de la connexion. Un code mémorisé est présenté à chaque connexion et à chaque reconnexion, sans afficher le formulaire ; un code mémorisé refusé est oublié. Un code saisi n'est mémorisé qu'une fois accepté.
+- Réalisation : le code est conservé sous la clé `partygame.gm.code` par `localCodeStorage` (`shared/connection/codeStorage.ts`), qui se comporte comme un stockage vide si le navigateur refuse le `localStorage` (navigation privée).
+- Réalisation : l'interface GM (`gm/App.svelte`) affiche le formulaire (`CodeForm.svelte`), l'écran d'attente pendant la vérification d'un code mémorisé, ou la console du lobby (`LobbyConsole.svelte`, nombre de joueurs inscrits, enrichie par US-E04-04). Le champ est un `type="text"` avec `inputmode="numeric"` : les zéros en tête et les espaces survivent. Le bouton reste désactivé tant que le serveur est injoignable ou que le champ ne contient pas 6 chiffres.
+- Réalisation : `GameConnection` expose `onReconnecting`, `onReconnected` et `onClose`, et la connexion utilise `withAutomaticReconnect` avec la politique par défaut. Le GM et l'écran TV se réannoncent dans `onReconnected`. La politique sans limite, le redémarrage après `onclose` et `visibilitychange` restent l'objet de US-E05-01 ; l'indicateur de coupure, de US-E05-02.
+- Réalisation : les tests E2E démarrent désormais le vrai serveur .NET derrière `vite preview` (port 5199, `GameMaster:Code` fixé dans `e2e/gameServer.ts`). `e2e/gm.spec.ts` couvre mauvais code, bon code, rechargement, code mémorisé expiré et l'absence de snapshot `GameMaster` avant authentification (messages WebSocket inspectés). Il s'exécute aussi sur iPhone (WebKit) et Pixel (Chromium).
+- Réalisation : la vérification sur de vrais appareils reste à faire par le GM (saisie au clavier numérique sur iPhone et Android).
 
 **Hors périmètre**
 - Limitation du nombre de tentatives (décision 2 du README).
