@@ -1,6 +1,6 @@
 ### US-E06-01 — Format du descripteur et schéma généré
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant qu'**auteur de pack
 **je veux** écrire le `pack.json` d'un pack avec l'autocomplétion et la validation de VS Code
@@ -28,6 +28,13 @@ Auteur : VS Code souligne l'erreur et en donne la raison. La lecture et la valid
 - Le générateur gagne une sortie hors de `client/` : `schemas/pack.schema.json`. Le fichier est formaté de façon stable (indentation, ordre des propriétés) pour que ses diffs restent lisibles.
 - Le premier pack d'exemple, sous `packs/`, arrive avec US-E08-01. L'association de VS Code se vérifie d'ici là sur un `pack.json` de travail, non versionné.
 - CLAUDE.md, section « Commandes » : mentionner que `npm run generate:contracts` produit aussi le schéma.
+- Réalisation : System.Text.Json refuse une base `[JsonPolymorphic]` sans aucun type dérivé (`InvalidOperationException` dès que les options la décrivent, schéma compris). Le type `quiz` est donc déclaré dès cette US, par un `QuizRoundDescriptor` vide (seulement `title`, hérité de `RoundDescriptor`) ; US-E08-01 lui ajoute ses propriétés. Aucun pack n'est chargé d'ici là (US-E06-02 dépend de US-E08-01) : ce type provisoirement trop permissif est sans effet.
+- Réalisation : `PackDescriptor` (`$schema` facultatif et ignoré, indispensable puisque toute propriété inconnue est refusée ; `formatVersion` ; `title` ; `description` ; `rounds`) et `RoundDescriptor` (`title`, de 1 à 60 caractères comme celui du pack) sont des `record` à propriétés `required` : une propriété obligatoire absente ou `null` fait échouer la lecture. `PackDescriptor.CurrentFormatVersion` vaut 1 ; une autre version est refusée par `[Range(1, 1)]`, traduit en `"const": 1` dans le schéma.
+- Réalisation : `PackJsonOptions` ajoute `AllowOutOfOrderMetadataProperties` : par défaut, System.Text.Json exige que `type` soit la première propriété d'une activité, ce qu'un auteur ne devine pas. À savoir pour US-E06-02 : une activité sans `type` lève une `NotSupportedException`, et non une `JsonException` ; la lecture s'arrête à la première erreur ; et `Validator` ne vérifie les attributs que d'un objet, sans descendre dans les objets qu'il contient.
+- Réalisation : `PackSchemaGenerator` (`tools/PartyGame.TypeGen`) s'appuie sur `JsonSchemaExporter` avec `PackJsonOptions`, qui produit déjà `additionalProperties: false` et la liste des propriétés obligatoires. Il ajoute les descriptions (celle de la propriété, sinon celle de son type ; celle d'un type d'activité est aussi portée par la valeur de son `type`, pour le survol de `"quiz"`), et traduit `[StringLength]`, `[Length]`, `[MinLength]`, `[MaxLength]` et `[Range]`. Tout autre attribut de validation fait échouer la génération, pour que l'éditeur n'accepte jamais en silence ce que le serveur refusera. Le fichier déclare le dialecte 2020-12, est indenté de 2 espaces, en LF, avec les accents lisibles.
+- Réalisation : `PartyGame.TypeGen` accepte `--schema <fichier>`, que `npm run generate:contracts` et `npm run check` (`scripts/checkContracts.js`) passent avec `../schemas/pack.schema.json`. L'espace de noms `PartyGame.Contracts.Packs` est exclu de la génération TypeScript, comme celui de la sérialisation.
+- Réalisation : tests `PackDescriptorTests` (Contracts : enveloppe, `type` placé n'importe où, propriété inconnue, `type` inconnu ou absent, propriété manquante ou mal typée, commentaires et virgules finales, contraintes dont `formatVersion`), `PackSchemaGeneratorTests` (sur des types de test : chaque attribut traduit, descriptions, base polymorphe, attributs non traduisibles, format stable), `GeneratedPackSchemaTests` (schéma versionné à jour, avec la commande à lancer) et `OutputFileTests`. `GeneratedContractsTests` vérifie qu'aucun type des packs n'apparaît dans les types TypeScript.
+- Vérification dans VS Code, sur un `pack.json` de travail sans `$schema` sous `packs/` : `formatVersion` à 2, `title` vide, `titel` et un `type` inconnu sont signalés (« Value must be 1. », « String is shorter than the minimum length of 1. », « Property titel is not allowed. », « Value must be "quiz". »).
 
 **Hors périmètre**
 - Le descripteur d'une manche de quiz (US-E08-01).

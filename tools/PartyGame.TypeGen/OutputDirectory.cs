@@ -18,13 +18,9 @@ internal static class OutputDirectory
         foreach (var file in files.OrderBy(f => f.Path, StringComparer.Ordinal))
         {
             var path = Path.Combine(directory, file.Path);
-            if (!File.Exists(path))
+            if (OutputFile.FindDifference(path, file.Content, file.Path) is { } difference)
             {
-                differences.Add($"{file.Path} is missing");
-            }
-            else if (NormalizeLineEndings(File.ReadAllText(path)) != file.Content)
-            {
-                differences.Add($"{file.Path} is out of date");
+                differences.Add(difference);
             }
         }
 
@@ -46,11 +42,7 @@ internal static class OutputDirectory
 
         foreach (var file in files)
         {
-            var path = Path.Combine(directory, file.Path);
-            if (!File.Exists(path) || NormalizeLineEndings(File.ReadAllText(path)) != file.Content)
-            {
-                File.WriteAllText(path, file.Content);
-            }
+            OutputFile.Write(Path.Combine(directory, file.Path), file.Content);
         }
     }
 
@@ -69,7 +61,4 @@ internal static class OutputDirectory
             .Order(StringComparer.Ordinal)
             .ToList();
     }
-
-    // Git may check files out with CRLF on Windows; only the content matters.
-    private static string NormalizeLineEndings(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal);
 }

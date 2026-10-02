@@ -15,7 +15,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 |---|---|---|---|
 | 0. Socle technique | Un dépôt outillé, un téléphone qui accède au serveur | E01, E02 | Terminée |
 | 1. Squelette temps réel | Le lobby fonctionne et survit aux mises en veille | E03, E04, E05 | En cours |
-| 2. Premier mode : quiz QCM | Une partie complète jouable de bout en bout | E06, E07, E08, E09 | À faire |
+| 2. Premier mode : quiz QCM | Une partie complète jouable de bout en bout | E06, E07, E08, E09 | En cours |
 | 3. Résilience | Les erreurs et les crashs deviennent invisibles | E10, E11, E12 | À faire |
 | 4. Buzzer et blind test | Un départage juste et un son maîtrisé | E13, E14, E15 | À faire |
 | 5. Questions ouvertes et contenu | Réponses libres et outils de création de packs | E16, E17 | À faire |

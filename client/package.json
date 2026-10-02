@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "node scripts/checkContracts.js && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && tsc -p tsconfig.node.json && eslint . && prettier --check .",
-    "generate:contracts": "dotnet run --project ../tools/PartyGame.TypeGen --verbosity quiet -- src/shared/contracts",
+    "generate:contracts": "dotnet run --project ../tools/PartyGame.TypeGen --verbosity quiet -- src/shared/contracts --schema ../schemas/pack.schema.json",
     "format": "prettier --write .",
     "test": "vitest run",
     "e2e": "playwright test"

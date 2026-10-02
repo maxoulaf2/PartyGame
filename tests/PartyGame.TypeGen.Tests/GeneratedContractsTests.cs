@@ -1,3 +1,5 @@
+using PartyGame.Contracts.Packs;
+
 namespace PartyGame.TypeGen.Tests;
 
 /// <summary>
@@ -9,7 +11,7 @@ public sealed class GeneratedContractsTests
     [Fact]
     public void GeneratedFiles_CommittedInClient_MatchContractsAssembly()
     {
-        var directory = Path.Combine(FindRepositoryRoot(), "client", "src", "shared", "contracts");
+        var directory = Path.Combine(RepositoryRoot.Find(), "client", "src", "shared", "contracts");
 
         var differences = OutputDirectory.FindDifferences(directory, ContractsGenerator.Generate(ContractsGenerator.ContractsAssembly));
 
@@ -30,16 +32,19 @@ public sealed class GeneratedContractsTests
         Assert.DoesNotContain(files, f => f.Path.StartsWith("ContractJsonOptions", StringComparison.Ordinal));
     }
 
-    private static string FindRepositoryRoot()
+    [Fact]
+    public void Generate_ContractsAssembly_ExcludesPackDescriptors()
     {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "PartyGame.slnx")))
-            {
-                return directory.FullName;
-            }
-        }
+        var packTypes = typeof(PackDescriptor).Assembly.GetExportedTypes()
+            .Where(t => t.Namespace == typeof(PackDescriptor).Namespace)
+            .Select(t => t.Name)
+            .ToList();
 
-        throw new InvalidOperationException($"PartyGame.slnx not found above {AppContext.BaseDirectory}.");
+        var files = ContractsGenerator.Generate(ContractsGenerator.ContractsAssembly);
+
+        Assert.Contains(nameof(PackDescriptor), packTypes);
+        Assert.Contains(nameof(RoundDescriptor), packTypes);
+        Assert.All(files, file => Assert.DoesNotContain(Path.GetFileNameWithoutExtension(file.Path), packTypes));
+        Assert.All(files, file => Assert.DoesNotContain(nameof(PackDescriptor), file.Content, StringComparison.Ordinal));
     }
 }
