@@ -82,6 +82,8 @@ Cette section décrit les commandes de référence. La mettre à jour dès qu'un
 ```bash
 # Lancement complet (PowerShell) : prérequis, npm ci, contrats, build du front si besoin, port libre, puis serveur
 .\scripts\start.ps1            # -Port 5001, -GameMasterCode 123456, -Rebuild
+# Test sur un seul PC (serveur déjà lancé) : écran TV, GM et N joueurs en fenêtres privées isolées
+.\scripts\open-browsers.ps1 3  # -BaseUrl http://localhost:5173 (Vite), -Port 5001, -Browser chrome|edge
 
 # Serveur
 dotnet build
