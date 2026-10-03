@@ -12,4 +12,7 @@ internal sealed record FakePlayerIntent(RoundId RoundId, string Action) : Player
 
     /// <summary>An action the round rejects.</summary>
     public const string Refused = "refused";
+
+    /// <summary>An action worth <see cref="FakeMode.AwardedPoints"/> to its player, the round itself unchanged.</summary>
+    public const string Scores = "scores";
 }

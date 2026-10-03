@@ -23,6 +23,20 @@ public sealed class PlayerIntentSequenceTests
         Assert.Contains($"player {Games.PlayerIdOf(1).Value} answers A", ((FakeRoundState)transition.State.CurrentRound!.State).Inputs);
     }
 
+    [Fact]
+    public void Handle_PlayerIntentThatScores_AwardsThePointsAndRecordsItsClientSeq()
+    {
+        // Given: a mode that awards points as soon as a player acts, as a buzzer would
+        var state = Games.InPhase(GamePhase.Round, "Zoé", "Max");
+
+        // When
+        var transition = Games.Engine.Handle(state, Acts(state, clientSeq: 3, FakePlayerIntent.Scores), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        Assert.Equal([(3L, FakeMode.AwardedPoints), (0L, 0)], transition.State.Players.Select(p => (p.LastClientSeq, p.Score)));
+    }
+
     [Theory]
     [InlineData(3)]
     [InlineData(2)]
