@@ -200,7 +200,7 @@ public sealed class TimerSchedulerTests : IDisposable
         });
         await using var harness = await LoopHarness.StartAsync(
             engine,
-            effects: h => new EffectExecutor(new TimerScheduler(h.Inputs, h.Time, _logger), new RecordingLogger<EffectExecutor>()));
+            effects: h => new EffectExecutor(new TimerScheduler(h.Inputs, h.Time, _logger)));
         await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // When

@@ -11,6 +11,7 @@ import type {
 } from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection, GameHubMethods, IntentOutcome } from './gameHub';
+import { IncidentInbox } from './incidentInbox.svelte';
 import type { SnapshotStore } from './snapshotStore.svelte';
 
 /**
@@ -78,7 +79,8 @@ export function isCodeComplete(code: string): boolean {
 /**
  * The authentication of the GM console. The code is typed once, then remembered on the device and
  * presented at every connection, including after a reload or a lost connection. Snapshots go to
- * `store`; the server only sends them once the code is accepted.
+ * `store`, and the incidents of the server to `incidents`; the server only sends them once the code
+ * is accepted.
  */
 export class GameMasterSession {
     #access = $state<GameMasterAccess>('codeRequired');
@@ -88,6 +90,7 @@ export class GameMasterSession {
     readonly #store: SnapshotStore<GameMasterSnapshot>;
     readonly #storage: CodeStorage;
     readonly #connection: GameConnection;
+    readonly #incidents = new IncidentInbox();
 
     constructor(
         store: SnapshotStore<GameMasterSnapshot>,
@@ -109,6 +112,11 @@ export class GameMasterSession {
         return this.#problem;
     }
 
+    /** The incidents of the server, for the game master alone. */
+    get incidents(): IncidentInbox {
+        return this.#incidents;
+    }
+
     /** Whether the server can be reached: a code cannot be submitted until it can. */
     get connected(): boolean {
         return this.#connected;
@@ -124,12 +132,19 @@ export class GameMasterSession {
 
     /** Connects to the server and presents the remembered code, if any. Returns a function that disconnects. */
     start(): () => void {
-        const unsubscribe = this.#connection.on('ReceiveGameMasterSnapshot', (snapshot) => {
-            this.#store.accept(snapshot);
+        const unsubscribeSnapshots = this.#connection.on(
+            'ReceiveGameMasterSnapshot',
+            (snapshot) => {
+                this.#store.accept(snapshot);
+            },
+        );
+        const unsubscribeIncidents = this.#connection.on('ReceiveIncidents', (incidents) => {
+            this.#incidents.accept(incidents);
         });
         this.#connection.onReconnecting(() => {
             this.#connected = false;
             this.#store.markStale();
+            this.#incidents.markStale();
         });
         this.#connection.onReconnected(() => this.#onConnected());
         this.#connection
@@ -139,7 +154,8 @@ export class GameMasterSession {
             .catch(() => {});
 
         return () => {
-            unsubscribe();
+            unsubscribeSnapshots();
+            unsubscribeIncidents();
             this.#connection.stop().catch(() => {});
         };
     }

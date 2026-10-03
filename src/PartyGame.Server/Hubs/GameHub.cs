@@ -8,6 +8,7 @@ using PartyGame.Engine.Projections;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
+using PartyGame.Server.Incidents;
 using PartyGame.Server.Packs;
 
 namespace PartyGame.Server.Hubs;
@@ -27,6 +28,7 @@ internal sealed class GameHub(
     IGameInputWriter inputs,
     PlayerConnections playerConnections,
     PackReloader packReloader,
+    IncidentJournal incidents,
     FrontEndBuild frontEndBuild,
     TimeProvider timeProvider,
     ILogger<GameHub> logger) : Hub<IGameClient>
@@ -93,7 +95,7 @@ internal sealed class GameHub(
 
     /// <summary>
     /// Gives the connection the role it claims, puts it in the group of that role, and sends it the current snapshot of
-    /// that role. Announcing again replaces the previous role, even when the new announcement is refused. A malformed
+    /// that role, and to the game master the incidents of the server as well. Announcing again replaces the previous role, even when the new announcement is refused. A malformed
     /// message changes nothing.
     /// </summary>
     /// <param name="message">An <see cref="Announcement"/>.</param>
@@ -127,9 +129,18 @@ internal sealed class GameHub(
 
         // Read once in the group: a change made since is broadcast to it as well, and the client keeps the newest version.
         var state = game.State;
-        await (announcement.Role == Role.Display
-            ? Clients.Caller.ReceiveDisplaySnapshot(snapshots.ForDisplay(state))
-            : Clients.Caller.ReceiveGameMasterSnapshot(snapshots.ForGameMaster(state))).ConfigureAwait(false);
+        if (announcement.Role == Role.Display)
+        {
+            await Clients.Caller.ReceiveDisplaySnapshot(snapshots.ForDisplay(state)).ConfigureAwait(false);
+        }
+        else
+        {
+            await Clients.Caller.ReceiveGameMasterSnapshot(snapshots.ForGameMaster(state)).ConfigureAwait(false);
+
+            // The same holds for the incidents: a newer list may come first, and the console keeps the newest.
+            await Clients.Caller.ReceiveIncidents(incidents.Current).ConfigureAwait(false);
+        }
+
         return _accepted;
     }
 

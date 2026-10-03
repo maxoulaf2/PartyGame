@@ -25,4 +25,9 @@ public interface IGameClient
     /// The current state of the game for one player, sent after each change and right after the identification.
     /// </summary>
     Task ReceivePlayerSnapshot(PlayerSnapshot snapshot);
+
+    /// <summary>
+    /// Every incident of the server, sent to the game master alone, on each new one and right after the announcement.
+    /// </summary>
+    Task ReceiveIncidents(IncidentList incidents);
 }

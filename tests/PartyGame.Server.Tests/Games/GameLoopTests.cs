@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Effects;
 using PartyGame.Server.Games;
@@ -152,6 +153,29 @@ public sealed class GameLoopTests
         Assert.Equal(InputOutcome.Accepted, next);
         Assert.Equal("2", Assert.Single(harness.Loop.State.Players).Nickname);
         Assert.Equal(["notify:listener"], harness.Journal.Entries);
+        var incident = Assert.Single(harness.Incidents.Reported);
+        Assert.Equal((IncidentCode.RoundHandlerFailed, null), (incident.Code, incident.Role));
+        Assert.Same(LoopHarness.InitialState, incident.State);
+    }
+
+    [Fact]
+    public async Task SubmitAsync_EngineThrowsAndIncidentCannotBeReported_KeepsHandlingInputs()
+    {
+        // Given
+        var engine = new ScriptedEngine((state, input, context) => ((TestInput)input).Value == 1
+            ? throw new InvalidOperationException("Injected engine failure")
+            : ScriptedEngine.AddPlayer(state, input, context));
+        await using var harness = await LoopHarness.StartAsync(engine, incidentsFail: true);
+
+        // When
+        var failed = await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
+        var next = await harness.Inputs.SubmitAsync(new TestInput(2), Ct);
+
+        // Then
+        Assert.Equal((InputOutcome.Failed, InputOutcome.Accepted), (failed, next));
+        Assert.Equal("2", Assert.Single(harness.Loop.State.Players).Nickname);
+        Assert.Equal(2, harness.Logger.Entries.Count(e => e.Level == LogLevel.Error));
+        Assert.Contains(harness.Logger.Entries, e => e.Message.Contains(nameof(IncidentCode.RoundHandlerFailed), StringComparison.Ordinal));
     }
 
     [Fact]
@@ -172,6 +196,9 @@ public sealed class GameLoopTests
         Assert.Equal([$"effect:{other}", "notify:listener"], harness.Journal.Entries);
         var error = Assert.Single(harness.Logger.Entries, e => e.Level == LogLevel.Error);
         Assert.Contains(nameof(CancelTimer), error.Message, StringComparison.Ordinal);
+        var incident = Assert.Single(harness.Incidents.Reported);
+        Assert.Equal(IncidentCode.EffectFailed, incident.Code);
+        Assert.Same(harness.Loop.State, incident.State);
     }
 
     [Fact]
@@ -188,6 +215,7 @@ public sealed class GameLoopTests
         Assert.Equal(InputOutcome.Accepted, outcome);
         Assert.Equal(["notify:other"], harness.Journal.Entries);
         Assert.Single(harness.Logger.Entries, e => e.Level == LogLevel.Error);
+        Assert.Equal(IncidentCode.EffectFailed, Assert.Single(harness.Incidents.Reported).Code);
     }
 
     [Fact]

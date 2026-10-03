@@ -6,6 +6,7 @@
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
     import AddressControl from './AddressControl.svelte';
+    import IncidentPanel from './IncidentPanel.svelte';
     import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import RoundControl from './RoundControl.svelte';
@@ -29,7 +30,10 @@
 </script>
 
 <main>
-    <h1>{fr.gm.consoleTitle}</h1>
+    <header>
+        <h1>{fr.gm.consoleTitle}</h1>
+        <IncidentPanel inbox={session.incidents} />
+    </header>
     <p class="counts">
         {countText(fr.gm.playersJoined, snapshot.players.length)}{#if snapshot.players.length > 0}
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
@@ -104,6 +108,14 @@
     h1,
     p {
         margin: 0;
+    }
+
+    header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-s) var(--space-m);
     }
 
     h1 {

@@ -3,6 +3,7 @@ using PartyGame.Content;
 using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Projections;
+using PartyGame.Server.Incidents;
 using PartyGame.Server.Network;
 using PartyGame.Server.Packs;
 
@@ -25,6 +26,8 @@ internal static class GameLoopExtensions
         builder.Services.TryAddSingleton<IGameInputWriter>(services => services.GetRequiredService<GameInputQueue>());
         builder.Services.TryAddSingleton<TimerScheduler>();
         builder.Services.TryAddSingleton<IEffectExecutor, EffectExecutor>();
+        builder.Services.TryAddSingleton<IncidentJournal>();
+        builder.Services.TryAddSingleton<IIncidentReporter, IncidentReporter>();
 
         // The engine has no randomness of its own: the identifier of the game and the seed come from here. Neither does it
         // know the network: the address phones join at, and those the game master may choose instead, come from the
@@ -45,6 +48,7 @@ internal static class GameLoopExtensions
                 services.GetRequiredService<TimeProvider>(),
                 services.GetRequiredService<IEffectExecutor>(),
                 services.GetServices<IGameStateListener>(),
+                services.GetRequiredService<IIncidentReporter>(),
                 services.GetRequiredService<ILogger<GameLoop>>());
         });
         builder.Services.AddHostedService(services => services.GetRequiredService<GameLoop>());

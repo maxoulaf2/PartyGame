@@ -237,6 +237,39 @@ export const fr = {
         },
         connected: 'Connecté',
         disconnected: 'Déconnecté',
+        // Failures the server recovered from by itself: the game master alone hears of them.
+        incidents: {
+            // The discreet counter of the header, for the incidents not read yet. Once they are
+            // read, « zero » still opens the list.
+            counter: {
+                zero: 'Incidents',
+                one: '{count} incident',
+                other: '{count} incidents',
+            },
+            title: 'Incidents du serveur',
+            hint: 'Le serveur s’en est remis seul : la partie continue, et ni les joueurs ni l’écran TV n’ont rien vu.',
+            listLabel: 'Incidents, du plus récent au plus ancien',
+            markAllRead: 'Tout marquer comme lu',
+            close: 'Fermer',
+            // When it happened, written by formatTime; then, for a repeated one, how many times.
+            at: 'À {time}',
+            repeated: '{count} fois, la dernière à {time}',
+            // The round in progress when it happened.
+            round: 'Manche {number}/{count} : {title}',
+            outsideRound: 'Hors manche',
+            // One message per IncidentCode, {role} taken from `roles`.
+            codes: {
+                RoundHandlerFailed: 'Une action n’a pas pu être traitée : elle a été ignorée.',
+                ProjectionFailed:
+                    'L’affichage {role} n’a pas pu être mis à jour : il garde l’état précédent.',
+                EffectFailed: 'Une opération a échoué après une action : la partie continue.',
+            },
+            roles: {
+                Player: 'des téléphones',
+                Display: 'de l’écran TV',
+                GameMaster: 'de la console',
+            },
+        },
         rename: {
             action: 'Renommer',
             // Read by screen readers: several « Renommer » buttons must be told apart.

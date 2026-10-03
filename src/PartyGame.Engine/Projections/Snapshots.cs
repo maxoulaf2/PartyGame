@@ -111,10 +111,18 @@ public sealed class Snapshots(GameModes modes)
                     pack.Problems)),
             ]);
 
-    private static RoundInfo? RoundInfoOf(GameState state) =>
-        state.CurrentRound is { } round
+    /// <summary>
+    /// What every role knows of the round in progress, or of the round that just finished between two rounds and once the
+    /// game is finished; <see langword="null"/> before the first round.
+    /// </summary>
+    /// <param name="state">The current state.</param>
+    public static RoundInfo? RoundInfoOf(GameState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return state.CurrentRound is { } round
             ? new RoundInfo(round.Id, round.Index + 1, state.Rounds.Length, state.Rounds[round.Index].Title)
             : null;
+    }
 
     /// <summary>
     /// The ranking between two rounds and once the game is finished, when every point of the round that just finished is

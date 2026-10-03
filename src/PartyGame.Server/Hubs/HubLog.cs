@@ -23,6 +23,9 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Warning, Message = "Snapshot not sent to group {Group}")]
     public static partial void SnapshotNotSent(this ILogger logger, Exception exception, string group);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "Projection for role {Role} failed at version {Version}, its clients keep their previous snapshot")]
+    public static partial void ProjectionFailed(this ILogger logger, Exception exception, Role role, long version);
+
     // The token is never logged: it is the only proof of who a player is.
     [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} joined as {Nickname}")]
     public static partial void PlayerJoined(this ILogger logger, Guid playerId, string nickname);
