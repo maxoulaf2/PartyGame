@@ -8,7 +8,7 @@
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E07-01](US-E07-01-enchainement-des-manches.md) | Manches du pack enchaînées par le moteur | Terminée | — |
-| [US-E07-02](US-E07-02-vues-des-modes.md) | Vues de chaque mode côté client | À faire | US-E07-01 |
+| [US-E07-02](US-E07-02-vues-des-modes.md) | Vues de chaque mode côté client | Terminée | US-E07-01 |
 | [US-E07-03](US-E07-03-non-fuite.md) | Aucune fuite d'information, quel que soit le mode | À faire | US-E07-01 |
 
 ## Décisions
