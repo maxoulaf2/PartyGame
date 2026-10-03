@@ -23,15 +23,24 @@ function choicesOf(page: Page) {
     return page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem');
 }
 
-/** The phone shows the question and its choices, which wait for the answers to open. */
+/**
+ * The phone is an answer pad: a button per choice, waiting for the answers to open, and neither
+ * the question nor the texts of the choices, read on the TV screen.
+ */
 async function expectQuestionOnPhone(phone: Page, question: string, progress: string) {
     await expect(phone.getByText(progress)).toBeVisible();
-    await expect(phone.getByRole('heading', { name: question })).toBeVisible();
-    await expect(choicesOf(phone)).toHaveText(['A 6', 'B 8']);
-    for (const choice of await choicesOf(phone).getByRole('button').all()) {
-        await expect(choice).toBeDisabled();
+    const buttons = choicesOf(phone).getByRole('button');
+    await expect(buttons).toHaveCount(2);
+    for (const letter of ['A', 'B']) {
+        const button = phone.getByRole('button', {
+            name: fill(fr.modes.quiz.player.choiceLabel, { letter }),
+        });
+        await expect(button).toBeDisabled();
+        await expect(button).toHaveText(letter);
     }
     await expect(phone.getByText(fr.modes.quiz.player.presentation)).toBeVisible();
+    await expect(phone.getByText(question)).toHaveCount(0);
+    await expect(phone.getByText('araignée')).toHaveCount(0);
 }
 
 test('the game master starts the game, and every interface presents its first question', async ({

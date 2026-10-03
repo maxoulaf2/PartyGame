@@ -66,7 +66,8 @@ public sealed class StartGameTests : IAsyncDisposable
         var toTheGameMaster = Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView);
         var toThePlayer = Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView);
         Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation, "Question ?"), (toDisplay.Display[^1].Phase, toTheDisplay.Phase, toTheDisplay.Text));
-        Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation, "Question ?"), (toZoe.Player[^1].Phase, toThePlayer.Phase, toThePlayer.Text));
+        Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation), (toZoe.Player[^1].Phase, toThePlayer.Phase));
+        Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B], toThePlayer.Choices);
         Assert.Equal(
             [new QuizGameMasterChoice(QuizChoiceLetter.A, "Oui", Correct: true), new QuizGameMasterChoice(QuizChoiceLetter.B, "Non", Correct: false)],
             toTheGameMaster.Choices);

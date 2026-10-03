@@ -89,8 +89,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             round.QuestionIndex + 1,
             round.Descriptor.Questions.Length,
             PhaseOf(round),
-            round.Question.Text,
-            PublicChoicesOf(round));
+            [.. ShownChoicesOf(round).Select(shown => shown.Letter)]);
     }
 
     /// <inheritdoc />
@@ -141,7 +140,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         round.ChoiceOrder.Select((index, position) => ((QuizChoiceLetter)position, round.Question.Choices[index]));
 
     /// <summary>
-    /// The choices of the question in progress as the TV screen and the phones show them: nothing tells the correct one.
+    /// The choices of the question in progress as the TV screen shows them: nothing tells the correct one.
     /// </summary>
     private static ImmutableArray<QuizChoiceView> PublicChoicesOf(QuizRound round) =>
         [.. ShownChoicesOf(round).Select(shown => new QuizChoiceView(shown.Letter, shown.Choice.Text))];
