@@ -8,7 +8,7 @@
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E09-01](US-E09-01-points-par-question.md) | Points gagnés à chaque question | Terminée | US-E08-04 |
-| [US-E09-02](US-E09-02-classement-intermediaire.md) | Classement entre deux manches | À faire | US-E09-01, US-E08-05 |
+| [US-E09-02](US-E09-02-classement-intermediaire.md) | Classement entre deux manches | Terminée | US-E09-01, US-E08-05 |
 | [US-E09-03](US-E09-03-classement-final.md) | Classement final | À faire | US-E09-02 |
 
 ## Décisions
