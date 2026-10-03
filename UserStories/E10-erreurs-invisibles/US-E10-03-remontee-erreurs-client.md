@@ -1,6 +1,6 @@
 ### US-E10-03 — Remontée des erreurs des clients
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant que** opérateur
 **je veux** retrouver dans les logs du serveur les erreurs JavaScript survenues sur les téléphones, la TV et la console GM
@@ -25,6 +25,10 @@ Défaut : rien n'est jamais visible, sur aucune page. Le GM n'est pas informé d
 - Le rapport ne contient ni pseudo, ni jeton, ni code GM : seulement le `PlayerId` connu du serveur, qu'il ajoute lui-même.
 - Les erreurs ignorées par le navigateur (« ResizeObserver loop… », erreurs de scripts d'extensions sans pile) sont filtrées avant envoi.
 - `StaleBuildReport` (US-E05-04) reste à part : ce n'est pas une erreur.
+- Réalisation : contrats. `ClientErrorKind` (`Error`, `UnhandledRejection`, `RenderFailed`) et `ClientErrorReport` : rôle de la page (elle peut ne pas l'avoir encore annoncé), chemin de la page sans requête ni fragment, type, message (nom et message de l'erreur, `TypeError: …`), pile ou `null`, type de la vue de manche affichée, version du snapshot affiché et identifiant de build, ces trois derniers à `null` quand ils n'existent pas.
+- Réalisation : serveur. `GameHub.ReportClientError` journalise un `Warning` structuré, avec la connexion et le `PlayerId` que le serveur connaît (`null` pour une connexion non identifiée). `ClientErrorFields` tronque chaque champ (page 200, message 500, pile 2 000, type de vue et build 64 caractères), sans couper une paire de substitution. `ClientErrorAllowance`, gardé dans `Context.Items`, admet 20 rapports par minute et par connexion : le double des 10 d'une page, qui renvoie d'un coup les 20 mis en attente pendant une longue coupure. Le premier rapport ignoré est journalisé une seule fois par connexion. Le décompte précède la lecture du message, pour borner aussi un flot de rapports malformés.
+- Réalisation : client. `shared/errors/` : `errorReport.ts` (description d'une valeur quelconque, troncature, filtrage du bruit : « ResizeObserver loop », « Script error. » sans pile, scripts d'extensions d'après le fichier mis en cause), `errorReporter.ts` (`ErrorReporter` : déduplication par message et début de pile pendant une minute, 10 rapports par minute au plus, file de 20 rapports gardant les premiers, renvoi à chaque connexion établie, envoi en échec remis en file sans nouveau rapport), `uncaughtErrors.ts` (écoute de `error` et `unhandledrejection`) et `errorReporting.ts`, le point d'entrée des pages : `startErrorReporting(role)` dans chaque `main.ts`, avant le montage, `connectErrorReporting(connection, game)` dans chaque `App.svelte`, avant le démarrage de la connexion, et `reportError(kind, error)` pour les `<svelte:boundary>` de US-E10-04. Le contexte (version, type de vue) est lu au moment de l'erreur, pas de l'envoi.
+- Réalisation : tests. `ReportClientErrorTests` (champs journalisés, joueur identifié, troncature, état inchangé, messages malformés, limitation par connexion et sa fenêtre), `ClientErrorAllowanceTests`, `ClientErrorFieldsTests`. Vitest : `errorReport.test.ts`, `errorReporter.test.ts`, `uncaughtErrors.test.ts`. Playwright : `errorReports.spec.ts`, sur les trois pages et les trois navigateurs, vérifie qu'une erreur d'un gestionnaire et une promesse rejetée partent vers le serveur sans rien changer à l'écran.
 
 **Hors périmètre**
 - Les `<svelte:boundary>` et l'écran TV jamais vide (US-E10-04).

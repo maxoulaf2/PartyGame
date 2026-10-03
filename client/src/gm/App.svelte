@@ -8,6 +8,7 @@
     import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
     import { createGameConnection } from '../shared/connection/gameHub';
+    import { connectErrorReporting } from '../shared/errors/errorReporting';
     import { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
     import { fr } from '../shared/i18n/fr';
@@ -25,11 +26,13 @@
         // Before the session starts the connection, so as not to miss the first one, nor the welcome.
         const stopClock = clock.start();
         const stopBuild = watchBuild(connection);
+        const stopErrors = connectErrorReporting(connection, game);
         const stopSession = session.start();
         return () => {
             stopStatus();
             stopClock();
             stopBuild();
+            stopErrors();
             stopSession();
         };
     });

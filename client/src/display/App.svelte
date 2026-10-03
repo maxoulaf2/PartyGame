@@ -8,6 +8,7 @@
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
     import { connectDisplay } from '../shared/connection/displayConnection';
     import { createGameConnection } from '../shared/connection/gameHub';
+    import { connectErrorReporting } from '../shared/errors/errorReporting';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
@@ -32,11 +33,13 @@
         // Before the connection starts, so as not to miss the first one, nor the welcome.
         const stopClock = clock.start();
         const stopBuild = watchBuild(connection);
+        const stopErrors = connectErrorReporting(connection, game);
         const disconnect = connectDisplay(game, connection);
         return () => {
             stopStatus();
             stopClock();
             stopBuild();
+            stopErrors();
             disconnect();
         };
     });

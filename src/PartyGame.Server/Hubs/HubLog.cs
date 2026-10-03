@@ -61,6 +61,24 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Warning, Message = "Connection {ConnectionId} still runs client build {ClientBuildId} after reloading to get build {ServerBuildId}: a cache or a proxy keeps serving the old pages")]
     public static partial void StaleBuildReported(this ILogger logger, string connectionId, string clientBuildId, string? serverBuildId);
 
+    // The player is the one the server knows the connection as: a report never names one itself.
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Client error {ErrorKind} on {Role} page {Page} from connection {ConnectionId}, player {PlayerId}: {ErrorMessage} (round view {RoundViewType}, snapshot {SnapshotVersion}, build {ClientBuildId}) {ErrorStack}")]
+    public static partial void ClientErrorReported(
+        this ILogger logger,
+        ClientErrorKind errorKind,
+        Role role,
+        string page,
+        string connectionId,
+        Guid? playerId,
+        string errorMessage,
+        string? roundViewType,
+        long? snapshotVersion,
+        string? clientBuildId,
+        string? errorStack);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Connection {ConnectionId} reports more than {ReportsPerWindow} client errors a minute: the extra ones are ignored")]
+    public static partial void ClientErrorsDropped(this ILogger logger, string connectionId, int reportsPerWindow);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Address {Address} advertised to phones, chosen by the game master")]
     public static partial void AdvertisedAddressChosen(this ILogger logger, string address);
 

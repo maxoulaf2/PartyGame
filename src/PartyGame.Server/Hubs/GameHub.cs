@@ -72,6 +72,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="LogStaleBuild"/>, as the clients call it.</summary>
     public const string ReportStaleBuild = nameof(ReportStaleBuild);
 
+    /// <summary>SignalR target of <see cref="LogClientError"/>, as the clients call it.</summary>
+    public const string ReportClientError = nameof(ReportClientError);
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
@@ -506,7 +509,7 @@ internal sealed class GameHub(
     /// Logs for the operator that a page still runs another build than the one served, although it reloaded to get it: a
     /// stubborn cache or a proxy. The page goes on with its build. Any connection may report it, identified or not.
     /// </summary>
-    /// <remarks>A minimal report, until the clients report their errors in general (E10).</remarks>
+    /// <remarks>Kept apart from <see cref="LogClientError"/>: an outdated build is no error of the page.</remarks>
     /// <param name="message">A <see cref="StaleBuildReport"/>.</param>
     [HubMethodName(ReportStaleBuild)]
     public void LogStaleBuild(JsonElement message)
@@ -524,6 +527,44 @@ internal sealed class GameHub(
         }
 
         logger.StaleBuildReported(Context.ConnectionId, report.ClientBuildId, frontEndBuild.Id);
+    }
+
+    /// <summary>
+    /// Logs for the operator a JavaScript error a page met without showing anything: the players, the TV screen and the
+    /// game master never see it. Any connection may report one, identified or not, since an error may come before the
+    /// announcement. Long fields are cut, and a connection that reports too much is ignored for a while.
+    /// </summary>
+    /// <param name="message">A <see cref="ClientErrorReport"/>.</param>
+    [HubMethodName(ReportClientError)]
+    public void LogClientError(JsonElement message)
+    {
+        // Counted before reading, so that a flood of malformed reports is bounded as well.
+        switch (ClientErrorAllowance.Of(Context).Admit(timeProvider.GetUtcNow()))
+        {
+            case ClientErrorAdmission.Dropped:
+                return;
+            case ClientErrorAdmission.FirstDropped:
+                logger.ClientErrorsDropped(Context.ConnectionId, ClientErrorAllowance.ReportsPerWindow);
+                return;
+        }
+
+        if (!HubMessage.TryRead<ClientErrorReport>(message, out var report, out var invalidPath))
+        {
+            logger.MessageMalformed(ReportClientError, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        logger.ClientErrorReported(
+            report.Kind,
+            report.Role,
+            ClientErrorFields.Truncate(report.Page, ClientErrorFields.MaxPageLength),
+            Context.ConnectionId,
+            Context.GetPlayerId()?.Value,
+            ClientErrorFields.Truncate(report.Message, ClientErrorFields.MaxMessageLength),
+            ClientErrorFields.Truncate(report.RoundViewType, ClientErrorFields.MaxRoundViewTypeLength),
+            report.SnapshotVersion,
+            ClientErrorFields.Truncate(report.BuildId, ClientErrorFields.MaxBuildIdLength),
+            ClientErrorFields.Truncate(report.Stack, ClientErrorFields.MaxStackLength));
     }
 
     /// <summary>

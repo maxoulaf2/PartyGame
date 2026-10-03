@@ -1,6 +1,10 @@
 import { mount } from 'svelte';
+import { startErrorReporting } from '../shared/errors/errorReporting';
 import '../shared/theme.css';
 import App from './App.svelte';
+
+// First of all, so that an error of the first rendering is reported too.
+startErrorReporting('GameMaster');
 
 const target = document.getElementById('app');
 if (!target) {
