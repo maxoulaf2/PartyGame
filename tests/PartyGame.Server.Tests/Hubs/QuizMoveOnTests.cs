@@ -27,6 +27,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
     private readonly TempDirectory _logs = new();
     private readonly TempDirectory _packs = new();
     private readonly FakeTimeProvider _time = new(_start);
+    private readonly PlayerIntents _playerIntents = new();
     private readonly WebApplicationFactory<Program> _factory;
 
     public QuizMoveOnTests()
@@ -66,6 +67,8 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await AnswerAsync(zoe, 1, QuizChoiceLetter.A);
         await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
         await SendAsync(gameMaster, new QuizRevealAnswer(RoundId, 1));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toZoe = new ReceivedSnapshots(zoe);
 
@@ -95,6 +98,8 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
         await AnswerAsync(zoe, 1, QuizChoiceLetter.A);
+        // What the previous intents sent is received first: only what follows is recorded.
+        await FlushAsync(display);
         using var toDisplay = new ReceivedSnapshots(display);
 
         // When: the game master skips it, sends it again, and the countdown would have run out meanwhile
@@ -131,6 +136,8 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 3));
         await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 3));
         await SendAsync(gameMaster, new QuizRevealAnswer(RoundId, 3));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await FlushAsync(display);
         using var toDisplay = new ReceivedSnapshots(display);
 
         // When
@@ -171,7 +178,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message(intent), Ct);
 
     private Task AnswerAsync(HubConnection player, int questionNumber, QuizChoiceLetter choice) =>
-        player.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(RoundId, questionNumber, choice)), Ct);
+        _playerIntents.SendAsync(player, new QuizSubmitAnswer(RoundId, questionNumber, choice));
 
     /// <summary>
     /// A message as the client sends it: serialized as its declared type, so that a round intent carries its <c>type</c>.

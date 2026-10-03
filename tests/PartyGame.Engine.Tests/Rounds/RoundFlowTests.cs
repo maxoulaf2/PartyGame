@@ -131,7 +131,7 @@ public sealed class RoundFlowTests
     {
         // Given
         var state = Games.InPhase(phase, "Zoé");
-        var intent = new PlayerRoundInput(Games.PlayerIdOf(1), new FakePlayerIntent(new RoundId(Guid.NewGuid()), "answers A"), Games.Now);
+        var intent = new PlayerRoundInput(Games.PlayerIdOf(1), ClientSeq: 1, new FakePlayerIntent(new RoundId(Guid.NewGuid()), "answers A"), Games.Now);
 
         // When
         var transition = Games.Engine.Handle(state, intent, Games.Context());

@@ -11,4 +11,8 @@ namespace PartyGame.Engine;
 /// Whether at least one connection of the player is open. A player who leaves stays registered, shown as disconnected:
 /// nobody is ever excluded from the game.
 /// </param>
-public sealed record Player(PlayerId Id, string Nickname, bool IsConnected);
+/// <param name="LastClientSeq">
+/// The number of the last intent of the player the engine accepted, 0 before the first one: an intent numbered up to it
+/// was already handled, and is sent again. Persisted with the state, so that a resumed game still ignores them.
+/// </param>
+public sealed record Player(PlayerId Id, string Nickname, bool IsConnected, long LastClientSeq = 0);

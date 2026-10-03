@@ -428,15 +428,23 @@ internal sealed class GameHub(
     /// <summary>
     /// Hands what a player does in the round in progress to its game mode, through the loop. Every game mode goes through
     /// this method: its intents are the types derived from <see cref="PlayerRoundIntent"/>. The call returns once the loop
-    /// has handled the intent; whether it was accepted shows in the snapshots.
+    /// has handled the intent, accepted or not: the phone takes the answer for an acknowledgment, and sends the intent
+    /// again, with the same number, when it never gets it. Whether the intent was accepted shows in the snapshots.
     /// </summary>
-    /// <param name="message">A <see cref="PlayerRoundIntent"/>, of the type its <c>type</c> names.</param>
+    /// <param name="message">A <see cref="PlayerIntentEnvelope"/>, its intent of the type its <c>type</c> names.</param>
     [HubMethodName(SendRoundIntent)]
     public async Task SendRoundIntentAsync(JsonElement message)
     {
-        if (!HubMessage.TryRead<PlayerRoundIntent>(message, out var intent, out var invalidPath))
+        if (!HubMessage.TryRead<PlayerIntentEnvelope>(message, out var envelope, out var invalidPath))
         {
             logger.MessageMalformed(SendRoundIntent, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (envelope.ClientSeq < 1)
+        {
+            // Numbers start from 1: the engine would take any other for an intent already handled.
+            logger.MessageMalformed(SendRoundIntent, Context.ConnectionId, "$.clientSeq");
             return;
         }
 
@@ -447,10 +455,10 @@ internal sealed class GameHub(
             return;
         }
 
+        var input = new Engine.Inputs.PlayerRoundInput(playerId, envelope.ClientSeq, envelope.Intent, timeProvider.GetUtcNow());
+
         // Not cancelled with the connection: once enqueued, the intent may be accepted whoever is left to see it.
-        await inputs
-            .SubmitAsync(new Engine.Inputs.PlayerRoundInput(playerId, intent, timeProvider.GetUtcNow()), CancellationToken.None)
-            .ConfigureAwait(false);
+        await inputs.SubmitAsync(input, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>

@@ -126,12 +126,13 @@ async function startedSession(
     server = fakeServer(),
     nicknames = memoryStorage(),
     tokens = memoryStorage(),
+    intents = memoryStorage(),
 ) {
     const store = new SnapshotStore<PlayerSnapshot>();
-    const session = new PlayerSession(store, tokens, nicknames, server.typed);
+    const session = new PlayerSession(store, tokens, nicknames, intents, server.typed);
     session.start();
     await vi.waitFor(() => expect(session.connected).toBe(true));
-    return { session, store, server, tokens, nicknames };
+    return { session, store, server, tokens, nicknames, intents };
 }
 
 describe('PlayerSession', () => {
@@ -177,7 +178,13 @@ describe('PlayerSession', () => {
     it('sends nothing while the server cannot be reached', async () => {
         const store = new SnapshotStore<PlayerSnapshot>();
         const server = fakeServer({ startFails: true });
-        const session = new PlayerSession(store, memoryStorage(), memoryStorage(), server.typed);
+        const session = new PlayerSession(
+            store,
+            memoryStorage(),
+            memoryStorage(),
+            memoryStorage(),
+            server.typed,
+        );
         session.start();
         await Promise.resolve();
 
@@ -226,7 +233,13 @@ describe('PlayerSession', () => {
     it('is synchronized on the form as soon as connected, without any snapshot', async () => {
         const store = new SnapshotStore<PlayerSnapshot>();
         const server = fakeServer();
-        const session = new PlayerSession(store, memoryStorage(), memoryStorage(), server.typed);
+        const session = new PlayerSession(
+            store,
+            memoryStorage(),
+            memoryStorage(),
+            memoryStorage(),
+            server.typed,
+        );
         expect(session.synchronized).toBe(false);
 
         session.start();
@@ -270,6 +283,7 @@ describe('PlayerSession', () => {
                 store,
                 memoryStorage(token),
                 memoryStorage('Zoé'),
+                memoryStorage(),
                 server.typed,
             );
 
@@ -360,37 +374,139 @@ describe('PlayerSession', () => {
             questionNumber: 1,
             choice: 'A',
         } as const;
+        const second = { ...answer, questionNumber: 2, choice: 'B' } as const;
 
-        it('hands the intent to the server once joined', async () => {
+        /** The envelopes the server received, in order. */
+        function sent(server: ReturnType<typeof fakeServer>): unknown[] {
+            return server.connection.invoke.mock.calls
+                .filter(([method]) => method === 'SendRoundIntent')
+                .map(([, envelope]) => envelope);
+        }
+
+        it('sends each intent in its envelope, numbered from 1, once joined', async () => {
             const { session, server } = await startedSession();
             await session.join('Zoé');
 
-            const outcome = await session.sendRoundIntent(answer);
+            session.sendRoundIntent(answer);
+            session.sendRoundIntent(second);
 
-            expect(outcome).toBe('sent');
-            expect(server.connection.invoke).toHaveBeenLastCalledWith('SendRoundIntent', answer);
+            await vi.waitFor(() => expect(session.pendingIntents).toEqual([]));
+            expect(sent(server)).toEqual([
+                { clientSeq: 1, intent: answer },
+                { clientSeq: 2, intent: second },
+            ]);
         });
 
-        it('sends nothing before the player is recognized, or while disconnected', async () => {
+        it('shows the intent as pending until the server acknowledges it', async () => {
+            const { session, server } = await startedSession();
+            await session.join('Zoé');
+            let acknowledge = () => {};
+            server.connection.invoke.mockImplementationOnce(
+                () =>
+                    new Promise((resolve) => {
+                        acknowledge = () => resolve(null);
+                    }),
+            );
+
+            session.sendRoundIntent(answer);
+
+            expect(session.pendingIntents).toEqual([answer]);
+            acknowledge();
+            await vi.waitFor(() => expect(session.pendingIntents).toEqual([]));
+        });
+
+        it('ignores an intent before the player registers', async () => {
             const { session, server } = await startedSession();
 
-            expect(await session.sendRoundIntent(answer)).toBe('unreachable');
+            session.sendRoundIntent(answer);
+
+            expect(session.pendingIntents).toEqual([]);
+            expect(sent(server)).toEqual([]);
+        });
+
+        it('keeps an intent while disconnected, and sends it once the player is identified again', async () => {
+            const { session, server } = await startedSession();
             await session.join('Zoé');
             server.drop();
-            expect(await session.sendRoundIntent(answer)).toBe('unreachable');
 
-            expect(server.connection.invoke).not.toHaveBeenCalledWith(
-                'SendRoundIntent',
-                expect.anything(),
-            );
+            session.sendRoundIntent(answer);
+            expect(session.pendingIntents).toEqual([answer]);
+            server.restore();
+
+            await vi.waitFor(() => expect(session.pendingIntents).toEqual([]));
+            const methods = server.connection.invoke.mock.calls.map(([method]) => method);
+            expect(methods.slice(-2)).toEqual(['ResumeSession', 'SendRoundIntent']);
+            expect(sent(server)).toEqual([{ clientSeq: 1, intent: answer }]);
         });
 
-        it('reports an intent lost with the connection as unreachable', async () => {
+        it('sends again, with the same number, an intent whose acknowledgment was lost', async () => {
             const { session, server } = await startedSession();
             await session.join('Zoé');
             server.connection.invoke.mockRejectedValueOnce(new Error('disconnected'));
 
-            expect(await session.sendRoundIntent(answer)).toBe('unreachable');
+            session.sendRoundIntent(answer);
+            await vi.waitFor(() => expect(sent(server)).toHaveLength(1));
+            server.drop();
+            session.sendRoundIntent(second);
+            server.restore();
+
+            await vi.waitFor(() => expect(session.pendingIntents).toEqual([]));
+            expect(sent(server)).toEqual([
+                { clientSeq: 1, intent: answer },
+                { clientSeq: 1, intent: answer },
+                { clientSeq: 2, intent: second },
+            ]);
+        });
+
+        it('sends the intents a reloaded page kept, once the player is recognized', async () => {
+            const intents = memoryStorage();
+            const first = await startedSession(
+                fakeServer(),
+                memoryStorage(),
+                memoryStorage(),
+                intents,
+            );
+            await first.session.join('Zoé');
+            first.server.drop();
+            first.session.sendRoundIntent(answer);
+
+            // The page reloads: a new session, with what the previous one kept.
+            const server = fakeServer({ known: [token] });
+            const session = new PlayerSession(
+                new SnapshotStore<PlayerSnapshot>(),
+                memoryStorage(token),
+                memoryStorage('Zoé'),
+                intents,
+                server.typed,
+            );
+            expect(session.pendingIntents).toEqual([answer]);
+            session.start();
+
+            await vi.waitFor(() => expect(session.pendingIntents).toEqual([]));
+            expect(sent(server)).toEqual([{ clientSeq: 1, intent: answer }]);
+            session.sendRoundIntent(second);
+            await vi.waitFor(() => expect(sent(server)).toHaveLength(2));
+            expect(sent(server)[1]).toEqual({ clientSeq: 2, intent: second });
+        });
+
+        it('starts the numbers over with the token of a new registration', async () => {
+            const { session, server, intents } = await startedSession();
+            await session.join('Zoé');
+            session.sendRoundIntent(answer);
+            await vi.waitFor(() => expect(sent(server)).toHaveLength(1));
+            server.drop();
+            session.sendRoundIntent(second);
+
+            server.restart();
+            server.restore();
+            await vi.waitFor(() => expect(session.status).toBe('registering'));
+            expect(session.pendingIntents).toEqual([]);
+            expect(intents.value).toBeNull();
+            await session.join('Zoé');
+            session.sendRoundIntent(second);
+
+            await vi.waitFor(() => expect(sent(server)).toHaveLength(2));
+            expect(sent(server)[1]).toEqual({ clientSeq: 1, intent: second });
         });
     });
 });

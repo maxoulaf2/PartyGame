@@ -271,6 +271,7 @@ public sealed class QuizAnswersTests
         var state = QuizGames.Answering(Presented());
         var answer = new PlayerRoundInput(
             Games.PlayerIdOf(1),
+            Games.NextClientSeq(state, 1),
             new QuizSubmitAnswer(new Contracts.RoundId(Guid.NewGuid()), 1, QuizChoiceLetter.A),
             Games.Now);
 

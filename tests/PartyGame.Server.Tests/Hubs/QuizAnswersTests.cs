@@ -28,6 +28,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     private readonly TempDirectory _logs = new();
     private readonly TempDirectory _packs = new();
     private readonly FakeTimeProvider _time = new(_start);
+    private readonly PlayerIntents _playerIntents = new();
     private readonly WebApplicationFactory<Program> _factory;
 
     public QuizAnswersTests()
@@ -65,6 +66,8 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var max = await JoinAsync("Max");
         await using var lea = await JoinAsync("Léa");
         Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
         using var toZoe = new ReceivedSnapshots(zoe);
@@ -117,6 +120,34 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SubmitAnswer_SentAgainWithTheSameClientSeq_IsHandledOnce()
+    {
+        // Given: Zoé answered, and her phone lost the acknowledgment
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        var joined = await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        var answer = new QuizSubmitAnswer(RoundId, 1, QuizChoiceLetter.B);
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, answer);
+
+        // When: identified again on a new connection, before the server noticed the first one dropped, it sends the
+        // answer again with the same number, then a stray copy of it with another choice
+        await using var reconnected = await HubClients.ConnectAsync(_factory);
+        var resumed = await reconnected.InvokeAsync<ResumeSessionResult>(GameHub.ResumeSession, new ResumeSessionRequest(joined.Token!), Ct);
+        var version = Game.State.Version;
+        await PlayerIntents.SendAsync(reconnected, clientSeq: 1, answer);
+        await PlayerIntents.SendAsync(reconnected, clientSeq: 1, answer with { Choice = QuizChoiceLetter.A });
+
+        // Then: neither changes the game
+        Assert.Null(resumed.Refusal);
+        Assert.Equal(version, Game.State.Version);
+        var view = Assert.IsType<QuizGameMasterView>(_factory.Services.GetRequiredService<Engine.Projections.Snapshots>().ForGameMaster(Game.State).RoundView);
+        Assert.Equal(QuizChoiceLetter.B, Assert.Single(view.Answers).Choice);
+        Assert.Equal(1, Assert.Single(Game.State.Players).LastClientSeq);
+    }
+
+    [Fact]
     public async Task AnswersTimer_Elapses_LocksTheAnswersOnEveryInterface()
     {
         // Given
@@ -126,6 +157,8 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toZoe = new ReceivedSnapshots(zoe);
         var version = Game.State.Version;
@@ -184,6 +217,8 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await AnswerAsync(zoe, QuizChoiceLetter.A);
         await AnswerAsync(max, QuizChoiceLetter.B);
         await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe), FlushAsync(max), FlushAsync(lea));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toZoe = new ReceivedSnapshots(zoe);
         using var toMax = new ReceivedSnapshots(max);
@@ -252,7 +287,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message(intent), Ct);
 
     private Task AnswerAsync(HubConnection player, QuizChoiceLetter choice) =>
-        player.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(RoundId, 1, choice)), Ct);
+        _playerIntents.SendAsync(player, new QuizSubmitAnswer(RoundId, 1, choice));
 
     /// <summary>
     /// A message as the client sends it: serialized as its declared type, so that a round intent carries its <c>type</c>.

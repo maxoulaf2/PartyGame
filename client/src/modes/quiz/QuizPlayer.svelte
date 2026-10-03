@@ -19,19 +19,16 @@
         clock,
         interactive,
         send,
+        pending,
     }: PlayerViewProps<QuizPlayerView, QuizSubmitAnswer> = $props();
 
-    // The choice sent and not confirmed yet, shown at once. The snapshot always wins: once it
-    // holds the answer, or leaves the answers, the pending choice no longer shows.
-    let pending = $state<{ readonly question: number; readonly letter: QuizChoiceLetter } | null>(
-        null,
-    );
+    // The choice sent and not acknowledged yet, shown at once, even after a reload. The snapshot
+    // always wins: once it holds the answer, or leaves the answers, the pending choice no longer
+    // shows.
     const pendingLetter = $derived(
-        pending !== null &&
-            pending.question === view.questionNumber &&
-            view.phase === 'Answering' &&
-            view.answer === null
-            ? pending.letter
+        view.phase === 'Answering' && view.answer === null
+            ? (pending.find((intent) => intent.questionNumber === view.questionNumber)?.choice ??
+                  null)
             : null,
     );
     const chosen = $derived(view.answer ?? pendingLetter);
@@ -55,21 +52,16 @@
         return pendingLetter !== null ? fr.modes.quiz.player.pending : null;
     });
 
-    async function choose(letter: QuizChoiceLetter) {
+    function choose(letter: QuizChoiceLetter) {
         if (!canAnswer) {
             return;
         }
-        const question = view.questionNumber;
-        pending = { question, letter };
-        await send({
+        send({
             type: 'quiz.submitAnswer',
             roundId: round.roundId,
-            questionNumber: question,
+            questionNumber: view.questionNumber,
             choice: letter,
         });
-        // Handled by the server by now: the snapshot that confirms the answer, or contradicts it,
-        // arrived first. Not sent: the choice is free again once the connection is back.
-        pending = null;
     }
 </script>
 

@@ -31,6 +31,7 @@ export type * from './PackProblem';
 export type * from './PackProblemCode';
 export type * from './Phase';
 export type * from './PlayerId';
+export type * from './PlayerIntentEnvelope';
 export type * from './PlayerRoundIntent';
 export type * from './PlayerRoundView';
 export type * from './PlayerSnapshot';

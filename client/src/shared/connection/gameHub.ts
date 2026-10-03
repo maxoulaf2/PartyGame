@@ -14,7 +14,7 @@ import type {
     JoinRequest,
     JoinResult,
     NextRoundRequest,
-    PlayerRoundIntent,
+    PlayerIntentEnvelope,
     ReloadPacksResult,
     RenamePlayerRequest,
     RenamePlayerResult,
@@ -49,7 +49,7 @@ export interface GameHubMethods {
     ReloadPacks: { args: []; result: ReloadPacksResult | null };
     // The next three answer nothing: the snapshots show whether the intent was accepted.
     NextRound: { args: [request: NextRoundRequest]; result: null };
-    SendRoundIntent: { args: [intent: PlayerRoundIntent]; result: null };
+    SendRoundIntent: { args: [envelope: PlayerIntentEnvelope]; result: null };
     SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
     SyncClock: { args: []; result: ClockSyncResult };
     ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };

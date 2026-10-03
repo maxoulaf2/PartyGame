@@ -1,6 +1,6 @@
 ### US-E08-06 — Renvoi des intentions après une coupure
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** que ma réponse compte même si mon téléphone a perdu la connexion juste après mon choix
@@ -27,6 +27,10 @@ C'est l'objet de l'US. Joueur : aucun message, l'état « en attente » est conf
 - Les intentions d'inscription et de reprise de session (`JoinGame`, `ResumeSession`) sont des requêtes avec réponse, antérieures à l'identité : elles n'ont pas de `ClientSeq`.
 - Le renvoi a lieu après la réidentification, et l'interface reste verrouillée jusqu'au snapshot frais (US-E05-02).
 - E2E : l'acquittement perdu se simule en coupant la WebSocket relayée (`page.routeWebSocket`) juste après l'envoi.
+- Réalisation : contrats. `SendRoundIntent` reçoit une `PlayerIntentEnvelope` (`clientSeq`, `intent`), sans toucher aux intentions des modes (décision 11 du README). Le hub refuse comme malformée, en `Warning`, une enveloppe sans numéro ou dont le numéro est inférieur à 1, et copie le numéro dans `PlayerRoundInput.ClientSeq`.
+- Réalisation : moteur. `Player.LastClientSeq` garde le numéro de la dernière intention acceptée du joueur, 0 au départ, et fait partie de l'état persisté. `RoundFlow` rejette avant le mode, avec `IntentAlreadyHandled`, une intention dont le numéro ne le dépasse pas, puis l'enregistre une fois l'intention acceptée, même quand le mode ne change rien. Une intention rejetée par le mode ne l'enregistre pas : l'état reste la même instance, sans diffusion, et l'intention renvoyée est jugée de nouveau, à l'heure de sa nouvelle réception. Les numéros peuvent donc sauter ceux des intentions rejetées.
+- Réalisation : client. `IntentQueue` (`shared/connection/intentQueue.svelte.ts`) numérote et garde les intentions dans le `localStorage` (`partygame.player.intents`), avec le jeton et le dernier numéro donné. `PlayerSession` l'ouvre une fois le joueur identifié (inscription ou reprise de session acceptée), la ferme à chaque coupure, la reprend au démarrage pour le jeton conservé, la remet à zéro avec le jeton d'une nouvelle inscription et l'efface sur `SessionUnknown`. Une seule intention à la fois : la suivante part après l'acquittement de la précédente. Une intention envoyée par une connexion perdue est renvoyée par la suivante, même si l'ancienne n'a pas encore abandonné. Les vues des modes reçoivent `pending`, les intentions de la manche affichée non acquittées : le choix « en attente » du quiz en est dérivé, et survit donc à un rechargement ; `send` ne renvoie plus rien.
+- Réalisation : tests. Moteur : `PlayerIntentSequenceTests` (numéro enregistré, renvoi et numéro plus ancien rejetés sans atteindre le mode, numéros qui sautent, intention acceptée sans changement, intention rejetée par le mode, numéros propres à chaque joueur) et `QuizResendTests` (réponse traitée puis renvoyée, réponse perdue renvoyée pendant les réponses et comptée à sa réception, réponse renvoyée à la question suivante et rejetée). Hub : `QuizAnswersTests` renvoie une réponse avec le même numéro depuis une nouvelle connexion, puis une copie avec un autre choix, sans aucun changement ; `RoundsTests` ajoute les enveloppes malformées. Vitest : `intentQueue.test.ts` (ordre, acquittement, renvoi, nouvelle connexion avant l'abandon de l'ancienne, persistance, jeton différent, valeur illisible, remise à zéro) et `playerSession.test.ts` (envoi après identification, renvoi avec le même numéro, rechargement, nouvelle inscription). E2E : dans `launch.spec.ts`, un téléphone dont la WebSocket est coupée juste après l'envoi de sa réponse la renvoie avec le même numéro, et la réponse est comptée une seule fois.
 
 **Hors périmètre**
 - La remontée des erreurs client (E10).

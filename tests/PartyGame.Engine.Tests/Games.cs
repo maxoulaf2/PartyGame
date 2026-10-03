@@ -118,7 +118,14 @@ internal static class Games
     public static ChooseAdvertisedAddress ChooseAddress(string address) => new(address, Now);
 
     public static PlayerRoundInput PlayerActs(GameState state, int player, string action) =>
-        new(PlayerIdOf(player), new FakePlayerIntent(state.CurrentRound!.Id, action), Now);
+        new(PlayerIdOf(player), NextClientSeq(state, player), new FakePlayerIntent(state.CurrentRound!.Id, action), Now);
+
+    /// <summary>
+    /// The number the phone of a player gives their next intent: one more than the last one the engine accepted from
+    /// them, or 1 for a player the game does not know.
+    /// </summary>
+    public static long NextClientSeq(GameState state, int player) =>
+        (state.Players.FirstOrDefault(p => p.Id == PlayerIdOf(player))?.LastClientSeq ?? 0) + 1;
 
     public static GameMasterRoundInput GameMasterActs(GameState state, string action) =>
         new(new FakeGameMasterIntent(state.CurrentRound!.Id, action), Now);

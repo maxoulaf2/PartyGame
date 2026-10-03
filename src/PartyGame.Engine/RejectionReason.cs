@@ -93,4 +93,10 @@ public enum RejectionReason
 
     /// <summary>The answer names a choice the question does not have.</summary>
     ChoiceUnknown,
+
+    /// <summary>
+    /// The intent of a player is numbered up to the last one accepted from them: already handled, it is sent again by a
+    /// phone that lost its connection before knowing it.
+    /// </summary>
+    IntentAlreadyHandled,
 }
