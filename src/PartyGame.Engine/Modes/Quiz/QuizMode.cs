@@ -72,7 +72,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Plays the intents of the quiz, each aimed at the question it names, and locks the answers once every participant
+    /// Plays the intents of the quiz, each aimed at the question it names, and the part of it it shows, and locks the answers once every participant
     /// answered, or when their timer elapses.
     /// </summary>
     /// <inheritdoc />
@@ -84,6 +84,8 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 
         return input switch
         {
+            GameMasterRoundInput { RoundIntent: QuizShowQuestion show } => ShowQuestion(round, show),
+            GameMasterRoundInput { RoundIntent: QuizShowChoice show } => ShowChoice(round, show),
             GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
             GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal, game),
             GameMasterRoundInput { RoundIntent: QuizNextQuestion next } => NextQuestion(round, next, context),
@@ -124,9 +126,12 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             round.QuestionNumber,
             round.Descriptor.Questions.Length,
             PhaseOf(round),
-            round.Question.Text,
-            round.Question.Image is { } image ? game.Media.UrlOf(image) : null,
+
+            // Nothing the TV screen does not show yet is sent: anyone may read its snapshots.
+            round.QuestionShown ? round.Question.Text : null,
+            round.QuestionShown && round.Question.Image is { } image ? game.Media.UrlOf(image) : null,
             PublicChoicesOf(round),
+            round.ChoiceOrder.Length,
             CloseTimeOf(round),
 
             // How many answered, never what: the choices stay secret until the reveal.
@@ -149,11 +154,13 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             round.Descriptor.Questions.Length,
             PhaseOf(round),
             round.Question.Text,
+            round.QuestionShown,
             [
                 .. ShownChoicesOf(round).Select(shown => new QuizGameMasterChoice(
                     shown.Letter,
                     shown.Choice.Text,
                     shown.Choice.Correct,
+                    (int)shown.Letter < round.ShownChoiceCount,
                     round.Answers.Values.Count(answer => answer.Choice == shown.Letter))),
             ],
             CloseTimeOf(round),
@@ -180,6 +187,38 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
+    /// Shows the question presented on the TV screen, with its image, its choices still hidden.
+    /// </summary>
+    private static RoundTransition ShowQuestion(QuizRound round, QuizShowQuestion show)
+    {
+        RejectionReason? rejection =
+            show.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != QuizPhase.Presentation ? RejectionReason.PhaseMismatch
+            : round.QuestionShown ? RejectionReason.PresentationStepMismatch
+            : null;
+        return rejection is { } reason
+            ? RoundTransition.Rejected(round, reason)
+            : new(round with { QuestionShown = true }, []);
+    }
+
+    /// <summary>
+    /// Shows the next choice of the question presented on the TV screen, once the question and the choices before it are
+    /// shown: the intent names it, so that a request sent twice shows it once.
+    /// </summary>
+    private static RoundTransition ShowChoice(QuizRound round, QuizShowChoice show)
+    {
+        RejectionReason? rejection =
+            show.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != QuizPhase.Presentation ? RejectionReason.PhaseMismatch
+            : (int)show.Choice < 0 || (int)show.Choice >= round.ChoiceOrder.Length ? RejectionReason.ChoiceUnknown
+            : !round.QuestionShown || (int)show.Choice != round.ShownChoiceCount ? RejectionReason.PresentationStepMismatch
+            : null;
+        return rejection is { } reason
+            ? RoundTransition.Rejected(round, reason)
+            : new(round with { ShownChoiceCount = round.ShownChoiceCount + 1 }, []);
+    }
+
+    /// <summary>
     /// Opens the answers of the question presented to the players registered now, until the end of its countdown.
     /// </summary>
     private static RoundTransition OpenAnswers(QuizRound round, QuizOpenAnswers open, GameState game, GameContext context)
@@ -198,6 +237,10 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         var opened = round with
         {
             Phase = QuizPhase.Answering,
+
+            // Whatever the TV screen still hides shows now: the players answer knowing every choice.
+            QuestionShown = true,
+            ShownChoiceCount = round.ChoiceOrder.Length,
             AnswersCloseAt = closeAt,
             Participants = [.. game.Players.Select(player => player.Id)],
         };
@@ -373,10 +416,10 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             .Select(player => (player, round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : (QuizChoiceLetter?)null));
 
     /// <summary>
-    /// The choices of the question in progress as the TV screen shows them: nothing tells the correct one.
+    /// The choices of the question in progress the TV screen shows so far: nothing tells the correct one.
     /// </summary>
     private static ImmutableArray<QuizChoiceView> PublicChoicesOf(QuizRound round) =>
-        [.. ShownChoicesOf(round).Select(shown => new QuizChoiceView(shown.Letter, shown.Choice.Text))];
+        [.. ShownChoicesOf(round).Take(round.ShownChoiceCount).Select(shown => new QuizChoiceView(shown.Letter, shown.Choice.Text))];
 
     /// <summary>
     /// When the answers close, while they are open: the screens count down to it.

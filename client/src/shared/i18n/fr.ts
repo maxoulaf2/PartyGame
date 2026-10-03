@@ -281,6 +281,8 @@ export const fr = {
                 other: '{count} réponses',
             },
             display: {
+                // Shown large while the game master reads out the question, before showing it.
+                upcoming: 'Question {number}',
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
                 // Read by screen readers: the players who chose a choice, once revealed.
@@ -312,6 +314,13 @@ export const fr = {
                 },
             },
             gm: {
+                // The game master shows on the TV screen what they just read out: the question, then
+                // each choice in turn.
+                showQuestion: 'Afficher la question',
+                showChoice: 'Afficher la proposition {letter}',
+                // Marks the question, or a choice, the TV screen does not show yet.
+                hiddenOnDisplay: 'Pas encore affichée sur la TV',
+                // Shows at once what the TV screen still hides, then starts the countdown.
                 openAnswers: 'Ouvrir les réponses',
                 revealAnswer: 'Révéler',
                 skipQuestion: 'Passer la question',

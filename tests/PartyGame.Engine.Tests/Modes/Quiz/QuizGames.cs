@@ -94,6 +94,28 @@ internal static class QuizGames
         return state with { CurrentRound = state.CurrentRound! with { State = moved } };
     }
 
+    /// <summary>The game master shows the question in progress on the TV screen.</summary>
+    public static GameMasterRoundInput ShowQuestion(GameState state, int? questionNumber = null) =>
+        new(new QuizShowQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>The game master shows a choice of the question in progress on the TV screen.</summary>
+    public static GameMasterRoundInput ShowChoice(GameState state, QuizChoiceLetter choice, int? questionNumber = null) =>
+        new(new QuizShowChoice(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber, choice), Games.Now);
+
+    /// <summary>
+    /// The same game, its question in progress shown on the TV screen, then its first choices, up to the given count.
+    /// </summary>
+    public static GameState Shown(GameState state, int? choiceCount = null)
+    {
+        state = Accepted(state, ShowQuestion(state));
+        for (var letter = 0; letter < (choiceCount ?? RoundOf(state).ChoiceOrder.Length); letter++)
+        {
+            state = Accepted(state, ShowChoice(state, (QuizChoiceLetter)letter));
+        }
+
+        return state;
+    }
+
     /// <summary>The game master opens the answers of the question in progress.</summary>
     public static GameMasterRoundInput OpenAnswers(GameState state, int? questionNumber = null) =>
         new(new QuizOpenAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);

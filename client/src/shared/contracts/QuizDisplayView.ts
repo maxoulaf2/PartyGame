@@ -12,9 +12,10 @@ export interface QuizDisplayView {
     readonly questionNumber: number;
     readonly questionCount: number;
     readonly phase: QuizQuestionPhase;
-    readonly text: string;
+    readonly text: string | null;
     readonly imageUrl: string | null;
     readonly choices: readonly QuizChoiceView[];
+    readonly choiceCount: number;
     readonly answersCloseAt: number | null;
     readonly answeredCount: number;
     readonly participantCount: number;

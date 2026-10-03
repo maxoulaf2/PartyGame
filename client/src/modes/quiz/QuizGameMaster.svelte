@@ -7,6 +7,8 @@
         QuizNextQuestion,
         QuizOpenAnswers,
         QuizRevealAnswer,
+        QuizShowChoice,
+        QuizShowQuestion,
         QuizSkipQuestion,
     } from '../../shared/contracts';
     import { countText } from '../../shared/i18n/countText';
@@ -21,7 +23,13 @@
     let { view, round, clock, interactive, send }: GameMasterViewProps<QuizGameMasterView, Intent> =
         $props();
 
-    type Intent = QuizOpenAnswers | QuizRevealAnswer | QuizNextQuestion | QuizSkipQuestion;
+    type Intent =
+        | QuizShowQuestion
+        | QuizShowChoice
+        | QuizOpenAnswers
+        | QuizRevealAnswer
+        | QuizNextQuestion
+        | QuizSkipQuestion;
 
     let sending = $state(false);
     // The question the game master asked to skip, until they confirm or cancel. The dialog goes away
@@ -30,6 +38,15 @@
     const confirmingSkip = $derived(skipping === view.questionNumber && view.phase !== 'Revealed');
 
     const lastQuestion = $derived(view.questionNumber === view.questionCount);
+
+    // The game master reads out the question, then each choice, and shows it on the TV screen
+    // right after: the choice to show next, once the question is.
+    const nextChoice = $derived(
+        view.phase === 'Presentation' && view.questionShown
+            ? (view.choices.find((choice) => !choice.shown) ?? null)
+            : null,
+    );
+    const presented = $derived(view.questionShown && view.choices.every((choice) => choice.shown));
 
     const answeredCount = $derived(view.answers.filter((answer) => answer.choice !== null).length);
     const allAnswered = $derived(view.answers.length > 0 && answeredCount === view.answers.length);
@@ -41,19 +58,36 @@
             .map((answer) => answer.nickname);
     }
 
-    async function act(type: Intent['type'], questionNumber = view.questionNumber) {
+    async function act(intent: Intent) {
         if (!interactive || sending) {
             return;
         }
         sending = true;
-        // Each intent names its question: sent again, or by a second console, it changes nothing.
-        // A lost connection is for the connection indicator to show.
-        await send({ type, roundId: round.roundId, questionNumber });
+        // Each intent names its question, and the step it moves on from: sent again, or by a
+        // second console, it changes nothing. A lost connection is for the connection indicator
+        // to show.
+        await send(intent);
         sending = false;
     }
 
+    function step(
+        type: Exclude<Intent['type'], 'quiz.showChoice'>,
+        questionNumber = view.questionNumber,
+    ) {
+        return act({ type, roundId: round.roundId, questionNumber });
+    }
+
+    function showChoice(choice: QuizChoiceLetter) {
+        return act({
+            type: 'quiz.showChoice',
+            roundId: round.roundId,
+            questionNumber: view.questionNumber,
+            choice,
+        });
+    }
+
     async function skip(questionNumber: number) {
-        await act('quiz.skipQuestion', questionNumber);
+        await step('quiz.skipQuestion', questionNumber);
         skipping = null;
     }
 </script>
@@ -75,14 +109,28 @@
             <p class="time-up">{fr.modes.quiz.timeUp}</p>
         {/if}
     </div>
-    <h3>{view.text}</h3>
+    <!-- The console shows the whole question from the start, for the game master to read it out;
+         what the TV screen does not show yet is marked. -->
+    <div class="question" class:hidden={!view.questionShown}>
+        <h3>{view.text}</h3>
+        {#if !view.questionShown}
+            <span class="hidden-label">{fr.modes.quiz.gm.hiddenOnDisplay}</span>
+        {/if}
+    </div>
     <ol class="choices" aria-label={fr.modes.quiz.choicesLabel}>
         {#each view.choices as choice (choice.letter)}
-            <li class:correct={choice.correct} style:--choice-color={choiceColor(choice.letter)}>
+            <li
+                class:correct={choice.correct}
+                class:hidden={!choice.shown}
+                style:--choice-color={choiceColor(choice.letter)}
+            >
                 <ChoiceMarker letter={choice.letter} />
                 <span class="text">{choice.text}</span>
                 {#if choice.correct}
                     <CorrectMark />
+                {/if}
+                {#if !choice.shown}
+                    <span class="hidden-label">{fr.modes.quiz.gm.hiddenOnDisplay}</span>
                 {/if}
                 {#if view.phase !== 'Presentation'}
                     <span class="count"
@@ -135,10 +183,30 @@
 
     <div class="actions">
         {#if view.phase === 'Presentation'}
+            {#if !view.questionShown}
+                <button
+                    type="button"
+                    disabled={!interactive || sending}
+                    onclick={() => step('quiz.showQuestion')}
+                >
+                    {fr.modes.quiz.gm.showQuestion}
+                </button>
+            {:else if nextChoice !== null}
+                {@const letter = nextChoice.letter}
+                <button
+                    type="button"
+                    disabled={!interactive || sending}
+                    onclick={() => showChoice(letter)}
+                >
+                    {fill(fr.modes.quiz.gm.showChoice, { letter })}
+                </button>
+            {/if}
+            <!-- Always offered: it shows at once whatever the TV screen still hides. -->
             <button
                 type="button"
+                class:secondary={!presented}
                 disabled={!interactive || sending}
-                onclick={() => act('quiz.openAnswers')}
+                onclick={() => step('quiz.openAnswers')}
             >
                 {fr.modes.quiz.gm.openAnswers}
             </button>
@@ -146,7 +214,7 @@
             <button
                 type="button"
                 disabled={!interactive || sending}
-                onclick={() => act('quiz.revealAnswer')}
+                onclick={() => step('quiz.revealAnswer')}
             >
                 {fr.modes.quiz.gm.revealAnswer}
             </button>
@@ -155,7 +223,7 @@
             <button
                 type="button"
                 disabled={!interactive || sending}
-                onclick={() => act('quiz.nextQuestion')}
+                onclick={() => step('quiz.nextQuestion')}
             >
                 {lastQuestion ? fr.modes.quiz.gm.endRound : fr.modes.quiz.gm.nextQuestion}
             </button>
@@ -221,6 +289,27 @@
     h3 {
         font-size: 1.25rem;
         overflow-wrap: anywhere;
+    }
+
+    .question {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    /* Not on the TV screen yet: dashed rather than faded alone, so that the text stays easy to
+       read out. */
+    .question.hidden,
+    .choices li.hidden {
+        outline: 2px dashed var(--color-text-muted);
+        outline-offset: 2px;
+        border-radius: var(--radius);
+    }
+
+    .hidden-label {
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+        font-style: italic;
     }
 
     .choices,

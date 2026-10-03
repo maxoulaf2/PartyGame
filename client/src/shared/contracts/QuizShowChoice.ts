@@ -4,11 +4,11 @@
 // </auto-generated>
 
 import type { QuizChoiceLetter } from './QuizChoiceLetter';
+import type { RoundId } from './RoundId';
 
-export interface QuizGameMasterChoice {
-    readonly letter: QuizChoiceLetter;
-    readonly text: string;
-    readonly correct: boolean;
-    readonly shown: boolean;
-    readonly answerCount: number;
+export interface QuizShowChoice {
+    readonly type: 'quiz.showChoice';
+    readonly roundId: RoundId;
+    readonly questionNumber: number;
+    readonly choice: QuizChoiceLetter;
 }

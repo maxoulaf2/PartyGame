@@ -59,19 +59,23 @@ public sealed class StartGameTests : IAsyncDisposable
         // Then
         Assert.Equal(new StartGameResult(Refusal: null), result);
         // The first question of the single round of the pack is presented on every interface, its answer to the game
-        // master only.
+        // master only. The TV screen shows nothing of it until the game master reads it out.
         Assert.Equal(GamePhase.Round, Game.State.Phase);
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
         var toTheDisplay = Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView);
         var toTheGameMaster = Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView);
         var toThePlayer = Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView);
-        Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation, "Question ?"), (toDisplay.Display[^1].Phase, toTheDisplay.Phase, toTheDisplay.Text));
+        Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation, null, 2), (toDisplay.Display[^1].Phase, toTheDisplay.Phase, toTheDisplay.Text, toTheDisplay.ChoiceCount));
+        Assert.Equal(("Question ?", false), (toTheGameMaster.Text, toTheGameMaster.QuestionShown));
         Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation), (toZoe.Player[^1].Phase, toThePlayer.Phase));
         Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B], toThePlayer.Choices);
         Assert.Equal(
-            [new QuizGameMasterChoice(QuizChoiceLetter.A, "Oui", Correct: true, AnswerCount: 0), new QuizGameMasterChoice(QuizChoiceLetter.B, "Non", Correct: false, AnswerCount: 0)],
+            [
+                new QuizGameMasterChoice(QuizChoiceLetter.A, "Oui", Correct: true, Shown: false, AnswerCount: 0),
+                new QuizGameMasterChoice(QuizChoiceLetter.B, "Non", Correct: false, Shown: false, AnswerCount: 0),
+            ],
             toTheGameMaster.Choices);
-        Assert.Equal([new QuizChoiceView(QuizChoiceLetter.A, "Oui"), new QuizChoiceView(QuizChoiceLetter.B, "Non")], toTheDisplay.Choices);
+        Assert.Empty(toTheDisplay.Choices);
         Assert.DoesNotContain("correct", toDisplay.Json[^1], StringComparison.OrdinalIgnoreCase);
         // The phone has a place for the correct choice and the verdict, both empty until the reveal.
         Assert.Equal((null, null), (toThePlayer.CorrectChoice, toThePlayer.Verdict));

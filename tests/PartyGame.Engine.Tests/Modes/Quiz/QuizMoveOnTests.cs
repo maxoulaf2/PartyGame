@@ -369,7 +369,8 @@ public sealed class QuizMoveOnTests
 
         // Then
         Assert.Equal((2, 3, QuizQuestionPhase.Presentation), (display.QuestionNumber, display.QuestionCount, display.Phase));
-        Assert.Equal(QuizGames.IllustratedQuestion.Text, display.Text);
+        Assert.Null(display.Text);
+        Assert.Equal(QuizGames.IllustratedQuestion.Text, gameMaster.Text);
         Assert.Equal((2, 3, QuizQuestionPhase.Presentation), (gameMaster.QuestionNumber, gameMaster.QuestionCount, gameMaster.Phase));
         Assert.Empty(gameMaster.Answers);
         Assert.Equal((2, 3, null, true), (player.QuestionNumber, player.QuestionCount, player.Answer, player.Participating));

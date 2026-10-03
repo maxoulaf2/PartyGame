@@ -74,7 +74,9 @@ public sealed class RoundsTests : IAsyncDisposable
         Assert.Equal((Phase.Round, round), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round));
         Assert.Equal((Phase.Round, round), (toGameMaster.GameMaster[^1].Phase, toGameMaster.GameMaster[^1].Round));
         Assert.Equal((Phase.Round, round), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round));
-        Assert.Equal("Question ?", Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView).Text);
+        // The TV screen shows nothing of the question until the game master reads it out.
+        var onDisplay = Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView);
+        Assert.Equal((1, null), (onDisplay.QuestionNumber, onDisplay.Text));
         Assert.Equal("Question ?", Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView).Text);
         Assert.Equal(1, Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView).QuestionNumber);
         Assert.Contains("\"roundView\":{\"type\":\"quiz\",", toZoe.Json[^1], StringComparison.Ordinal);
