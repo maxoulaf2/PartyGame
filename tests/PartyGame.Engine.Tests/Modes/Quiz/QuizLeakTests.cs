@@ -36,10 +36,14 @@ public sealed class QuizLeakTests
             ("illustrated question shown", QuizGames.Shown(QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 1), choiceCount: 0)),
             ("shuffled choices partly shown", QuizGames.Shown(QuizGames.Started(_shuffled, _players), choiceCount: 2)),
             ("every choice shown", QuizGames.Shown(QuizGames.Started(_rounds, _players))),
-            ("answers opened with the question partly shown", QuizGames.Answering(QuizGames.Shown(QuizGames.Started(_shuffled, _players), choiceCount: 1))),
+            ("first choice shown, answers open", QuizGames.Shown(QuizGames.Started(_shuffled, _players), choiceCount: 1)),
+            ("answers given while the choices show", Showing(QuizGames.Started(_shuffled, _players), (2, QuizChoiceLetter.B), (1, QuizChoiceLetter.A))),
+            ("everybody answered while the choices show", Showing(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.B))),
+            ("player joined once the first choice showed", QuizGames.Accepted(QuizGames.Shown(QuizGames.Started(_rounds, ["Zoé", "Max"]), choiceCount: 1), Games.Join("Léa", player: 3))),
+            ("locked without countdown", QuizGames.Shown(Showing(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B), (3, QuizChoiceLetter.B)))),
             ("last question", QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 2)),
             ("player joined during the presentation", QuizGames.Accepted(QuizGames.Started(_rounds, ["Zoé", "Max"]), Games.Join("Léa", player: 3))),
-            ("answers just opened", QuizGames.Answering(QuizGames.Started(_rounds, _players))),
+            ("countdown just started", QuizGames.Answering(QuizGames.Started(_rounds, _players))),
             ("some answers", QuizGames.Answering(QuizGames.Started(_shuffled, _players), (2, QuizChoiceLetter.C), (1, QuizChoiceLetter.A))),
             ("locked once everybody answered", QuizGames.Answering(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.D))),
             ("player joined during the answers", QuizGames.Accepted(QuizGames.Answering(QuizGames.Started(_rounds, ["Zoé", "Max"]), (1, QuizChoiceLetter.B)), Games.Join("Léa", player: 3))),
@@ -71,7 +75,12 @@ public sealed class QuizLeakTests
 
             CorrectAnswerPair("correct answer", _rounds),
             CorrectAnswerPair("correct answer, shuffled", _shuffled),
+            CorrectAnswerPair("correct answer, answers given while the choices show", _rounds, state => Showing(state, (1, QuizChoiceLetter.A))),
             CorrectAnswerPair("correct answer, answers open", _rounds, state => QuizGames.Answering(state, (1, QuizChoiceLetter.A))),
+            CorrectAnswerPair(
+                "correct answer, locked without countdown with a speed bonus",
+                _fast,
+                state => QuizGames.Shown(Showing(state, (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B), (3, QuizChoiceLetter.A)))),
             CorrectAnswerPair("correct answer, locked", _shuffled, state => QuizGames.Locked(state, (1, QuizChoiceLetter.A))),
 
             // No score moves before the reveal, whether the answers received are right or wrong, fast or slow.
@@ -91,6 +100,7 @@ public sealed class QuizLeakTests
                 Audience.AllButGameMaster),
 
             // The choice of a player is told to nobody but them and the game master before the reveal.
+            ChoicePair("choice of Zoé, choices showing", Showing, QuizChoiceLetter.A, QuizChoiceLetter.B),
             ChoicePair("choice of Zoé, answers open", QuizGames.Answering, QuizChoiceLetter.A, QuizChoiceLetter.C),
             ChoicePair("choice of Zoé, locked", QuizGames.Locked, QuizChoiceLetter.D, QuizChoiceLetter.B),
 
@@ -104,6 +114,11 @@ public sealed class QuizLeakTests
                 "whether Zoé answered",
                 QuizGames.Answering(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B), (1, QuizChoiceLetter.A)),
                 QuizGames.Answering(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B)),
+                Audience.OtherPlayersThan("Zoé")),
+            new SecretPair<GameState>(
+                "whether Zoé answered, choices showing",
+                Showing(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B), (1, QuizChoiceLetter.A)),
+                Showing(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B)),
                 Audience.OtherPlayersThan("Zoé")),
             new SecretPair<GameState>(
                 "whether Zoé answered, revealed",
@@ -177,11 +192,27 @@ public sealed class QuizLeakTests
     }
 
     /// <summary>
-    /// The same game, its answers opened, answered right by Zoé the given time after the opening, then locked.
+    /// The same game, the first two choices of its question in progress shown, then answered by the given players, in this
+    /// order, while the other choices still hide.
+    /// </summary>
+    private static GameState Showing(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)
+    {
+        state = QuizGames.Shown(state, choiceCount: 2);
+        foreach (var (player, choice) in answers)
+        {
+            state = QuizGames.Accepted(state, QuizGames.Answer(state, player, choice));
+        }
+
+        return state;
+    }
+
+    /// <summary>
+    /// The same game, every choice shown, answered right by Zoé the given time after the start of the countdown, then
+    /// locked.
     /// </summary>
     private static GameState LockedAfter(GameState state, int seconds)
     {
-        state = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        state = QuizGames.Shown(state);
         state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddSeconds(seconds)));
         return QuizGames.Closed(state);
     }

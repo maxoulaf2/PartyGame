@@ -6,7 +6,7 @@ namespace PartyGame.Engine.Tests.Modes.Quiz;
 
 /// <summary>
 /// The presentation of a quiz question: hidden on the TV screen at first, then shown by the game master as they read it
-/// out, the question with its image, then its choices one by one. Opening the answers shows what is still hidden.
+/// out, the question with its image, then its choices one by one, which the phones unlock as they show.
 /// </summary>
 public sealed class QuizPresentationTests
 {
@@ -34,7 +34,7 @@ public sealed class QuizPresentationTests
     }
 
     [Fact]
-    public void ProjectForPlayer_QuestionHidden_ShowsAButtonPerChoice()
+    public void ProjectForPlayer_QuestionHidden_ShowsAButtonPerChoiceAllLocked()
     {
         // Given
         var state = QuizGames.Started(_rounds, _players);
@@ -44,6 +44,20 @@ public sealed class QuizPresentationTests
 
         // Then: the phones have shown every button from the start
         Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B, QuizChoiceLetter.C, QuizChoiceLetter.D], view.Choices);
+        Assert.Equal(0, view.ShownChoiceCount);
+    }
+
+    [Fact]
+    public void ProjectForPlayer_ChoiceShown_UnlocksItsButton()
+    {
+        // Given
+        var state = QuizGames.Shown(QuizGames.Started(_rounds, _players), choiceCount: 2);
+
+        // When
+        state = QuizGames.Accepted(state, QuizGames.ShowChoice(state, QuizChoiceLetter.C));
+
+        // Then
+        Assert.Equal(3, PlayerOf(state).ShownChoiceCount);
     }
 
     [Fact]
@@ -109,7 +123,7 @@ public sealed class QuizPresentationTests
     }
 
     [Fact]
-    public void Handle_ShowQuestion_AnswersOpen_IsRejected()
+    public void Handle_ShowQuestion_CountdownRunning_IsRejected()
     {
         // Given
         var state = QuizGames.Answering(QuizGames.Started(_rounds, _players));
@@ -216,8 +230,8 @@ public sealed class QuizPresentationTests
     [InlineData((QuizChoiceLetter)(-1))]
     public void Handle_ShowChoice_LetterTheQuestionHasNot_IsRejected(QuizChoiceLetter letter)
     {
-        // Given: the illustrated question has two choices, both shown
-        var state = QuizGames.Shown(QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 1));
+        // Given: the illustrated question has two choices, the first one shown
+        var state = QuizGames.Shown(QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 1), choiceCount: 1);
 
         // When
         var transition = QuizGames.Engine.Handle(state, QuizGames.ShowChoice(state, letter), Games.Context());
@@ -242,9 +256,9 @@ public sealed class QuizPresentationTests
     }
 
     [Fact]
-    public void Handle_ShowChoice_AnswersOpen_IsRejected()
+    public void Handle_ShowChoice_CountdownRunning_IsRejected()
     {
-        // Given: every choice shows once the answers open
+        // Given: every choice shows once the countdown runs
         var state = QuizGames.Answering(QuizGames.Started(_rounds, _players));
 
         // When
@@ -253,37 +267,6 @@ public sealed class QuizPresentationTests
         // Then
         Assert.Equal(RejectionReason.PhaseMismatch, transition.Rejection);
         Assert.Same(state, transition.State);
-    }
-
-    [Fact]
-    public void Handle_OpenAnswers_QuestionHidden_ShowsEverythingAtOnce()
-    {
-        // Given: the game master opens without showing anything first
-        var state = QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 1);
-
-        // When
-        var opened = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
-
-        // Then
-        var display = DisplayOf(opened);
-        Assert.Equal((QuizQuestionPhase.Answering, QuizGames.IllustratedQuestion.Text), (display.Phase, display.Text));
-        Assert.Equal(state.Media.UrlOf(QuizGames.Flag), display.ImageUrl);
-        Assert.Equal(["Japon", "Bangladesh"], display.Choices.Select(c => c.Text));
-        Assert.True(GameMasterOf(opened).QuestionShown);
-        Assert.All(GameMasterOf(opened).Choices, choice => Assert.True(choice.Shown));
-    }
-
-    [Fact]
-    public void Handle_OpenAnswers_SomeChoicesShown_ShowsTheOthers()
-    {
-        // Given
-        var state = QuizGames.Shown(QuizGames.Started(_rounds, _players), choiceCount: 2);
-
-        // When
-        var opened = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
-
-        // Then
-        Assert.Equal(["Canberra", "Sydney", "Melbourne", "Perth"], DisplayOf(opened).Choices.Select(c => c.Text));
     }
 
     [Fact]

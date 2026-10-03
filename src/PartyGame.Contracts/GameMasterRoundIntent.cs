@@ -10,7 +10,7 @@ namespace PartyGame.Contracts;
 /// <remarks>
 /// Each game mode declares its own derived intents here with <see cref="JsonDerivedTypeAttribute"/>: these lines are
 /// part of registering the mode. The <c>type</c> of an intent is the one of the rounds of its mode, a dot, then the
-/// name of the intent, such as <c>quiz.openAnswers</c>: the clients tell from it which mode the intent belongs to. A
+/// name of the intent, such as <c>quiz.revealAnswer</c>: the clients tell from it which mode the intent belongs to. A
 /// derived intent names the step it moves on from (question, phase), so that the mode rejects it as obsolete once the
 /// game has moved on.
 /// </remarks>
@@ -20,7 +20,6 @@ namespace PartyGame.Contracts;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(QuizShowQuestion), "quiz.showQuestion")]
 [JsonDerivedType(typeof(QuizShowChoice), "quiz.showChoice")]
-[JsonDerivedType(typeof(QuizOpenAnswers), "quiz.openAnswers")]
 [JsonDerivedType(typeof(QuizRevealAnswer), "quiz.revealAnswer")]
 [JsonDerivedType(typeof(QuizNextQuestion), "quiz.nextQuestion")]
 [JsonDerivedType(typeof(QuizSkipQuestion), "quiz.skipQuestion")]

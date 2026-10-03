@@ -1,8 +1,8 @@
 namespace PartyGame.Contracts.Quiz;
 
 /// <summary>
-/// A player chooses a choice of the question in progress, while its answers are open. Only the first choice of a player
-/// counts: a second one is rejected.
+/// A player chooses a choice of the question in progress, among those the TV screen shows, while its answers are open:
+/// from the first choice shown until they are locked. Only the first choice of a player counts: a second one is rejected.
 /// </summary>
 /// <param name="RoundId">The round the intent is aimed at.</param>
 /// <param name="QuestionNumber">

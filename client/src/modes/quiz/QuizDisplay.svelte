@@ -44,8 +44,9 @@
                     count: view.questionCount,
                 })}
             </p>
-            {#if view.phase === 'Answering' || view.phase === 'Locked'}
-                <!-- How many answered, never what: the choices stay secret until the reveal. -->
+            {#if view.phase !== 'Revealed' && view.participantCount > 0}
+                <!-- How many answered, never what: the choices stay secret until the reveal. The
+                     answers open with the first choice shown. -->
                 <p class="answered">
                     {fill(fr.modes.quiz.answered, {
                         answered: view.answeredCount,

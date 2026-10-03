@@ -72,7 +72,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
         using var toZoe = new ReceivedSnapshots(zoe);
         using var toMax = new ReceivedSnapshots(max);
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await PresentAsync(gameMaster, 1);
 
         // When
         await AnswerAsync(zoe, QuizChoiceLetter.B);
@@ -109,7 +109,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await using var max = await JoinAsync("Max");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await PresentAsync(gameMaster, 1);
         await AnswerAsync(zoe, QuizChoiceLetter.B);
         var version = Game.State.Version;
 
@@ -130,7 +130,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         var joined = await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await PresentAsync(gameMaster, 1);
         var answer = new QuizSubmitAnswer(RoundId, 1, QuizChoiceLetter.B);
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, answer);
 
@@ -159,7 +159,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await PresentAsync(gameMaster, 1);
         // What the previous intents sent is received first: only what follows is recorded.
         await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
         using var toDisplay = new ReceivedSnapshots(display);
@@ -189,7 +189,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await PresentAsync(gameMaster, 1);
 
         // When: the only participant answers, then the countdown would have run out
         await AnswerAsync(zoe, QuizChoiceLetter.A);
@@ -214,7 +214,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var max = await JoinAsync("Max");
         await using var lea = await JoinAsync("Léa");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await PresentAsync(gameMaster, 1);
         await AnswerAsync(zoe, QuizChoiceLetter.A);
         await AnswerAsync(max, QuizChoiceLetter.B);
         var version = Game.State.Version;
@@ -254,16 +254,71 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task OpenAnswers_FromAPlayer_IsIgnored()
+    public async Task SubmitAnswer_WhileTheChoicesShow_LastChoiceLocksTheAnswersWithoutCountdown()
+    {
+        // Given: Zoé, the only participant, answers as soon as the first choice shows
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await AnnounceAsync(display, Role.Display);
+        await using var zoe = await JoinAsync("Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toZoe = new ReceivedSnapshots(zoe);
+        await AnswerAsync(zoe, QuizChoiceLetter.A);
+
+        // When: the game master shows the last choice, then the countdown would have run out
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.B));
+        var locked = Game.State;
+        _time.Advance(TimeSpan.FromSeconds(QuizRoundDescriptor.DefaultAnswerSeconds));
+        await FlushAsync(gameMaster);
+
+        // Then: the answers locked at once, without any countdown, and no timer changes them since
+        Assert.Same(locked, Game.State);
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
+        var views = toDisplay.Display.Select(snapshot => Assert.IsType<QuizDisplayView>(snapshot.RoundView)).ToList();
+        Assert.Equal(
+            [(QuizQuestionPhase.Presentation, 1), (QuizQuestionPhase.Locked, 2)],
+            views.Select(view => (view.Phase, view.Choices.Length)));
+        Assert.All(views, view => Assert.Null(view.AnswersCloseAt));
+        Assert.Equal((1, 1), (views[^1].AnsweredCount, views[^1].ParticipantCount));
+        var onPhone = Assert.IsType<QuizPlayerView>(toZoe.Player[0].RoundView);
+        Assert.Equal((QuizQuestionPhase.Presentation, 1, QuizChoiceLetter.A), (onPhone.Phase, onPhone.ShownChoiceCount, onPhone.Answer));
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_ChoiceNotShownYet_IsIgnored()
+    {
+        // Given: the first choice shows, the second one not yet
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await JoinAsync("Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A));
+        var state = Game.State;
+
+        // When
+        await AnswerAsync(zoe, QuizChoiceLetter.B);
+
+        // Then
+        Assert.Same(state, Game.State);
+    }
+
+    [Fact]
+    public async Task ShowChoice_FromAPlayer_IsIgnored()
     {
         // Given
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
         var state = Game.State;
 
         // When: a player sends what only the game master may send
-        await zoe.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizOpenAnswers(RoundId, 1)), Ct);
+        await zoe.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A)), Ct);
 
         // Then
         Assert.Same(state, Game.State);
@@ -292,6 +347,16 @@ public sealed class QuizAnswersTests : IAsyncDisposable
 
     private static Task SendAsync(HubConnection gameMaster, GameMasterRoundIntent intent) =>
         gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message(intent), Ct);
+
+    /// <summary>
+    /// The game master shows the question, then both its choices: the last one starts the countdown of its answers.
+    /// </summary>
+    private async Task PresentAsync(HubConnection gameMaster, int questionNumber)
+    {
+        await SendAsync(gameMaster, new QuizShowQuestion(RoundId, questionNumber));
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, questionNumber, QuizChoiceLetter.A));
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, questionNumber, QuizChoiceLetter.B));
+    }
 
     private Task AnswerAsync(HubConnection player, QuizChoiceLetter choice) =>
         _playerIntents.SendAsync(player, new QuizSubmitAnswer(RoundId, 1, choice));

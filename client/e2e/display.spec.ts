@@ -709,6 +709,28 @@ test('/display/ counts down the answers and shows how many players answered, nev
     ).toHaveText(['A Sydney', 'B Canberra', 'C Melbourne', 'D Perth']);
 });
 
+test('/display/ counts the answers given while the choices show, without countdown', async ({
+    page,
+}) => {
+    const view = quizView({
+        choices: quizView().choices.slice(0, 2),
+        answeredCount: 3,
+        participantCount: 9,
+    });
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    await expect(
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 3, participants: 9 })),
+    ).toBeVisible();
+    await expect(page.getByRole('timer')).toHaveCount(0);
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
+});
+
 test('/display/ stops the countdown at 0 and waits for the server to lock the answers', async ({
     page,
 }) => {

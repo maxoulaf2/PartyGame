@@ -32,25 +32,27 @@ public sealed record QuizRound(QuizRoundDescriptor Descriptor, int QuestionIndex
 
     /// <summary>
     /// Whether the TV screen shows the text of the question in progress, and its image: the game master shows it once they
-    /// have read it out, or opens the answers.
+    /// have read it out.
     /// </summary>
     public bool QuestionShown { get; init; }
 
     /// <summary>
     /// How many choices of the question in progress the TV screen shows, the first ones in the order shown: the game
-    /// master shows them one by one after the question, and opening the answers shows them all.
+    /// master shows them one by one after the question, and the players may choose them as they show.
     /// </summary>
     public int ShownChoiceCount { get; init; }
 
     /// <summary>
-    /// When the answers of the question in progress close, set when they open, or <see langword="null"/> before. Kept once
-    /// they are locked, even early once everybody answered, for the speed bonus.
+    /// When the answers of the question in progress close, set when their countdown starts, with the last choice shown, or
+    /// <see langword="null"/> before, and when everybody answered before it. Kept once they are locked, even early once
+    /// everybody answered, for the speed bonus.
     /// </summary>
     public DateTimeOffset? AnswersCloseAt { get; init; }
 
     /// <summary>
-    /// The players taking part in the question in progress: those registered when its answers opened, connected or not,
-    /// in order of arrival. Empty before. A player who joins later plays from the next question.
+    /// The players taking part in the question in progress: those registered when its answers opened, with its first
+    /// choice shown, connected or not, in order of arrival. Empty before. A player who joins later plays from the next
+    /// question.
     /// </summary>
     public ImmutableArray<PlayerId> Participants { get; init; } = [];
 

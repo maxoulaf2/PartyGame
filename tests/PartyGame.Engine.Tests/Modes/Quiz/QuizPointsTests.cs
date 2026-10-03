@@ -38,7 +38,7 @@ public sealed class QuizPointsTests
     {
         // Given
         var state = Presented(_round);
-        state = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        state = QuizGames.Shown(state);
         state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddSeconds(1)));
         state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.A, Games.Now.AddSeconds(19)));
 
@@ -114,9 +114,9 @@ public sealed class QuizPointsTests
     }
 
     [Fact]
-    public void Handle_RevealAnswerStampedBeforeTheOpening_GetsTheWholeBonusOnly()
+    public void Handle_RevealAnswerStampedBeforeTheCountdown_GetsTheWholeBonusOnly()
     {
-        // Given: the hub stamped the answer just before the loop handled the opening
+        // Given: the hub stamped the answer just before the loop handled the last choice shown
         var state = AnsweredAfter(_fast, -100);
 
         // When
@@ -124,6 +124,39 @@ public sealed class QuizPointsTests
 
         // Then
         Assert.Equal(1500, revealed.Players[0].Score);
+    }
+
+    [Fact]
+    public void Handle_RevealAnswerGivenWhileTheChoicesShowed_GetsTheWholeBonus()
+    {
+        // Given: Zoé answered right as soon as the correct choice showed, long before the last one
+        var state = QuizGames.Shown(Presented(_fast), choiceCount: 1);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddSeconds(-30)));
+        state = QuizGames.Shown(state);
+
+        // When
+        var revealed = Reveal(state);
+
+        // Then
+        Assert.Equal(1500, revealed.Players[0].Score);
+    }
+
+    [Fact]
+    public void Handle_RevealAnswerLockedWithoutCountdown_GivesTheWholeBonusToTheRightAnswers()
+    {
+        // Given: everybody answered before the last choice showed, which locked the answers without countdown
+        var state = QuizGames.Shown(Presented(_fast), choiceCount: 3);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 3, QuizChoiceLetter.A));
+        state = QuizGames.Shown(state);
+        Assert.Equal((QuizPhase.Locked, null), (QuizGames.RoundOf(state).Phase, QuizGames.RoundOf(state).AnswersCloseAt));
+
+        // When
+        var revealed = Reveal(state);
+
+        // Then
+        Assert.Equal([1500, 0, 1500], revealed.Players.Select(p => p.Score));
     }
 
     [Fact]
@@ -330,8 +363,8 @@ public sealed class QuizPointsTests
     private static GameState Presented(QuizRoundDescriptor round) => QuizGames.Started([round], _players);
 
     /// <summary>
-    /// The first question of the given round, its answers opened, then answered right by Zoé, received the given time
-    /// after the opening. With <paramref name="earlier"/>, Zoé has already scored that much on an earlier question.
+    /// The first question of the given round, every choice shown, then answered right by Zoé, received the given time
+    /// after the start of the countdown. With <paramref name="earlier"/>, Zoé has already scored that much on an earlier question.
     /// </summary>
     private static GameState AnsweredAfter(QuizRoundDescriptor round, int milliseconds, int earlier = 0)
     {
@@ -341,7 +374,7 @@ public sealed class QuizPointsTests
             state = state with { Players = state.Players.SetItem(0, state.Players[0] with { Score = earlier }) };
         }
 
-        state = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        state = QuizGames.Shown(state);
         return QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddMilliseconds(milliseconds)));
     }
 

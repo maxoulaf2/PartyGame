@@ -74,7 +74,7 @@ public sealed class QuizMoveOnTests
 
         // When
         state = QuizGames.Accepted(state, QuizGames.NextQuestion(state));
-        state = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        state = QuizGames.Shown(state);
 
         // Then
         Assert.Contains(Games.PlayerIdOf(4), QuizGames.RoundOf(state).Participants);
@@ -255,7 +255,7 @@ public sealed class QuizMoveOnTests
         var answering = QuizGames.Answering(Presented());
         var late = QuizGames.Answer(answering, 1, QuizChoiceLetter.A);
         var skipped = QuizGames.Accepted(answering, QuizGames.SkipQuestion(answering));
-        var state = QuizGames.Accepted(skipped, QuizGames.OpenAnswers(skipped));
+        var state = QuizGames.Shown(skipped);
 
         // When
         var transition = QuizGames.Engine.Handle(state, late, Games.Context());

@@ -196,7 +196,7 @@ public sealed class QuizModeTests
     public void Snapshots_FirstQuestionShown_ShowItInPresentationToEveryRole()
     {
         // Given
-        var state = QuizGames.Shown(QuizGames.Started([Round(QuizGames.CapitalQuestion, QuizGames.LastQuestion)], ["Zoé"]));
+        var state = QuizGames.Shown(QuizGames.Started([Round(QuizGames.CapitalQuestion, QuizGames.LastQuestion)], ["Zoé"]), choiceCount: 3);
 
         // When
         var display = Assert.IsType<QuizDisplayView>(QuizGames.Snapshots.ForDisplay(state).RoundView);
@@ -211,7 +211,7 @@ public sealed class QuizModeTests
     }
 
     [Fact]
-    public void ProjectForDisplay_Presentation_ShowsTheChoicesWithTheirLettersInTheOrderOfTheDescriptor()
+    public void ProjectForDisplay_EveryChoiceShown_ShowsThemWithTheirLettersInTheOrderOfTheDescriptor()
     {
         // Given
         var state = QuizGames.Shown(QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]));

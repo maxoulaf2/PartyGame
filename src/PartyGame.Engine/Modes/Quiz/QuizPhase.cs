@@ -6,12 +6,14 @@ namespace PartyGame.Engine.Modes.Quiz;
 public enum QuizPhase
 {
     /// <summary>
-    /// The game master reads out the question, then its choices one by one, each shown on the TV screen as they go, so
-    /// that everybody knows them before the answers open.
+    /// The game master reads out the question, then its choices one by one, each shown on the TV screen as they go. The
+    /// answers open with the first choice: the players may choose among the choices shown.
     /// </summary>
     Presentation,
 
-    /// <summary>The players answer, until every participant answered or the countdown ends.</summary>
+    /// <summary>
+    /// Every choice shown, the countdown runs: the players answer, until every participant answered or the countdown ends.
+    /// </summary>
     Answering,
 
     /// <summary>The answers are locked: no answer is accepted anymore.</summary>

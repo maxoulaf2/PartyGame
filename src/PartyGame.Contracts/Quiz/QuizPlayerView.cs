@@ -10,14 +10,20 @@ namespace PartyGame.Contracts.Quiz;
 /// <param name="QuestionNumber">Number of the question in the round, from 1.</param>
 /// <param name="QuestionCount">Number of questions of the round.</param>
 /// <param name="Phase">Phase of the question.</param>
-/// <param name="Choices">The letters of the choices, in the order shown on the TV screen.</param>
+/// <param name="Choices">
+/// The letters of the choices, in the order shown on the TV screen: the phone shows a button for each from the start.
+/// </param>
+/// <param name="ShownChoiceCount">
+/// How many choices the TV screen shows, the first ones of <paramref name="Choices"/>: while the answers are open, the
+/// player may choose among them, each button unlocked as its choice shows.
+/// </param>
 /// <param name="AnswersCloseAt">
-/// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while they are open;
-/// <see langword="null"/> otherwise.
+/// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while their countdown runs,
+/// from the last choice shown; <see langword="null"/> otherwise.
 /// </param>
 /// <param name="Participating">
-/// Whether the player takes part in the question: always during the presentation, then only if they were registered when
-/// its answers opened. A player who joined meanwhile plays from the next question.
+/// Whether the player takes part in the question: always before its first choice shows, then only if they were
+/// registered when it showed, opening the answers. A player who joined meanwhile plays from the next question.
 /// </param>
 /// <param name="Answer">The letter this player chose, or <see langword="null"/> while they have not answered.</param>
 /// <param name="CorrectChoice">
@@ -36,6 +42,7 @@ public sealed record QuizPlayerView(
     int QuestionCount,
     QuizQuestionPhase Phase,
     ImmutableArray<QuizChoiceLetter> Choices,
+    int ShownChoiceCount,
     long? AnswersCloseAt,
     bool Participating,
     QuizChoiceLetter? Answer,

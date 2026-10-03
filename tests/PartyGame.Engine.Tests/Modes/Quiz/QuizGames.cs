@@ -103,22 +103,23 @@ internal static class QuizGames
         new(new QuizShowChoice(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber, choice), Games.Now);
 
     /// <summary>
-    /// The same game, its question in progress shown on the TV screen, then its first choices, up to the given count.
+    /// The same game, its question in progress shown on the TV screen if it is not yet, then its next choices, up to the
+    /// given count: the first one opens the answers, the last one starts their countdown.
     /// </summary>
     public static GameState Shown(GameState state, int? choiceCount = null)
     {
-        state = Accepted(state, ShowQuestion(state));
-        for (var letter = 0; letter < (choiceCount ?? RoundOf(state).ChoiceOrder.Length); letter++)
+        if (!RoundOf(state).QuestionShown)
+        {
+            state = Accepted(state, ShowQuestion(state));
+        }
+
+        for (var letter = RoundOf(state).ShownChoiceCount; letter < (choiceCount ?? RoundOf(state).ChoiceOrder.Length); letter++)
         {
             state = Accepted(state, ShowChoice(state, (QuizChoiceLetter)letter));
         }
 
         return state;
     }
-
-    /// <summary>The game master opens the answers of the question in progress.</summary>
-    public static GameMasterRoundInput OpenAnswers(GameState state, int? questionNumber = null) =>
-        new(new QuizOpenAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
 
     /// <summary>The game master reveals the answer of the question in progress.</summary>
     public static GameMasterRoundInput RevealAnswer(GameState state, int? questionNumber = null) =>
@@ -150,11 +151,12 @@ internal static class QuizGames
         new(QuizMode.AnswersTimer, dueAt ?? RoundOf(state).AnswersCloseAt!.Value) { RoundId = state.CurrentRound!.Id };
 
     /// <summary>
-    /// The same game, the answers of its question in progress opened, then answered by the given players, in this order.
+    /// The same game, every choice of its question in progress shown, which starts the countdown of its answers, then
+    /// answered by the given players, in this order.
     /// </summary>
     public static GameState Answering(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)
     {
-        state = Accepted(state, OpenAnswers(state));
+        state = Shown(state);
         foreach (var (player, choice) in answers)
         {
             state = Accepted(state, Answer(state, player, choice));
@@ -164,7 +166,7 @@ internal static class QuizGames
     }
 
     /// <summary>
-    /// The same game, the answers of its question in progress opened, answered by the given players, then locked.
+    /// The same game, the countdown of its question in progress started, answered by the given players, then locked.
     /// </summary>
     public static GameState Locked(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers) =>
         Closed(Answering(state, answers));
@@ -177,7 +179,7 @@ internal static class QuizGames
         RoundOf(state).Phase == QuizPhase.Answering ? Accepted(state, AnswersTimerElapsed(state)) : state;
 
     /// <summary>
-    /// The same game, the answers of its question in progress opened, answered by the given players, locked, then
+    /// The same game, the countdown of its question in progress started, answered by the given players, locked, then
     /// revealed.
     /// </summary>
     public static GameState Revealed(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)

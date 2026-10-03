@@ -8,8 +8,9 @@ using PartyGame.Engine.Modes.Quiz;
 namespace PartyGame.Engine.Tests.Modes.Quiz;
 
 /// <summary>
-/// The answers of a quiz question: opened by the game master, given by the players before the end of the countdown, then
-/// locked by the timer, or as soon as every participant answered.
+/// The answers of a quiz question: opened with its first choice shown, given by the players as the choices show then
+/// before the end of the countdown, which starts with the last choice, then locked by the timer, or as soon as every
+/// participant answered and every choice is shown.
 /// </summary>
 public sealed class QuizAnswersTests
 {
@@ -21,117 +22,207 @@ public sealed class QuizAnswersTests
     private static readonly DateTimeOffset _closeAt = Games.Now.AddSeconds(QuizRoundDescriptor.DefaultAnswerSeconds);
 
     [Fact]
-    public void Handle_OpenAnswers_StartsTheCountdownForThePlayersRegistered()
+    public void Handle_ShowChoice_First_OpensTheAnswersToThePlayersRegistered()
     {
         // Given
-        var state = Presented();
+        var state = QuizGames.Shown(Presented(), choiceCount: 0);
 
         // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.OpenAnswers(state), Games.Context());
+        var transition = QuizGames.Engine.Handle(state, QuizGames.ShowChoice(state, QuizChoiceLetter.A), Games.Context());
+
+        // Then: the countdown waits for the last choice
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        var round = QuizGames.RoundOf(transition.State);
+        Assert.Equal((QuizPhase.Presentation, null), (round.Phase, round.AnswersCloseAt));
+        Assert.Equal([Games.PlayerIdOf(1), Games.PlayerIdOf(2), Games.PlayerIdOf(3)], round.Participants);
+        Assert.Empty(round.Answers);
+    }
+
+    [Fact]
+    public void Handle_ShowChoice_Last_StartsTheCountdownOfTheParticipants()
+    {
+        // Given: Noé joined once the first choice showed, too late to take part
+        var state = QuizGames.Accepted(QuizGames.Shown(Presented(), choiceCount: 1), Games.Join("Noé", player: 4));
+        state = QuizGames.Shown(state, choiceCount: 3);
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.ShowChoice(state, QuizChoiceLetter.D), Games.Context());
 
         // Then
         Assert.Null(transition.Rejection);
         var round = QuizGames.RoundOf(transition.State);
         Assert.Equal((QuizPhase.Answering, _closeAt), (round.Phase, round.AnswersCloseAt));
         Assert.Equal([Games.PlayerIdOf(1), Games.PlayerIdOf(2), Games.PlayerIdOf(3)], round.Participants);
-        Assert.Empty(round.Answers);
         var timer = Assert.IsType<ScheduleTimer>(Assert.Single(transition.Effects));
         Assert.Equal((QuizMode.AnswersTimer, _closeAt, state.CurrentRound!.Id), (timer.TimerId, timer.DueAt, timer.RoundId));
     }
 
     [Fact]
-    public void Handle_OpenAnswers_RoundWithItsOwnTime_CountsDownFromIt()
+    public void Handle_ShowChoice_Last_RoundWithItsOwnTime_CountsDownFromIt()
     {
         // Given
         var state = QuizGames.Started([QuizGames.Round(QuizGames.CapitalQuestion) with { AnswerSeconds = 8 }], _players);
 
         // When
-        var opened = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        var shown = QuizGames.Shown(state);
 
         // Then
-        Assert.Equal(Games.Now.AddSeconds(8), QuizGames.RoundOf(opened).AnswersCloseAt);
+        Assert.Equal(Games.Now.AddSeconds(8), QuizGames.RoundOf(shown).AnswersCloseAt);
     }
 
     [Fact]
-    public void Handle_OpenAnswers_QuestionWithItsOwnTime_CountsDownFromItRatherThanFromTheRound()
+    public void Handle_ShowChoice_Last_QuestionWithItsOwnTime_CountsDownFromItRatherThanFromTheRound()
     {
         // Given
         var question = QuizGames.CapitalQuestion with { AnswerSeconds = 45 };
         var state = QuizGames.Started([QuizGames.Round(question) with { AnswerSeconds = 8 }], _players);
 
         // When
-        var opened = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        var shown = QuizGames.Shown(state);
 
         // Then
-        Assert.Equal(Games.Now.AddSeconds(45), QuizGames.RoundOf(opened).AnswersCloseAt);
+        Assert.Equal(Games.Now.AddSeconds(45), QuizGames.RoundOf(shown).AnswersCloseAt);
     }
 
     [Fact]
-    public void Handle_OpenAnswers_DisconnectedPlayer_TakesPartAnyway()
+    public void Handle_ShowChoice_First_DisconnectedPlayer_TakesPartAnyway()
     {
         // Given: Max's phone is asleep when the answers open
         var state = QuizGames.Accepted(Presented(), new PlayerConnectionLost(Games.PlayerIdOf(2)));
 
         // When
-        var opened = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        var opened = QuizGames.Shown(state, choiceCount: 1);
 
         // Then
         Assert.Contains(Games.PlayerIdOf(2), QuizGames.RoundOf(opened).Participants);
     }
 
     [Fact]
-    public void Handle_OpenAnswersTwice_IsRejectedAsObsolete()
+    public void Handle_ShowChoice_Last_EverybodyAnsweredAlready_LocksTheAnswersWithoutCountdown()
     {
-        // Given: two consoles, or a request sent again after a reconnection
-        var state = QuizGames.Answering(Presented());
+        // Given: everybody answered while the choices showed
+        var state = QuizGames.Shown(Presented(), choiceCount: 3);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.C));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 3, QuizChoiceLetter.B));
 
         // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.OpenAnswers(state), Games.Context());
+        var transition = QuizGames.Engine.Handle(state, QuizGames.ShowChoice(state, QuizChoiceLetter.D), Games.Context());
 
-        // Then
-        AssertRejected(state, transition, RejectionReason.PhaseMismatch);
+        // Then: every choice shows, and the game master may reveal at once
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        var round = QuizGames.RoundOf(transition.State);
+        Assert.Equal((QuizPhase.Locked, null, 4), (round.Phase, round.AnswersCloseAt, round.ShownChoiceCount));
+        Assert.Equal(3, round.Answers.Count);
     }
 
     [Fact]
-    public void Handle_OpenAnswersOnceLocked_IsRejectedAsObsolete()
+    public void Handle_ShowChoice_Last_DisconnectedParticipantLeftToAnswer_StartsTheCountdown()
     {
-        // Given
-        var state = QuizGames.Locked(Presented());
+        // Given: Léa's phone fell asleep once the answers opened, and the others answered
+        var state = QuizGames.Shown(Presented(), choiceCount: 2);
+        state = QuizGames.Accepted(state, new PlayerConnectionLost(Games.PlayerIdOf(3)));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B));
 
         // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.OpenAnswers(state), Games.Context());
+        var round = QuizGames.RoundOf(QuizGames.Shown(state));
 
-        // Then
-        AssertRejected(state, transition, RejectionReason.PhaseMismatch);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(2)]
-    public void Handle_OpenAnswersOfAnotherQuestion_IsRejected(int questionNumber)
-    {
-        // Given
-        var state = Presented();
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.OpenAnswers(state, questionNumber), Games.Context());
-
-        // Then
-        AssertRejected(state, transition, RejectionReason.QuestionMismatch);
+        // Then: she can still answer once back
+        Assert.Equal((QuizPhase.Answering, _closeAt), (round.Phase, round.AnswersCloseAt));
     }
 
     [Fact]
-    public void Handle_OpenAnswersOfAnotherRound_IsRejected()
+    public void Handle_ShowChoiceOfAnotherRound_IsRejected()
     {
         // Given
-        var state = Presented();
-        var open = new GameMasterRoundInput(new QuizOpenAnswers(new Contracts.RoundId(Guid.NewGuid()), 1), Games.Now);
+        var state = QuizGames.Shown(Presented(), choiceCount: 0);
+        var show = new GameMasterRoundInput(new QuizShowChoice(new Contracts.RoundId(Guid.NewGuid()), 1, QuizChoiceLetter.A), Games.Now);
 
         // When
-        var transition = QuizGames.Engine.Handle(state, open, Games.Context());
+        var transition = QuizGames.Engine.Handle(state, show, Games.Context());
 
         // Then
         AssertRejected(state, transition, RejectionReason.RoundMismatch);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswerWhileTheChoicesShow_RecordsItWithoutLockingTheAnswers()
+    {
+        // Given: two choices of four shown, and Zoé answered already
+        var state = QuizGames.Shown(Presented(), choiceCount: 2);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A));
+        var receivedAt = Games.Now.AddSeconds(-3);
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B, receivedAt), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        var round = QuizGames.RoundOf(transition.State);
+        Assert.Equal(QuizPhase.Presentation, round.Phase);
+        Assert.Equal(new QuizAnswer(QuizChoiceLetter.B, receivedAt), round.Answers[Games.PlayerIdOf(2)]);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswerOfTheLastParticipantWhileTheChoicesShow_KeepsShowingThem()
+    {
+        // Given
+        var state = QuizGames.Shown(Presented(), choiceCount: 2);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B));
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 3, QuizChoiceLetter.A), Games.Context());
+
+        // Then: the game master reads out the other choices, the last one locking the answers
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(QuizPhase.Presentation, QuizGames.RoundOf(transition.State).Phase);
+        Assert.Null(QuizGames.Engine.Handle(transition.State, QuizGames.ShowChoice(transition.State, QuizChoiceLetter.C), Games.Context()).Rejection);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswerWithAChoiceNotShownYet_IsRejected()
+    {
+        // Given: A and B show, C and D not yet
+        var state = QuizGames.Shown(Presented(), choiceCount: 2);
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 1, QuizChoiceLetter.C), Games.Context());
+
+        // Then
+        AssertRejected(state, transition, RejectionReason.ChoiceHidden);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswerOfAPlayerWhoJoinedAfterTheFirstChoice_IsRejected()
+    {
+        // Given: Noé joins once the answers opened, with the first choice
+        var state = QuizGames.Accepted(QuizGames.Shown(Presented(), choiceCount: 1), Games.Join("Noé", player: 4));
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 4, QuizChoiceLetter.A), Games.Context());
+
+        // Then
+        AssertRejected(state, transition, RejectionReason.NotParticipating);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswerOfAPlayerWhoJoinedBeforeTheFirstChoice_IsAccepted()
+    {
+        // Given: Noé joins while the question shows, its choices not yet
+        var state = QuizGames.Accepted(QuizGames.Shown(Presented(), choiceCount: 0), Games.Join("Noé", player: 4));
+        state = QuizGames.Shown(state, choiceCount: 1);
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 4, QuizChoiceLetter.A), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
     }
 
     [Fact]
@@ -215,11 +306,13 @@ public sealed class QuizAnswersTests
         Assert.Equal(QuizChoiceLetter.A, QuizGames.RoundOf(transition.State).Answers[Games.PlayerIdOf(1)].Choice);
     }
 
-    [Fact]
-    public void Handle_SubmitAnswerDuringThePresentation_IsRejected()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Handle_SubmitAnswerBeforeTheFirstChoice_IsRejected(bool questionShown)
     {
         // Given
-        var state = Presented();
+        var state = questionShown ? QuizGames.Shown(Presented(), choiceCount: 0) : Presented();
 
         // When
         var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A), Games.Context());
@@ -440,6 +533,20 @@ public sealed class QuizAnswersTests
     }
 
     [Fact]
+    public void ProjectForDisplay_ChoicesShowing_ShowsHowManyAnsweredWithoutDeadline()
+    {
+        // Given
+        var state = QuizGames.Shown(Presented(), choiceCount: 2);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B));
+
+        // When
+        var view = (QuizDisplayView)QuizGames.Snapshots.ForDisplay(state).RoundView!;
+
+        // Then
+        Assert.Equal((QuizQuestionPhase.Presentation, null, 1, 3), (view.Phase, view.AnswersCloseAt, view.AnsweredCount, view.ParticipantCount));
+    }
+
+    [Fact]
     public void ProjectForDisplay_PlayerJoinedAfterTheOpening_IsNotCounted()
     {
         // Given
@@ -508,7 +615,37 @@ public sealed class QuizAnswersTests
         var view = (QuizPlayerView)QuizGames.Snapshots.ForPlayer(state, state.Players[0]).RoundView!;
 
         // Then
-        Assert.Equal((true, null, null), (view.Participating, view.AnswersCloseAt, view.Answer));
+        Assert.Equal((true, null, null, 0), (view.Participating, view.AnswersCloseAt, view.Answer, view.ShownChoiceCount));
+    }
+
+    [Fact]
+    public void ProjectForPlayer_ChoicesShowing_UnlocksTheChoicesShownAndShowsTheOwnChoiceOnly()
+    {
+        // Given
+        var state = QuizGames.Shown(Presented(), choiceCount: 2);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B));
+
+        // When
+        var max = (QuizPlayerView)QuizGames.Snapshots.ForPlayer(state, state.Players[1]).RoundView!;
+        var zoe = (QuizPlayerView)QuizGames.Snapshots.ForPlayer(state, state.Players[0]).RoundView!;
+
+        // Then: every button shows, the first two unlocked
+        Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B, QuizChoiceLetter.C, QuizChoiceLetter.D], max.Choices);
+        Assert.Equal((QuizQuestionPhase.Presentation, 2, null, true, QuizChoiceLetter.B), (max.Phase, max.ShownChoiceCount, max.AnswersCloseAt, max.Participating, max.Answer));
+        Assert.Equal((true, null), (zoe.Participating, zoe.Answer));
+    }
+
+    [Fact]
+    public void ProjectForPlayer_JoinedAfterTheFirstChoice_DoesNotTakePart()
+    {
+        // Given
+        var state = QuizGames.Accepted(QuizGames.Shown(Presented(), choiceCount: 1), Games.Join("Noé", player: 4));
+
+        // When
+        var view = (QuizPlayerView)QuizGames.Snapshots.ForPlayer(state, state.Players[3]).RoundView!;
+
+        // Then
+        Assert.Equal((QuizQuestionPhase.Presentation, false), (view.Phase, view.Participating));
     }
 
     [Fact]
@@ -544,6 +681,22 @@ public sealed class QuizAnswersTests
 
         // Then
         Assert.Equal("Maxime", view.Answers[1].Nickname);
+    }
+
+    [Fact]
+    public void ProjectForGameMaster_ChoicesShowing_ShowsEachParticipantWithTheirChoice()
+    {
+        // Given
+        var state = QuizGames.Shown(Presented(), choiceCount: 1);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 3, QuizChoiceLetter.A));
+
+        // When
+        var view = (QuizGameMasterView)QuizGames.Snapshots.ForGameMaster(state).RoundView!;
+
+        // Then
+        Assert.Equal([null, null, QuizChoiceLetter.A], view.Answers.Select(answer => answer.Choice));
+        Assert.Equal([1, 0, 0, 0], view.Choices.Select(choice => choice.AnswerCount));
+        Assert.Null(view.AnswersCloseAt);
     }
 
     [Fact]
