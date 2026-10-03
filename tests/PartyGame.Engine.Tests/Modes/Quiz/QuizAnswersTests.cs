@@ -9,7 +9,7 @@ namespace PartyGame.Engine.Tests.Modes.Quiz;
 
 /// <summary>
 /// The answers of a quiz question: opened by the game master, given by the players before the end of the countdown, then
-/// locked by the timer or by the game master.
+/// locked by the timer, or as soon as every participant answered.
 /// </summary>
 public sealed class QuizAnswersTests
 {
@@ -153,16 +153,50 @@ public sealed class QuizAnswersTests
     }
 
     [Fact]
-    public void Handle_SubmitAnswer_EveryParticipantAnswered_KeepsTheAnswersOpen()
+    public void Handle_SubmitAnswerOfTheLastParticipant_LocksTheAnswersAndCancelsTheTimer()
     {
-        // Given: only the game master or the countdown locks the answers
+        // Given
         var state = QuizGames.Answering(Presented(), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B));
+        var receivedAt = Games.Now.AddSeconds(4);
 
         // When
-        var answered = QuizGames.Accepted(state, QuizGames.Answer(state, 3, QuizChoiceLetter.A));
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 3, QuizChoiceLetter.A, receivedAt), Games.Context());
+
+        // Then: the answer counts, and the deadline stays, for the speed bonus
+        Assert.Null(transition.Rejection);
+        Assert.Equal(new CancelTimer(QuizMode.AnswersTimer), Assert.Single(transition.Effects));
+        var round = QuizGames.RoundOf(transition.State);
+        Assert.Equal((QuizPhase.Locked, _closeAt, 3), (round.Phase, round.AnswersCloseAt, round.Answers.Count));
+        Assert.Equal(new QuizAnswer(QuizChoiceLetter.A, receivedAt), round.Answers[Games.PlayerIdOf(3)]);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswer_DisconnectedParticipantLeftToAnswer_KeepsTheAnswersOpen()
+    {
+        // Given: Léa's phone fell asleep once the answers opened, and she takes part anyway
+        var state = QuizGames.Answering(Presented(), (1, QuizChoiceLetter.A));
+        state = QuizGames.Accepted(state, new PlayerConnectionLost(Games.PlayerIdOf(3)));
+
+        // When
+        var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B), Games.Context());
+
+        // Then: the countdown goes on, so that she can still answer once back
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        Assert.Equal(QuizPhase.Answering, QuizGames.RoundOf(transition.State).Phase);
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswerOfTheLastParticipant_PlayerJoinedDuringTheAnswers_LocksThemAnyway()
+    {
+        // Given: Noé joined once the answers opened, too late to take part
+        var state = QuizGames.Accepted(QuizGames.Answering(Presented(), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B)), Games.Join("Noé", player: 4));
+
+        // When
+        var answered = QuizGames.Accepted(state, QuizGames.Answer(state, 3, QuizChoiceLetter.C));
 
         // Then
-        Assert.Equal((QuizPhase.Answering, 3), (QuizGames.RoundOf(answered).Phase, QuizGames.RoundOf(answered).Answers.Count));
+        Assert.Equal(QuizPhase.Locked, QuizGames.RoundOf(answered).Phase);
     }
 
     [Theory]
@@ -337,11 +371,11 @@ public sealed class QuizAnswersTests
     }
 
     [Fact]
-    public void Handle_AnswersTimerElapsedOnceLockedByTheGameMaster_IsRejectedAsObsolete()
+    public void Handle_AnswersTimerElapsedOnceEverybodyAnswered_IsRejectedAsObsolete()
     {
-        // Given: the timer elapsed while the lock of the game master was being handled
-        var answering = QuizGames.Answering(Presented());
-        var state = QuizGames.Accepted(answering, QuizGames.LockAnswers(answering));
+        // Given: the timer elapsed while the last answer was being handled
+        var answering = QuizGames.Answering(Presented(), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B));
+        var state = QuizGames.Accepted(answering, QuizGames.Answer(answering, 3, QuizChoiceLetter.C));
 
         // When
         var transition = QuizGames.Engine.Handle(state, QuizGames.AnswersTimerElapsed(answering), Games.Context());
@@ -375,64 +409,6 @@ public sealed class QuizAnswersTests
 
         // Then
         AssertRejected(state, transition, RejectionReason.UnexpectedTimer);
-    }
-
-    [Fact]
-    public void Handle_LockAnswers_LocksThemAndCancelsTheTimer()
-    {
-        // Given
-        var state = QuizGames.Answering(Presented(), (2, QuizChoiceLetter.B));
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.LockAnswers(state), Games.Context());
-
-        // Then
-        Assert.Null(transition.Rejection);
-        Assert.Equal(new CancelTimer(QuizMode.AnswersTimer), Assert.Single(transition.Effects));
-        var round = QuizGames.RoundOf(transition.State);
-        Assert.Equal((QuizPhase.Locked, _closeAt), (round.Phase, round.AnswersCloseAt));
-        Assert.Single(round.Answers);
-    }
-
-    [Fact]
-    public void Handle_LockAnswersDuringThePresentation_IsRejected()
-    {
-        // Given
-        var state = Presented();
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.LockAnswers(state), Games.Context());
-
-        // Then
-        AssertRejected(state, transition, RejectionReason.PhaseMismatch);
-    }
-
-    [Fact]
-    public void Handle_LockAnswersTwice_IsRejectedAsObsolete()
-    {
-        // Given
-        var state = QuizGames.Locked(Presented());
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.LockAnswers(state), Games.Context());
-
-        // Then
-        AssertRejected(state, transition, RejectionReason.PhaseMismatch);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(2)]
-    public void Handle_LockAnswersOfAnotherQuestion_IsRejected(int questionNumber)
-    {
-        // Given
-        var state = QuizGames.Answering(Presented());
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.LockAnswers(state, questionNumber), Games.Context());
-
-        // Then
-        AssertRejected(state, transition, RejectionReason.QuestionMismatch);
     }
 
     [Fact]

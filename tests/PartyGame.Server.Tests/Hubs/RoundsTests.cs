@@ -94,11 +94,11 @@ public sealed class RoundsTests : IAsyncDisposable
         // When: a player acts, the game master ends the round, asks for the next one and ends it as well
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
         var played = (TestQuizRound)Game.State.CurrentRound!.State;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
         var betweenRounds = Game.State.Phase;
         await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
         var second = Game.State.CurrentRound!;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(second.Id, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(second.Id, 1)), Ct);
 
         // Then
         Assert.Equal(1, played.PlayerIntents);
@@ -129,7 +129,7 @@ public sealed class RoundsTests : IAsyncDisposable
         using var toZoe = new ReceivedSnapshots(zoe);
 
         // When
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
 
         // Then: nobody scored, so both share the first rank, in alphabetical order
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
@@ -162,7 +162,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         var first = Game.State.CurrentRound!.Id;
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
         await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
         var last = Game.State.CurrentRound!.Id;
         using var toDisplay = new ReceivedSnapshots(display);
@@ -171,7 +171,7 @@ public sealed class RoundsTests : IAsyncDisposable
         using var toMax = new ReceivedSnapshots(max);
 
         // When
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(last, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(last, 1)), Ct);
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
@@ -202,9 +202,9 @@ public sealed class RoundsTests : IAsyncDisposable
         await JoinAsync(zoe, "Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         var first = Game.State.CurrentRound!.Id;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
         await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(Game.State.CurrentRound!.Id, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(Game.State.CurrentRound!.Id, 1)), Ct);
         using var toDisplay = new ReceivedSnapshots(display);
         using var toLea = new ReceivedSnapshots(lea);
 
@@ -228,7 +228,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await JoinAsync(zoe, "Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         var first = Game.State.CurrentRound!.Id;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
         var version = Game.State.Version;
 
         // When
@@ -306,13 +306,13 @@ public sealed class RoundsTests : IAsyncDisposable
         var roundId = Game.State.CurrentRound!.Id;
         if (method == GameHub.NextRound)
         {
-            await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(roundId, 1)), Ct);
+            await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(roundId, 1)), Ct);
         }
 
         var state = Game.State;
         var message = method == GameHub.NextRound
             ? Message(new NextRoundRequest(roundId))
-            : Message<GameMasterRoundIntent>(new QuizLockAnswers(roundId, 1));
+            : Message<GameMasterRoundIntent>(new QuizSkipQuestion(roundId, 1));
 
         // When: a player sends what only the game master may send
         await zoe.InvokeAsync(method, message, Ct);

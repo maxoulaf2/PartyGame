@@ -11,6 +11,10 @@ import { joinOnNewPhone, uniqueNickname } from './players.ts';
 // Starting the game cannot be undone, and every test shares the same server: playwright.config.ts
 // runs this file in a project of its own, once all the other tests are done.
 
+// The players of the other tests take part too, most of them gone: only the countdowns lock the
+// answers, kept short by the pack (20 s, 15 s and 10 s), and waited for.
+const countdownTimeout = 25_000;
+
 async function openConsole(page: Page): Promise<void> {
     await page.addInitScript(
         ([key, code]) => {
@@ -60,6 +64,8 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     browser,
     baseURL,
 }) => {
+    // Three countdowns run out during the game.
+    test.setTimeout(120_000);
     const nickname = uniqueNickname('Zoé');
     const lateNickname = uniqueNickname('Max');
     const phone = await joinOnNewPhone(browser, baseURL, nickname);
@@ -169,20 +175,24 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         `B 8 ${fr.modes.quiz.correct} ${countText(fr.modes.quiz.choiceAnswers, 2)}`,
     ]);
 
-    // The game master locks the answers before the end of the countdown.
-    await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
-    for (const screen of [display, phone, silentPhone, page]) {
+    // The game master cannot lock the answers: the countdown does, the silent phone not answering.
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
+    await expect(display.getByText(fr.modes.quiz.timeUp)).toBeVisible({
+        timeout: countdownTimeout,
+    });
+    for (const screen of [display, silentPhone, page]) {
         await expect(screen.getByText(fr.modes.quiz.timeUp)).toBeVisible();
         await expect(screen.getByRole('timer')).toHaveCount(0);
     }
     await expect(display.getByText(answeredText(3, participants))).toBeVisible();
-    // The phone that answered keeps its choice; the silent one shows none.
+    // The phone that answered keeps its choice, recorded; the silent one shows none.
+    await expect(phone.getByText(fr.modes.quiz.player.recorded)).toBeVisible();
+    await expect(phone.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
     await expect(choiceButton(phone, 'B')).toHaveAttribute('aria-pressed', 'true');
     for (const letter of ['A', 'B']) {
         await expect(choiceButton(silentPhone, letter)).toHaveAttribute('aria-pressed', 'false');
         await expect(choiceButton(silentPhone, letter)).toBeDisabled();
     }
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toHaveCount(0);
 
     // The game master reveals the answer: the TV screen shows who chose what, in order of arrival,
     // then the players taking part who did not answer.
@@ -302,8 +312,9 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(display.getByText(answeredText(1, thirdParticipants))).toBeVisible();
 
     // The last question played, the console offers to end the round, which ends on every screen.
-    await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
-    await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
+    await page
+        .getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true })
+        .click({ timeout: countdownTimeout });
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toHaveCount(0);
     await page.getByRole('button', { name: fr.modes.quiz.gm.endRound }).click();
     await expect(page.getByRole('button', { name: fr.gm.nextRound.action })).toBeVisible();
@@ -372,8 +383,9 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
     await answer(phone, 'B');
     await answer(latePhone, 'B');
-    await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
-    await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
+    await page
+        .getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true })
+        .click({ timeout: countdownTimeout });
     await page.getByRole('button', { name: fr.modes.quiz.gm.endRound }).click();
 
     // The game is finished: the TV screen shows the podium, the first alone, the three second ex

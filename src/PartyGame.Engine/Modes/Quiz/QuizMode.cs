@@ -15,7 +15,7 @@ namespace PartyGame.Engine.Modes.Quiz;
 public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 {
     /// <summary>
-    /// The timer that locks the answers at the end of the countdown.
+    /// The timer that locks the answers at the end of the countdown, unless every participant answered before.
     /// </summary>
     public static readonly TimerId AnswersTimer = new("quiz-answers");
 
@@ -72,7 +72,8 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Plays the intents of the quiz, each aimed at the question it names, and locks the answers when their timer elapses.
+    /// Plays the intents of the quiz, each aimed at the question it names, and locks the answers once every participant
+    /// answered, or when their timer elapses.
     /// </summary>
     /// <inheritdoc />
     public override RoundTransition Handle(QuizRound round, GameInput input, GameState game, GameContext context)
@@ -84,7 +85,6 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         return input switch
         {
             GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
-            GameMasterRoundInput { RoundIntent: QuizLockAnswers locking } => LockAnswers(round, locking),
             GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal, game),
             GameMasterRoundInput { RoundIntent: QuizNextQuestion next } => NextQuestion(round, next, context),
             GameMasterRoundInput { RoundIntent: QuizSkipQuestion skip } => SkipQuestion(round, skip, context),
@@ -205,26 +205,8 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Locks the answers before the end of the countdown, at the request of the game master.
-    /// </summary>
-    private static RoundTransition LockAnswers(QuizRound round, QuizLockAnswers locking)
-    {
-        if (locking.QuestionNumber != round.QuestionNumber)
-        {
-            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
-        }
-
-        if (round.Phase != QuizPhase.Answering)
-        {
-            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
-        }
-
-        return new(round with { Phase = QuizPhase.Locked }, [new CancelTimer(AnswersTimer)]);
-    }
-
-    /// <summary>
-    /// Reveals the correct answer once the answers are locked: the game master locks them first. The points of the
-    /// question are awarded now, never before, so that no score tells a correct answer ahead of time.
+    /// Reveals the correct answer once the answers are locked. The points of the question are awarded now, never before,
+    /// so that no score tells a correct answer ahead of time.
     /// </summary>
     private static RoundTransition RevealAnswer(QuizRound round, QuizRevealAnswer reveal, GameState game)
     {
@@ -328,7 +310,8 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Records the first answer of a participant, received before the answers close.
+    /// Records the first answer of a participant, received before the answers close, and locks the answers once every
+    /// participant answered: nobody is left to wait for.
     /// </summary>
     private static RoundTransition SubmitAnswer(QuizRound round, PlayerId playerId, QuizSubmitAnswer answer, DateTimeOffset receivedAt)
     {
@@ -347,7 +330,10 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             return RoundTransition.Rejected(round, reason);
         }
 
-        return new(round with { Answers = round.Answers.Add(playerId, new QuizAnswer(answer.Choice, receivedAt)) }, []);
+        var answered = round with { Answers = round.Answers.Add(playerId, new QuizAnswer(answer.Choice, receivedAt)) };
+        return answered.Answers.Count == answered.Participants.Length
+            ? new(answered with { Phase = QuizPhase.Locked }, [new CancelTimer(AnswersTimer)])
+            : new(answered, []);
     }
 
     /// <summary>

@@ -69,7 +69,7 @@ public sealed class QuizMoveOnTests
     {
         // Given: Noé joins too late for the first question
         var state = QuizGames.Accepted(QuizGames.Answering(Presented()), Games.Join("Noé", player: 4));
-        state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+        state = QuizGames.Closed(state);
         state = QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
 
         // When

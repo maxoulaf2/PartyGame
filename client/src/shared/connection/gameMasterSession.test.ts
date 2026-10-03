@@ -653,17 +653,17 @@ describe('GameMasterSession', () => {
     });
 
     describe('sendRoundIntent', () => {
-        const lock = { type: 'quiz.lockAnswers', roundId, questionNumber: 1 } as const;
+        const reveal = { type: 'quiz.revealAnswer', roundId, questionNumber: 1 } as const;
 
         it('hands the intent to the server', async () => {
             const { session, server } = await grantedSession();
 
-            const outcome = await session.sendRoundIntent(lock);
+            const outcome = await session.sendRoundIntent(reveal);
 
             expect(outcome).toBe('sent');
             expect(server.connection.invoke).toHaveBeenLastCalledWith(
                 'SendGameMasterRoundIntent',
-                lock,
+                reveal,
             );
         });
 
@@ -671,16 +671,16 @@ describe('GameMasterSession', () => {
             const { session, server } = await grantedSession();
             server.becomeUnreachable();
 
-            expect(await session.sendRoundIntent(lock)).toBe('unreachable');
+            expect(await session.sendRoundIntent(reveal)).toBe('unreachable');
         });
 
         it('sends nothing while disconnected or without access', async () => {
             const { session, server } = await startedSession(memoryStorage());
 
-            expect(await session.sendRoundIntent(lock)).toBe('unreachable');
+            expect(await session.sendRoundIntent(reveal)).toBe('unreachable');
             await session.submit(goodCode);
             server.drop();
-            expect(await session.sendRoundIntent(lock)).toBe('unreachable');
+            expect(await session.sendRoundIntent(reveal)).toBe('unreachable');
 
             expect(server.connection.invoke).not.toHaveBeenCalledWith(
                 'SendGameMasterRoundIntent',

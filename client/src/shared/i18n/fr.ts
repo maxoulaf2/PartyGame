@@ -260,8 +260,10 @@ export const fr = {
             question: 'Question {number}/{count}',
             // Read by screen readers: the choices of the question, each with its letter.
             choicesLabel: 'Propositions',
-            // Shown everywhere once the answers are locked, by the countdown or by the game master.
+            // Shown once the countdown locked the answers.
             timeUp: 'Temps écoulé',
+            // Shown instead of « Temps écoulé » once everybody answered, which locks the answers early.
+            allAnswered: 'Tous les joueurs ont répondu',
             // Read by screen readers before the seconds left to answer.
             timeLeft: 'Temps restant',
             // How many of the players taking part answered, never what.
@@ -311,7 +313,6 @@ export const fr = {
             },
             gm: {
                 openAnswers: 'Ouvrir les réponses',
-                lockAnswers: 'Verrouiller maintenant',
                 revealAnswer: 'Révéler',
                 skipQuestion: 'Passer la question',
                 // Asked before skipping: the answers received and the question are lost.
@@ -328,7 +329,6 @@ export const fr = {
                 nextQuestion: 'Question suivante',
                 // Replaces « Question suivante » once the last question of the round is revealed.
                 endRound: 'Terminer la manche',
-                allAnswered: 'Tous les joueurs ont répondu',
                 answersLabel: 'Réponses des joueurs',
                 // A player taking part who has not chosen while the answers are open.
                 waitingAnswer: 'Pas encore de réponse',

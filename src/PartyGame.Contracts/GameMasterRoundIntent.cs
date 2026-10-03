@@ -19,7 +19,6 @@ namespace PartyGame.Contracts;
 /// </param>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(QuizOpenAnswers), "quiz.openAnswers")]
-[JsonDerivedType(typeof(QuizLockAnswers), "quiz.lockAnswers")]
 [JsonDerivedType(typeof(QuizRevealAnswer), "quiz.revealAnswer")]
 [JsonDerivedType(typeof(QuizNextQuestion), "quiz.nextQuestion")]
 [JsonDerivedType(typeof(QuizSkipQuestion), "quiz.skipQuestion")]

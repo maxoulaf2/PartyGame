@@ -663,8 +663,10 @@ test('/display/ stops the countdown at 0 and waits for the server to lock the an
     await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
 });
 
-test('/display/ shows that the time is up once the answers are locked', async ({ page }) => {
-    const view = quizView({ phase: 'Locked', answeredCount: 3, participantCount: 3 });
+test('/display/ shows that the time is up once the countdown locked the answers', async ({
+    page,
+}) => {
+    const view = quizView({ phase: 'Locked', answeredCount: 2, participantCount: 3 });
     await serveDisplaySnapshot(
         page,
         fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
@@ -673,9 +675,26 @@ test('/display/ shows that the time is up once the answers are locked', async ({
     await page.goto('/display/');
 
     await expect(page.getByText(fr.modes.quiz.timeUp)).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.allAnswered)).toHaveCount(0);
     await expect(
-        page.getByText(fill(fr.modes.quiz.answered, { answered: 3, participants: 3 })),
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 2, participants: 3 })),
     ).toBeVisible();
+    await expect(page.getByRole('timer')).toHaveCount(0);
+});
+
+test('/display/ shows that everybody answered once their last answer locked the answers', async ({
+    page,
+}) => {
+    const view = quizView({ phase: 'Locked', answeredCount: 3, participantCount: 3 });
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fr.modes.quiz.allAnswered)).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
     await expect(page.getByRole('timer')).toHaveCount(0);
 });
 

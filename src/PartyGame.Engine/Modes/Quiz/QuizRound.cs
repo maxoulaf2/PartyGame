@@ -32,7 +32,7 @@ public sealed record QuizRound(QuizRoundDescriptor Descriptor, int QuestionIndex
 
     /// <summary>
     /// When the answers of the question in progress close, set when they open, or <see langword="null"/> before. Kept once
-    /// they are locked, even early, for the speed bonus.
+    /// they are locked, even early once everybody answered, for the speed bonus.
     /// </summary>
     public DateTimeOffset? AnswersCloseAt { get; init; }
 

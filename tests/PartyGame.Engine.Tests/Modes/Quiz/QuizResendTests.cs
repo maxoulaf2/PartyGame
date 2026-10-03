@@ -56,7 +56,7 @@ public sealed class QuizResendTests
         // Given: the answer of Zoé to the first question never reached the server, and the second question is open
         var first = QuizGames.Answering(Presented());
         var lost = QuizGames.Answer(first, 1, QuizChoiceLetter.B);
-        var revealed = QuizGames.Accepted(QuizGames.Accepted(first, QuizGames.LockAnswers(first)), QuizGames.RevealAnswer(first));
+        var revealed = QuizGames.Accepted(QuizGames.Closed(first), QuizGames.RevealAnswer(first));
         var state = QuizGames.Answering(QuizGames.Accepted(revealed, QuizGames.NextQuestion(revealed)));
 
         // When: her phone sends it again once reconnected
