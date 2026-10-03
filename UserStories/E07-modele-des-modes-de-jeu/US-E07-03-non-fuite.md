@@ -1,6 +1,6 @@
 ### US-E07-03 — Aucune fuite d'information, quel que soit le mode
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** qu'aucun écran autre que celui du GM ne trahisse une bonne réponse ou le choix d'un autre joueur avant la révélation
@@ -23,6 +23,11 @@ Sans objet à l'exécution : cette US ne livre que des tests. Un test de non-fui
 - La comparaison se fait sur le JSON sérialisé, et non sur les objets : c'est ce que reçoit réellement un client.
 - La couverture des phases s'appuie sur une énumération des phases déclarée par le mode.
 - La convention « chaque couple phase/rôle a son test de non-fuite » de `docs/coding-guidelines.md` est satisfaite par cet outil.
+- Réalisation : l'outil est dans `tests/Shared/Leaks/`, compilé dans chaque projet de test, et ne dépend que de `PartyGame.Contracts`. `LeakSuite<TState, TPhase>` reçoit la phase d'un état (`PhaseOf`), ses projections (`Project`, un `ProjectionSet` : écran TV, GM et chaque téléphone, sérialisés avec `ContractJsonOptions` ou les options du test), les scénarios, les secrets d'un état (`SecretsOf`) et les paires (`SecretPair`). Elle expose `AssertEveryPhaseIsCovered`, `AssertNoSecretIsShown` et `AssertPairsLookTheSame`. Les états des paires comptent aussi comme scénarios.
+- Réalisation : un secret (`Secret`) est caché à une `Audience` : `Everyone` (jetons, chemins des médias), `AllButGameMaster` (bonnes réponses, adresses et packs), `OtherPlayersThan(joueur)` (pseudo et identifiant d'un joueur), `AllButGameMasterAnd(joueur)` (choix d'un joueur avant la révélation). La projection GM n'est contrainte que par les secrets cachés à `Everyone`.
+- Réalisation : la recherche parcourt le JSON décodé (valeurs texte et noms de propriétés, qui portent des données dans un dictionnaire) et non le texte brut : le sérialiseur écrit `\u00C9chauffement`, si bien que l'ancienne recherche de « Échauffement » dans `PackChoiceTests` ne pouvait rien trouver. La comparaison des paires rapporte le chemin de la première différence (`$.choices[0].correct is true in one state, false in the other`), y compris une propriété ou un élément de tableau présent d'un seul côté. Chaque échec nomme le scénario, la phase, le rôle et le joueur.
+- Réalisation : les tests de non-fuite du lobby (`SnapshotsTests`) sont regroupés dans `SnapshotsLeakTests`, une `LeakSuite` sur `GamePhase` avec quatre scénarios par phase (trois joueurs, autres packs, pack illustré, autre adresse choisie) et deux paires par phase (sans jetons pour tous les rôles, sans les secrets du GM pour l'écran TV et les téléphones). Les tests d'intégration du hub (jetons, code GM, adresses candidates, packs, chemins des médias) passent par `LeakAssert.NoSecretReceived`, qui nomme la version et la phase du snapshot fautif et échoue si aucun snapshot n'a été reçu.
+- Réalisation : l'outil est lui-même testé sur un mode jouet (`Engine.Tests/Leaks/LeakSuiteTests.cs`) dont chaque test fait fuiter une projection : texte, nom de propriété, caractère non ASCII, index, ordre, compteur, téléphone d'un autre joueur, phase ou rôle non couvert.
 
 **Hors périmètre**
 - Les scénarios propres au quiz, écrits avec chacune de ses US.

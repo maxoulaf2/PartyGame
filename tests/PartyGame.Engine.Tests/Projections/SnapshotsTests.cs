@@ -130,27 +130,6 @@ public sealed class SnapshotsTests
         Assert.Equal(Games.OtherAddress, Games.Snapshots.ForGameMaster(state).JoinAddress);
     }
 
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForDisplayAndPlayer_AnyPhase_ContainNoOtherCandidateNorInterfaceName(GamePhase phase, Phase _)
-    {
-        // Given: only the game master may see the networks of the host
-        var state = Games.InPhase(phase, "Zoé", "Max");
-
-        // When
-        var projections = new List<object> { Games.Snapshots.ForDisplay(state) };
-        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
-
-        // Then
-        foreach (var json in projections.Select(Serialize))
-        {
-            Assert.DoesNotContain(Games.OtherAddress, json, StringComparison.Ordinal);
-            Assert.DoesNotContain("Wi-Fi", json, StringComparison.Ordinal);
-            Assert.DoesNotContain("Ethernet", json, StringComparison.Ordinal);
-            Assert.DoesNotContain("candidate", json, StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
     [Fact]
     public void ForGameMaster_Lobby_ShowsEveryPackWithTheRoundsOfTheValidOnesAndTheProblemsOfTheInvalidOnes()
     {
@@ -236,45 +215,6 @@ public sealed class SnapshotsTests
         Assert.Equal("Soirée test", snapshot.PackTitle);
     }
 
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForDisplayAndPlayer_AnyPhase_ContainNothingOfThePacksButTheTitleOfTheChosenOne(GamePhase phase, Phase _)
-    {
-        // Given: the other packs, their problems and the folder of the packs are for the game master only
-        var other = Games.ValidPack("pack-voisin", "Titre voisin", [new FakeRoundDescriptor { Title = "Manche voisine" }]);
-        var state = Games.Accepted(Games.LobbyWith("Zoé", "Max"), Games.Loaded(Games.Pack, other, Games.InvalidPack("pack-casse", "Titre cassé")));
-        state = Games.PlayedUpTo(phase, state);
-
-        // When
-        var projections = new List<object> { Games.Snapshots.ForDisplay(state) };
-        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
-
-        // Then
-        foreach (var json in projections.Select(Serialize))
-        {
-            string[] secrets =
-            [
-                "pack-voisin", "Titre voisin", "Manche voisine", "pack-casse", "Titre cassé", "tour-eiffel", "$.rounds",
-                nameof(PackProblemCode.PackMediaMissing), Games.PackDirectory, Games.PackId, "catalog", "problem",
-            ];
-            Assert.All(secrets, secret => Assert.DoesNotContain(secret, json, StringComparison.OrdinalIgnoreCase));
-        }
-    }
-
-    [Fact]
-    public void ForDisplayAndPlayer_Lobby_ContainNoRoundOfTheChosenPack()
-    {
-        // Given: the rounds of the pack are discovered as they are played
-        var state = Games.LobbyWith("Zoé");
-
-        // When
-        string[] json = [Serialize(Games.Snapshots.ForDisplay(state)), Serialize(Games.Snapshots.ForPlayer(state, state.Players[0]))];
-
-        // Then
-        Assert.All(json, j => Assert.DoesNotContain("Échauffement", j, StringComparison.Ordinal));
-        Assert.All(json, j => Assert.DoesNotContain("Finale", j, StringComparison.Ordinal));
-    }
-
     [Fact]
     public void ForEachRole_RenamedPlayer_ShowsTheNewNickname()
     {
@@ -322,78 +262,6 @@ public sealed class SnapshotsTests
 
         // Then
         Assert.All(projected, p => Assert.Equal(expected, p));
-    }
-
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForEachRole_AnyPhase_ContainsNoPlayerToken(GamePhase phase, Phase _)
-    {
-        // Given
-        var state = Games.InPhase(phase, "Zoé", "Max", "Léa");
-
-        // When
-        var projections = new List<object> { Games.Snapshots.ForDisplay(state), Games.Snapshots.ForGameMaster(state) };
-        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
-
-        // Then
-        foreach (var json in projections.Select(Serialize))
-        {
-            Assert.All(state.PlayerTokens.Keys, token => Assert.DoesNotContain(token.Value, json, StringComparison.Ordinal));
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForPlayer_AnyPhase_ContainsNothingAboutOtherPlayers(GamePhase phase, Phase _)
-    {
-        // Given
-        var state = Games.InPhase(phase, "Zoé", "Max", "Léa");
-        var player = state.Players[1];
-
-        // When
-        var json = Serialize(Games.Snapshots.ForPlayer(state, player));
-
-        // Then
-        foreach (var other in state.Players.Where(p => p != player))
-        {
-            Assert.DoesNotContain(other.Nickname, json, StringComparison.Ordinal);
-            Assert.DoesNotContain(other.Id.Value.ToString(), json, StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForDisplay_AnyPhase_IsTheSameAsWithoutSecrets(GamePhase phase, Phase _)
-    {
-        // Given: everything the TV screen may not show is removed from the state, down to the title of the chosen pack
-        var state = Games.InPhase(phase, "Zoé", "Max");
-        var withoutSecrets = state with
-        {
-            PlayerTokens = state.PlayerTokens.Clear(),
-            JoinAddressCandidates = [],
-            Catalog = new PackCatalog(string.Empty, [new CatalogPack(Games.PackId, Games.Pack.Title, RoundCount: null, Descriptor: null, [])]),
-        };
-
-        // When
-        var snapshot = Games.Snapshots.ForDisplay(state);
-
-        // Then: compared as JSON, since the list of players has no value equality
-        Assert.Equal(Serialize(Games.Snapshots.ForDisplay(withoutSecrets)), Serialize(snapshot));
-    }
-
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForGameMaster_AnyPhase_IsTheSameAsWithoutSecrets(GamePhase phase, Phase _)
-    {
-        // Given: the tokens are the only secret the game master may not see
-        var state = Games.InPhase(phase, "Zoé", "Max");
-        var withoutSecrets = state with { PlayerTokens = state.PlayerTokens.Clear() };
-
-        // When
-        var snapshot = Games.Snapshots.ForGameMaster(state);
-
-        // Then
-        Assert.Equal(Serialize(Games.Snapshots.ForGameMaster(withoutSecrets)), Serialize(snapshot));
     }
 
     [Fact]
@@ -485,25 +353,4 @@ public sealed class SnapshotsTests
         // Then
         Assert.Equal($"/media/{id.Value}", Assert.IsType<FakeDisplayView>(snapshot.RoundView).ImageUrl);
     }
-
-    [Theory]
-    [MemberData(nameof(Phases))]
-    public void ForEachRole_AnyPhaseOfAnIllustratedGame_ContainsNoPathOfAMedia(GamePhase phase, Phase _)
-    {
-        // Given: a media file is named after what it shows, which may be the answer
-        var state = Games.PlayedUpTo(phase, Games.IllustratedLobbyWith("Zoé", "Max"));
-
-        // When
-        var projections = new List<object> { Games.Snapshots.ForDisplay(state), Games.Snapshots.ForGameMaster(state) };
-        projections.AddRange(state.Players.Select(p => Games.Snapshots.ForPlayer(state, p)));
-
-        // Then
-        foreach (var json in projections.Select(Serialize))
-        {
-            string[] secrets = ["images", "drapeau", "japon", "monuments", "tour-eiffel", ".png", ".jpg"];
-            Assert.All(secrets, secret => Assert.DoesNotContain(secret, json, StringComparison.OrdinalIgnoreCase));
-        }
-    }
-
-    private static string Serialize(object snapshot) => FakeJson.Serialize(snapshot);
 }

@@ -5,6 +5,7 @@ using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Projections;
 using PartyGame.Engine.Tests.Rounds;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Engine.Tests;
 
@@ -44,6 +45,16 @@ internal static class Games
 
     /// <summary>A catalog with a single valid pack, <see cref="Pack"/>, which a new game chooses at once.</summary>
     public static readonly PackCatalog Catalog = new(PackDirectory, [Pack]);
+
+    /// <summary>
+    /// What each viewer receives for a state, serialized as the hub does, the phones named by the nickname of their player.
+    /// </summary>
+    public static ProjectionSet Projected(GameState state) =>
+        new(
+            Snapshots.ForDisplay(state),
+            Snapshots.ForGameMaster(state),
+            [.. state.Players.Select(p => (p.Nickname, (object)Snapshots.ForPlayer(state, p)))],
+            FakeJson.Options);
 
     public static GameState NewLobby() =>
         GameState.Create(new GameId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff")), JoinAddress, JoinAddressCandidates, Catalog);

@@ -8,6 +8,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Network;
 using PartyGame.Server.Tests.Network;
+using PartyGame.Tests.Shared.Leaks;
 using static PartyGame.Server.Tests.Network.TestInterfaces;
 
 namespace PartyGame.Server.Tests.Hubs;
@@ -55,7 +56,7 @@ public sealed class ChooseAdvertisedAddressTests : IAsyncDisposable
             [new GameMasterJoinAddress(WifiAddress, "Wi-Fi"), new GameMasterJoinAddress(EthernetAddress, "Ethernet")],
             snapshot.JoinAddressCandidates);
         Assert.Equal(WifiAddress, Assert.Single(toDisplay.Display).JoinAddress);
-        Assert.DoesNotContain(EthernetAddress, Assert.Single(toDisplay.Json), StringComparison.Ordinal);
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, new Secret(EthernetAddress, Audience.AllButGameMaster));
     }
 
     [Fact]
