@@ -7,7 +7,7 @@ namespace PartyGame.Server.Tests.Hubs;
 
 /// <summary>
 /// Records the snapshots a test connection receives, as raw JSON, so that tests can check both their content and what
-/// went over the wire.
+/// went over the wire. The lists of incidents are recorded as well: they are the other state the server sends to a role.
 /// </summary>
 internal sealed class ReceivedSnapshots : IDisposable
 {
@@ -22,11 +22,24 @@ internal sealed class ReceivedSnapshots : IDisposable
             Subscribe(connection, nameof(IGameClient.ReceiveDisplaySnapshot)),
             Subscribe(connection, nameof(IGameClient.ReceiveGameMasterSnapshot)),
             Subscribe(connection, nameof(IGameClient.ReceivePlayerSnapshot)),
+            Subscribe(connection, nameof(IGameClient.ReceiveIncidents)),
         ];
     }
 
     /// <summary>Every snapshot received so far, as JSON, whatever its role.</summary>
     public IReadOnlyList<string> Json
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _received.Where(r => r.Message != nameof(IGameClient.ReceiveIncidents)).Select(r => r.Json)];
+            }
+        }
+    }
+
+    /// <summary>Every snapshot and list of incidents received so far, as JSON.</summary>
+    public IReadOnlyList<string> Messages
     {
         get
         {
@@ -42,6 +55,8 @@ internal sealed class ReceivedSnapshots : IDisposable
     public IReadOnlyList<GameMasterSnapshot> GameMaster => Of<GameMasterSnapshot>(nameof(IGameClient.ReceiveGameMasterSnapshot));
 
     public IReadOnlyList<PlayerSnapshot> Player => Of<PlayerSnapshot>(nameof(IGameClient.ReceivePlayerSnapshot));
+
+    public IReadOnlyList<IncidentList> Incidents => Of<IncidentList>(nameof(IGameClient.ReceiveIncidents));
 
     public void Dispose()
     {

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using PartyGame.Contracts;
+using PartyGame.Contracts.Packs;
 using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
@@ -12,6 +13,8 @@ namespace PartyGame.Server.Tests.Hubs;
 
 public sealed class SnapshotBroadcasterTests
 {
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task OnStateChangedAsync_OneGroupFails_LogsWarningAndSendsToTheOthers()
     {
@@ -19,7 +22,7 @@ public sealed class SnapshotBroadcasterTests
         var hub = new RecordingHubContext(failingGroup: HubGroups.Display);
         var logger = new RecordingLogger<SnapshotBroadcaster>();
         var modes = new GameModes([]);
-        var broadcaster = new SnapshotBroadcaster(hub, new Snapshots(modes), logger);
+        var broadcaster = new SnapshotBroadcaster(hub, new Snapshots(modes), new RecordingIncidentReporter(), logger);
         var state = new GameEngine(modes).Handle(
             LoopHarness.InitialState,
             new JoinGame(new PlayerId(Guid.NewGuid()), new PlayerToken("token"), "Zoé", DateTimeOffset.UnixEpoch),
@@ -27,7 +30,7 @@ public sealed class SnapshotBroadcasterTests
         var player = Assert.Single(state.Players);
 
         // When
-        await broadcaster.OnStateChangedAsync(state, TestContext.Current.CancellationToken);
+        await broadcaster.OnStateChangedAsync(state, Ct);
 
         // Then
         Assert.Equal([HubGroups.GameMaster, HubGroups.Player(player.Id)], hub.Sent);
@@ -37,10 +40,74 @@ public sealed class SnapshotBroadcasterTests
         Assert.IsType<InvalidOperationException>(warning.Exception);
     }
 
+    [Theory]
+    [InlineData(Role.Display, HubGroups.GameMaster)]
+    [InlineData(Role.GameMaster, HubGroups.Display)]
+    public async Task OnStateChangedAsync_ProjectionOfARoleThrows_SendsTheOthersTheirsAndReportsTheRole(Role failing, string other)
+    {
+        // Given
+        var hub = new RecordingHubContext();
+        var incidents = new RecordingIncidentReporter();
+        var logger = new RecordingLogger<SnapshotBroadcaster>();
+        var broadcaster = new SnapshotBroadcaster(hub, new Snapshots(new GameModes([new FaultyQuizMode(failing)])), incidents, logger);
+        var state = RoundWith("Zoé");
+
+        // When
+        await broadcaster.OnStateChangedAsync(state, Ct);
+
+        // Then
+        Assert.Equal([other, HubGroups.Player(state.Players[0].Id)], hub.Sent);
+        var incident = Assert.Single(incidents.Reported);
+        Assert.Equal((IncidentCode.ProjectionFailed, failing), (incident.Code, incident.Role));
+        Assert.Same(state, incident.State);
+        var error = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, error.Level);
+        Assert.Contains(failing.ToString(), error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnStateChangedAsync_ProjectionOfPlayersThrows_SendsTheOthersTheirsAndReportsOnce()
+    {
+        // Given
+        var hub = new RecordingHubContext();
+        var incidents = new RecordingIncidentReporter();
+        var logger = new RecordingLogger<SnapshotBroadcaster>();
+        var broadcaster = new SnapshotBroadcaster(hub, new Snapshots(new GameModes([new FaultyQuizMode(Role.Player)])), incidents, logger);
+
+        // When
+        await broadcaster.OnStateChangedAsync(RoundWith("Zoé", "Max"), Ct);
+
+        // Then
+        Assert.Equal([HubGroups.Display, HubGroups.GameMaster], hub.Sent);
+        var incident = Assert.Single(incidents.Reported);
+        Assert.Equal((IncidentCode.ProjectionFailed, Role.Player), (incident.Code, incident.Role));
+        Assert.Equal(2, logger.Entries.Count(e => e.Level == LogLevel.Error));
+    }
+
     /// <summary>
-    /// Records the groups that received a snapshot, and fails to send to one of them.
+    /// A game in its first round, a quiz round played by <see cref="FaultyQuizMode"/>, with the given players.
     /// </summary>
-    private sealed class RecordingHubContext(string failingGroup) : IHubContext<GameHub, IGameClient>
+    private static GameState RoundWith(params string[] nicknames)
+    {
+        var descriptor = new QuizRoundDescriptor
+        {
+            Title = "Échauffement",
+            Questions = [new QuizQuestion { Text = "Question ?", Choices = [new QuizChoice { Text = "Oui", Correct = true }, new QuizChoice { Text = "Non" }] }],
+        };
+        var state = LoopHarness.InitialState with
+        {
+            Phase = GamePhase.Round,
+            Players = [.. nicknames.Select(nickname => new Player(new PlayerId(Guid.NewGuid()), nickname, IsConnected: true))],
+            Pack = new PackDescriptor { FormatVersion = PackDescriptor.CurrentFormatVersion, Title = "Soirée", Rounds = [descriptor] },
+        };
+        var round = new FaultyQuizMode().Start(descriptor, state, new GameContext(DateTimeOffset.UnixEpoch, new Random(42))).State;
+        return state with { CurrentRound = new PlayedRound(new RoundId(Guid.NewGuid()), Index: 0, round) };
+    }
+
+    /// <summary>
+    /// Records the groups that received a snapshot, and fails to send to one of them, if any.
+    /// </summary>
+    private sealed class RecordingHubContext(string? failingGroup = null) : IHubContext<GameHub, IGameClient>
     {
         public List<string> Sent { get; } = [];
 
@@ -48,7 +115,7 @@ public sealed class SnapshotBroadcasterTests
 
         public IGroupManager Groups => throw new NotSupportedException();
 
-        private string FailingGroup => failingGroup;
+        private string? FailingGroup => failingGroup;
 
         private sealed class GroupClients(RecordingHubContext hub) : IHubClients<IGameClient>
         {
@@ -80,6 +147,8 @@ public sealed class SnapshotBroadcasterTests
             public Task ReceiveGameMasterSnapshot(GameMasterSnapshot snapshot) => Send();
 
             public Task ReceivePlayerSnapshot(PlayerSnapshot snapshot) => Send();
+
+            public Task ReceiveIncidents(IncidentList incidents) => throw new NotSupportedException();
 
             private Task Send()
             {

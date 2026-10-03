@@ -5,6 +5,7 @@ import type {
     GameId,
     GameMasterSnapshot,
     IGameClient,
+    IncidentList,
     PlayerId,
     ReloadPacksResult,
     RenamePlayerResult,
@@ -49,7 +50,7 @@ function fakeServer(options: { startFails?: boolean } = {}) {
     let packAnswer: SelectPackResult | null = { refusal: null };
     let reloadAnswer: ReloadPacksResult | null = { refusal: null };
     let reachable = true;
-    const handlers = new Map<string, (snapshot: GameMasterSnapshot) => void>();
+    const handlers = new Map<string, (message: GameMasterSnapshot | IncidentList) => void>();
     const callbacks = { reconnecting: () => {}, reconnected: () => {} };
     const connection = {
         start: vi.fn(() =>
@@ -95,10 +96,12 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                 };
             },
         ),
-        on: vi.fn((message: string, handler: (snapshot: GameMasterSnapshot) => void) => {
-            handlers.set(message, handler);
-            return () => handlers.delete(message);
-        }),
+        on: vi.fn(
+            (message: string, handler: (message: GameMasterSnapshot | IncidentList) => void) => {
+                handlers.set(message, handler);
+                return () => handlers.delete(message);
+            },
+        ),
         onReconnecting: vi.fn((callback: () => void) => {
             callbacks.reconnecting = callback;
         }),
@@ -113,6 +116,7 @@ function fakeServer(options: { startFails?: boolean } = {}) {
         typed,
         send: (snapshot: GameMasterSnapshot) =>
             handlers.get('ReceiveGameMasterSnapshot')?.(snapshot),
+        sendIncidents: (incidents: IncidentList) => handlers.get('ReceiveIncidents')?.(incidents),
         drop: () => {
             reachable = false;
             callbacks.reconnecting();
@@ -364,6 +368,27 @@ describe('GameMasterSession', () => {
         server.send(snapshot(4));
 
         expect(store.current?.version).toBe(4);
+    });
+
+    it('hands the incidents to its inbox, which takes any list once the connection comes back', async () => {
+        const { session, server } = await grantedSession();
+        const incident = {
+            id: 1,
+            code: 'RoundHandlerFailed',
+            round: null,
+            role: null,
+            count: 1,
+            lastOccurredAt: 1_790_000_000_000,
+        } as const;
+
+        server.sendIncidents({ version: 3, incidents: [{ ...incident, count: 3 }] });
+        server.drop();
+        server.restore();
+        // The server restarted meanwhile: it counts its incidents from 0 again.
+        server.sendIncidents({ version: 1, incidents: [incident] });
+
+        expect(session.incidents.incidents).toEqual([incident]);
+        expect(session.incidents.unread).toBe(1);
     });
 
     it('stops handling snapshots and disconnects when disposed', () => {

@@ -22,9 +22,6 @@ internal static partial class GameLoopLog
     [LoggerMessage(Level = LogLevel.Error, Message = "State change listener {Listener} failed")]
     public static partial void ListenerFailed(this ILogger logger, Exception exception, string listener);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Effect {EffectType} has no executor")]
-    public static partial void EffectNotSupported(this ILogger logger, string effectType);
-
     [LoggerMessage(Level = LogLevel.Information, Message = "Round {RoundNumber} of {RoundCount} started: {RoundTitle} ({Descriptor})")]
     public static partial void RoundStarted(this ILogger logger, int roundNumber, int roundCount, string roundTitle, string descriptor);
 

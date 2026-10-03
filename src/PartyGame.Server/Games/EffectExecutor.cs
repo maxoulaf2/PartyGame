@@ -5,7 +5,7 @@ namespace PartyGame.Server.Games;
 /// <summary>
 /// Hands each effect of a transition to the service that executes it.
 /// </summary>
-internal sealed class EffectExecutor(TimerScheduler timers, ILogger<EffectExecutor> logger) : IEffectExecutor
+internal sealed class EffectExecutor(TimerScheduler timers) : IEffectExecutor
 {
     public ValueTask ExecuteAsync(Effect effect, CancellationToken cancellationToken)
     {
@@ -21,9 +21,8 @@ internal sealed class EffectExecutor(TimerScheduler timers, ILogger<EffectExecut
                 return ValueTask.CompletedTask;
 
             default:
-                // An effect without executor is a bug of the server, not of the game: it is logged and the game goes on.
-                logger.EffectNotSupported(effect.GetType().Name);
-                return ValueTask.CompletedTask;
+                // A bug of the server, not of the game: the loop logs it, tells the game master, and the game goes on.
+                throw new NotSupportedException($"Effect {effect.GetType().Name} has no executor.");
         }
     }
 }

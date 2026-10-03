@@ -5,6 +5,7 @@
 
 import type { DisplaySnapshot } from './DisplaySnapshot';
 import type { GameMasterSnapshot } from './GameMasterSnapshot';
+import type { IncidentList } from './IncidentList';
 import type { PlayerSnapshot } from './PlayerSnapshot';
 import type { Welcome } from './Welcome';
 
@@ -13,4 +14,5 @@ export interface IGameClient {
     ReceiveDisplaySnapshot(snapshot: DisplaySnapshot): void;
     ReceiveGameMasterSnapshot(snapshot: GameMasterSnapshot): void;
     ReceivePlayerSnapshot(snapshot: PlayerSnapshot): void;
+    ReceiveIncidents(incidents: IncidentList): void;
 }

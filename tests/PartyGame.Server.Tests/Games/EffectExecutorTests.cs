@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using PartyGame.Engine;
 using PartyGame.Engine.Effects;
@@ -13,14 +12,13 @@ public sealed class EffectExecutorTests : IDisposable
 
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 1, 20, 0, 0, TimeSpan.Zero));
     private readonly RecordingInputWriter _inputs = new();
-    private readonly RecordingLogger<EffectExecutor> _logger = new();
     private readonly TimerScheduler _timers;
     private readonly EffectExecutor _executor;
 
     public EffectExecutorTests()
     {
         _timers = new TimerScheduler(_inputs, _time, new RecordingLogger<TimerScheduler>());
-        _executor = new EffectExecutor(_timers, _logger);
+        _executor = new EffectExecutor(_timers);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -56,14 +54,12 @@ public sealed class EffectExecutorTests : IDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsync_EffectWithoutExecutor_LogsError()
+    public async Task ExecuteAsync_EffectWithoutExecutor_ThrowsForTheLoopToReportIt()
     {
         // When
-        await _executor.ExecuteAsync(new TestEffect(), Ct);
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => _executor.ExecuteAsync(new TestEffect(), Ct).AsTask());
 
         // Then
-        var error = Assert.Single(_logger.Entries);
-        Assert.Equal(LogLevel.Error, error.Level);
-        Assert.Contains(nameof(TestEffect), error.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(TestEffect), exception.Message, StringComparison.Ordinal);
     }
 }
