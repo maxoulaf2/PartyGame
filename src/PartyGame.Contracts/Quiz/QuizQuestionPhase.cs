@@ -3,9 +3,6 @@ namespace PartyGame.Contracts.Quiz;
 /// <summary>
 /// Phase of the question in progress in a quiz round, as the snapshots show it to the clients.
 /// </summary>
-/// <remarks>
-/// The reveal comes with US-E08-04.
-/// </remarks>
 public enum QuizQuestionPhase
 {
     /// <summary>The question and its choices are shown, so that everybody reads them before the answers open.</summary>
@@ -16,4 +13,7 @@ public enum QuizQuestionPhase
 
     /// <summary>The answers are locked: no answer is accepted anymore.</summary>
     Locked,
+
+    /// <summary>The correct answer is revealed, with what each player chose.</summary>
+    Revealed,
 }

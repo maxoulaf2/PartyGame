@@ -4,6 +4,7 @@
 // </auto-generated>
 
 import type { QuizChoiceView } from './QuizChoiceView';
+import type { QuizDisplayReveal } from './QuizDisplayReveal';
 import type { QuizQuestionPhase } from './QuizQuestionPhase';
 
 export interface QuizDisplayView {
@@ -17,4 +18,5 @@ export interface QuizDisplayView {
     readonly answersCloseAt: number | null;
     readonly answeredCount: number;
     readonly participantCount: number;
+    readonly reveal: QuizDisplayReveal | null;
 }

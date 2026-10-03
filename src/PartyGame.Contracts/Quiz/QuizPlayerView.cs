@@ -20,6 +20,13 @@ namespace PartyGame.Contracts.Quiz;
 /// its answers opened. A player who joined meanwhile plays from the next question.
 /// </param>
 /// <param name="Answer">The letter this player chose, or <see langword="null"/> while they have not answered.</param>
+/// <param name="CorrectChoice">
+/// The letter of the correct choice, once the answer is revealed; <see langword="null"/> before.
+/// </param>
+/// <param name="Verdict">
+/// Whether the player got it right, once the answer is revealed, if they took part in the question;
+/// <see langword="null"/> otherwise.
+/// </param>
 public sealed record QuizPlayerView(
     int QuestionNumber,
     int QuestionCount,
@@ -27,4 +34,6 @@ public sealed record QuizPlayerView(
     ImmutableArray<QuizChoiceLetter> Choices,
     long? AnswersCloseAt,
     bool Participating,
-    QuizChoiceLetter? Answer) : PlayerRoundView;
+    QuizChoiceLetter? Answer,
+    QuizChoiceLetter? CorrectChoice,
+    QuizVerdict? Verdict) : PlayerRoundView;

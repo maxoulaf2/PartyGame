@@ -40,6 +40,9 @@
     );
 
     const status = $derived.by(() => {
+        if (view.phase === 'Revealed') {
+            return null;
+        }
         if (!view.participating) {
             return fr.modes.quiz.player.nextQuestion;
         }
@@ -84,26 +87,60 @@
             </p>
         {/if}
     </header>
-    <ol class="choices" class:decided={chosen !== null} aria-label={fr.modes.quiz.choicesLabel}>
-        {#each view.choices as letter (letter)}
-            <li>
-                <!-- Chosen on click, never on pointerdown: a finger sliding over the pad must not
-                     answer by mistake. -->
-                <button
-                    type="button"
-                    class:chosen={chosen === letter}
-                    class:pending={pendingLetter === letter}
-                    disabled={!canAnswer}
-                    aria-pressed={chosen === letter}
-                    aria-label={fill(fr.modes.quiz.player.choiceLabel, { letter })}
-                    style:background={choiceColor(letter)}
-                    onclick={() => choose(letter)}
-                >
-                    <ChoiceMarker {letter} color="currentColor" />
-                </button>
-            </li>
-        {/each}
-    </ol>
+    {#if view.correctChoice !== null}
+        <!-- The verdict, told by an icon and a text, then the correct choice by its letter, its
+             shape and its color: its text is read on the TV screen. -->
+        <section class="reveal">
+            {#if view.verdict !== null}
+                <p class="verdict {view.verdict}">
+                    <svg viewBox="0 0 24 24" width="1.25em" height="1.25em" aria-hidden="true">
+                        {#if view.verdict === 'Correct'}
+                            <path d="M4 12.5l5 5L20 6.5" />
+                        {:else if view.verdict === 'Wrong'}
+                            <path d="M6 6l12 12M18 6L6 18" />
+                        {:else}
+                            <path d="M6 12h12" />
+                        {/if}
+                    </svg>
+                    {fr.modes.quiz.player.verdicts[view.verdict]}
+                </p>
+            {/if}
+            {#if view.verdict !== 'Correct'}
+                <p class="correct-label">{fr.modes.quiz.player.correctChoice}</p>
+            {/if}
+            <div
+                class="correct-choice"
+                role="img"
+                aria-label={fill(fr.modes.quiz.player.choiceLabel, {
+                    letter: view.correctChoice,
+                })}
+                style:background={choiceColor(view.correctChoice)}
+            >
+                <ChoiceMarker letter={view.correctChoice} color="currentColor" />
+            </div>
+        </section>
+    {:else}
+        <ol class="choices" class:decided={chosen !== null} aria-label={fr.modes.quiz.choicesLabel}>
+            {#each view.choices as letter (letter)}
+                <li>
+                    <!-- Chosen on click, never on pointerdown: a finger sliding over the pad must not
+                         answer by mistake. -->
+                    <button
+                        type="button"
+                        class:chosen={chosen === letter}
+                        class:pending={pendingLetter === letter}
+                        disabled={!canAnswer}
+                        aria-pressed={chosen === letter}
+                        aria-label={fill(fr.modes.quiz.player.choiceLabel, { letter })}
+                        style:background={choiceColor(letter)}
+                        onclick={() => choose(letter)}
+                    >
+                        <ChoiceMarker {letter} color="currentColor" />
+                    </button>
+                </li>
+            {/each}
+        </ol>
+    {/if}
     <p class="status" role="status">{status ?? ''}</p>
 </main>
 
@@ -187,6 +224,52 @@
     /* Sent, not confirmed yet. */
     button.pending {
         outline-style: dashed;
+    }
+
+    .reveal {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: var(--space-m);
+    }
+
+    .verdict {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        color: var(--color-text);
+        font-size: 2.25rem;
+        font-weight: 800;
+    }
+
+    .verdict svg {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .verdict.Correct {
+        color: var(--color-accent);
+    }
+
+    .correct-label {
+        font-size: 1.25rem;
+    }
+
+    .correct-choice {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: min(60vw, 14rem);
+        aspect-ratio: 1;
+        border-radius: var(--radius);
+        /* Dark on the light colors of the choices, as on the pad. */
+        color: var(--color-bg);
+        font-size: 3.5rem;
     }
 
     .status {

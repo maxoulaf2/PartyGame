@@ -231,9 +231,23 @@ export const fr = {
             timeLeft: 'Temps restant',
             // How many of the players taking part answered, never what.
             answered: 'Réponses : {answered} / {participants}',
+            // Marks the correct choice, next to an icon: never told by the color alone.
+            correct: 'Bonne réponse',
+            // A player taking part who did not choose before the answers were locked.
+            noAnswer: 'Pas de réponse',
+            // How many players chose a choice.
+            choiceAnswers: {
+                zero: 'aucune réponse',
+                one: '{count} réponse',
+                other: '{count} réponses',
+            },
             display: {
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
+                // Read by screen readers: the players who chose a choice, once revealed.
+                choicePlayersLabel: 'Joueurs ayant choisi {letter}',
+                // Heads the players taking part who did not answer, once revealed.
+                unanswered: 'Sans réponse',
             },
             player: {
                 // Read by screen readers: the buttons show a shape and a letter only.
@@ -243,23 +257,25 @@ export const fr = {
                 recorded: 'Réponse enregistrée',
                 // For a player who joined once the answers were open.
                 nextQuestion: 'Tu joueras à la question suivante',
+                // What the reveal tells the player, one per QuizVerdict.
+                verdicts: {
+                    Correct: 'Bonne réponse !',
+                    Wrong: 'Raté',
+                    NoAnswer: 'Pas de réponse',
+                },
+                // Heads the correct choice once revealed, unless the player chose it.
+                correctChoice: 'La bonne réponse',
             },
             gm: {
-                correct: 'Bonne réponse',
                 openAnswers: 'Ouvrir les réponses',
                 lockAnswers: 'Verrouiller maintenant',
+                revealAnswer: 'Révéler',
                 skipQuestion: 'Passer la question',
+                nextQuestion: 'Question suivante',
                 allAnswered: 'Tous les joueurs ont répondu',
                 answersLabel: 'Réponses des joueurs',
-                // A player taking part who has not chosen, while the answers are open, then once locked.
+                // A player taking part who has not chosen while the answers are open.
                 waitingAnswer: 'Pas encore de réponse',
-                noAnswer: 'Pas de réponse',
-                // How many players chose a choice.
-                choiceAnswers: {
-                    zero: 'aucune réponse',
-                    one: '{count} réponse',
-                    other: '{count} réponses',
-                },
             },
         },
     },

@@ -3,9 +3,6 @@ namespace PartyGame.Engine.Modes.Quiz;
 /// <summary>
 /// Phase of the question in progress in a quiz round.
 /// </summary>
-/// <remarks>
-/// The reveal comes with US-E08-04.
-/// </remarks>
 public enum QuizPhase
 {
     /// <summary>The question and its choices are shown, so that everybody reads them before the answers open.</summary>
@@ -16,4 +13,7 @@ public enum QuizPhase
 
     /// <summary>The answers are locked: no answer is accepted anymore.</summary>
     Locked,
+
+    /// <summary>The correct answer is revealed, with what each player chose.</summary>
+    Revealed,
 }

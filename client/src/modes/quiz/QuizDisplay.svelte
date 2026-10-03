@@ -1,21 +1,35 @@
 <script lang="ts">
     import Countdown from '../../shared/components/Countdown.svelte';
-    import type { QuizDisplayView } from '../../shared/contracts';
+    import type { QuizChoiceLetter, QuizDisplayView } from '../../shared/contracts';
+    import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
     import type { DisplayViewProps } from '../../shared/modeViews';
     import ChoiceMarker from './ChoiceMarker.svelte';
     import { choiceColor } from './choiceTheme';
+    import CorrectMark from './CorrectMark.svelte';
 
     let { view, round, clock }: DisplayViewProps<QuizDisplayView> = $props();
 
     // An image that cannot be loaded leaves the question on screen without it: never a broken
     // image on the TV.
     let failedImage = $state<string | null>(null);
-    const image = $derived(view.imageUrl !== failedImage ? view.imageUrl : null);
+    // Once revealed, the room looks at who chose what: the image gives way to the nicknames.
+    const image = $derived(
+        view.reveal === null && view.imageUrl !== failedImage ? view.imageUrl : null,
+    );
+
+    /** The players who chose `letter`, in order of arrival, once revealed. */
+    function chosenBy(letter: QuizChoiceLetter) {
+        return view.reveal?.answers.filter((answer) => answer.choice === letter) ?? [];
+    }
+
+    const unanswered = $derived(
+        view.reveal?.answers.filter((answer) => answer.choice === null) ?? [],
+    );
 </script>
 
-<main>
+<main class:revealed={view.reveal !== null}>
     <header>
         <p class="round">{round.title}</p>
         <div class="status">
@@ -25,7 +39,7 @@
                     count: view.questionCount,
                 })}
             </p>
-            {#if view.phase !== 'Presentation'}
+            {#if view.phase === 'Answering' || view.phase === 'Locked'}
                 <!-- How many answered, never what: the choices stay secret until the reveal. -->
                 <p class="answered">
                     {fill(fr.modes.quiz.answered, {
@@ -59,12 +73,53 @@
     </div>
     <ol class="choices" aria-label={fr.modes.quiz.choicesLabel}>
         {#each view.choices as choice (choice.letter)}
-            <li style:--choice-color={choiceColor(choice.letter)}>
-                <ChoiceMarker letter={choice.letter} />
-                <span class="text">{choice.text}</span>
+            {@const correct = view.reveal?.correctChoice === choice.letter}
+            <li
+                class:correct
+                class:wrong={view.reveal !== null && !correct}
+                style:--choice-color={choiceColor(choice.letter)}
+            >
+                <div class="choice">
+                    <ChoiceMarker letter={choice.letter} />
+                    <span class="text">{choice.text}</span>
+                    {#if correct}
+                        <span class="mark"><CorrectMark /></span>
+                    {/if}
+                </div>
+                {#if view.reveal !== null}
+                    {@const players = chosenBy(choice.letter)}
+                    <div class="chosen-by">
+                        <span class="count"
+                            >{countText(fr.modes.quiz.choiceAnswers, players.length)}</span
+                        >
+                        {#if players.length > 0}
+                            <ul
+                                class="nicknames"
+                                aria-label={fill(fr.modes.quiz.display.choicePlayersLabel, {
+                                    letter: choice.letter,
+                                })}
+                            >
+                                {#each players as player (player.playerId)}
+                                    <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
+                                    <li>{player.nickname}</li>
+                                {/each}
+                            </ul>
+                        {/if}
+                    </div>
+                {/if}
             </li>
         {/each}
     </ol>
+    {#if unanswered.length > 0}
+        <div class="unanswered">
+            <span class="count">{fr.modes.quiz.display.unanswered}</span>
+            <ul class="nicknames" aria-label={fr.modes.quiz.display.unanswered}>
+                {#each unanswered as player (player.playerId)}
+                    <li>{player.nickname}</li>
+                {/each}
+            </ul>
+        </div>
+    {/if}
 </main>
 
 <style>
@@ -156,10 +211,10 @@
         list-style: none;
     }
 
-    li {
+    .choices > li {
         display: flex;
-        align-items: center;
-        gap: 1.5vw;
+        flex-direction: column;
+        gap: 1vh;
         padding: 1.5vh 1.5vw;
         border-left: 0.6vw solid var(--choice-color);
         border-radius: var(--radius);
@@ -167,8 +222,109 @@
         line-height: 1.2;
     }
 
+    .choice {
+        display: flex;
+        align-items: center;
+        gap: 1.5vw;
+    }
+
     .text {
         min-width: 0;
         overflow-wrap: anywhere;
+    }
+
+    /* Once revealed, the question has been read: it makes room for the nicknames, and each
+       choice takes the whole width, its text on the left, who chose it on the right. A question
+       of 200 characters, four choices of 80 and 20 nicknames of 16 under the same choice fit. */
+    .revealed {
+        gap: 1.5vh;
+    }
+
+    .revealed .question {
+        flex: none;
+    }
+
+    .revealed h1 {
+        font-size: 2.25rem;
+    }
+
+    .revealed .choices {
+        grid-template-columns: 1fr;
+        gap: 1.5vh;
+    }
+
+    .revealed .choices > li {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 2vw;
+        padding: 0.6vh 1.5vw;
+    }
+
+    .revealed .choice {
+        flex: 0 0 34%;
+        flex-wrap: wrap;
+        gap: 0.5vh 1vw;
+        font-size: 1.9rem;
+        line-height: 1.15;
+    }
+
+    .revealed .text {
+        flex: 1 1 0;
+    }
+
+    /* On a line of its own, so that the text of the correct choice keeps its width. */
+    .mark {
+        flex-basis: 100%;
+    }
+
+    /* The correct choice stands out by an icon, a label and a frame; the others fade, their
+       nicknames staying readable. */
+    .correct {
+        outline: 0.3vw solid var(--color-text);
+    }
+
+    .wrong .choice {
+        opacity: 0.45;
+    }
+
+    /* The count, then the nicknames below it, over the whole width left: 20 nicknames of 16
+       characters fit under a single choice at a size readable from 3 m. */
+    .chosen-by,
+    .unanswered {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        gap: 0.4vh;
+        min-width: 0;
+        font-size: 1.9rem;
+        line-height: 1.1;
+    }
+
+    .count {
+        color: var(--color-text-muted);
+        font-weight: 700;
+    }
+
+    .nicknames {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4vh 0.6vw;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .nicknames li {
+        min-width: 0;
+        padding: 0 0.3em;
+        border-radius: var(--radius);
+        background: var(--color-bg);
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .unanswered {
+        flex: none;
+        padding: 0 1.5vw;
     }
 </style>

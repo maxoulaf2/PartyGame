@@ -20,4 +20,5 @@ namespace PartyGame.Contracts;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(QuizOpenAnswers), "quiz.openAnswers")]
 [JsonDerivedType(typeof(QuizLockAnswers), "quiz.lockAnswers")]
+[JsonDerivedType(typeof(QuizRevealAnswer), "quiz.revealAnswer")]
 public abstract record GameMasterRoundIntent(RoundId RoundId);

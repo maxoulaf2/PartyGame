@@ -3,4 +3,10 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type QuizQuestionPhase = 'Presentation' | 'Answering' | 'Locked' | 'Revealed';
+import type { RoundId } from './RoundId';
+
+export interface QuizRevealAnswer {
+    readonly type: 'quiz.revealAnswer';
+    readonly roundId: RoundId;
+    readonly questionNumber: number;
+}

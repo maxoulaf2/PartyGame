@@ -1,9 +1,11 @@
 <script lang="ts">
     import Countdown from '../../shared/components/Countdown.svelte';
     import type {
+        QuizChoiceLetter,
         QuizGameMasterView,
         QuizLockAnswers,
         QuizOpenAnswers,
+        QuizRevealAnswer,
     } from '../../shared/contracts';
     import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
@@ -11,6 +13,7 @@
     import type { GameMasterViewProps } from '../../shared/modeViews';
     import ChoiceMarker from './ChoiceMarker.svelte';
     import { choiceColor } from './choiceTheme';
+    import CorrectMark from './CorrectMark.svelte';
 
     let {
         view,
@@ -18,14 +21,24 @@
         clock,
         interactive,
         send,
-    }: GameMasterViewProps<QuizGameMasterView, QuizOpenAnswers | QuizLockAnswers> = $props();
+    }: GameMasterViewProps<
+        QuizGameMasterView,
+        QuizOpenAnswers | QuizLockAnswers | QuizRevealAnswer
+    > = $props();
 
     let sending = $state(false);
 
     const answeredCount = $derived(view.answers.filter((answer) => answer.choice !== null).length);
     const allAnswered = $derived(view.answers.length > 0 && answeredCount === view.answers.length);
 
-    async function act(type: 'quiz.openAnswers' | 'quiz.lockAnswers') {
+    /** The nicknames of the players who chose `letter`, in order of arrival. */
+    function chosenBy(letter: QuizChoiceLetter): string[] {
+        return view.answers
+            .filter((answer) => answer.choice === letter)
+            .map((answer) => answer.nickname);
+    }
+
+    async function act(type: 'quiz.openAnswers' | 'quiz.lockAnswers' | 'quiz.revealAnswer') {
         if (!interactive || sending) {
             return;
         }
@@ -60,25 +73,16 @@
                 <ChoiceMarker letter={choice.letter} />
                 <span class="text">{choice.text}</span>
                 {#if choice.correct}
-                    <!-- Told by an icon and a label, never by the color alone. -->
-                    <span class="answer">
-                        <svg viewBox="0 0 24 24" width="1.25em" height="1.25em" aria-hidden="true">
-                            <path
-                                d="M4 12.5l5 5L20 6.5"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="3"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            />
-                        </svg>
-                        {fr.modes.quiz.gm.correct}
-                    </span>
+                    <CorrectMark />
                 {/if}
                 {#if view.phase !== 'Presentation'}
                     <span class="count"
-                        >{countText(fr.modes.quiz.gm.choiceAnswers, choice.answerCount)}</span
+                        >{countText(fr.modes.quiz.choiceAnswers, choice.answerCount)}</span
                     >
+                {/if}
+                {#if view.phase === 'Revealed' && chosenBy(choice.letter).length > 0}
+                    <!-- The same distribution as on the TV screen, once revealed. -->
+                    <span class="chosen-by">{chosenBy(choice.letter).join(' · ')}</span>
                 {/if}
             </li>
         {/each}
@@ -103,7 +107,7 @@
                         <span class="none">
                             {view.phase === 'Answering'
                                 ? fr.modes.quiz.gm.waitingAnswer
-                                : fr.modes.quiz.gm.noAnswer}
+                                : fr.modes.quiz.noAnswer}
                         </span>
                     {/if}
                 </li>
@@ -111,7 +115,7 @@
         </ul>
     {/if}
 
-    <!-- Revealing comes with US-E08-04, skipping a question with US-E08-05. -->
+    <!-- Skipping a question and moving to the next one come with US-E08-05. -->
     <div class="actions">
         {#if view.phase === 'Presentation'}
             <button
@@ -129,8 +133,21 @@
             >
                 {fr.modes.quiz.gm.lockAnswers}
             </button>
+        {:else if view.phase === 'Locked'}
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => act('quiz.revealAnswer')}
+            >
+                {fr.modes.quiz.gm.revealAnswer}
+            </button>
         {/if}
-        <button type="button" class="secondary" disabled>{fr.modes.quiz.gm.skipQuestion}</button>
+        {#if view.phase === 'Revealed'}
+            <button type="button" disabled>{fr.modes.quiz.gm.nextQuestion}</button>
+        {:else}
+            <button type="button" class="secondary" disabled>{fr.modes.quiz.gm.skipQuestion}</button
+            >
+        {/if}
     </div>
 </div>
 
@@ -203,12 +220,9 @@
         overflow-wrap: anywhere;
     }
 
-    .answer {
-        display: inline-flex;
-        flex: none;
-        align-items: center;
-        gap: 0.25em;
-        font-weight: 700;
+    .chosen-by {
+        flex-basis: 100%;
+        overflow-wrap: anywhere;
     }
 
     .count,

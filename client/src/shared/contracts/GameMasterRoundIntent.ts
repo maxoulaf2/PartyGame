@@ -5,5 +5,6 @@
 
 import type { QuizLockAnswers } from './QuizLockAnswers';
 import type { QuizOpenAnswers } from './QuizOpenAnswers';
+import type { QuizRevealAnswer } from './QuizRevealAnswer';
 
-export type GameMasterRoundIntent = QuizLockAnswers | QuizOpenAnswers;
+export type GameMasterRoundIntent = QuizLockAnswers | QuizOpenAnswers | QuizRevealAnswer;
