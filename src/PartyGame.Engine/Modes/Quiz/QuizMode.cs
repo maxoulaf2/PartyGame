@@ -15,7 +15,8 @@ namespace PartyGame.Engine.Modes.Quiz;
 public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 {
     /// <summary>
-    /// The timer that locks the answers at the end of the countdown, unless every participant answered before.
+    /// The timer that locks the answers at the end of the countdown, unless every participant answered before: it starts
+    /// once the last choice shows.
     /// </summary>
     public static readonly TimerId AnswersTimer = new("quiz-answers");
 
@@ -72,8 +73,9 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Plays the intents of the quiz, each aimed at the question it names, and the part of it it shows, and locks the answers once every participant
-    /// answered, or when their timer elapses.
+    /// Plays the intents of the quiz, each aimed at the question it names, and the part of it it shows. The answers open
+    /// with the first choice shown, and lock once every participant answered and every choice is shown, or when their
+    /// timer elapses.
     /// </summary>
     /// <inheritdoc />
     public override RoundTransition Handle(QuizRound round, GameInput input, GameState game, GameContext context)
@@ -85,8 +87,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         return input switch
         {
             GameMasterRoundInput { RoundIntent: QuizShowQuestion show } => ShowQuestion(round, show),
-            GameMasterRoundInput { RoundIntent: QuizShowChoice show } => ShowChoice(round, show),
-            GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
+            GameMasterRoundInput { RoundIntent: QuizShowChoice show } => ShowChoice(round, show, game, context),
             GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal, game),
             GameMasterRoundInput { RoundIntent: QuizNextQuestion next } => NextQuestion(round, next, context),
             GameMasterRoundInput { RoundIntent: QuizSkipQuestion skip } => SkipQuestion(round, skip, context),
@@ -107,10 +108,11 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             round.Descriptor.Questions.Length,
             PhaseOf(round),
             [.. ShownChoicesOf(round).Select(shown => shown.Letter)],
+            round.ShownChoiceCount,
             CloseTimeOf(round),
 
-            // Whoever is registered during the presentation takes part once the answers open.
-            round.Phase == QuizPhase.Presentation || round.Participants.Contains(player.Id),
+            // Whoever is registered before the first choice shows takes part once it opens the answers.
+            !AnswersOpened(round) || round.Participants.Contains(player.Id),
             round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null,
             round.Phase == QuizPhase.Revealed ? CorrectLetterOf(round) : null,
             round.Phase == QuizPhase.Revealed ? VerdictOf(round, player.Id) : null,
@@ -203,9 +205,11 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 
     /// <summary>
     /// Shows the next choice of the question presented on the TV screen, once the question and the choices before it are
-    /// shown: the intent names it, so that a request sent twice shows it once.
+    /// shown: the intent names it, so that a request sent twice shows it once. The players may choose it at once. The
+    /// first choice opens the answers to the players registered now; the last one starts their countdown, or locks them
+    /// if every participant answered already.
     /// </summary>
-    private static RoundTransition ShowChoice(QuizRound round, QuizShowChoice show)
+    private static RoundTransition ShowChoice(QuizRound round, QuizShowChoice show, GameState game, GameContext context)
     {
         RejectionReason? rejection =
             show.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
@@ -213,38 +217,30 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             : (int)show.Choice < 0 || (int)show.Choice >= round.ChoiceOrder.Length ? RejectionReason.ChoiceUnknown
             : !round.QuestionShown || (int)show.Choice != round.ShownChoiceCount ? RejectionReason.PresentationStepMismatch
             : null;
-        return rejection is { } reason
-            ? RoundTransition.Rejected(round, reason)
-            : new(round with { ShownChoiceCount = round.ShownChoiceCount + 1 }, []);
-    }
-
-    /// <summary>
-    /// Opens the answers of the question presented to the players registered now, until the end of its countdown.
-    /// </summary>
-    private static RoundTransition OpenAnswers(QuizRound round, QuizOpenAnswers open, GameState game, GameContext context)
-    {
-        if (open.QuestionNumber != round.QuestionNumber)
+        if (rejection is { } reason)
         {
-            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+            return RoundTransition.Rejected(round, reason);
         }
 
-        if (round.Phase != QuizPhase.Presentation)
+        var shown = round with { ShownChoiceCount = round.ShownChoiceCount + 1 };
+        if (!AnswersOpened(round))
         {
-            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
+            // Fixed now, so that the last answer expected is known: a player who joins later plays the next question.
+            shown = shown with { Participants = [.. game.Players.Select(player => player.Id)] };
+        }
+
+        if (shown.ShownChoiceCount < shown.ChoiceOrder.Length)
+        {
+            return new(shown, []);
+        }
+
+        if (EverybodyAnswered(shown))
+        {
+            return new(shown with { Phase = QuizPhase.Locked }, []);
         }
 
         var closeAt = context.Now.AddSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds);
-        var opened = round with
-        {
-            Phase = QuizPhase.Answering,
-
-            // Whatever the TV screen still hides shows now: the players answer knowing every choice.
-            QuestionShown = true,
-            ShownChoiceCount = round.ChoiceOrder.Length,
-            AnswersCloseAt = closeAt,
-            Participants = [.. game.Players.Select(player => player.Id)],
-        };
-        return new(opened, [new ScheduleTimer(AnswersTimer, closeAt)]);
+        return new(shown with { Phase = QuizPhase.Answering, AnswersCloseAt = closeAt }, [new ScheduleTimer(AnswersTimer, closeAt)]);
     }
 
     /// <summary>
@@ -272,15 +268,15 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 
     /// <summary>
     /// The points of a correct answer: those of the round, plus its speed bonus in proportion to the time left when the
-    /// answer was received, rounded to the nearest integer. Computed in integers, so that the result is exact and
-    /// reproducible.
+    /// answer was received, rounded to the nearest integer: the whole bonus before the countdown starts, while the choices
+    /// show. Computed in integers, so that the result is exact and reproducible.
     /// </summary>
     private static int PointsFor(QuizRound round, QuizAnswer answer)
     {
         var duration = TimeSpan.FromSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds).Ticks;
 
-        // Kept within the countdown: the hub may stamp an answer just before the loop handles the opening.
-        var left = Math.Clamp((round.AnswersCloseAt!.Value - answer.ReceivedAt).Ticks, 0, duration);
+        // Kept within the countdown, which never started when everybody answered before the last choice showed.
+        var left = round.AnswersCloseAt is { } closeAt ? Math.Clamp((closeAt - answer.ReceivedAt).Ticks, 0, duration) : duration;
         var bonus = ((2 * round.Descriptor.SpeedBonus * left) + duration) / (2 * duration);
         return round.Descriptor.Points + (int)bonus;
     }
@@ -353,19 +349,21 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Records the first answer of a participant, received before the answers close, and locks the answers once every
-    /// participant answered: nobody is left to wait for.
+    /// Records the first answer of a participant to a choice shown, received before the answers close, and locks the
+    /// answers once every participant answered during the countdown: nobody is left to wait for. Before it, the last choice
+    /// shown locks them.
     /// </summary>
     private static RoundTransition SubmitAnswer(QuizRound round, PlayerId playerId, QuizSubmitAnswer answer, DateTimeOffset receivedAt)
     {
         RejectionReason? rejection =
             answer.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
-            : round.Phase != QuizPhase.Answering ? RejectionReason.PhaseMismatch
+            : !AnswersOpen(round) ? RejectionReason.PhaseMismatch
 
             // Received once closed, although the loop has not handled the timer yet: the time of reception decides.
             : receivedAt >= round.AnswersCloseAt ? RejectionReason.AnswerTooLate
             : !round.Participants.Contains(playerId) ? RejectionReason.NotParticipating
             : (int)answer.Choice < 0 || (int)answer.Choice >= round.ChoiceOrder.Length ? RejectionReason.ChoiceUnknown
+            : (int)answer.Choice >= round.ShownChoiceCount ? RejectionReason.ChoiceHidden
             : round.Answers.ContainsKey(playerId) ? RejectionReason.AlreadyAnswered
             : null;
         if (rejection is { } reason)
@@ -374,10 +372,26 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         }
 
         var answered = round with { Answers = round.Answers.Add(playerId, new QuizAnswer(answer.Choice, receivedAt)) };
-        return answered.Answers.Count == answered.Participants.Length
+        return answered.Phase == QuizPhase.Answering && EverybodyAnswered(answered)
             ? new(answered with { Phase = QuizPhase.Locked }, [new CancelTimer(AnswersTimer)])
             : new(answered, []);
     }
+
+    /// <summary>
+    /// Whether the answers of the question in progress opened, with its first choice shown, even if they are locked since.
+    /// </summary>
+    private static bool AnswersOpened(QuizRound round) => round.Phase != QuizPhase.Presentation || round.ShownChoiceCount > 0;
+
+    /// <summary>
+    /// Whether the players may answer the question in progress: from its first choice shown until the answers lock.
+    /// </summary>
+    private static bool AnswersOpen(QuizRound round) =>
+        round.Phase == QuizPhase.Answering || (round.Phase == QuizPhase.Presentation && round.ShownChoiceCount > 0);
+
+    /// <summary>
+    /// Whether every participant answered the question in progress: nobody is left to wait for.
+    /// </summary>
+    private static bool EverybodyAnswered(QuizRound round) => round.Answers.Count == round.Participants.Length;
 
     /// <summary>
     /// The choices of the question in progress in the order shown, each with its letter.
@@ -422,7 +436,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         [.. ShownChoicesOf(round).Take(round.ShownChoiceCount).Select(shown => new QuizChoiceView(shown.Letter, shown.Choice.Text))];
 
     /// <summary>
-    /// When the answers close, while they are open: the screens count down to it.
+    /// When the answers close, while their countdown runs: the screens count down to it.
     /// </summary>
     private static long? CloseTimeOf(QuizRound round) =>
         round.Phase == QuizPhase.Answering ? round.AnswersCloseAt?.ToUnixTimeMilliseconds() : null;

@@ -5,7 +5,6 @@
         QuizChoiceLetter,
         QuizGameMasterView,
         QuizNextQuestion,
-        QuizOpenAnswers,
         QuizRevealAnswer,
         QuizShowChoice,
         QuizShowQuestion,
@@ -24,12 +23,7 @@
         $props();
 
     type Intent =
-        | QuizShowQuestion
-        | QuizShowChoice
-        | QuizOpenAnswers
-        | QuizRevealAnswer
-        | QuizNextQuestion
-        | QuizSkipQuestion;
+        QuizShowQuestion | QuizShowChoice | QuizRevealAnswer | QuizNextQuestion | QuizSkipQuestion;
 
     let sending = $state(false);
     // The question the game master asked to skip, until they confirm or cancel. The dialog goes away
@@ -40,13 +34,15 @@
     const lastQuestion = $derived(view.questionNumber === view.questionCount);
 
     // The game master reads out the question, then each choice, and shows it on the TV screen
-    // right after: the choice to show next, once the question is.
+    // right after: the choice to show next, once the question is. The last one starts the
+    // countdown.
     const nextChoice = $derived(
         view.phase === 'Presentation' && view.questionShown
             ? (view.choices.find((choice) => !choice.shown) ?? null)
             : null,
     );
-    const presented = $derived(view.questionShown && view.choices.every((choice) => choice.shown));
+    // The players answer from the first choice shown, while the game master reads out the others.
+    const answersOpened = $derived(view.choices.some((choice) => choice.shown));
 
     const answeredCount = $derived(view.answers.filter((answer) => answer.choice !== null).length);
     const allAnswered = $derived(view.answers.length > 0 && answeredCount === view.answers.length);
@@ -132,7 +128,7 @@
                 {#if !choice.shown}
                     <span class="hidden-label">{fr.modes.quiz.gm.hiddenOnDisplay}</span>
                 {/if}
-                {#if view.phase !== 'Presentation'}
+                {#if choice.shown}
                     <span class="count"
                         >{countText(fr.modes.quiz.choiceAnswers, choice.answerCount)}</span
                     >
@@ -145,7 +141,7 @@
         {/each}
     </ol>
 
-    {#if view.phase !== 'Presentation'}
+    {#if answersOpened}
         <p class="answered" role="status">
             {fill(fr.modes.quiz.answered, {
                 answered: answeredCount,
@@ -163,7 +159,7 @@
                             <ChoiceMarker letter={answer.choice} />
                         {:else}
                             <span class="none">
-                                {view.phase === 'Answering'
+                                {view.phase === 'Answering' || view.phase === 'Presentation'
                                     ? fr.modes.quiz.gm.waitingAnswer
                                     : fr.modes.quiz.noAnswer}
                             </span>
@@ -201,15 +197,6 @@
                     {fill(fr.modes.quiz.gm.showChoice, { letter })}
                 </button>
             {/if}
-            <!-- Always offered: it shows at once whatever the TV screen still hides. -->
-            <button
-                type="button"
-                class:secondary={!presented}
-                disabled={!interactive || sending}
-                onclick={() => step('quiz.openAnswers')}
-            >
-                {fr.modes.quiz.gm.openAnswers}
-            </button>
         {:else if view.phase === 'Locked'}
             <button
                 type="button"

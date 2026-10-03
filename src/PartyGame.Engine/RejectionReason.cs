@@ -71,9 +71,9 @@ public enum RejectionReason
     QuestionMismatch,
 
     /// <summary>
-    /// The question in progress is not in the phase the intent acts in: answers opened twice, a part of the question
-    /// shown once they are open, an answer while they are not open, a reveal before they are locked, a move to the next
-    /// question before the reveal, or a question skipped once revealed.
+    /// The question in progress is not in the phase the intent acts in: a part of the question shown once every choice is,
+    /// an answer while the answers are not open, a reveal before they are locked, a move to the next question before the
+    /// reveal, or a question skipped once revealed.
     /// </summary>
     PhaseMismatch,
 
@@ -93,6 +93,11 @@ public enum RejectionReason
 
     /// <summary>The intent names a choice the question does not have.</summary>
     ChoiceUnknown,
+
+    /// <summary>
+    /// The player chose a choice the TV screen does not show yet: their phone unlocks it only once the game master shows it.
+    /// </summary>
+    ChoiceHidden,
 
     /// <summary>
     /// The game master shows a part of the question presented that is not the next one to show: already shown, for

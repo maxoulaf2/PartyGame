@@ -2,7 +2,8 @@ namespace PartyGame.Contracts.Quiz;
 
 /// <summary>
 /// The game master shows on the TV screen the next choice of the question presented, once they have read it aloud: the
-/// choices show one by one, in the order of their letters, after the question.
+/// choices show one by one, in the order of their letters, after the question. The players may choose it at once: the
+/// first choice opens the answers, and the last one starts their countdown, unless every participant answered already.
 /// </summary>
 /// <param name="RoundId">The round the intent is aimed at.</param>
 /// <param name="QuestionNumber">

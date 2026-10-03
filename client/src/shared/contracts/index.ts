@@ -44,7 +44,6 @@ export type * from './QuizGameMasterAnswer';
 export type * from './QuizGameMasterChoice';
 export type * from './QuizGameMasterView';
 export type * from './QuizNextQuestion';
-export type * from './QuizOpenAnswers';
 export type * from './QuizPlayerView';
 export type * from './QuizQuestionPhase';
 export type * from './QuizRevealAnswer';

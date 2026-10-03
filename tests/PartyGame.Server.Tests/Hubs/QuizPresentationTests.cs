@@ -79,7 +79,7 @@ public sealed class QuizPresentationTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task OpenAnswers_ChoicesHidden_ShowsThemAllOnTheDisplay()
+    public async Task ShowChoice_Last_StartsTheCountdownOnTheDisplay()
     {
         // Given
         await using var display = await HubClients.ConnectAsync(_factory);
@@ -88,16 +88,18 @@ public sealed class QuizPresentationTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A));
         await FlushAsync(display);
         using var toDisplay = new ReceivedSnapshots(display);
 
         // When
-        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.B));
 
         // Then
         await FlushAsync(display);
         var view = Assert.IsType<QuizDisplayView>(Assert.Single(toDisplay.Display).RoundView);
         Assert.Equal(QuizQuestionPhase.Answering, view.Phase);
+        Assert.NotNull(view.AnswersCloseAt);
         Assert.Equal(["Oui", "Non"], view.Choices.Select(c => c.Text));
     }
 

@@ -36,13 +36,23 @@ function pointsText(points: number): string {
     return countText(fr.game.points, points);
 }
 
+/** The game master shows the question, then its two choices: the last one starts the countdown. */
+async function showWholeQuestion(page: Page): Promise<void> {
+    await page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion }).click();
+    for (const letter of ['A', 'B']) {
+        await page
+            .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter }) })
+            .click();
+    }
+}
+
 function choicesOf(page: Page) {
     return page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem');
 }
 
 /**
- * The phone is an answer pad: a button per choice, waiting for the answers to open, and neither
- * the question nor the texts of the choices, read on the TV screen.
+ * The phone is an answer pad: a button per choice, each waiting for the TV screen to show it, and
+ * neither the question nor the texts of the choices, read on the TV screen.
  */
 async function expectQuestionOnPhone(phone: Page, question: string, progress: string) {
     await expect(phone.getByText(progress)).toBeVisible();
@@ -105,7 +115,6 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         `B 8 ${fr.modes.quiz.correct} ${fr.modes.quiz.gm.hiddenOnDisplay}`,
     ]);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion })).toBeVisible();
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeVisible();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeVisible();
     await expect(start).toHaveCount(0);
     // The pack is fixed: neither the list of packs nor their reload are offered anymore.
@@ -123,23 +132,15 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(display.getByRole('heading')).toHaveCount(0);
     await expect(choicesOf(display)).toHaveCount(0);
 
-    // The game master reads out the question, then each choice, and shows it right after.
+    // The game master reads out the question, then shows it.
     await page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion }).click();
     await expect(display.getByRole('heading', { name: question })).toBeVisible();
     await expect(choicesOf(display)).toHaveCount(0);
-    await page
-        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) })
-        .click();
-    await expect(choicesOf(display)).toHaveText(['A 6']);
-    await page
-        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'B' }) })
-        .click();
-    await expect(choicesOf(display)).toHaveText(['A 6', 'B 8']);
-    await expect(choicesOf(page)).toHaveText(['A 6', `B 8 ${fr.modes.quiz.correct}`]);
 
     await expectQuestionOnPhone(phone, question, progress);
 
-    // Registration stays open: a late phone joins during the presentation, and sees the question.
+    // Registration stays open: late phones join during the presentation, and see the question.
+    // Two of them take part: one answers, the other lets the time run out.
     const latePhone = await joinOnNewPhone(browser, baseURL, lateNickname);
     await expectQuestionOnPhone(latePhone, question, progress);
     await expect(
@@ -147,29 +148,37 @@ test('the game master plays a whole game, from the choice of the pack to the fin
             .getByRole('list', { name: fr.gm.playerListLabel })
             .getByText(lateNickname, { exact: true }),
     ).toBeVisible();
-
-    for (const other of [display, phone, latePhone]) {
-        await expect(other.getByText(fr.modes.quiz.correct)).toHaveCount(0);
-    }
-
-    // Two more phones take part: one answers, the other lets the time run out.
     const thirdNickname = uniqueNickname('Léa');
     const silentNickname = uniqueNickname('Noé');
     const thirdPhone = await joinOnNewPhone(browser, baseURL, thirdNickname);
     const silentPhone = await joinOnNewPhone(browser, baseURL, silentNickname);
     await expectQuestionOnPhone(silentPhone, question, progress);
 
-    // The game master opens the answers: the countdown starts on every screen.
-    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    for (const other of [display, phone, latePhone]) {
+        await expect(other.getByText(fr.modes.quiz.correct)).toHaveCount(0);
+    }
+
+    // The game master reads out the first choice and shows it: the answers open, its button
+    // unlocking on the phones, the next one waiting for its own turn.
+    await page
+        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) })
+        .click();
+    await expect(choicesOf(display)).toHaveText(['A 6']);
+    await expect(choiceButton(latePhone, 'A')).toBeEnabled();
+    await expect(choiceButton(latePhone, 'B')).toBeDisabled();
     const answers = page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel });
     await expect(answers).toBeVisible();
     // Every registered player takes part, those of the other tests included, connected or not.
     const participants = await answers.getByRole('listitem').count();
     expect(participants).toBeGreaterThanOrEqual(4);
-    for (const screen of [display, phone, page]) {
-        await expect(screen.getByRole('timer')).toBeVisible();
-    }
     await expect(display.getByText(answeredText(0, participants))).toBeVisible();
+
+    // A player answers without waiting for the other choices: no countdown runs yet.
+    await answer(latePhone, 'A');
+    await expect(display.getByText(answeredText(1, participants))).toBeVisible();
+    for (const screen of [display, phone, page]) {
+        await expect(screen.getByRole('timer')).toHaveCount(0);
+    }
 
     // A phone that joins now plays from the next question.
     const tooLateNickname = uniqueNickname('Tom');
@@ -177,9 +186,17 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toBeVisible();
     await expect(choiceButton(tooLatePhone, 'A')).toBeDisabled();
 
-    // Three players answer: each choice shows at once, then is confirmed by the server.
+    // The last choice shown, the countdown starts on every screen.
+    await page
+        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'B' }) })
+        .click();
+    await expect(choicesOf(display)).toHaveText(['A 6', 'B 8']);
+    for (const screen of [display, phone, page]) {
+        await expect(screen.getByRole('timer')).toBeVisible();
+    }
+
+    // Two more players answer: each choice shows at once, then is confirmed by the server.
     await answer(phone, 'B');
-    await answer(latePhone, 'A');
     await answer(thirdPhone, 'B');
     await expect(display.getByText(answeredText(3, participants))).toBeVisible();
     // The TV screen tells how many answered, never what.
@@ -290,12 +307,15 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     }
     await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toHaveCount(0);
 
-    // The game master opens the answers without showing the question first: the TV screen shows
-    // it whole at once. Then they skip it after confirming: the third one follows on every
-    // interface, numbered after the skipped one, and nothing tells about it.
-    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    // The game master shows the question and its first choice, which a player chooses at once.
+    // Then they skip it after confirming: the third one follows on every interface, numbered
+    // after the skipped one, and nothing tells about it.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion }).click();
+    await page
+        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) })
+        .click();
     await expect(display.getByRole('heading', { name: second })).toBeVisible();
-    await expect(choicesOf(display)).toHaveCount(2);
+    await expect(choicesOf(display)).toHaveCount(1);
     await answer(tooLatePhone, 'A');
     const skipDialog = page.getByRole('dialog', {
         name: fill(fr.modes.quiz.gm.skipConfirm.title, { number: 2 }),
@@ -327,7 +347,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     const flakyNickname = uniqueNickname('Eva');
     const flaky = await joinWithRelayedNetwork(browser, baseURL, flakyNickname);
     await expectQuestionOnPhone(flaky.phone, third, thirdProgress);
-    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await showWholeQuestion(page);
     // Listed once the console shows the opened answers: every participant is listed with it.
     await expect(answers.getByRole('listitem').filter({ hasText: flakyNickname })).toBeVisible();
     const thirdParticipants = await answers.getByRole('listitem').count();
@@ -412,7 +432,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         display.getByText(fill(fr.modes.quiz.display.upcoming, { number: 1 }), { exact: true }),
     ).toBeVisible();
     await expectQuestionOnPhone(phone, last, lastProgress);
-    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await showWholeQuestion(page);
     await expect(display.getByRole('heading', { name: last })).toBeVisible();
     await answer(phone, 'B');
     await answer(latePhone, 'B');
@@ -469,7 +489,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         `${rankText(fr.game.rank, 1)} ${nickname} ${pointsText(2000)}`,
     );
     await expect(page.getByRole('button', { name: fr.gm.nextRound.action })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion })).toHaveCount(0);
 
     // Registration stays open: a phone that joins now sees the end of the game, without a rank,
     // and the final ranking stays that of the game.

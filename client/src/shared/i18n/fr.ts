@@ -315,13 +315,12 @@ export const fr = {
             },
             gm: {
                 // The game master shows on the TV screen what they just read out: the question, then
-                // each choice in turn.
+                // each choice in turn, which the players may choose at once. The last one starts the
+                // countdown.
                 showQuestion: 'Afficher la question',
                 showChoice: 'Afficher la proposition {letter}',
                 // Marks the question, or a choice, the TV screen does not show yet.
                 hiddenOnDisplay: 'Pas encore affichée sur la TV',
-                // Shows at once what the TV screen still hides, then starts the countdown.
-                openAnswers: 'Ouvrir les réponses',
                 revealAnswer: 'Révéler',
                 skipQuestion: 'Passer la question',
                 // Asked before skipping: the answers received and the question are lost.

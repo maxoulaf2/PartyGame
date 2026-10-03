@@ -283,9 +283,9 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
         text: 'Quelle est la capitale de l’Australie ?',
         questionShown: true,
         choices: [
-            { letter: 'A', text: 'Sydney', correct: false, shown: true, answerCount: 0 },
-            { letter: 'B', text: 'Canberra', correct: true, shown: true, answerCount: 0 },
-            { letter: 'C', text: 'Melbourne', correct: false, shown: true, answerCount: 0 },
+            { letter: 'A', text: 'Sydney', correct: false, shown: false, answerCount: 0 },
+            { letter: 'B', text: 'Canberra', correct: true, shown: false, answerCount: 0 },
+            { letter: 'C', text: 'Melbourne', correct: false, shown: false, answerCount: 0 },
         ],
         answersCloseAt: null,
         answers: [],
@@ -306,20 +306,29 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
         .getByRole('listitem');
     // Told by a label, never by the color alone: only the correct choice has it.
     await expect(choices).toHaveText([
-        'A Sydney',
-        `B Canberra ${fr.modes.quiz.correct}`,
-        'C Melbourne',
+        `A Sydney ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+        `B Canberra ${fr.modes.quiz.correct} ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+        `C Melbourne ${fr.modes.quiz.gm.hiddenOnDisplay}`,
     ]);
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeEnabled();
+    await expect(
+        page.getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) }),
+    ).toBeEnabled();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeEnabled();
-    // Nothing to count before the answers open.
+    // Nothing to count before the answers open, with the first choice shown.
     await expect(page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel })).toHaveCount(0);
     await expect(page.getByRole('timer')).toHaveCount(0);
     await expect(page.getByRole('button', { name: fr.gm.start.action })).toHaveCount(0);
 });
 
-/** The question of the round in progress in presentation, the TV screen showing its first `shownCount` choices. */
-function presentationView(questionShown: boolean, shownCount: number): QuizGameMasterView {
+/**
+ * The question of the round in progress in presentation, the TV screen showing its first
+ * `shownCount` choices, and the players its answers wait for once the first one shows.
+ */
+function presentationView(
+    questionShown: boolean,
+    shownCount: number,
+    answers: QuizGameMasterView['answers'] = [],
+): QuizGameMasterView {
     return {
         type: 'quiz',
         questionNumber: 2,
@@ -338,10 +347,10 @@ function presentationView(questionShown: boolean, shownCount: number): QuizGameM
             text,
             correct,
             shown: index < shownCount,
-            answerCount: 0,
+            answerCount: answers.filter((answer) => answer.choice === letter).length,
         })),
         answersCloseAt: null,
-        answers: [],
+        answers,
     };
 }
 
@@ -361,8 +370,6 @@ test('/gm/ reads out the question before showing it on the TV screen', async ({ 
         `B Canberra ${fr.modes.quiz.correct} ${fr.modes.quiz.gm.hiddenOnDisplay}`,
         `C Melbourne ${fr.modes.quiz.gm.hiddenOnDisplay}`,
     ]);
-    // Opening the answers stays offered, to show everything at once.
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeEnabled();
     await expect(
         page.getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) }),
     ).toHaveCount(0);
@@ -396,25 +403,6 @@ test('/gm/ shows the next choice on the TV screen once read out', async ({ page 
                 choice: 'B',
             },
         ]);
-});
-
-test('/gm/ offers to open the answers alone once everything is shown', async ({ page }) => {
-    const hub = await serveGameMasterSnapshot(page, fakeRound(presentationView(true, 3)));
-
-    await openConsole(page);
-
-    await expect(page.getByText(fr.modes.quiz.gm.hiddenOnDisplay)).toHaveCount(0);
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion })).toHaveCount(0);
-    for (const letter of ['A', 'B', 'C']) {
-        await expect(
-            page.getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter }) }),
-        ).toHaveCount(0);
-    }
-    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
-
-    await expect
-        .poll(() => hub.roundIntents)
-        .toEqual([{ type: 'quiz.openAnswers', roundId: firstRound.roundId, questionNumber: 2 }]);
 });
 
 test('/gm/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
@@ -486,7 +474,38 @@ test('/gm/ follows what each player answers while the answers are open', async (
     // Only the countdown or the last answer locks them: the game master can only skip the question.
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeEnabled();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toHaveCount(0);
+});
+
+test('/gm/ follows the answers given while the choices show, before any countdown', async ({
+    page,
+}) => {
+    const view = presentationView(true, 2, [
+        { playerId: zoe, nickname: 'Zoé', choice: 'B', points: null },
+        { playerId: max, nickname: 'Max', choice: null, points: null },
+    ]);
+    await serveGameMasterSnapshot(page, fakeRound(view));
+
+    await openConsole(page);
+
+    await expect(
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 1, participants: 2 })),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel }).getByRole('listitem'),
+    ).toHaveText(['Zoé B', `Max ${fr.modes.quiz.gm.waitingAnswer}`]);
+    // Counted under the choices shown only: the players cannot choose the others yet.
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `A Sydney ${countText(fr.modes.quiz.choiceAnswers, 0)}`,
+        `B Canberra ${fr.modes.quiz.correct} ${countText(fr.modes.quiz.choiceAnswers, 1)}`,
+        `C Melbourne ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+    ]);
+    // The countdown starts with the last choice.
+    await expect(page.getByRole('timer')).toHaveCount(0);
+    await expect(
+        page.getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'C' }) }),
+    ).toBeEnabled();
 });
 
 test('/gm/ tells when every player taking part answered, which locks the answers', async ({

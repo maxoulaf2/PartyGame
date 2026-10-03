@@ -25,19 +25,23 @@
         pending,
     }: PlayerViewProps<QuizPlayerView, QuizSubmitAnswer> = $props();
 
+    // The answers open with the first choice the TV screen shows: each button unlocks as its
+    // choice shows, so that the players may answer while the game master reads out the others.
+    const answersOpen = $derived(
+        view.phase === 'Answering' || (view.phase === 'Presentation' && view.shownChoiceCount > 0),
+    );
+
     // The choice sent and not acknowledged yet, shown at once, even after a reload. The snapshot
     // always wins: once it holds the answer, or leaves the answers, the pending choice no longer
     // shows.
     const pendingLetter = $derived(
-        view.phase === 'Answering' && view.answer === null
+        answersOpen && view.answer === null
             ? (pending.find((intent) => intent.questionNumber === view.questionNumber)?.choice ??
                   null)
             : null,
     );
     const chosen = $derived(view.answer ?? pendingLetter);
-    const canAnswer = $derived(
-        interactive && view.phase === 'Answering' && view.participating && chosen === null,
-    );
+    const canAnswer = $derived(interactive && answersOpen && view.participating && chosen === null);
 
     const status = $derived.by(() => {
         if (view.phase === 'Revealed') {
@@ -56,8 +60,13 @@
         return pendingLetter !== null ? fr.modes.quiz.player.pending : null;
     });
 
-    function choose(letter: QuizChoiceLetter) {
-        if (!canAnswer) {
+    /** Whether the TV screen shows the choice at `index`, in the order of the letters. */
+    function shown(index: number): boolean {
+        return index < view.shownChoiceCount;
+    }
+
+    function choose(letter: QuizChoiceLetter, index: number) {
+        if (!canAnswer || !shown(index)) {
             return;
         }
         send({
@@ -126,7 +135,7 @@
         </section>
     {:else}
         <ol class="choices" class:decided={chosen !== null} aria-label={fr.modes.quiz.choicesLabel}>
-            {#each view.choices as letter (letter)}
+            {#each view.choices as letter, index (letter)}
                 <li>
                     <!-- Chosen on click, never on pointerdown: a finger sliding over the pad must not
                          answer by mistake. -->
@@ -134,11 +143,11 @@
                         type="button"
                         class:chosen={chosen === letter}
                         class:pending={pendingLetter === letter}
-                        disabled={!canAnswer}
+                        disabled={!canAnswer || !shown(index)}
                         aria-pressed={chosen === letter}
                         aria-label={fill(fr.modes.quiz.player.choiceLabel, { letter })}
                         style:background={choiceColor(letter)}
-                        onclick={() => choose(letter)}
+                        onclick={() => choose(letter, index)}
                     >
                         <ChoiceMarker {letter} color="currentColor" />
                     </button>
@@ -209,7 +218,7 @@
         touch-action: manipulation;
     }
 
-    /* Waiting for the answers to open, or another choice taken: dimmed, still recognizable. */
+    /* Not on the TV screen yet, or another choice taken: dimmed, still recognizable. */
     button:disabled {
         opacity: 0.6;
         cursor: default;

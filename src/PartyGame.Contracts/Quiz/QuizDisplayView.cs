@@ -19,20 +19,20 @@ namespace PartyGame.Contracts.Quiz;
 /// </param>
 /// <param name="Choices">
 /// The choices shown so far, in the order shown, which is the order of their letters: they show one by one during the
-/// presentation, all of them once the answers open.
+/// presentation, the countdown starting with the last one.
 /// </param>
 /// <param name="ChoiceCount">
 /// How many choices the question has, shown or not, so that the screen keeps their room: the phones show as many
-/// buttons from the start.
+/// buttons from the start, each unlocked as its choice shows.
 /// </param>
 /// <param name="AnswersCloseAt">
-/// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while they are open;
+/// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while their countdown runs;
 /// <see langword="null"/> otherwise. The countdown is computed from it and from the offset of the clock.
 /// </param>
-/// <param name="AnsweredCount">How many players taking part answered: 0 until the answers open.</param>
+/// <param name="AnsweredCount">How many players taking part answered: 0 until the answers open, with the first choice.</param>
 /// <param name="ParticipantCount">
-/// How many players take part in the question, the players registered when its answers opened, connected or not: 0 until
-/// the answers open.
+/// How many players take part in the question, the players registered when its answers opened with its first choice,
+/// connected or not: 0 until the answers open.
 /// </param>
 /// <param name="Reveal">
 /// The correct choice and what each player chose, once the answer is revealed; <see langword="null"/> before.
