@@ -1,11 +1,14 @@
 <script lang="ts">
+    import ConfirmDialog from '../../shared/components/ConfirmDialog.svelte';
     import Countdown from '../../shared/components/Countdown.svelte';
     import type {
         QuizChoiceLetter,
         QuizGameMasterView,
         QuizLockAnswers,
+        QuizNextQuestion,
         QuizOpenAnswers,
         QuizRevealAnswer,
+        QuizSkipQuestion,
     } from '../../shared/contracts';
     import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
@@ -15,18 +18,19 @@
     import { choiceColor } from './choiceTheme';
     import CorrectMark from './CorrectMark.svelte';
 
-    let {
-        view,
-        round,
-        clock,
-        interactive,
-        send,
-    }: GameMasterViewProps<
-        QuizGameMasterView,
-        QuizOpenAnswers | QuizLockAnswers | QuizRevealAnswer
-    > = $props();
+    let { view, round, clock, interactive, send }: GameMasterViewProps<QuizGameMasterView, Intent> =
+        $props();
+
+    type Intent =
+        QuizOpenAnswers | QuizLockAnswers | QuizRevealAnswer | QuizNextQuestion | QuizSkipQuestion;
 
     let sending = $state(false);
+    // The question the game master asked to skip, until they confirm or cancel. The dialog goes away
+    // on its own once the round moves on, for instance by a second console.
+    let skipping = $state<number | null>(null);
+    const confirmingSkip = $derived(skipping === view.questionNumber && view.phase !== 'Revealed');
+
+    const lastQuestion = $derived(view.questionNumber === view.questionCount);
 
     const answeredCount = $derived(view.answers.filter((answer) => answer.choice !== null).length);
     const allAnswered = $derived(view.answers.length > 0 && answeredCount === view.answers.length);
@@ -38,15 +42,20 @@
             .map((answer) => answer.nickname);
     }
 
-    async function act(type: 'quiz.openAnswers' | 'quiz.lockAnswers' | 'quiz.revealAnswer') {
+    async function act(type: Intent['type'], questionNumber = view.questionNumber) {
         if (!interactive || sending) {
             return;
         }
         sending = true;
         // Each intent names its question: sent again, or by a second console, it changes nothing.
         // A lost connection is for the connection indicator to show.
-        await send({ type, roundId: round.roundId, questionNumber: view.questionNumber });
+        await send({ type, roundId: round.roundId, questionNumber });
         sending = false;
+    }
+
+    async function skip(questionNumber: number) {
+        await act('quiz.skipQuestion', questionNumber);
+        skipping = null;
     }
 </script>
 
@@ -115,7 +124,6 @@
         </ul>
     {/if}
 
-    <!-- Skipping a question and moving to the next one come with US-E08-05. -->
     <div class="actions">
         {#if view.phase === 'Presentation'}
             <button
@@ -143,13 +151,38 @@
             </button>
         {/if}
         {#if view.phase === 'Revealed'}
-            <button type="button" disabled>{fr.modes.quiz.gm.nextQuestion}</button>
-        {:else}
-            <button type="button" class="secondary" disabled>{fr.modes.quiz.gm.skipQuestion}</button
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => act('quiz.nextQuestion')}
             >
+                {lastQuestion ? fr.modes.quiz.gm.endRound : fr.modes.quiz.gm.nextQuestion}
+            </button>
+        {:else}
+            <button
+                type="button"
+                class="secondary"
+                disabled={!interactive || sending}
+                onclick={() => (skipping = view.questionNumber)}
+            >
+                {fr.modes.quiz.gm.skipQuestion}
+            </button>
         {/if}
     </div>
 </div>
+{#if confirmingSkip}
+    <ConfirmDialog
+        title={fill(fr.modes.quiz.gm.skipConfirm.title, { number: view.questionNumber })}
+        message={lastQuestion
+            ? fr.modes.quiz.gm.skipConfirm.lastMessage
+            : fr.modes.quiz.gm.skipConfirm.message}
+        confirmLabel={fr.modes.quiz.gm.skipConfirm.confirm}
+        cancelLabel={fr.modes.quiz.gm.skipConfirm.cancel}
+        confirmDisabled={!interactive || sending}
+        onconfirm={() => skip(view.questionNumber)}
+        oncancel={() => (skipping = null)}
+    />
+{/if}
 
 <style>
     .quiz {

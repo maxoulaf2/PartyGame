@@ -46,4 +46,10 @@ public sealed record QuizRound(QuizRoundDescriptor Descriptor, int QuestionIndex
     /// The answer of each participant who answered the question in progress: their first one only.
     /// </summary>
     public ImmutableDictionary<PlayerId, QuizAnswer> Answers { get; init; } = ImmutableDictionary<PlayerId, QuizAnswer>.Empty;
+
+    /// <summary>
+    /// The positions in <see cref="Descriptor"/> of the questions the game master skipped before their reveal, in order,
+    /// kept for the history of the round: they score nothing.
+    /// </summary>
+    public ImmutableArray<int> SkippedQuestions { get; init; } = [];
 }

@@ -1,5 +1,9 @@
 import type { Page } from '@playwright/test';
-import type { DisplaySnapshot, GameMasterSnapshot } from '../src/shared/contracts';
+import type {
+    DisplaySnapshot,
+    GameMasterRoundIntent,
+    GameMasterSnapshot,
+} from '../src/shared/contracts';
 
 // The JSON protocol of SignalR ends each message with the 0x1e record separator.
 const separator = '\u001e';
@@ -42,13 +46,15 @@ export function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Pro
  * demand, such as a lobby without any player, or a host on several networks.
  *
  * An address choice is handled as the server does: a candidate is advertised in a new snapshot,
- * anything else is refused. `chosen` records every address the console sent.
+ * anything else is refused. `chosen` records every address the console sent, and `roundIntents`
+ * every intent it sent to the round in progress, which changes nothing.
  */
 export async function serveGameMasterSnapshot(
     page: Page,
     snapshot: GameMasterSnapshot,
-): Promise<{ chosen: string[] }> {
+): Promise<{ chosen: string[]; roundIntents: GameMasterRoundIntent[] }> {
     const chosen: string[] = [];
+    const roundIntents: GameMasterRoundIntent[] = [];
     let current = snapshot;
     await serveSnapshot(page, 'ReceiveGameMasterSnapshot', snapshot, {
         ChooseAdvertisedAddress: ([request]) => {
@@ -60,8 +66,12 @@ export async function serveGameMasterSnapshot(
             current = { ...current, version: current.version + 1, joinAddress: address };
             return { result: { refusal: null }, snapshots: [current] };
         },
+        SendGameMasterRoundIntent: ([intent]) => {
+            roundIntents.push(intent as GameMasterRoundIntent);
+            return { result: null };
+        },
     });
-    return { chosen };
+    return { chosen, roundIntents };
 }
 
 async function serveSnapshot(

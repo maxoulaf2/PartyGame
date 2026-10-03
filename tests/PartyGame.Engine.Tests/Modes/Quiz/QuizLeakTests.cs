@@ -8,8 +8,8 @@ namespace PartyGame.Engine.Tests.Modes.Quiz;
 
 /// <summary>
 /// What the views of a quiz round may show to each viewer: the correct answer and the choices of the players to the game
-/// master only before the reveal, the choice of a player never to the other phones, the questions as they come, the
-/// paths of the images to nobody.
+/// master only before the reveal, the choice of a player never to the other phones, the questions as they come, a
+/// skipped question to nobody once the round moved on, the paths of the images to nobody.
 /// </summary>
 public sealed class QuizLeakTests
 {
@@ -41,6 +41,9 @@ public sealed class QuizLeakTests
             ("revealed without answer", QuizGames.Revealed(QuizGames.Started(_rounds, _players))),
             ("revealed with answers", QuizGames.Revealed(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.B), (3, QuizChoiceLetter.D))),
             ("revealed to a player who joined during the answers", RevealedAfterLateJoin()),
+            ("second question, after a revealed one", Next(QuizGames.Revealed(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.A)))),
+            ("second question, after a skipped one", Skip(QuizGames.Locked(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B)))),
+            ("second question answered, after a skipped one", QuizGames.Answering(Skip(QuizGames.Answering(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A))), (2, QuizChoiceLetter.B))),
         ],
         SecretsOf = SecretsOf,
         Pairs =
@@ -70,6 +73,15 @@ public sealed class QuizLeakTests
                 QuizGames.Revealed(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B), (1, QuizChoiceLetter.A)),
                 QuizGames.Revealed(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B)),
                 Audience.OtherPlayersThan("Zoé")),
+
+            // A skipped question leaves no trace: neither its correct answer nor what the players chose.
+            CorrectAnswerPair("correct answer of the skipped question", _rounds, state => Skip(QuizGames.Locked(state, (1, QuizChoiceLetter.A))), Audience.Everyone),
+            ChoicePair("choice of Zoé on the skipped question", (state, answers) => Skip(QuizGames.Locked(state, answers)), QuizChoiceLetter.A, QuizChoiceLetter.C, Audience.Everyone),
+            new SecretPair<GameState>(
+                "whether Zoé answered the skipped question",
+                Skip(QuizGames.Answering(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A))),
+                Skip(QuizGames.Answering(QuizGames.Started(_rounds, _players))),
+                Audience.Everyone),
         ],
     };
 
@@ -89,7 +101,8 @@ public sealed class QuizLeakTests
     private static SecretPair<GameState> CorrectAnswerPair(
         string name,
         ImmutableArray<QuizRoundDescriptor> rounds,
-        Func<GameState, GameState>? play = null)
+        Func<GameState, GameState>? play = null,
+        Audience? hiddenFrom = null)
     {
         play ??= state => state;
         var moved = rounds[0] with { Questions = rounds[0].Questions.SetItem(0, QuizGames.WithCorrectChoice(rounds[0].Questions[0], 2)) };
@@ -97,7 +110,7 @@ public sealed class QuizLeakTests
             name,
             play(QuizGames.Started(rounds, _players)),
             play(QuizGames.Started([moved], _players)),
-            Audience.AllButGameMaster);
+            hiddenFrom ?? Audience.AllButGameMaster);
     }
 
     /// <summary>
@@ -125,6 +138,16 @@ public sealed class QuizLeakTests
         state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
         return QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
     }
+
+    /// <summary>
+    /// The same game, moved on from its revealed question to the next one.
+    /// </summary>
+    private static GameState Next(GameState state) => QuizGames.Accepted(state, QuizGames.NextQuestion(state));
+
+    /// <summary>
+    /// The same game, its question in progress skipped for the next one.
+    /// </summary>
+    private static GameState Skip(GameState state) => QuizGames.Accepted(state, QuizGames.SkipQuestion(state));
 
     /// <summary>
     /// The same game, its answers locked by their timer rather than by the game master.

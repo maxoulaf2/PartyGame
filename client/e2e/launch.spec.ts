@@ -43,7 +43,7 @@ async function expectQuestionOnPhone(phone: Page, question: string, progress: st
     await expect(phone.getByText('araignée')).toHaveCount(0);
 }
 
-test('the game master starts the game, then the players answer its first question', async ({
+test('the game master starts the game, then plays the questions of its first round', async ({
     page,
     browser,
     baseURL,
@@ -76,7 +76,7 @@ test('the game master starts the game, then the players answer its first questio
     // The first question of the first round is presented on every interface, its correct answer
     // on the console only.
     const question = 'Combien de pattes a une araignée ?';
-    const progress = fill(fr.modes.quiz.question, { number: 1, count: 1 });
+    const progress = fill(fr.modes.quiz.question, { number: 1, count: 3 });
     await expect(
         page.getByText(fill(fr.game.round, { number: 1, count: playedPack.rounds.length })),
     ).toBeVisible();
@@ -204,7 +204,59 @@ test('the game master starts the game, then the players answer its first questio
         `${nickname} · ${thirdNickname}`,
     );
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toBeVisible();
+
+    // The game master moves on: the second question is presented on every interface, and the
+    // phone that joined too late for the first one takes part in it.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion }).click();
+    const second = 'Quelle planète est la plus proche du Soleil ?';
+    const secondProgress = fill(fr.modes.quiz.question, { number: 2, count: 3 });
+    await expect(page.getByRole('heading', { name: second })).toBeVisible();
+    await expect(display.getByRole('heading', { name: second })).toBeVisible();
+    await expect(display.getByText(secondProgress)).toBeVisible();
+    await expect(display.getByText(fr.modes.quiz.correct)).toHaveCount(0);
+    for (const other of [phone, latePhone, thirdPhone, silentPhone, tooLatePhone]) {
+        await expectQuestionOnPhone(other, second, secondProgress);
+        await expect(correctChoiceOn(other, 'B')).toHaveCount(0);
+    }
+    await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toHaveCount(0);
+
+    // The game master opens the answers, then skips the question after confirming: the third one
+    // follows on every interface, numbered after the skipped one, and nothing tells about it.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await answer(tooLatePhone, 'A');
+    const skipDialog = page.getByRole('dialog', {
+        name: fill(fr.modes.quiz.gm.skipConfirm.title, { number: 2 }),
+    });
+    await page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion }).click();
+    await skipDialog
+        .getByRole('button', { name: fr.modes.quiz.gm.skipConfirm.confirm, exact: true })
+        .click();
+    const third = 'Combien de côtés a un hexagone ?';
+    const thirdProgress = fill(fr.modes.quiz.question, { number: 3, count: 3 });
+    await expect(page.getByRole('heading', { name: third })).toBeVisible();
+    await expect(skipDialog).toHaveCount(0);
+    await expect(display.getByRole('heading', { name: third })).toBeVisible();
+    await expect(display.getByText(thirdProgress)).toBeVisible();
+    for (const screen of [display, tooLatePhone]) {
+        await expect(screen.getByRole('timer')).toHaveCount(0);
+        await expect(screen.getByText(second)).toHaveCount(0);
+    }
+    await expectQuestionOnPhone(tooLatePhone, third, thirdProgress);
+    for (const verdict of Object.values(verdicts)) {
+        await expect(tooLatePhone.getByText(verdict, { exact: true })).toHaveCount(0);
+    }
+
+    // The last question played, the console offers to end the round, which ends on every screen.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
+    await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toHaveCount(0);
+    await page.getByRole('button', { name: fr.modes.quiz.gm.endRound }).click();
+    await expect(page.getByRole('button', { name: fr.gm.nextRound.action })).toBeVisible();
+    await expect(page.getByRole('heading', { name: third })).toHaveCount(0);
+    for (const screen of [display, phone]) {
+        await expect(screen.getByText(thirdProgress)).toHaveCount(0);
+    }
 
     await Promise.all(
         [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, display].map((other) =>

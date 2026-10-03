@@ -5,7 +5,7 @@
 
 Le game master présente chaque question sur l'écran TV, ouvre les réponses, puis révèle la bonne. Les joueurs choisissent une proposition sur leur téléphone avant la fin d'un compte à rebours.
 
-> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03), puis la révélation (US-E08-04). Le passage d'une question à l'autre arrive avec US-E08-05, et les points avec E09 : d'ici là, une manche de quiz s'arrête sur sa première question, une fois sa réponse révélée.
+> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03), la révélation (US-E08-04), puis le passage d'une question à l'autre, la question passée et la fin de manche (US-E08-05). Les points arrivent avec E09.
 
 ## Règles
 
@@ -28,7 +28,9 @@ Le game master présente chaque question sur l'écran TV, ouvre les réponses, p
 | `Locked` | Plus aucune réponse n'est acceptée : la TV, les téléphones et la console affichent « Temps écoulé », chaque téléphone avec le choix de son joueur s'il en a fait un. | « Révéler » sur la console GM. |
 | `Revealed` | La TV encadre la bonne proposition, marquée d'une coche et de « Bonne réponse », et atténue les autres ; sous chacune, le nombre de joueurs qui l'ont choisie et leurs pseudos, puis les participants sans réponse. Chaque téléphone affiche son verdict (« Bonne réponse ! », « Raté » ou « Pas de réponse ») et la bonne proposition (lettre, forme et couleur) ; un joueur arrivé après l'ouverture voit la bonne proposition, sans verdict. La console GM montre la même répartition. Les points gagnés s'y ajouteront avec E09. | Le GM passe à la question suivante, ou termine la manche après la dernière. |
 
-Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`. Seule la console GM connaît la bonne réponse et le choix de chaque joueur avant la phase `Revealed` : un téléphone ne connaît que celui de son joueur, et la TV que le nombre de réponses. Après la révélation, la TV montre qui a choisi quoi, mais un téléphone ne connaît toujours que le choix et le verdict de son joueur.
+Après la révélation, la console GM propose « Question suivante », ou « Terminer la manche » sur la dernière question : la partie passe alors entre deux manches, ou se termine après la dernière.
+
+Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`, après confirmation : la question est abandonnée, les réponses reçues sont ignorées et personne ne marque de point, le compte à rebours s'arrête, et la question suivante est présentée, ou la manche se termine si c'était la dernière. La numérotation tient compte de la question passée (« Question 4/5 » après la 3 passée), et ni la TV ni les téléphones ne la mentionnent. Seule la console GM connaît la bonne réponse et le choix de chaque joueur avant la phase `Revealed` : un téléphone ne connaît que celui de son joueur, et la TV que le nombre de réponses. Après la révélation, la TV montre qui a choisi quoi, mais un téléphone ne connaît toujours que le choix et le verdict de son joueur.
 
 ## Format du descripteur
 

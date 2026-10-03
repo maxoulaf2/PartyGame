@@ -10,6 +10,14 @@
         {
           "text": "Combien de pattes a une araignée ?",
           "choices": [{ "text": "6" }, { "text": "8", "correct": true }]
+        },
+        {
+          "text": "Quelle planète est la plus proche du Soleil ?",
+          "choices": [{ "text": "Mercure", "correct": true }, { "text": "Vénus" }]
+        },
+        {
+          "text": "Combien de côtés a un hexagone ?",
+          "choices": [{ "text": "5" }, { "text": "6", "correct": true }]
         }
       ]
     },

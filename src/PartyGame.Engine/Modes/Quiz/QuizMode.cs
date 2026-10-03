@@ -12,10 +12,6 @@ namespace PartyGame.Engine.Modes.Quiz;
 /// <summary>
 /// Plays the multiple-choice quiz rounds of the packs.
 /// </summary>
-/// <remarks>
-/// For now, a round plays its first question up to the reveal of its answer and stays there: the next questions come
-/// with US-E08-05.
-/// </remarks>
 public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 {
     /// <summary>
@@ -90,6 +86,8 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
             GameMasterRoundInput { RoundIntent: QuizLockAnswers locking } => LockAnswers(round, locking),
             GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal),
+            GameMasterRoundInput { RoundIntent: QuizNextQuestion next } => NextQuestion(round, next, context),
+            GameMasterRoundInput { RoundIntent: QuizSkipQuestion skip } => SkipQuestion(round, skip, context),
             PlayerRoundInput { RoundIntent: QuizSubmitAnswer answer } submitted =>
                 SubmitAnswer(round, submitted.PlayerId, answer, submitted.ReceivedAt),
             TimerElapsed timer => CloseAnswers(round, timer),
@@ -236,6 +234,59 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         }
 
         return new(round with { Phase = QuizPhase.Revealed }, []);
+    }
+
+    /// <summary>
+    /// Moves on from the revealed question: to the next one, or to the end of the round after the last one.
+    /// </summary>
+    private static RoundTransition NextQuestion(QuizRound round, QuizNextQuestion next, GameContext context)
+    {
+        if (next.QuestionNumber != round.QuestionNumber)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+        }
+
+        if (round.Phase != QuizPhase.Revealed)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
+        }
+
+        return MoveOn(round, context, []);
+    }
+
+    /// <summary>
+    /// Gives up the question in progress before its reveal: its answers are ignored, and its countdown stops if it runs.
+    /// Once revealed, the game master moves on to the next question instead.
+    /// </summary>
+    private static RoundTransition SkipQuestion(QuizRound round, QuizSkipQuestion skip, GameContext context)
+    {
+        if (skip.QuestionNumber != round.QuestionNumber)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+        }
+
+        if (round.Phase == QuizPhase.Revealed)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
+        }
+
+        var skipped = round with { SkippedQuestions = round.SkippedQuestions.Add(round.QuestionIndex) };
+        return MoveOn(skipped, context, round.Phase == QuizPhase.Answering ? [new CancelTimer(AnswersTimer)] : []);
+    }
+
+    /// <summary>
+    /// Presents the question that follows the one in progress, or ends the round after its last one, the round then
+    /// staying on it.
+    /// </summary>
+    private static RoundTransition MoveOn(QuizRound round, GameContext context, ImmutableArray<Effect> effects)
+    {
+        if (round.QuestionIndex == round.Descriptor.Questions.Length - 1)
+        {
+            return new(round, effects) { IsFinished = true };
+        }
+
+        var next = Present(round.Descriptor, round.QuestionIndex + 1, context.Random) with { SkippedQuestions = round.SkippedQuestions };
+        return new(next, effects);
     }
 
     /// <summary>

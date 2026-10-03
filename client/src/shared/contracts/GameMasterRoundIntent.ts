@@ -4,7 +4,9 @@
 // </auto-generated>
 
 import type { QuizLockAnswers } from './QuizLockAnswers';
+import type { QuizNextQuestion } from './QuizNextQuestion';
 import type { QuizOpenAnswers } from './QuizOpenAnswers';
 import type { QuizRevealAnswer } from './QuizRevealAnswer';
+import type { QuizSkipQuestion } from './QuizSkipQuestion';
 
-export type GameMasterRoundIntent = QuizLockAnswers | QuizOpenAnswers | QuizRevealAnswer;
+export type GameMasterRoundIntent = QuizLockAnswers | QuizNextQuestion | QuizOpenAnswers | QuizRevealAnswer | QuizSkipQuestion;

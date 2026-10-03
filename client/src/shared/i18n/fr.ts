@@ -271,7 +271,20 @@ export const fr = {
                 lockAnswers: 'Verrouiller maintenant',
                 revealAnswer: 'Révéler',
                 skipQuestion: 'Passer la question',
+                // Asked before skipping: the answers received and the question are lost.
+                skipConfirm: {
+                    title: 'Passer la question {number} ?',
+                    message:
+                        'Les réponses reçues seront ignorées et personne ne marquera de point sur cette question. La question suivante s’affichera sur tous les écrans.',
+                    // When the question skipped is the last one of the round.
+                    lastMessage:
+                        'Les réponses reçues seront ignorées et personne ne marquera de point sur cette question. C’est la dernière question : la manche se terminera.',
+                    confirm: 'Passer',
+                    cancel: 'Annuler',
+                },
                 nextQuestion: 'Question suivante',
+                // Replaces « Question suivante » once the last question of the round is revealed.
+                endRound: 'Terminer la manche',
                 allAnswered: 'Tous les joueurs ont répondu',
                 answersLabel: 'Réponses des joueurs',
                 // A player taking part who has not chosen while the answers are open.

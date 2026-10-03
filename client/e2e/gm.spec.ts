@@ -307,8 +307,7 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
         'C Melbourne',
     ]);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeEnabled();
-    // Skipping a question comes with US-E08-05.
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeDisabled();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeEnabled();
     // Nothing to count before the answers open.
     await expect(page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel })).toHaveCount(0);
     await expect(page.getByRole('timer')).toHaveCount(0);
@@ -428,6 +427,81 @@ test('/gm/ shows who chose what once the answer is revealed', async ({ page }) =
     ).toHaveText(['Zoé B', `Max ${fr.modes.quiz.noAnswer}`]);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toHaveCount(0);
-    // Moving on comes with US-E08-05.
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toBeEnabled();
+    // Not the last question: the round goes on.
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.endRound })).toHaveCount(0);
+});
+
+test('/gm/ moves on from the revealed question to the next one', async ({ page }) => {
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const hub = await serveGameMasterSnapshot(
+        page,
+        fakeRound({ ...view, phase: 'Revealed', answersCloseAt: null }),
+    );
+
+    await openConsole(page);
+    await page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion }).click();
+
+    // The intent names the question it moves on from: sent twice, it moves on only once.
+    await expect
+        .poll(() => hub.roundIntents)
+        .toEqual([{ type: 'quiz.nextQuestion', roundId: firstRound.roundId, questionNumber: 2 }]);
+});
+
+test('/gm/ ends the round once its last question is revealed', async ({ page }) => {
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const hub = await serveGameMasterSnapshot(
+        page,
+        fakeRound({ ...view, questionNumber: 5, phase: 'Revealed', answersCloseAt: null }),
+    );
+
+    await openConsole(page);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toHaveCount(0);
+    await page.getByRole('button', { name: fr.modes.quiz.gm.endRound }).click();
+
+    await expect
+        .poll(() => hub.roundIntents)
+        .toEqual([{ type: 'quiz.nextQuestion', roundId: firstRound.roundId, questionNumber: 5 }]);
+});
+
+test('/gm/ skips the question in progress once the game master confirms', async ({ page }) => {
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const hub = await serveGameMasterSnapshot(page, fakeRound(view));
+    const skip = page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion });
+    const dialog = page.getByRole('dialog', {
+        name: fill(fr.modes.quiz.gm.skipConfirm.title, { number: 2 }),
+    });
+
+    await openConsole(page);
+
+    // Cancelling sends nothing.
+    await skip.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(fr.modes.quiz.gm.skipConfirm.message)).toBeVisible();
+    await dialog.getByRole('button', { name: fr.modes.quiz.gm.skipConfirm.cancel }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await skip.click();
+    await dialog.getByRole('button', { name: fr.modes.quiz.gm.skipConfirm.confirm }).click();
+
+    await expect(dialog).toHaveCount(0);
+    await expect
+        .poll(() => hub.roundIntents)
+        .toEqual([{ type: 'quiz.skipQuestion', roundId: firstRound.roundId, questionNumber: 2 }]);
+});
+
+test('/gm/ warns that skipping the last question ends the round', async ({ page }) => {
+    const view = answeringView([]);
+    await serveGameMasterSnapshot(
+        page,
+        fakeRound({ ...view, questionNumber: 5, phase: 'Locked', answersCloseAt: null }),
+    );
+
+    await openConsole(page);
+    await page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion }).click();
+
+    const dialog = page.getByRole('dialog', {
+        name: fill(fr.modes.quiz.gm.skipConfirm.title, { number: 5 }),
+    });
+    await expect(dialog.getByText(fr.modes.quiz.gm.skipConfirm.lastMessage)).toBeVisible();
 });
