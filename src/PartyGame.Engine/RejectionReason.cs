@@ -60,4 +60,7 @@ public enum RejectionReason
 
     /// <summary>The next round is asked for while the game is not between two rounds.</summary>
     NotBetweenRounds,
+
+    /// <summary>The game mode of the round in progress plays no such intent.</summary>
+    IntentUnsupported,
 }

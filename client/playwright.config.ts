@@ -29,13 +29,20 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'] },
             testIgnore: [/(player|reconnection|buildReload)\.spec\.ts/, serverWide],
         },
-        // Starting the game cannot be undone on the shared server, and a new address changes every
-        // QR code: once every other test is done.
+        // A new address changes every QR code: once every other test is done.
+        {
+            name: 'address',
+            use: { ...devices['Desktop Chrome'] },
+            testMatch: /address\.spec\.ts/,
+            dependencies: ['ios-safari', 'android-chrome', 'desktop-chrome'],
+        },
+        // Starting the game cannot be undone on the shared server, and the TV screen then leaves
+        // the lobby and its QR code: last of all.
         {
             name: 'launch',
             use: { ...devices['Desktop Chrome'] },
-            testMatch: serverWide,
-            dependencies: ['ios-safari', 'android-chrome', 'desktop-chrome'],
+            testMatch: /launch\.spec\.ts/,
+            dependencies: ['address'],
         },
     ],
     webServer: [

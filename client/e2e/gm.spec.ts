@@ -4,6 +4,7 @@ import type {
     GameId,
     GameMasterRoundView,
     GameMasterSnapshot,
+    QuizGameMasterView,
     RoundId,
     RoundInfo,
 } from '../src/shared/contracts';
@@ -267,8 +268,22 @@ test('/gm/ lets the game master choose the address among the networks of the hos
     expect(hub.chosen).toEqual(['10.0.0.2']);
 });
 
-test('/gm/ shows the round in progress with the view of its mode', async ({ page }) => {
-    await serveGameMasterSnapshot(page, fakeRound({ type: 'quiz' }));
+test('/gm/ presents the question of the round in progress, its correct answer marked', async ({
+    page,
+}) => {
+    const view: QuizGameMasterView = {
+        type: 'quiz',
+        questionNumber: 2,
+        questionCount: 5,
+        phase: 'Presentation',
+        text: 'Quelle est la capitale de l’Australie ?',
+        choices: [
+            { letter: 'A', text: 'Sydney', correct: false },
+            { letter: 'B', text: 'Canberra', correct: true },
+            { letter: 'C', text: 'Melbourne', correct: false },
+        ],
+    };
+    await serveGameMasterSnapshot(page, fakeRound(view));
 
     await openConsole(page);
 
@@ -276,8 +291,21 @@ test('/gm/ shows the round in progress with the view of its mode', async ({ page
     await expect(page.getByText(roundText(fr.game.round, round))).toBeVisible();
     await expect(page.getByRole('heading', { name: round.title })).toBeVisible();
     await expect(
-        page.getByText(fill(fr.modes.quiz.gm.ready, { title: round.title })),
+        page.getByText(fill(fr.modes.quiz.question, { number: 2, count: 5 })),
     ).toBeVisible();
+    await expect(page.getByRole('heading', { name: view.text })).toBeVisible();
+    const choices = page
+        .getByRole('list', { name: fr.modes.quiz.choicesLabel })
+        .getByRole('listitem');
+    // Told by a label, never by the color alone: only the correct choice has it.
+    await expect(choices).toHaveText([
+        'A Sydney',
+        `B Canberra ${fr.modes.quiz.gm.correct}`,
+        'C Melbourne',
+    ]);
+    // Their intents come with the next stories of the quiz.
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeDisabled();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeDisabled();
     await expect(page.getByRole('button', { name: fr.gm.start.action })).toHaveCount(0);
 });
 

@@ -5,7 +5,7 @@
 
 Le game master présente chaque question sur l'écran TV, ouvre les réponses, puis révèle la bonne. Les joueurs choisissent une proposition sur leur téléphone avant la fin d'un compte à rebours.
 
-> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01). Le déroulé des questions arrive avec US-E08-02 à US-E08-05 : d'ici là, une manche de quiz se termine dès qu'elle démarre.
+> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02). L'ouverture des réponses, la révélation et le passage d'une question à l'autre arrivent avec US-E08-03 à US-E08-05 : d'ici là, une manche de quiz reste sur la présentation de sa première question.
 
 ## Règles
 
@@ -15,14 +15,14 @@ Le game master présente chaque question sur l'écran TV, ouvre les réponses, p
 - **Barème.** Une bonne réponse rapporte les points de la manche (`points`, 1 000 par défaut). Si la manche définit un bonus de rapidité (`speedBonus`, 0 par défaut), il s'y ajoute en proportion du temps restant à la réception de la réponse : bonus × temps restant ÷ durée de réponse, arrondi à l'entier. Une mauvaise réponse ou une absence de réponse rapporte 0, sans pénalité. Les points sont attribués à la révélation : une question passée avant sa révélation ne rapporte rien.
 - **Révélation.** L'écran TV met en évidence la bonne proposition, et montre sous chaque proposition le nombre de joueurs qui l'ont choisie et leurs pseudos, puis les joueurs sans réponse. Chaque téléphone indique à son joueur s'il a eu juste.
 - **Joueurs arrivés en cours de partie.** Un joueur inscrit pendant une manche participe à toute question dont les réponses s'ouvrent après son inscription, et commence à 0 point. La règle définitive sera tranchée en phase 6.
-- **Propositions.** Chaque question a de 2 à 4 propositions, dont exactement une bonne. Chacune est distinguée par une lettre (A à D), une forme et une couleur, jamais par la couleur seule. L'ordre est celui du descripteur, sauf si la manche demande un mélange (`shuffleChoices`) : l'ordre mélangé est alors le même sur tous les écrans.
+- **Propositions.** Chaque question a de 2 à 4 propositions, dont exactement une bonne. Chacune est distinguée par une lettre (A à D), une forme (A triangle, B losange, C cercle, D carré) et une couleur, jamais par la couleur seule. L'ordre est celui du descripteur, sauf si la manche demande un mélange (`shuffleChoices`) : l'ordre mélangé, tiré à la présentation de chaque question, est alors le même sur tous les écrans.
 - **Images.** Une question peut avoir une image, affichée sur l'écran TV seulement. Les téléphones n'affichent aucun média.
 
 ## Phases d'une question
 
 | Phase | Ce qui se passe | Passage à la suivante |
 |---|---|---|
-| `Presentation` | La question et ses propositions s'affichent. Les téléphones les montrent désactivées. | Le GM ouvre les réponses. |
+| `Presentation` | La question et ses propositions s'affichent : sur la TV avec le titre de la manche, le numéro de la question (« Question 3/5 ») et son image, sur les téléphones désactivées, et sur la console GM avec la bonne réponse signalée. | Le GM ouvre les réponses. |
 | `Answering` | Les joueurs répondent. Le compte à rebours tourne sur la TV et les téléphones, et la TV montre le nombre de réponses reçues. | Fin du compte à rebours, ou verrouillage par le GM. |
 | `Locked` | Plus aucune réponse n'est acceptée (« Temps écoulé »). | Le GM révèle la réponse. |
 | `Revealed` | La bonne réponse, la répartition des choix et les points gagnés s'affichent. | Le GM passe à la question suivante, ou termine la manche après la dernière. |

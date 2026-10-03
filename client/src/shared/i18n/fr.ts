@@ -222,10 +222,22 @@ export const fr = {
     // The texts of each game mode, under the type of its rounds.
     modes: {
         quiz: {
-            // Provisional, until the questions are played (US-E08-02).
-            player: { ready: 'Prépare-toi : les questions arrivent !' },
-            display: { ready: 'Préparez-vous : les questions arrivent !' },
-            gm: { ready: 'Les questions de « {title} » s’afficheront ici.' },
+            question: 'Question {number}/{count}',
+            // Read by screen readers: the choices of the question, each with its letter.
+            choicesLabel: 'Propositions',
+            display: {
+                // Read by screen readers: the packs describe no image.
+                imageLabel: 'Illustration de la question',
+            },
+            player: {
+                // Shown while the question is presented, before the answers open.
+                presentation: 'Lis bien la question : les réponses vont s’ouvrir.',
+            },
+            gm: {
+                correct: 'Bonne réponse',
+                openAnswers: 'Ouvrir les réponses',
+                skipQuestion: 'Passer la question',
+            },
         },
     },
 } as const;

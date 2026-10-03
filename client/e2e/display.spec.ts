@@ -6,11 +6,12 @@ import type {
     GameId,
     Phase,
     PlayerId,
+    QuizDisplayView,
     RoundId,
     RoundInfo,
 } from '../src/shared/contracts';
 import { countText } from '../src/shared/i18n/countText.ts';
-import { roundText } from '../src/shared/i18n/fill.ts';
+import { fill, roundText } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { serveDisplaySnapshot } from './fakeHub.ts';
 import { advertisedAddress } from './gameServer.ts';
@@ -183,17 +184,156 @@ test('/display/ keeps the player list when the server knows no address', async (
     await expect(playerList(page).getByText('Zoé', { exact: true })).toBeVisible();
 });
 
-test('/display/ shows the round in progress with the view of its mode', async ({ page }) => {
+/** A question in presentation, as the quiz shows it on the TV screen. */
+function quizView(view: Partial<QuizDisplayView> = {}): QuizDisplayView {
+    return {
+        type: 'quiz',
+        questionNumber: 3,
+        questionCount: 5,
+        phase: 'Presentation',
+        text: 'Quelle est la capitale de l’Australie ?',
+        imageUrl: null,
+        choices: [
+            { letter: 'A', text: 'Sydney' },
+            { letter: 'B', text: 'Canberra' },
+            { letter: 'C', text: 'Melbourne' },
+            { letter: 'D', text: 'Perth' },
+        ],
+        ...view,
+    };
+}
+
+/** A text of exactly `length` characters, made of words of usual lengths. */
+function longText(start: string, length: number): string {
+    return (
+        `${start} ${'avec des mots de longueur habituelle '.repeat(10)}`.slice(0, length - 1) + '?'
+    );
+}
+
+/** Serves an image of 1600 × 1200 at `url`, larger than the room the TV screen gives it. */
+async function serveImage(page: Page, url: string): Promise<void> {
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200"><rect width="1600" height="1200" fill="#4ba3ff"/></svg>';
+    await page.route(`**${url}`, (route) =>
+        route.fulfill({ status: 200, contentType: 'image/svg+xml', body: svg }),
+    );
+}
+
+test('/display/ presents the question of the round in progress, with its choices', async ({
+    page,
+}) => {
     await serveDisplaySnapshot(
         page,
-        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', { type: 'quiz' }),
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', quizView()),
     );
 
     await page.goto('/display/');
 
-    await expect(page.getByRole('heading', { name: fakeRound.title })).toBeVisible();
-    await expect(page.getByText(roundText(fr.game.round, fakeRound))).toBeVisible();
+    await expect(page.getByText(fakeRound.title, { exact: true })).toBeVisible();
+    await expect(
+        page.getByText(fill(fr.modes.quiz.question, { number: 3, count: 5 })),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Quelle est la capitale de l’Australie ?' }),
+    ).toBeVisible();
+    const choices = page
+        .getByRole('list', { name: fr.modes.quiz.choicesLabel })
+        .getByRole('listitem');
+    await expect(choices).toHaveText(['A Sydney', 'B Canberra', 'C Melbourne', 'D Perth']);
+    // Each letter has a shape of its own, so that no choice is told apart by its color alone.
+    const shapes = await choices.evaluateAll((items) =>
+        items.map((item) => getComputedStyle(item.querySelector('.shape') as Element).clipPath),
+    );
+    expect(new Set(shapes).size).toBe(4);
+    await expect(page.getByRole('img', { name: fr.modes.quiz.display.imageLabel })).toHaveCount(0);
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
+});
+
+test('/display/ fits a long illustrated question and four long choices on a 1080p screen, readable and clear of the edges', async ({
+    page,
+}) => {
+    const imageUrl = '/media/illustration-de-test';
+    await serveImage(page, imageUrl);
+    const view = quizView({
+        text: longText('Laquelle de ces propositions est la bonne', 200),
+        imageUrl,
+        choices: (['A', 'B', 'C', 'D'] as const).map((letter) => ({
+            letter,
+            text: longText(`Proposition ${letter}`, 80),
+        })),
+    });
+    expect([...view.text].length).toBe(200);
+    expect(view.choices.every((choice) => [...choice.text].length === 80)).toBe(true);
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    const image = page.getByRole('img', { name: fr.modes.quiz.display.imageLabel });
+    await expect(image).toBeVisible();
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete)).toBe(true);
+    const question = page.getByRole('heading', { name: view.text });
+    const choices = page
+        .getByRole('list', { name: fr.modes.quiz.choicesLabel })
+        .getByRole('listitem');
+    await expect(choices).toHaveCount(4);
+    for (const element of [
+        page.getByText(fakeRound.title, { exact: true }),
+        page.getByText(fill(fr.modes.quiz.question, { number: 3, count: 5 })),
+        image,
+        question,
+        ...(await choices.all()),
+    ]) {
+        await expect(element).toBeVisible();
+        expectWithinSafeArea(await element.boundingBox(), viewport);
+    }
+    // About 3 cm high on a 55" TV: readable from 3 m.
+    for (const text of [question, ...(await choices.locator('.text').all())]) {
+        const fontSize = await text.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        );
+        expect(fontSize).toBeGreaterThanOrEqual(30);
+    }
+    // Nothing scrolls, and nothing is cut by the screen of the quiz either.
+    const overflows = await page.evaluate(() => {
+        const root = document.documentElement;
+        const main = document.querySelector('main');
+        return (
+            root.scrollHeight > root.clientHeight ||
+            root.scrollWidth > root.clientWidth ||
+            !main ||
+            main.scrollHeight > main.clientHeight ||
+            main.scrollWidth > main.clientWidth
+        );
+    });
+    expect(overflows).toBe(false);
+});
+
+test('/display/ keeps the question on screen without its image when the image fails', async ({
+    page,
+}) => {
+    const imageUrl = '/media/introuvable';
+    await page.route(`**${imageUrl}`, (route) => route.fulfill({ status: 404 }));
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', quizView({ imageUrl })),
+    );
+
+    await page.goto('/display/');
+
+    await expect(
+        page.getByRole('heading', { name: 'Quelle est la capitale de l’Australie ?' }),
+    ).toBeVisible();
+    await expect(page.getByRole('img', { name: fr.modes.quiz.display.imageLabel })).toHaveCount(0);
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveCount(4);
 });
 
 test('/display/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
