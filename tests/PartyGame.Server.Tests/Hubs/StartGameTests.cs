@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using PartyGame.Contracts;
+using PartyGame.Contracts.Quiz;
 using PartyGame.Engine;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
@@ -40,7 +41,7 @@ public sealed class StartGameTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task StartGame_AsGameMasterWithPlayers_ShowsTheStartedGameOnEveryInterface()
+    public async Task StartGame_AsGameMasterWithPlayers_PresentsTheFirstQuestionOnEveryInterface()
     {
         // Given
         await using var display = await HubClients.ConnectAsync(_factory);
@@ -57,12 +58,21 @@ public sealed class StartGameTests : IAsyncDisposable
 
         // Then
         Assert.Equal(new StartGameResult(Refusal: null), result);
-        // The quiz mode does not play its questions yet (E08): the single round of the pack finishes as soon as it starts.
-        Assert.Equal(GamePhase.Finished, Game.State.Phase);
+        // The first question of the single round of the pack is presented on every interface, its answer to the game
+        // master only.
+        Assert.Equal(GamePhase.Round, Game.State.Phase);
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
-        Assert.Equal(Phase.Finished, toDisplay.Display[^1].Phase);
-        Assert.Equal(Phase.Finished, toGameMaster.GameMaster[^1].Phase);
-        Assert.Equal(Phase.Finished, toZoe.Player[^1].Phase);
+        var toTheDisplay = Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView);
+        var toTheGameMaster = Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView);
+        var toThePlayer = Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView);
+        Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation, "Question ?"), (toDisplay.Display[^1].Phase, toTheDisplay.Phase, toTheDisplay.Text));
+        Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation, "Question ?"), (toZoe.Player[^1].Phase, toThePlayer.Phase, toThePlayer.Text));
+        Assert.Equal(
+            [new QuizGameMasterChoice(QuizChoiceLetter.A, "Oui", Correct: true), new QuizGameMasterChoice(QuizChoiceLetter.B, "Non", Correct: false)],
+            toTheGameMaster.Choices);
+        Assert.Equal([new QuizChoiceView(QuizChoiceLetter.A, "Oui"), new QuizChoiceView(QuizChoiceLetter.B, "Non")], toTheDisplay.Choices);
+        Assert.DoesNotContain("correct", toDisplay.Json[^1], StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("correct", toZoe.Json[^1], StringComparison.OrdinalIgnoreCase);
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Game started", StringComparison.Ordinal));
     }
 
@@ -147,7 +157,9 @@ public sealed class StartGameTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(max));
-        Assert.Equal((Phase.Finished, "Max"), (toMax.Player[^1].Phase, toMax.Player[^1].Nickname));
+        // Joined during the presentation of the first question, Max sees it like everybody else.
+        Assert.Equal((Phase.Round, "Max"), (toMax.Player[^1].Phase, toMax.Player[^1].Nickname));
+        Assert.Equal(QuizQuestionPhase.Presentation, Assert.IsType<QuizPlayerView>(toMax.Player[^1].RoundView).Phase);
         Assert.Equal(["Zoé", "Max"], toDisplay.Display[^1].Players.Select(p => p.Nickname));
         Assert.Equal(["Zoé", "Max"], toGameMaster.GameMaster[^1].Players.Select(p => p.Nickname));
     }

@@ -285,7 +285,7 @@ public sealed class PackChoiceTests : IAsyncDisposable
         // Then
         Assert.Equal(new SelectPackResult(SelectPackRefusal.AlreadyStarted), result);
         Assert.Equal("soiree", Game.State.SelectedPackId);
-        Assert.Equal(GamePhase.BetweenRounds, Game.State.Phase);
+        Assert.Equal(GamePhase.Round, Game.State.Phase);
     }
 
     [Fact]

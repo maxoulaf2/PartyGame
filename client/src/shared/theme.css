@@ -20,6 +20,17 @@
     --radius: 0.75rem;
     --touch-target-min: 48px;
 
+    /* The choices of a question, by letter: a color and a shape (a clip-path) each, so that
+       no choice is ever told apart by its color alone. */
+    --choice-a-color: #ff5a6e;
+    --choice-a-shape: polygon(50% 4%, 100% 96%, 0% 96%);
+    --choice-b-color: #4ba3ff;
+    --choice-b-shape: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    --choice-c-color: #ffb224;
+    --choice-c-shape: circle(50%);
+    --choice-d-color: #3ccf8e;
+    --choice-d-shape: inset(6%);
+
     color-scheme: dark;
 }
 

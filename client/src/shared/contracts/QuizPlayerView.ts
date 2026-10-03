@@ -3,6 +3,14 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { QuizChoiceView } from './QuizChoiceView';
+import type { QuizQuestionPhase } from './QuizQuestionPhase';
+
 export interface QuizPlayerView {
     readonly type: 'quiz';
+    readonly questionNumber: number;
+    readonly questionCount: number;
+    readonly phase: QuizQuestionPhase;
+    readonly text: string;
+    readonly choices: readonly QuizChoiceView[];
 }

@@ -34,7 +34,7 @@ public sealed class RoundsTests : IAsyncDisposable
             .UseSetting(PacksOptions.DirectorySetting, _packs.Path)
             .ConfigureTestServices(services =>
             {
-                // The test mode replaces the quiz mode, whose questions are not played yet.
+                // The test mode replaces the quiz mode, whose rounds cannot be played to their end yet.
                 services.RemoveAll<IGameMode>();
                 services.AddSingleton<IGameMode, TestQuizMode>();
             }));
@@ -70,10 +70,13 @@ public sealed class RoundsTests : IAsyncDisposable
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
         var round = new RoundInfo(Game.State.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement");
-        Assert.Equal((Phase.Round, round, new QuizDisplayView()), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round, toDisplay.Display[^1].RoundView));
-        Assert.Equal((Phase.Round, round, new QuizGameMasterView()), (toGameMaster.GameMaster[^1].Phase, toGameMaster.GameMaster[^1].Round, toGameMaster.GameMaster[^1].RoundView));
-        Assert.Equal((Phase.Round, round, new QuizPlayerView()), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round, toZoe.Player[^1].RoundView));
-        Assert.Contains("\"roundView\":{\"type\":\"quiz\"}", toZoe.Json[^1], StringComparison.Ordinal);
+        Assert.Equal((Phase.Round, round), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round));
+        Assert.Equal((Phase.Round, round), (toGameMaster.GameMaster[^1].Phase, toGameMaster.GameMaster[^1].Round));
+        Assert.Equal((Phase.Round, round), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round));
+        Assert.Equal("Question ?", Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView).Text);
+        Assert.Equal("Question ?", Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView).Text);
+        Assert.Equal("Question ?", Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView).Text);
+        Assert.Contains("\"roundView\":{\"type\":\"quiz\",", toZoe.Json[^1], StringComparison.Ordinal);
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Round {RoundNumber} of {RoundCount} started", StringComparison.Ordinal));
     }
 

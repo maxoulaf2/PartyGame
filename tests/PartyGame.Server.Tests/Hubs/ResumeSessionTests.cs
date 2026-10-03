@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using PartyGame.Contracts;
+using PartyGame.Contracts.Quiz;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Packs;
@@ -89,8 +90,10 @@ public sealed class ResumeSessionTests : IAsyncDisposable
         // Then
         Assert.Equal(playerId, result.PlayerId);
         await FlushAsync(phone);
-        // Without any pack chosen yet (US-E06-03), the game has no round: it is finished as soon as it starts.
-        Assert.Equal(Phase.Finished, toPhone.Player.MaxBy(s => s.Version)!.Phase);
+        // The first question of the only round of the pack is presented.
+        var current = toPhone.Player.MaxBy(s => s.Version)!;
+        Assert.Equal(Phase.Round, current.Phase);
+        Assert.IsType<QuizPlayerView>(current.RoundView);
     }
 
     [Fact]
