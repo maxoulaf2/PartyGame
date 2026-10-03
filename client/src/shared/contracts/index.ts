@@ -49,6 +49,8 @@ export type * from './QuizPlayerView';
 export type * from './QuizQuestionPhase';
 export type * from './QuizRevealAnswer';
 export type * from './QuizRevealedAnswer';
+export type * from './QuizShowChoice';
+export type * from './QuizShowQuestion';
 export type * from './QuizSkipQuestion';
 export type * from './QuizSubmitAnswer';
 export type * from './QuizVerdict';

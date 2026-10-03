@@ -193,10 +193,10 @@ public sealed class QuizModeTests
     }
 
     [Fact]
-    public void Snapshots_GameStarted_ShowTheFirstQuestionInPresentationToEveryRole()
+    public void Snapshots_FirstQuestionShown_ShowItInPresentationToEveryRole()
     {
         // Given
-        var state = QuizGames.Started([Round(QuizGames.CapitalQuestion, QuizGames.LastQuestion)], ["Zoé"]);
+        var state = QuizGames.Shown(QuizGames.Started([Round(QuizGames.CapitalQuestion, QuizGames.LastQuestion)], ["Zoé"]));
 
         // When
         var display = Assert.IsType<QuizDisplayView>(QuizGames.Snapshots.ForDisplay(state).RoundView);
@@ -214,7 +214,7 @@ public sealed class QuizModeTests
     public void ProjectForDisplay_Presentation_ShowsTheChoicesWithTheirLettersInTheOrderOfTheDescriptor()
     {
         // Given
-        var state = QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]);
+        var state = QuizGames.Shown(QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]));
 
         // When
         var view = (QuizDisplayView)QuizGames.Mode.ProjectForDisplay(QuizGames.RoundOf(state), state);
@@ -235,7 +235,7 @@ public sealed class QuizModeTests
     public void ProjectForDisplay_IllustratedQuestion_ShowsTheUrlOfItsImage()
     {
         // Given
-        var state = QuizGames.Started([Round(QuizGames.IllustratedQuestion)], ["Zoé"]);
+        var state = QuizGames.Shown(QuizGames.Started([Round(QuizGames.IllustratedQuestion)], ["Zoé"]), choiceCount: 0);
 
         // When
         var view = (QuizDisplayView)QuizGames.Mode.ProjectForDisplay(QuizGames.RoundOf(state), state);
@@ -267,7 +267,7 @@ public sealed class QuizModeTests
     {
         // Given
         var round = Round(QuizGames.CapitalQuestion) with { ShuffleChoices = true };
-        var state = QuizGames.Started([round], ["Zoé", "Max"]);
+        var state = QuizGames.Shown(QuizGames.Started([round], ["Zoé", "Max"]));
         var quiz = QuizGames.RoundOf(state);
 
         // When

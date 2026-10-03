@@ -424,7 +424,7 @@ test('/display/ keeps the player list when the server knows no address', async (
     await expect(playerList(page).getByText('Zoé', { exact: true })).toBeVisible();
 });
 
-/** A question in presentation, as the quiz shows it on the TV screen. */
+/** A question in presentation, every choice shown, as the quiz shows it on the TV screen. */
 function quizView(view: Partial<QuizDisplayView> = {}): QuizDisplayView {
     return {
         type: 'quiz',
@@ -439,6 +439,7 @@ function quizView(view: Partial<QuizDisplayView> = {}): QuizDisplayView {
             { letter: 'C', text: 'Melbourne' },
             { letter: 'D', text: 'Perth' },
         ],
+        choiceCount: 4,
         answersCloseAt: null,
         answeredCount: 0,
         participantCount: 0,
@@ -493,13 +494,79 @@ test('/display/ presents the question of the round in progress, with its choices
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
 });
 
+test('/display/ shows the number of the question alone until the game master shows it', async ({
+    page,
+}) => {
+    // Even its image stays hidden: the snapshot holds nothing of the question yet.
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot(
+            [fakePlayer(1, 'Zoé')],
+            advertisedAddress,
+            'Round',
+            quizView({ text: null, choices: [] }),
+        ),
+    );
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fakeRound.title, { exact: true })).toBeVisible();
+    await expect(
+        page.getByText(fill(fr.modes.quiz.display.upcoming, { number: 3 }), { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading')).toHaveCount(0);
+    await expect(page.getByRole('img', { name: fr.modes.quiz.display.imageLabel })).toHaveCount(0);
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveCount(0);
+});
+
+test('/display/ shows the choices one by one, each in the room it keeps once all are shown', async ({
+    page,
+}) => {
+    // Without the fade, so that every box is measured where it stays.
+    const boxesOf = async (target: Page, shownCount: number) => {
+        await target.emulateMedia({ reducedMotion: 'reduce' });
+        const view = quizView();
+        await serveDisplaySnapshot(
+            target,
+            fakeSnapshot(
+                [fakePlayer(1, 'Zoé')],
+                advertisedAddress,
+                'Round',
+                quizView({ choices: view.choices.slice(0, shownCount) }),
+            ),
+        );
+        await target.goto('/display/');
+        const choices = target
+            .getByRole('list', { name: fr.modes.quiz.choicesLabel })
+            .getByRole('listitem');
+        await expect(choices).toHaveText(
+            ['A Sydney', 'B Canberra', 'C Melbourne', 'D Perth'].slice(0, shownCount),
+        );
+        const heading = target.getByRole('heading', { name: 'Quelle est la capitale' });
+        return {
+            heading: await heading.boundingBox(),
+            choices: await Promise.all((await choices.all()).map((choice) => choice.boundingBox())),
+        };
+    };
+
+    const partly = await boxesOf(page, 2);
+    const full = await boxesOf(await page.context().newPage(), 4);
+
+    // Nothing moves as the other choices show.
+    expect(partly.heading).toEqual(full.heading);
+    expect(partly.choices).toEqual(full.choices.slice(0, 2));
+});
+
 test('/display/ fits a long illustrated question and four long choices on a 1080p screen, readable and clear of the edges', async ({
     page,
 }) => {
     const imageUrl = '/media/illustration-de-test';
     await serveImage(page, imageUrl);
+    const text = longText('Laquelle de ces propositions est la bonne', 200);
     const view = quizView({
-        text: longText('Laquelle de ces propositions est la bonne', 200),
+        text,
         imageUrl,
         // Answering, so that the countdown and the count of the answers are on screen as well.
         phase: 'Answering',
@@ -511,7 +578,7 @@ test('/display/ fits a long illustrated question and four long choices on a 1080
             text: longText(`Proposition ${letter}`, 80),
         })),
     });
-    expect([...view.text].length).toBe(200);
+    expect([...text].length).toBe(200);
     expect(view.choices.every((choice) => [...choice.text].length === 80)).toBe(true);
     await serveDisplaySnapshot(
         page,
@@ -527,7 +594,7 @@ test('/display/ fits a long illustrated question and four long choices on a 1080
     const image = page.getByRole('img', { name: fr.modes.quiz.display.imageLabel });
     await expect(image).toBeVisible();
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete)).toBe(true);
-    const question = page.getByRole('heading', { name: view.text });
+    const question = page.getByRole('heading', { name: text });
     const choices = page
         .getByRole('list', { name: fr.modes.quiz.choicesLabel })
         .getByRole('listitem');
@@ -775,10 +842,11 @@ test('/display/ fits 20 long nicknames under a single choice on a 1080p screen, 
     expect(nicknames.every((nickname) => [...nickname].length === 16)).toBe(true);
     const imageUrl = '/media/illustration-de-test';
     await serveImage(page, imageUrl);
+    const text = longText('Laquelle de ces propositions est la bonne', 200);
     const view = revealedView(
         nicknames.map((nickname) => ({ nickname, choice: 'B' })),
         {
-            text: longText('Laquelle de ces propositions est la bonne', 200),
+            text,
             imageUrl,
             choices: (['A', 'B', 'C', 'D'] as const).map((letter) => ({
                 letter,
@@ -803,7 +871,7 @@ test('/display/ fits 20 long nicknames under a single choice on a 1080p screen, 
         .getByRole('list', { name: fr.modes.quiz.choicesLabel })
         .locator(':scope > li');
     for (const element of [
-        page.getByRole('heading', { name: view.text }),
+        page.getByRole('heading', { name: text }),
         ...(await choices.all()),
         ...(await shown.all()),
     ]) {

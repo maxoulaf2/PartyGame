@@ -13,6 +13,7 @@ export interface QuizGameMasterView {
     readonly questionCount: number;
     readonly phase: QuizQuestionPhase;
     readonly text: string;
+    readonly questionShown: boolean;
     readonly choices: readonly QuizGameMasterChoice[];
     readonly answersCloseAt: number | null;
     readonly answers: readonly QuizGameMasterAnswer[];

@@ -27,6 +27,11 @@
     const unanswered = $derived(
         view.reveal?.answers.filter((answer) => answer.choice === null) ?? [],
     );
+
+    const letters: readonly QuizChoiceLetter[] = ['A', 'B', 'C', 'D'];
+    // The choices the game master has not shown yet keep their room, so that nothing moves on
+    // screen as they show one by one.
+    const hiddenLetters = $derived(letters.slice(view.choices.length, view.choiceCount));
 </script>
 
 <main class:revealed={view.reveal !== null}>
@@ -66,14 +71,21 @@
         </div>
     </header>
     <div class="question">
-        {#if image}
-            <img
-                src={image}
-                alt={fr.modes.quiz.display.imageLabel}
-                onerror={() => (failedImage = image)}
-            />
+        {#if view.text === null}
+            <!-- The game master reads the question out first: it shows right after. -->
+            <p class="upcoming">
+                {fill(fr.modes.quiz.display.upcoming, { number: view.questionNumber })}
+            </p>
+        {:else}
+            {#if image}
+                <img
+                    src={image}
+                    alt={fr.modes.quiz.display.imageLabel}
+                    onerror={() => (failedImage = image)}
+                />
+            {/if}
+            <h1>{view.text}</h1>
         {/if}
-        <h1>{view.text}</h1>
     </div>
     <ol class="choices" aria-label={fr.modes.quiz.choicesLabel}>
         {#each view.choices as choice (choice.letter)}
@@ -111,6 +123,14 @@
                         {/if}
                     </div>
                 {/if}
+            </li>
+        {/each}
+        {#each hiddenLetters as letter (letter)}
+            <li class="hidden-choice" aria-hidden="true">
+                <div class="choice">
+                    <ChoiceMarker {letter} />
+                    <span class="text">&nbsp;</span>
+                </div>
             </li>
         {/each}
     </ol>
@@ -191,6 +211,14 @@
         min-height: 0;
     }
 
+    .upcoming {
+        flex: 1 1 0;
+        color: var(--color-text-muted);
+        font-size: 5rem;
+        font-weight: 800;
+        text-align: center;
+    }
+
     img {
         flex: none;
         max-width: 35vw;
@@ -235,6 +263,26 @@
     .text {
         min-width: 0;
         overflow-wrap: anywhere;
+    }
+
+    .hidden-choice {
+        visibility: hidden;
+    }
+
+    /* The question, then each choice, shows as the game master reads it out. */
+    @media (prefers-reduced-motion: no-preference) {
+        h1,
+        img,
+        .choices > li {
+            animation: appear 0.4s ease-out;
+        }
+    }
+
+    /* A fade alone: nothing moves, so that nothing ever crosses the edges of the screen. */
+    @keyframes appear {
+        from {
+            opacity: 0;
+        }
     }
 
     /* Once revealed, the question has been read: it makes room for the nicknames, and each

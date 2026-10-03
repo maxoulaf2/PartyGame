@@ -18,6 +18,8 @@ namespace PartyGame.Contracts;
 /// The round the intent is aimed at. The server rejects it without effect when that round is not the one in progress.
 /// </param>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(QuizShowQuestion), "quiz.showQuestion")]
+[JsonDerivedType(typeof(QuizShowChoice), "quiz.showChoice")]
 [JsonDerivedType(typeof(QuizOpenAnswers), "quiz.openAnswers")]
 [JsonDerivedType(typeof(QuizRevealAnswer), "quiz.revealAnswer")]
 [JsonDerivedType(typeof(QuizNextQuestion), "quiz.nextQuestion")]

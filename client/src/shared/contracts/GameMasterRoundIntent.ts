@@ -6,6 +6,8 @@
 import type { QuizNextQuestion } from './QuizNextQuestion';
 import type { QuizOpenAnswers } from './QuizOpenAnswers';
 import type { QuizRevealAnswer } from './QuizRevealAnswer';
+import type { QuizShowChoice } from './QuizShowChoice';
+import type { QuizShowQuestion } from './QuizShowQuestion';
 import type { QuizSkipQuestion } from './QuizSkipQuestion';
 
-export type GameMasterRoundIntent = QuizNextQuestion | QuizOpenAnswers | QuizRevealAnswer | QuizSkipQuestion;
+export type GameMasterRoundIntent = QuizNextQuestion | QuizOpenAnswers | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;

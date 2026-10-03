@@ -281,10 +281,11 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
         questionCount: 5,
         phase: 'Presentation',
         text: 'Quelle est la capitale de l’Australie ?',
+        questionShown: true,
         choices: [
-            { letter: 'A', text: 'Sydney', correct: false, answerCount: 0 },
-            { letter: 'B', text: 'Canberra', correct: true, answerCount: 0 },
-            { letter: 'C', text: 'Melbourne', correct: false, answerCount: 0 },
+            { letter: 'A', text: 'Sydney', correct: false, shown: true, answerCount: 0 },
+            { letter: 'B', text: 'Canberra', correct: true, shown: true, answerCount: 0 },
+            { letter: 'C', text: 'Melbourne', correct: false, shown: true, answerCount: 0 },
         ],
         answersCloseAt: null,
         answers: [],
@@ -317,6 +318,105 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
     await expect(page.getByRole('button', { name: fr.gm.start.action })).toHaveCount(0);
 });
 
+/** The question of the round in progress in presentation, the TV screen showing its first `shownCount` choices. */
+function presentationView(questionShown: boolean, shownCount: number): QuizGameMasterView {
+    return {
+        type: 'quiz',
+        questionNumber: 2,
+        questionCount: 5,
+        phase: 'Presentation',
+        text: 'Quelle est la capitale de l’Australie ?',
+        questionShown,
+        choices: (
+            [
+                ['A', 'Sydney', false],
+                ['B', 'Canberra', true],
+                ['C', 'Melbourne', false],
+            ] as const
+        ).map(([letter, text, correct], index) => ({
+            letter,
+            text,
+            correct,
+            shown: index < shownCount,
+            answerCount: 0,
+        })),
+        answersCloseAt: null,
+        answers: [],
+    };
+}
+
+test('/gm/ reads out the question before showing it on the TV screen', async ({ page }) => {
+    const hub = await serveGameMasterSnapshot(page, fakeRound(presentationView(false, 0)));
+
+    await openConsole(page);
+
+    // The console shows the whole question at once, marking what the TV screen does not show.
+    const question = page.getByRole('heading', { name: 'Quelle est la capitale de l’Australie ?' });
+    await expect(question).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.gm.hiddenOnDisplay)).toHaveCount(4);
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `A Sydney ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+        `B Canberra ${fr.modes.quiz.correct} ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+        `C Melbourne ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+    ]);
+    // Opening the answers stays offered, to show everything at once.
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeEnabled();
+    await expect(
+        page.getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) }),
+    ).toHaveCount(0);
+
+    await page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion }).click();
+
+    await expect
+        .poll(() => hub.roundIntents)
+        .toEqual([{ type: 'quiz.showQuestion', roundId: firstRound.roundId, questionNumber: 2 }]);
+});
+
+test('/gm/ shows the next choice on the TV screen once read out', async ({ page }) => {
+    const hub = await serveGameMasterSnapshot(page, fakeRound(presentationView(true, 1)));
+
+    await openConsole(page);
+
+    await expect(page.getByText(fr.modes.quiz.gm.hiddenOnDisplay)).toHaveCount(2);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion })).toHaveCount(0);
+    await page
+        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'B' }) })
+        .click();
+
+    // The intent names the choice it shows: sent twice, it shows a single one.
+    await expect
+        .poll(() => hub.roundIntents)
+        .toEqual([
+            {
+                type: 'quiz.showChoice',
+                roundId: firstRound.roundId,
+                questionNumber: 2,
+                choice: 'B',
+            },
+        ]);
+});
+
+test('/gm/ offers to open the answers alone once everything is shown', async ({ page }) => {
+    const hub = await serveGameMasterSnapshot(page, fakeRound(presentationView(true, 3)));
+
+    await openConsole(page);
+
+    await expect(page.getByText(fr.modes.quiz.gm.hiddenOnDisplay)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion })).toHaveCount(0);
+    for (const letter of ['A', 'B', 'C']) {
+        await expect(
+            page.getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter }) }),
+        ).toHaveCount(0);
+    }
+    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+
+    await expect
+        .poll(() => hub.roundIntents)
+        .toEqual([{ type: 'quiz.openAnswers', roundId: firstRound.roundId, questionNumber: 2 }]);
+});
+
 test('/gm/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
     await serveGameMasterSnapshot(
         page,
@@ -340,9 +440,16 @@ function answeringView(answers: QuizGameMasterView['answers']): QuizGameMasterVi
         questionCount: 5,
         phase: 'Answering',
         text: 'Quelle est la capitale de l’Australie ?',
+        questionShown: true,
         choices: [
-            { letter: 'A', text: 'Sydney', correct: false, answerCount: countOf('A') },
-            { letter: 'B', text: 'Canberra', correct: true, answerCount: countOf('B') },
+            { letter: 'A', text: 'Sydney', correct: false, shown: true, answerCount: countOf('A') },
+            {
+                letter: 'B',
+                text: 'Canberra',
+                correct: true,
+                shown: true,
+                answerCount: countOf('B'),
+            },
         ],
         answersCloseAt: Date.now() + 20_000,
         answers,

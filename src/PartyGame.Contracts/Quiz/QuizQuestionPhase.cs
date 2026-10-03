@@ -5,7 +5,10 @@ namespace PartyGame.Contracts.Quiz;
 /// </summary>
 public enum QuizQuestionPhase
 {
-    /// <summary>The question and its choices are shown, so that everybody reads them before the answers open.</summary>
+    /// <summary>
+    /// The game master reads out the question, then its choices one by one, each shown on the TV screen as they go, so
+    /// that everybody knows them before the answers open.
+    /// </summary>
     Presentation,
 
     /// <summary>The players answer, until every participant answered or the countdown ends.</summary>

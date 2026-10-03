@@ -71,9 +71,9 @@ public enum RejectionReason
     QuestionMismatch,
 
     /// <summary>
-    /// The question in progress is not in the phase the intent acts in: answers opened twice, an answer while they are
-    /// not open, a reveal before they are locked, a move to the next question before the reveal, or a question skipped
-    /// once revealed.
+    /// The question in progress is not in the phase the intent acts in: answers opened twice, a part of the question
+    /// shown once they are open, an answer while they are not open, a reveal before they are locked, a move to the next
+    /// question before the reveal, or a question skipped once revealed.
     /// </summary>
     PhaseMismatch,
 
@@ -91,8 +91,14 @@ public enum RejectionReason
     /// </summary>
     NotParticipating,
 
-    /// <summary>The answer names a choice the question does not have.</summary>
+    /// <summary>The intent names a choice the question does not have.</summary>
     ChoiceUnknown,
+
+    /// <summary>
+    /// The game master shows a part of the question presented that is not the next one to show: already shown, for
+    /// instance sent twice or by a second console, or a choice before the question or before the choices that precede it.
+    /// </summary>
+    PresentationStepMismatch,
 
     /// <summary>
     /// The intent of a player is numbered up to the last one accepted from them: already handled, it is sent again by a

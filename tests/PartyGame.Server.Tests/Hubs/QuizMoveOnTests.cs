@@ -81,7 +81,8 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         Assert.Same(next, Game.State);
         await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
         var onDisplay = Assert.IsType<QuizDisplayView>(Assert.Single(toDisplay.Display).RoundView);
-        Assert.Equal((2, 3, QuizQuestionPhase.Presentation, "Question 2 ?"), (onDisplay.QuestionNumber, onDisplay.QuestionCount, onDisplay.Phase, onDisplay.Text));
+        // Hidden on the TV screen until the game master reads it out.
+        Assert.Equal((2, 3, QuizQuestionPhase.Presentation, null), (onDisplay.QuestionNumber, onDisplay.QuestionCount, onDisplay.Phase, onDisplay.Text));
         Assert.Null(onDisplay.Reveal);
         var onPhone = Assert.IsType<QuizPlayerView>(Assert.Single(toZoe.Player).RoundView);
         Assert.Equal((2, QuizQuestionPhase.Presentation, null, null), (onPhone.QuestionNumber, onPhone.Phase, onPhone.Answer, onPhone.Verdict));

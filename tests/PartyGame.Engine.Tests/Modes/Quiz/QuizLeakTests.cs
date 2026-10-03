@@ -9,7 +9,8 @@ namespace PartyGame.Engine.Tests.Modes.Quiz;
 /// <summary>
 /// What the views of a quiz round may show to each viewer: the correct answer and the choices of the players to the game
 /// master only before the reveal, the choice of a player never to the other phones, no score before the reveal, the
-/// questions as they come, a skipped question to nobody once the round moved on, the paths of the images to nobody.
+/// questions as they come, and each part of a question only once the game master shows it, a skipped question to nobody
+/// once the round moved on, the paths of the images to nobody.
 /// </summary>
 public sealed class QuizLeakTests
 {
@@ -31,6 +32,11 @@ public sealed class QuizLeakTests
             ("first question", QuizGames.Started(_rounds, _players)),
             ("shuffled choices", QuizGames.Started(_shuffled, _players)),
             ("illustrated question", QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 1)),
+            ("question shown, its choices hidden", QuizGames.Shown(QuizGames.Started(_rounds, _players), choiceCount: 0)),
+            ("illustrated question shown", QuizGames.Shown(QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 1), choiceCount: 0)),
+            ("shuffled choices partly shown", QuizGames.Shown(QuizGames.Started(_shuffled, _players), choiceCount: 2)),
+            ("every choice shown", QuizGames.Shown(QuizGames.Started(_rounds, _players))),
+            ("answers opened with the question partly shown", QuizGames.Answering(QuizGames.Shown(QuizGames.Started(_shuffled, _players), choiceCount: 1))),
             ("last question", QuizGames.AtQuestion(QuizGames.Started(_rounds, _players), 2)),
             ("player joined during the presentation", QuizGames.Accepted(QuizGames.Started(_rounds, ["Zoé", "Max"]), Games.Join("Léa", player: 3))),
             ("answers just opened", QuizGames.Answering(QuizGames.Started(_rounds, _players))),
@@ -51,6 +57,18 @@ public sealed class QuizLeakTests
         SecretsOf = SecretsOf,
         Pairs =
         [
+            // The TV screen shows a question as the game master reads it out, and nothing of it before.
+            new SecretPair<GameState>(
+                "text of the question hidden",
+                QuizGames.Started(_rounds, _players),
+                QuizGames.Started([_rounds[0] with { Questions = _rounds[0].Questions.SetItem(0, QuizGames.CapitalQuestion with { Text = "Quelle est la capitale du Canada ?" }) }], _players),
+                Audience.AllButGameMaster),
+            new SecretPair<GameState>(
+                "text of a choice hidden",
+                QuizGames.Shown(QuizGames.Started(_rounds, _players), choiceCount: 2),
+                QuizGames.Shown(QuizGames.Started([_rounds[0] with { Questions = _rounds[0].Questions.SetItem(0, WithChoiceText(QuizGames.CapitalQuestion, 2, "Brisbane")) }], _players), choiceCount: 2),
+                Audience.AllButGameMaster),
+
             CorrectAnswerPair("correct answer", _rounds),
             CorrectAnswerPair("correct answer, shuffled", _shuffled),
             CorrectAnswerPair("correct answer, answers open", _rounds, state => QuizGames.Answering(state, (1, QuizChoiceLetter.A))),
@@ -176,6 +194,12 @@ public sealed class QuizLeakTests
         QuizGames.Locked(Next(QuizGames.Revealed(QuizGames.Started([round], _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A))), (1, QuizChoiceLetter.A));
 
     /// <summary>
+    /// The same question, one of its choices worded otherwise.
+    /// </summary>
+    private static QuizQuestion WithChoiceText(QuizQuestion question, int choice, string text) =>
+        question with { Choices = question.Choices.SetItem(choice, question.Choices[choice] with { Text = text }) };
+
+    /// <summary>
     /// The same game, moved on from its revealed question to the next one.
     /// </summary>
     private static GameState Next(GameState state) => QuizGames.Accepted(state, QuizGames.NextQuestion(state));
@@ -188,6 +212,21 @@ public sealed class QuizLeakTests
     private static IEnumerable<Secret> SecretsOf(GameState state)
     {
         var round = QuizGames.RoundOf(state);
+
+        // The question in progress shows as the game master reads it out: first its text and image, then its choices.
+        if (!round.QuestionShown)
+        {
+            yield return new Secret(round.Question.Text, Audience.AllButGameMaster);
+            if (round.Question.Image is { } image)
+            {
+                yield return new Secret(state.Media.UrlOf(image), Audience.AllButGameMaster);
+            }
+        }
+
+        foreach (var index in round.ChoiceOrder.Skip(round.ShownChoiceCount))
+        {
+            yield return new Secret(round.Question.Choices[index].Text, Audience.AllButGameMaster);
+        }
 
         // The questions to come, and their images, are discovered as they are played.
         foreach (var question in round.Descriptor.Questions.Skip(round.QuestionIndex + 1))

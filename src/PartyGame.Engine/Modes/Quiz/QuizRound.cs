@@ -31,6 +31,18 @@ public sealed record QuizRound(QuizRoundDescriptor Descriptor, int QuestionIndex
     public int QuestionNumber => QuestionIndex + 1;
 
     /// <summary>
+    /// Whether the TV screen shows the text of the question in progress, and its image: the game master shows it once they
+    /// have read it out, or opens the answers.
+    /// </summary>
+    public bool QuestionShown { get; init; }
+
+    /// <summary>
+    /// How many choices of the question in progress the TV screen shows, the first ones in the order shown: the game
+    /// master shows them one by one after the question, and opening the answers shows them all.
+    /// </summary>
+    public int ShownChoiceCount { get; init; }
+
+    /// <summary>
     /// When the answers of the question in progress close, set when they open, or <see langword="null"/> before. Kept once
     /// they are locked, even early once everybody answered, for the speed bonus.
     /// </summary>

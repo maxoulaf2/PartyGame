@@ -92,7 +92,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await dialog.getByRole('button', { name: fr.gm.start.confirm, exact: true }).click();
 
     // The first question of the first round is presented on every interface, its correct answer
-    // on the console only.
+    // on the console only. The TV screen shows its number alone, until the game master shows it.
     const question = 'Combien de pattes a une araignée ?';
     const progress = fill(fr.modes.quiz.question, { number: 1, count: 3 });
     await expect(
@@ -100,7 +100,11 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: playedPack.rounds[0] })).toBeVisible();
     await expect(page.getByRole('heading', { name: question })).toBeVisible();
-    await expect(choicesOf(page)).toHaveText(['A 6', `B 8 ${fr.modes.quiz.correct}`]);
+    await expect(choicesOf(page)).toHaveText([
+        `A 6 ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+        `B 8 ${fr.modes.quiz.correct} ${fr.modes.quiz.gm.hiddenOnDisplay}`,
+    ]);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion })).toBeVisible();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeVisible();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeVisible();
     await expect(start).toHaveCount(0);
@@ -113,8 +117,25 @@ test('the game master plays a whole game, from the choice of the pack to the fin
 
     await expect(display.getByText(playedPack.rounds[0], { exact: true })).toBeVisible();
     await expect(display.getByText(progress)).toBeVisible();
+    await expect(
+        display.getByText(fill(fr.modes.quiz.display.upcoming, { number: 1 }), { exact: true }),
+    ).toBeVisible();
+    await expect(display.getByRole('heading')).toHaveCount(0);
+    await expect(choicesOf(display)).toHaveCount(0);
+
+    // The game master reads out the question, then each choice, and shows it right after.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.showQuestion }).click();
     await expect(display.getByRole('heading', { name: question })).toBeVisible();
+    await expect(choicesOf(display)).toHaveCount(0);
+    await page
+        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) })
+        .click();
+    await expect(choicesOf(display)).toHaveText(['A 6']);
+    await page
+        .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'B' }) })
+        .click();
     await expect(choicesOf(display)).toHaveText(['A 6', 'B 8']);
+    await expect(choicesOf(page)).toHaveText(['A 6', `B 8 ${fr.modes.quiz.correct}`]);
 
     await expectQuestionOnPhone(phone, question, progress);
 
@@ -257,7 +278,10 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     const second = 'Quelle planète est la plus proche du Soleil ?';
     const secondProgress = fill(fr.modes.quiz.question, { number: 2, count: 3 });
     await expect(page.getByRole('heading', { name: second })).toBeVisible();
-    await expect(display.getByRole('heading', { name: second })).toBeVisible();
+    await expect(
+        display.getByText(fill(fr.modes.quiz.display.upcoming, { number: 2 }), { exact: true }),
+    ).toBeVisible();
+    await expect(display.getByText(second)).toHaveCount(0);
     await expect(display.getByText(secondProgress)).toBeVisible();
     await expect(display.getByText(fr.modes.quiz.correct)).toHaveCount(0);
     for (const other of [phone, latePhone, thirdPhone, silentPhone, tooLatePhone]) {
@@ -266,9 +290,12 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     }
     await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toHaveCount(0);
 
-    // The game master opens the answers, then skips the question after confirming: the third one
-    // follows on every interface, numbered after the skipped one, and nothing tells about it.
+    // The game master opens the answers without showing the question first: the TV screen shows
+    // it whole at once. Then they skip it after confirming: the third one follows on every
+    // interface, numbered after the skipped one, and nothing tells about it.
     await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await expect(display.getByRole('heading', { name: second })).toBeVisible();
+    await expect(choicesOf(display)).toHaveCount(2);
     await answer(tooLatePhone, 'A');
     const skipDialog = page.getByRole('dialog', {
         name: fill(fr.modes.quiz.gm.skipConfirm.title, { number: 2 }),
@@ -281,7 +308,10 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     const thirdProgress = fill(fr.modes.quiz.question, { number: 3, count: 3 });
     await expect(page.getByRole('heading', { name: third })).toBeVisible();
     await expect(skipDialog).toHaveCount(0);
-    await expect(display.getByRole('heading', { name: third })).toBeVisible();
+    await expect(
+        display.getByText(fill(fr.modes.quiz.display.upcoming, { number: 3 }), { exact: true }),
+    ).toBeVisible();
+    await expect(display.getByText(third)).toHaveCount(0);
     await expect(display.getByText(thirdProgress)).toBeVisible();
     for (const screen of [display, tooLatePhone]) {
         await expect(screen.getByRole('timer')).toHaveCount(0);
@@ -378,9 +408,12 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     const last = 'Quel est le plus grand océan ?';
     const lastProgress = fill(fr.modes.quiz.question, { number: 1, count: 1 });
     await expect(page.getByRole('heading', { name: playedPack.rounds[1] })).toBeVisible();
-    await expect(display.getByRole('heading', { name: last })).toBeVisible();
+    await expect(
+        display.getByText(fill(fr.modes.quiz.display.upcoming, { number: 1 }), { exact: true }),
+    ).toBeVisible();
     await expectQuestionOnPhone(phone, last, lastProgress);
     await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await expect(display.getByRole('heading', { name: last })).toBeVisible();
     await answer(phone, 'B');
     await answer(latePhone, 'B');
     await page
