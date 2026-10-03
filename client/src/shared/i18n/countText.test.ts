@@ -10,4 +10,8 @@ describe('countText', () => {
         expect(countText(texts, 2)).toBe('2 joueurs');
         expect(countText(texts, 12)).toBe('12 joueurs');
     });
+
+    it('writes the number the French way', () => {
+        expect(countText(texts, 1350)).toBe('1 350 joueurs');
+    });
 });

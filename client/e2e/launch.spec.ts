@@ -3,6 +3,7 @@ import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { formatNumber } from '../src/shared/i18n/numberText.ts';
 import { gameMasterCode, playedPack } from './gameServer.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
 
@@ -18,6 +19,11 @@ async function openConsole(page: Page): Promise<void> {
     );
     await page.goto('/gm/');
     await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
+}
+
+/** The points a player earned with a question, as the phones and the console show them. */
+function earnedText(points: number): string {
+    return fill(fr.modes.quiz.pointsEarned, { points: formatNumber(points) });
 }
 
 function choicesOf(page: Page) {
@@ -193,15 +199,39 @@ test('the game master starts the game, then plays the questions of its first rou
         await expect(missed.getByText(fr.modes.quiz.player.correctChoice)).toBeVisible();
         await expect(correctChoiceOn(missed, 'B')).toBeVisible();
     }
-    // The phone that joined too late to take part sees the correct answer, without verdict.
+    // Under the verdict, the points of the question and the new total: those of the round for a
+    // correct answer, the pack giving no speed bonus, nothing otherwise.
+    for (const right of [phone, thirdPhone]) {
+        await expect(right.getByText(earnedText(1000), { exact: true })).toBeVisible();
+        await expect(right.getByText(countText(fr.modes.quiz.player.score, 1000))).toBeVisible();
+    }
+    for (const missed of [latePhone, silentPhone]) {
+        await expect(missed.getByText(earnedText(0), { exact: true })).toBeVisible();
+        await expect(missed.getByText(countText(fr.modes.quiz.player.score, 0))).toBeVisible();
+    }
+    // The phone that joined too late to take part sees the correct answer, without verdict nor
+    // points.
     await expect(correctChoiceOn(tooLatePhone, 'B')).toBeVisible();
     for (const verdict of Object.values(verdicts)) {
         await expect(tooLatePhone.getByText(verdict, { exact: true })).toHaveCount(0);
     }
+    await expect(tooLatePhone.getByText(earnedText(0), { exact: true })).toHaveCount(0);
 
-    // The console shows the same distribution, and moving on comes next.
+    // The console shows the same distribution, the points of each participant and every score,
+    // and moving on comes next.
     await expect(choicesOf(page).filter({ hasText: fr.modes.quiz.correct })).toContainText(
         `${nickname} · ${thirdNickname}`,
+    );
+    await expect(answers.getByRole('listitem').filter({ hasText: nickname })).toHaveText(
+        `${nickname} B ${earnedText(1000)}`,
+    );
+    await expect(answers.getByRole('listitem').filter({ hasText: lateNickname })).toHaveText(
+        `${lateNickname} A ${earnedText(0)}`,
+    );
+    const players = page.getByRole('list', { name: fr.gm.playerListLabel }).getByRole('listitem');
+    await expect(players.filter({ hasText: nickname })).toContainText(countText(fr.gm.score, 1000));
+    await expect(players.filter({ hasText: tooLateNickname })).toContainText(
+        countText(fr.gm.score, 0),
     );
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
 

@@ -20,6 +20,8 @@ export interface PlayerViewProps<
 > {
     readonly view: V;
     readonly round: RoundInfo;
+    /** The points of this player since the start of the game, computed by the server alone. */
+    readonly score: number;
     /** The clock of the server, to count down to the times of the view. */
     readonly clock: ServerClock;
     /** Whether the page is synchronized with the server: every action is disabled otherwise. */

@@ -5,8 +5,10 @@
         QuizPlayerView,
         QuizSubmitAnswer,
     } from '../../shared/contracts';
+    import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatNumber } from '../../shared/i18n/numberText';
     import type { PlayerViewProps } from '../../shared/modeViews';
     import ChoiceMarker from './ChoiceMarker.svelte';
     import { choiceColor } from './choiceTheme';
@@ -16,6 +18,7 @@
     let {
         view,
         round,
+        score,
         clock,
         interactive,
         send,
@@ -96,6 +99,15 @@
                     </svg>
                     {fr.modes.quiz.player.verdicts[view.verdict]}
                 </p>
+            {/if}
+            {#if view.points !== null}
+                <!-- Both computed by the server: the phone adds nothing up. -->
+                <div class="points">
+                    <p class="earned">
+                        {fill(fr.modes.quiz.pointsEarned, { points: formatNumber(view.points) })}
+                    </p>
+                    <p class="score">{countText(fr.modes.quiz.player.score, score)}</p>
+                </div>
             {/if}
             {#if view.verdict !== 'Correct'}
                 <p class="correct-label">{fr.modes.quiz.player.correctChoice}</p>
@@ -246,6 +258,23 @@
 
     .verdict.Correct {
         color: var(--color-accent);
+    }
+
+    .points {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .earned {
+        color: var(--color-text);
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    .score {
+        font-size: 1.25rem;
     }
 
     .correct-label {

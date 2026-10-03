@@ -18,4 +18,5 @@ export interface QuizPlayerView {
     readonly answer: QuizChoiceLetter | null;
     readonly correctChoice: QuizChoiceLetter | null;
     readonly verdict: QuizVerdict | null;
+    readonly points: number | null;
 }

@@ -13,6 +13,7 @@
     import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatNumber } from '../../shared/i18n/numberText';
     import type { GameMasterViewProps } from '../../shared/modeViews';
     import ChoiceMarker from './ChoiceMarker.svelte';
     import { choiceColor } from './choiceTheme';
@@ -110,15 +111,24 @@
                 <li>
                     <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
                     <span class="nickname">{answer.nickname}</span>
-                    {#if answer.choice !== null}
-                        <ChoiceMarker letter={answer.choice} />
-                    {:else}
-                        <span class="none">
-                            {view.phase === 'Answering'
-                                ? fr.modes.quiz.gm.waitingAnswer
-                                : fr.modes.quiz.noAnswer}
-                        </span>
-                    {/if}
+                    <span class="answer">
+                        {#if answer.choice !== null}
+                            <ChoiceMarker letter={answer.choice} />
+                        {:else}
+                            <span class="none">
+                                {view.phase === 'Answering'
+                                    ? fr.modes.quiz.gm.waitingAnswer
+                                    : fr.modes.quiz.noAnswer}
+                            </span>
+                        {/if}
+                        {#if answer.points !== null}
+                            <span class="points">
+                                {fill(fr.modes.quiz.pointsEarned, {
+                                    points: formatNumber(answer.points),
+                                })}
+                            </span>
+                        {/if}
+                    </span>
                 </li>
             {/each}
         </ul>
@@ -282,6 +292,18 @@
         min-width: 0;
         font-weight: 700;
         overflow-wrap: anywhere;
+    }
+
+    .answer {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-m);
+    }
+
+    .points {
+        min-width: 4.5em;
+        font-weight: 700;
+        text-align: right;
     }
 
     .actions {

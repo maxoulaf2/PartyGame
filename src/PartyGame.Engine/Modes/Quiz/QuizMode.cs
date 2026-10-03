@@ -85,7 +85,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         {
             GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
             GameMasterRoundInput { RoundIntent: QuizLockAnswers locking } => LockAnswers(round, locking),
-            GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal),
+            GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal, game),
             GameMasterRoundInput { RoundIntent: QuizNextQuestion next } => NextQuestion(round, next, context),
             GameMasterRoundInput { RoundIntent: QuizSkipQuestion skip } => SkipQuestion(round, skip, context),
             PlayerRoundInput { RoundIntent: QuizSubmitAnswer answer } submitted =>
@@ -111,7 +111,8 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             round.Phase == QuizPhase.Presentation || round.Participants.Contains(player.Id),
             round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null,
             round.Phase == QuizPhase.Revealed ? CorrectLetterOf(round) : null,
-            round.Phase == QuizPhase.Revealed ? VerdictOf(round, player.Id) : null);
+            round.Phase == QuizPhase.Revealed ? VerdictOf(round, player.Id) : null,
+            PointsOf(round, player.Id));
     }
 
     /// <inheritdoc />
@@ -157,7 +158,10 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             ],
             CloseTimeOf(round),
 
-            [.. ParticipantsOf(round, game).Select(p => new QuizGameMasterAnswer(p.Player.Id, p.Player.Nickname, p.Choice))]);
+            [
+                .. ParticipantsOf(round, game).Select(p =>
+                    new QuizGameMasterAnswer(p.Player.Id, p.Player.Nickname, p.Choice, PointsOf(round, p.Player.Id))),
+            ]);
     }
 
     /// <summary>
@@ -219,9 +223,10 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
-    /// Reveals the correct answer once the answers are locked: the game master locks them first.
+    /// Reveals the correct answer once the answers are locked: the game master locks them first. The points of the
+    /// question are awarded now, never before, so that no score tells a correct answer ahead of time.
     /// </summary>
-    private static RoundTransition RevealAnswer(QuizRound round, QuizRevealAnswer reveal)
+    private static RoundTransition RevealAnswer(QuizRound round, QuizRevealAnswer reveal, GameState game)
     {
         if (reveal.QuestionNumber != round.QuestionNumber)
         {
@@ -233,7 +238,26 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
         }
 
-        return new(round with { Phase = QuizPhase.Revealed }, []);
+        var correct = CorrectLetterOf(round);
+        var points = ParticipantsOf(round, game).ToImmutableDictionary(
+            p => p.Player.Id,
+            p => p.Choice == correct ? PointsFor(round, round.Answers[p.Player.Id]) : 0);
+        return new(round with { Phase = QuizPhase.Revealed, Points = points }, []) { Points = points };
+    }
+
+    /// <summary>
+    /// The points of a correct answer: those of the round, plus its speed bonus in proportion to the time left when the
+    /// answer was received, rounded to the nearest integer. Computed in integers, so that the result is exact and
+    /// reproducible.
+    /// </summary>
+    private static int PointsFor(QuizRound round, QuizAnswer answer)
+    {
+        var duration = TimeSpan.FromSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds).Ticks;
+
+        // Kept within the countdown: the hub may stamp an answer just before the loop handles the opening.
+        var left = Math.Clamp((round.AnswersCloseAt!.Value - answer.ReceivedAt).Ticks, 0, duration);
+        var bonus = ((2 * round.Descriptor.SpeedBonus * left) + duration) / (2 * duration);
+        return round.Descriptor.Points + (int)bonus;
     }
 
     /// <summary>
@@ -346,6 +370,12 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         : !round.Answers.TryGetValue(playerId, out var answer) ? QuizVerdict.NoAnswer
         : answer.Choice == CorrectLetterOf(round) ? QuizVerdict.Correct
         : QuizVerdict.Wrong;
+
+    /// <summary>
+    /// What a participant earned with the question in progress, once revealed: nothing to one who did not take part.
+    /// </summary>
+    private static int? PointsOf(QuizRound round, PlayerId playerId) =>
+        round.Phase == QuizPhase.Revealed && round.Points.TryGetValue(playerId, out var points) ? points : null;
 
     /// <summary>
     /// The players taking part in the question in progress, in order of arrival, each with their choice. Players are

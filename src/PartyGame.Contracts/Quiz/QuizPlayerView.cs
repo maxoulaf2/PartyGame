@@ -27,6 +27,10 @@ namespace PartyGame.Contracts.Quiz;
 /// Whether the player got it right, once the answer is revealed, if they took part in the question;
 /// <see langword="null"/> otherwise.
 /// </param>
+/// <param name="Points">
+/// The points the player earned with the question, 0 included, once the answer is revealed, if they took part in it;
+/// <see langword="null"/> otherwise. Their total is <see cref="PlayerSnapshot.Score"/>.
+/// </param>
 public sealed record QuizPlayerView(
     int QuestionNumber,
     int QuestionCount,
@@ -36,4 +40,5 @@ public sealed record QuizPlayerView(
     bool Participating,
     QuizChoiceLetter? Answer,
     QuizChoiceLetter? CorrectChoice,
-    QuizVerdict? Verdict) : PlayerRoundView;
+    QuizVerdict? Verdict,
+    int? Points) : PlayerRoundView;

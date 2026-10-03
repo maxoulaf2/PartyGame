@@ -15,4 +15,8 @@ namespace PartyGame.Engine;
 /// The number of the last intent of the player the engine accepted, 0 before the first one: an intent numbered up to it
 /// was already handled, and is sent again. Persisted with the state, so that a resumed game still ignores them.
 /// </param>
-public sealed record Player(PlayerId Id, string Nickname, bool IsConnected, long LastClientSeq = 0);
+/// <param name="Score">
+/// The points of the player since the start of the game, whatever the rounds that awarded them. A player who joins
+/// during the game starts at 0.
+/// </param>
+public sealed record Player(PlayerId Id, string Nickname, bool IsConnected, long LastClientSeq = 0, int Score = 0);

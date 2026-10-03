@@ -203,7 +203,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task RevealAnswer_OnceLocked_ShowsWhoChoseWhatOnTheDisplayAndEachVerdictOnThePhones()
+    public async Task RevealAnswer_OnceLocked_ShowsWhoChoseWhatOnTheDisplayAndEachVerdictAndScoreOnThePhones()
     {
         // Given: Zoé is right, Max is wrong, Léa did not answer, and the answers are locked
         await using var display = await HubClients.ConnectAsync(_factory);
@@ -238,9 +238,13 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         Assert.Equal(
             [("Zoé", QuizChoiceLetter.A), ("Max", QuizChoiceLetter.B), ("Léa", null)],
             onDisplay.Reveal.Answers.Select(answer => (answer.Nickname, answer.Choice)));
-        Assert.Equal(
-            [QuizVerdict.Correct, QuizVerdict.Wrong, QuizVerdict.NoAnswer],
-            new[] { toZoe, toMax, toLea }.Select(to => Assert.IsType<QuizPlayerView>(Assert.Single(to.Player).RoundView).Verdict!.Value));
+        var onPhones = new[] { toZoe, toMax, toLea }.Select(to => Assert.Single(to.Player)).ToArray();
+        var views = onPhones.Select(snapshot => Assert.IsType<QuizPlayerView>(snapshot.RoundView)).ToArray();
+        Assert.Equal([QuizVerdict.Correct, QuizVerdict.Wrong, QuizVerdict.NoAnswer], views.Select(view => view.Verdict!.Value));
+
+        // The points of the question, awarded once although the reveal was sent twice.
+        Assert.Equal([1000, 0, 0], views.Select(view => view.Points!.Value));
+        Assert.Equal([1000, 0, 0], onPhones.Select(snapshot => snapshot.Score));
 
         // A phone learns its own verdict only, never who the others are nor what they chose.
         LeakAssert.NoSecretReceived(Viewer.PhoneOf("Léa"), toLea.Json, new Secret("Zoé", Audience.Everyone), new Secret("Max", Audience.Everyone));

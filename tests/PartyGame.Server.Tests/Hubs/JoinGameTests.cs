@@ -49,7 +49,7 @@ public sealed class JoinGameTests : IAsyncDisposable
         Assert.Matches("^[A-Za-z0-9_-]{22}$", result.Token);
         await FlushAsync(connection);
         var snapshot = Assert.Single(received.Player.DistinctBy(s => s.Version));
-        Assert.Equal(new PlayerSnapshot(Game.State.GameId, 2, Phase.Lobby, result.PlayerId.Value, "Zoé", PlayerCount: 1, Round: null, RoundView: null), snapshot);
+        Assert.Equal(new PlayerSnapshot(Game.State.GameId, 2, Phase.Lobby, result.PlayerId.Value, "Zoé", Score: 0, PlayerCount: 1, Round: null, RoundView: null), snapshot);
         var player = Assert.Single(Game.State.Players);
         Assert.True(player.IsConnected);
         Assert.Equal(result.PlayerId, Game.State.PlayerTokens[new Engine.PlayerToken(result.Token!)]);

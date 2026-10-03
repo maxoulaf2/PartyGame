@@ -125,6 +125,40 @@ public sealed class RoundFlowTests
         Assert.Same(state, transition.State);
     }
 
+    [Fact]
+    public void Handle_RoundAwardingPoints_AddsThemToTheScoresOfThePlayers()
+    {
+        // Given
+        var state = Games.InPhase(GamePhase.Round, "Zoé", "Max");
+
+        // When: the round awards points without changing itself
+        var transition = Games.Engine.Handle(state, Games.GameMasterActs(state, FakeGameMasterIntent.Award), Games.Context());
+
+        // Then: the scores change, so the state does
+        Assert.Null(transition.Rejection);
+        Assert.NotSame(state, transition.State);
+        Assert.Equal([FakeMode.AwardedPoints, FakeMode.AwardedPoints], transition.State.Players.Select(p => p.Score));
+        Assert.Same(state.CurrentRound!.State, transition.State.CurrentRound!.State);
+    }
+
+    [Fact]
+    public void Handle_PointsOfSeveralRounds_AddUpAndStartAtZeroForAPlayerWhoJoinsDuringTheGame()
+    {
+        // Given: Zoé scores in the first round, Max joins between the two rounds
+        var state = Games.InPhase(GamePhase.Round, "Zoé");
+        state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Award));
+        state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Finish));
+        state = Games.Accepted(state, Games.Join("Max", player: 2));
+        Assert.Equal([FakeMode.AwardedPoints, 0], state.Players.Select(p => p.Score));
+        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+
+        // When
+        state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Award));
+
+        // Then
+        Assert.Equal([2 * FakeMode.AwardedPoints, FakeMode.AwardedPoints], state.Players.Select(p => p.Score));
+    }
+
     [Theory]
     [MemberData(nameof(OutsideRound))]
     public void Handle_PlayerRoundIntentOutsideRound_IsRejected(GamePhase phase)
