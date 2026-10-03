@@ -9,6 +9,8 @@ export type * from './AnnouncementResult';
 export type * from './ChooseAdvertisedAddressRefusal';
 export type * from './ChooseAdvertisedAddressRequest';
 export type * from './ChooseAdvertisedAddressResult';
+export type * from './ClientErrorKind';
+export type * from './ClientErrorReport';
 export type * from './ClockSyncResult';
 export type * from './DisplayPlayer';
 export type * from './DisplayRoundView';

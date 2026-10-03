@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E10-01](US-E10-01-incidents-gm.md) | Incidents serveur signalés au GM | Terminée | — |
 | [US-E10-02](US-E10-02-passer-une-manche-defaillante.md) | Passer une manche qui échoue à répétition | À faire | US-E10-01 |
-| [US-E10-03](US-E10-03-remontee-erreurs-client.md) | Remontée des erreurs des clients | Prête | — |
+| [US-E10-03](US-E10-03-remontee-erreurs-client.md) | Remontée des erreurs des clients | Terminée | — |
 | [US-E10-04](US-E10-04-vues-protegees.md) | Vues protégées et écran TV jamais vide | À faire | US-E10-01, US-E10-03 |
 
 ## Décisions

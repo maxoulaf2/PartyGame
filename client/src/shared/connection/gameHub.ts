@@ -9,6 +9,7 @@ import type {
     AnnouncementResult,
     ChooseAdvertisedAddressRequest,
     ChooseAdvertisedAddressResult,
+    ClientErrorReport,
     GameMasterRoundIntent,
     IGameClient,
     JoinRequest,
@@ -53,6 +54,7 @@ export interface GameHubMethods {
     SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
     SyncClock: { args: []; result: ClockSyncResult };
     ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };
+    ReportClientError: { args: [report: ClientErrorReport]; result: null };
 }
 
 /**

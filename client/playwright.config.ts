@@ -7,7 +7,7 @@ import {
 } from './e2e/gameServer.ts';
 
 const port = 4173;
-const mobilePages = /(player|gm|packs|reconnection|buildReload)\.spec\.ts/;
+const mobilePages = /(player|gm|packs|reconnection|buildReload|errorReports)\.spec\.ts/;
 // Tests that change the shared server for every other test: starting the game, the address.
 const serverWide = /(launch|address)\.spec\.ts/;
 
