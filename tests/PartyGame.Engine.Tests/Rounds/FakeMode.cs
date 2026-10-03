@@ -35,6 +35,8 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
                 new RoundTransition(round, []),
             PlayerRoundInput { RoundIntent: FakePlayerIntent { Action: FakePlayerIntent.Refused } } =>
                 RoundTransition.Rejected(round, RejectionReason.PhaseMismatch),
+            PlayerRoundInput { RoundIntent: FakePlayerIntent { Action: FakePlayerIntent.Scores } } player =>
+                new RoundTransition(round, []) { Points = ImmutableDictionary<PlayerId, int>.Empty.Add(player.PlayerId, AwardedPoints) },
             PlayerRoundInput { RoundIntent: FakePlayerIntent intent } player =>
                 Record(round, $"player {player.PlayerId.Value} {intent.Action}"),
             GameMasterRoundInput { RoundIntent: FakeGameMasterIntent { Action: FakeGameMasterIntent.Finish } } =>

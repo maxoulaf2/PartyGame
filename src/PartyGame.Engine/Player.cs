@@ -19,4 +19,13 @@ namespace PartyGame.Engine;
 /// The points of the player since the start of the game, whatever the rounds that awarded them. A player who joins
 /// during the game starts at 0.
 /// </param>
-public sealed record Player(PlayerId Id, string Nickname, bool IsConnected, long LastClientSeq = 0, int Score = 0);
+/// <param name="JoinedAfterEnd">
+/// Whether the player joined once the game was finished: having played no round, they are not ranked.
+/// </param>
+public sealed record Player(
+    PlayerId Id,
+    string Nickname,
+    bool IsConnected,
+    long LastClientSeq = 0,
+    int Score = 0,
+    bool JoinedAfterEnd = false);

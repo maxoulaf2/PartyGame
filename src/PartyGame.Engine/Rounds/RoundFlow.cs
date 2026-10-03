@@ -72,8 +72,10 @@ internal static class RoundFlow
             return handled;
         }
 
-        // Even when the mode changes nothing, so that the intent sent again is not handled again.
-        var players = handled.State.Players.Replace(player, player with { LastClientSeq = input.ClientSeq });
+        // Even when the mode changes nothing, so that the intent sent again is not handled again. The player as the mode
+        // left them, with the points it may have awarded for the intent.
+        var acting = handled.State.Players.First(p => p.Id == player.Id);
+        var players = handled.State.Players.Replace(acting, acting with { LastClientSeq = input.ClientSeq });
         return new Transition(handled.State with { Players = players }, handled.Effects);
     }
 

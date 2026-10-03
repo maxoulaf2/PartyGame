@@ -549,3 +549,40 @@ test('/gm/ ranks the players between two rounds, then offers to start the next o
     ).toBeVisible();
     await expect(page.getByRole('button', { name: fr.gm.nextRound.action })).toBeEnabled();
 });
+
+test('/gm/ shows the final ranking once the game is finished, with nothing left to start', async ({
+    page,
+}) => {
+    const lastRound: RoundInfo = { ...firstRound, number: 3, title: 'Finale' };
+    await serveGameMasterSnapshot(page, {
+        ...fakeLobby(),
+        phase: 'Finished',
+        players: [
+            { id: zoe, nickname: 'Zoé', isConnected: true, score: 3000 },
+            { id: max, nickname: 'Max', isConnected: false, score: 3000 },
+        ],
+        packCatalog: null,
+        selectedPackId: 'soiree',
+        packTitle: 'Grande soirée',
+        round: lastRound,
+        ranking: [
+            { id: max, nickname: 'Max', isConnected: false, rank: 1, isTied: true, score: 3000 },
+            { id: zoe, nickname: 'Zoé', isConnected: true, rank: 1, isTied: true, score: 3000 },
+        ],
+    });
+
+    await openConsole(page);
+
+    await expect(page.getByRole('heading', { name: fr.game.finished })).toBeVisible();
+    await expect(page.getByRole('heading', { name: fr.game.finalRanking })).toBeVisible();
+    await expect(
+        page.getByRole('list', { name: fr.game.rankingLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `${rankText(fr.game.rank, 1)} Max ${countText(fr.game.points, 3000)}`,
+        `${rankText(fr.game.rank, 1)} Zoé ${countText(fr.game.points, 3000)}`,
+    ]);
+    // The game is over: neither a round to play nor a game to start.
+    for (const action of [fr.gm.nextRound.action, fr.gm.start.action]) {
+        await expect(page.getByRole('button', { name: action })).toHaveCount(0);
+    }
+});

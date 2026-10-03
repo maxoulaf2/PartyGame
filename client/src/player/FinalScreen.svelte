@@ -1,28 +1,33 @@
 <script lang="ts">
-    import type { PlayerStanding, RoundInfo } from '../shared/contracts';
+    import type { PlayerStanding } from '../shared/contracts';
     import { countText } from '../shared/i18n/countText';
-    import { roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { standingText } from '../shared/i18n/rankText';
+    import { isOnPodium } from '../shared/podium';
 
     interface Props {
-        /** The round that just finished. */
-        round: RoundInfo;
-        /** The rank of the player, computed by the server. */
-        standing: PlayerStanding;
+        /**
+         * The final rank of the player, computed by the server, or null for a phone that joined
+         * once the game was finished.
+         */
+        standing: PlayerStanding | null;
         score: number;
     }
 
-    let { round, standing, score }: Props = $props();
+    let { standing, score }: Props = $props();
 </script>
 
 <main>
-    <h1>{roundText(fr.game.roundEnded, round)}</h1>
-    <p class="standing">
-        {standingText(fr.game.standing, fr.game.rank, standing, standing.rankedCount)}
-    </p>
-    <p class="score">{countText(fr.game.points, score)}</p>
-    <p class="status">{fr.player.betweenRounds}</p>
+    <h1>{fr.game.finished}</h1>
+    {#if standing}
+        <p class="standing">
+            {standingText(fr.game.standing, fr.game.rank, standing, standing.rankedCount)}
+        </p>
+        <p class="score">{countText(fr.game.points, score)}</p>
+        <p class="message">{isOnPodium(standing.rank) ? fr.player.podium : fr.player.finished}</p>
+    {:else}
+        <p class="message">{fr.player.joinedAfterEnd}</p>
+    {/if}
 </main>
 
 <style>
@@ -59,7 +64,8 @@
         font-weight: 700;
     }
 
-    .status {
-        color: var(--color-text-muted);
+    .message {
+        font-size: 1.25rem;
+        font-weight: 700;
     }
 </style>

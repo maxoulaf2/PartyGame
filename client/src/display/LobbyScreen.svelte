@@ -1,11 +1,3 @@
-<script lang="ts" module>
-    /** What the lobby says is going on, once the game has started. */
-    export interface Notice {
-        readonly headline: string;
-        readonly detail: string | null;
-    }
-</script>
-
 <script lang="ts">
     import QrCode from '../shared/components/QrCode.svelte';
     import type { DisplaySnapshot } from '../shared/contracts';
@@ -16,7 +8,8 @@
 
     interface Props {
         snapshot: DisplaySnapshot;
-        notice?: Notice | null;
+        /** What is going on, once the game has started. */
+        notice?: string | null;
     }
 
     let { snapshot, notice = null }: Props = $props();
@@ -53,10 +46,7 @@
             <p class="pack">{packTitle}</p>
         {/if}
         {#if notice !== null}
-            <p class="headline">{notice.headline}</p>
-            {#if notice.detail !== null}
-                <p class="detail">{notice.detail}</p>
-            {/if}
+            <p class="headline">{notice}</p>
         {/if}
         <p class="status">{status}</p>
         <PlayerList players={snapshot.players} />
@@ -135,9 +125,5 @@
         font-size: var(--font-size-title);
         font-weight: 700;
         line-height: 1.1;
-    }
-
-    .detail {
-        font-weight: 700;
     }
 </style>

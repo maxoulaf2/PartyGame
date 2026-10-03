@@ -26,8 +26,8 @@ namespace PartyGame.Contracts;
 /// What the game mode of the round in progress shows on the TV screen, or <see langword="null"/> outside a round.
 /// </param>
 /// <param name="Ranking">
-/// Every registered player by rank, then in alphabetical order of nickname within a rank, between two rounds; empty
-/// otherwise.
+/// The players by rank, then in alphabetical order of nickname within a rank, between two rounds and once the game is
+/// finished; empty otherwise. Every registered player is ranked, but those who joined once the game was finished.
 /// </param>
 public sealed record DisplaySnapshot(
     GameId GameId,

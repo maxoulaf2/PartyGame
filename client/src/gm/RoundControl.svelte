@@ -3,11 +3,10 @@
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { selectGameScreen } from '../shared/gameScreen';
-    import { countText } from '../shared/i18n/countText';
     import { fill, roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
-    import { rankText } from '../shared/i18n/rankText';
     import { findGameMasterView } from '../modes/registry';
+    import RankingList from './RankingList.svelte';
 
     interface Props {
         snapshot: GameMasterSnapshot;
@@ -70,19 +69,12 @@
         <p id="next-round-hint" class="hint">{fr.gm.nextRound.hint}</p>
         <!-- After the action: with many players, a long ranking would push it out of sight. -->
         <h3>{fill(fr.game.rankingAfter, { number: round.number })}</h3>
-        <!-- Ranked by the server, ties in alphabetical order: shown as received, never sorted here. -->
-        <ol aria-label={fr.game.rankingLabel}>
-            {#each snapshot.ranking as player (player.id)}
-                <li>
-                    <span class="rank">{rankText(fr.game.rank, player.rank)}</span>
-                    <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
-                    <span class="nickname">{player.nickname}</span>
-                    <span class="score">{countText(fr.game.points, player.score)}</span>
-                </li>
-            {/each}
-        </ol>
+        <RankingList ranking={snapshot.ranking} />
     {:else if screen.kind === 'finished'}
+        <!-- Nothing left to start: a new game needs the server to restart. -->
         <h2>{fr.game.finished}</h2>
+        <h3>{fr.game.finalRanking}</h3>
+        <RankingList ranking={snapshot.ranking} />
     {:else}
         <p class="progress" role="status">{fr.gm.inProgress}</p>
     {/if}
@@ -119,42 +111,6 @@
 
     .hint {
         color: var(--color-text-muted);
-    }
-
-    ol {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
-    li {
-        display: flex;
-        align-items: baseline;
-        gap: var(--space-m);
-        padding: var(--space-s) var(--space-m);
-        border-radius: var(--radius);
-        background: var(--color-surface);
-    }
-
-    .rank {
-        flex: 0 0 3em;
-        color: var(--color-accent);
-        font-weight: 700;
-    }
-
-    .nickname {
-        flex: 1;
-        min-width: 0;
-        font-weight: 700;
-        /* A long nickname wraps rather than being cut. */
-        overflow-wrap: anywhere;
-    }
-
-    .score {
-        white-space: nowrap;
     }
 
     .upcoming {

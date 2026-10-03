@@ -55,7 +55,7 @@ async function expectQuestionOnPhone(phone: Page, question: string, progress: st
     await expect(phone.getByText('araignée')).toHaveCount(0);
 }
 
-test('the game master starts the game, then plays the questions of its first round', async ({
+test('the game master plays a whole game, from the choice of the pack to the final ranking', async ({
     page,
     browser,
     baseURL,
@@ -362,10 +362,95 @@ test('the game master starts the game, then plays the questions of its first rou
         ),
     ).toBeVisible();
 
+    // The game master starts the last round, of a single question: two players get it right.
+    await page.getByRole('button', { name: fr.gm.nextRound.action }).click();
+    const last = 'Quel est le plus grand océan ?';
+    const lastProgress = fill(fr.modes.quiz.question, { number: 1, count: 1 });
+    await expect(page.getByRole('heading', { name: playedPack.rounds[1] })).toBeVisible();
+    await expect(display.getByRole('heading', { name: last })).toBeVisible();
+    await expectQuestionOnPhone(phone, last, lastProgress);
+    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    await answer(phone, 'B');
+    await answer(latePhone, 'B');
+    await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
+    await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
+    await page.getByRole('button', { name: fr.modes.quiz.gm.endRound }).click();
+
+    // The game is finished: the TV screen shows the podium, the first alone, the three second ex
+    // aequo on the same step in alphabetical order, no third step, then every other player.
+    await expect(display.getByRole('heading', { name: fr.game.finalRanking })).toBeVisible();
+    const podium = display.getByRole('list', { name: fr.game.podiumLabel });
+    const step = (rank: number) =>
+        podium
+            .getByRole('list', {
+                name: fill(fr.game.podiumStepLabel, { rank: rankText(fr.game.rank, rank) }),
+            })
+            .getByRole('listitem');
+    await expect(step(1)).toHaveText([nickname]);
+    await expect(step(2)).toHaveText([flakyNickname, thirdNickname, lateNickname]);
+    await expect(step(3)).toHaveCount(0);
+    await expect(podium.locator('[data-rank="1"]')).toContainText(pointsText(2000));
+    await expect(podium.locator('[data-rank="2"]')).toContainText(pointsText(1000));
+    const rest = display.getByRole('list', { name: fr.game.restLabel }).getByRole('listitem');
+    await expect(rest).toHaveCount(playerCount - 4);
+    await expect(rest.filter({ hasText: silentNickname })).toHaveText(
+        `${rankText(fr.game.rank, 5)} ${silentNickname} ${pointsText(0)}`,
+    );
+
+    // Each phone shows its final rank and score, with a word for those on the podium.
+    const finalStandings = [
+        [phone, { rank: 1, isTied: false }, 2000, fr.player.podium],
+        [latePhone, { rank: 2, isTied: true }, 1000, fr.player.podium],
+        [silentPhone, { rank: 5, isTied: true }, 0, fr.player.finished],
+    ] as const;
+    for (const [other, standing, points, message] of finalStandings) {
+        await expect(other.getByRole('heading', { name: fr.game.finished })).toBeVisible();
+        await expect(
+            other.getByText(standingText(fr.game.standing, fr.game.rank, standing, playerCount), {
+                exact: true,
+            }),
+        ).toBeVisible();
+        await expect(other.getByText(pointsText(points), { exact: true })).toBeVisible();
+        await expect(other.getByText(message, { exact: true })).toBeVisible();
+    }
+
+    // The console shows the final ranking, and nothing left to play.
+    await expect(page.getByRole('heading', { name: fr.game.finished })).toBeVisible();
+    const finalRanking = page
+        .getByRole('list', { name: fr.game.rankingLabel })
+        .getByRole('listitem');
+    await expect(finalRanking).toHaveCount(playerCount);
+    await expect(finalRanking.first()).toHaveText(
+        `${rankText(fr.game.rank, 1)} ${nickname} ${pointsText(2000)}`,
+    );
+    await expect(page.getByRole('button', { name: fr.gm.nextRound.action })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toHaveCount(0);
+
+    // Registration stays open: a phone that joins now sees the end of the game, without a rank,
+    // and the final ranking stays that of the game.
+    const afterEndNickname = uniqueNickname('Ugo');
+    const afterEndPhone = await joinOnNewPhone(browser, baseURL, afterEndNickname);
+    await expect(afterEndPhone.getByRole('heading', { name: fr.game.finished })).toBeVisible();
+    await expect(afterEndPhone.getByText(fr.player.joinedAfterEnd)).toBeVisible();
+    await expect(
+        page
+            .getByRole('list', { name: fr.gm.playerListLabel })
+            .getByText(afterEndNickname, { exact: true }),
+    ).toBeVisible();
+    await expect(finalRanking).toHaveCount(playerCount);
+    await expect(display.getByText(afterEndNickname)).toHaveCount(0);
+
     await Promise.all(
-        [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, flaky.phone, display].map(
-            (other) => other.context().close(),
-        ),
+        [
+            phone,
+            latePhone,
+            thirdPhone,
+            silentPhone,
+            tooLatePhone,
+            flaky.phone,
+            afterEndPhone,
+            display,
+        ].map((other) => other.context().close()),
     );
 });
 

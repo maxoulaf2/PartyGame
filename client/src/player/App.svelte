@@ -18,6 +18,7 @@
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
     import { findPlayerView } from '../modes/registry';
+    import FinalScreen from './FinalScreen.svelte';
     import JoinForm from './JoinForm.svelte';
     import LobbyScreen from './LobbyScreen.svelte';
     import RankingScreen from './RankingScreen.svelte';
@@ -79,11 +80,10 @@
         <RankingScreen
             round={screen.round}
             standing={game.current.standing}
-            playerCount={game.current.playerCount}
             score={game.current.score}
         />
     {:else if screen.kind === 'finished'}
-        <WaitingScreen title={fr.game.finished} message={fr.player.finished} />
+        <FinalScreen standing={game.current.standing} score={game.current.score} />
     {:else}
         <WaitingScreen title={fr.app.name} message={fr.player.inProgress} />
     {/if}

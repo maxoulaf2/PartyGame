@@ -10,10 +10,13 @@ namespace PartyGame.Server.Tests.Hubs;
 
 /// <summary>
 /// Plays quiz rounds for the hub tests that need rounds to end, which the quiz mode cannot do before US-E08-05: it counts
-/// the intents of the players, and any intent of the game master finishes the round. Its views are those of the quiz mode.
+/// the intents of the players, each one worth <see cref="PointsPerIntent"/> to its player, and any intent of the game master
+/// finishes the round. Its views are those of the quiz mode.
 /// </summary>
 internal sealed class TestQuizMode : GameMode<QuizRoundDescriptor, TestQuizRound>
 {
+    public const int PointsPerIntent = 100;
+
     private static readonly QuizMode _quiz = new();
 
     public override ImmutableArray<PackProblem> Validate(QuizRoundDescriptor descriptor, string path) => [];
@@ -24,7 +27,10 @@ internal sealed class TestQuizMode : GameMode<QuizRoundDescriptor, TestQuizRound
     public override RoundTransition Handle(TestQuizRound round, GameInput input, GameState game, GameContext context) =>
         input switch
         {
-            PlayerRoundInput => new RoundTransition(round with { PlayerIntents = round.PlayerIntents + 1 }, []),
+            PlayerRoundInput player => new RoundTransition(round with { PlayerIntents = round.PlayerIntents + 1 }, [])
+            {
+                Points = ImmutableDictionary<PlayerId, int>.Empty.Add(player.PlayerId, PointsPerIntent),
+            },
             GameMasterRoundInput => new RoundTransition(round, []) { IsFinished = true },
             _ => RoundTransition.Rejected(round, RejectionReason.UnexpectedTimer),
         };

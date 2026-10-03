@@ -13,6 +13,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Packs;
 using PartyGame.Server.Tests.Packs;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -142,9 +143,79 @@ public sealed class RoundsTests : IAsyncDisposable
         Assert.Equal(expected, toDisplay.Display[^1].Ranking);
         Assert.Equal(expected, toGameMaster.GameMaster[^1].Ranking);
         Assert.Equal("Finale", toGameMaster.GameMaster[^1].NextRoundTitle);
-        Assert.Equal((new PlayerStanding(1, IsTied: true), 2), (toZoe.Player[^1].Standing, toZoe.Player[^1].PlayerCount));
-        Assert.Contains("\"standing\":{\"rank\":1,\"isTied\":true}", toZoe.Json[^1], StringComparison.Ordinal);
+        Assert.Equal((new PlayerStanding(1, IsTied: true, RankedCount: 2), 2), (toZoe.Player[^1].Standing, toZoe.Player[^1].PlayerCount));
+        Assert.Contains("\"standing\":{\"rank\":1,\"isTied\":true,\"rankedCount\":2}", toZoe.Json[^1], StringComparison.Ordinal);
         Assert.DoesNotContain("Finale", toDisplay.Json[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LastRoundFinished_SendsTheFinalRankingToEachInterface()
+    {
+        // Given: Zoé scores in the first round, then the game master plays the game to its end
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await using var max = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+        await JoinAsync(max, "Max");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var first = Game.State.CurrentRound!.Id;
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
+        var last = Game.State.CurrentRound!.Id;
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+        using var toZoe = new ReceivedSnapshots(zoe);
+        using var toMax = new ReceivedSnapshots(max);
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(last, 1)), Ct);
+
+        // Then
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
+        var ids = Game.State.Players.ToDictionary(p => p.Nickname, p => p.Id);
+        RankedPlayer[] expected =
+        [
+            new(ids["Zoé"], "Zoé", IsConnected: true, Rank: 1, IsTied: false, Score: TestQuizMode.PointsPerIntent),
+            new(ids["Max"], "Max", IsConnected: true, Rank: 2, IsTied: false, Score: 0),
+        ];
+        Assert.Equal(Phase.Finished, toDisplay.Display[^1].Phase);
+        Assert.Equal(expected, toDisplay.Display[^1].Ranking);
+        Assert.Equal(expected, toGameMaster.GameMaster[^1].Ranking);
+        Assert.Equal(new PlayerStanding(1, IsTied: false, RankedCount: 2), toZoe.Player[^1].Standing);
+        Assert.Equal(new PlayerStanding(2, IsTied: false, RankedCount: 2), toMax.Player[^1].Standing);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, new Secret("Max", Audience.OtherPlayersThan("Max")));
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Max"), toMax.Json, new Secret("Zoé", Audience.OtherPlayersThan("Zoé")));
+    }
+
+    [Fact]
+    public async Task JoinGame_OnceFinished_ShowsTheEndWithoutRankingTheLateArrival()
+    {
+        // Given: a game played to its end by Zoé
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await using var lea = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var first = Game.State.CurrentRound!.Id;
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+        await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(Game.State.CurrentRound!.Id, 1)), Ct);
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toLea = new ReceivedSnapshots(lea);
+
+        // When: registration stays open
+        await JoinAsync(lea, "Léa");
+
+        // Then
+        await Task.WhenAll(FlushAsync(display), FlushAsync(lea));
+        Assert.Equal((Phase.Finished, null), (toLea.Player[^1].Phase, toLea.Player[^1].Standing));
+        Assert.Equal(["Zoé"], toDisplay.Display[^1].Ranking.Select(p => p.Nickname));
+        Assert.Contains(toDisplay.Display[^1].Players, p => p.Nickname == "Léa");
     }
 
     [Fact]

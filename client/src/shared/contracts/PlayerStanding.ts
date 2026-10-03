@@ -6,4 +6,5 @@
 export interface PlayerStanding {
     readonly rank: number;
     readonly isTied: boolean;
+    readonly rankedCount: number;
 }
