@@ -98,10 +98,6 @@ internal static class QuizGames
     public static GameMasterRoundInput OpenAnswers(GameState state, int? questionNumber = null) =>
         new(new QuizOpenAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
 
-    /// <summary>The game master locks the answers of the question in progress.</summary>
-    public static GameMasterRoundInput LockAnswers(GameState state, int? questionNumber = null) =>
-        new(new QuizLockAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
-
     /// <summary>The game master reveals the answer of the question in progress.</summary>
     public static GameMasterRoundInput RevealAnswer(GameState state, int? questionNumber = null) =>
         new(new QuizRevealAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
@@ -148,11 +144,15 @@ internal static class QuizGames
     /// <summary>
     /// The same game, the answers of its question in progress opened, answered by the given players, then locked.
     /// </summary>
-    public static GameState Locked(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)
-    {
-        state = Answering(state, answers);
-        return Accepted(state, LockAnswers(state));
-    }
+    public static GameState Locked(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers) =>
+        Closed(Answering(state, answers));
+
+    /// <summary>
+    /// The same game, the answers of its question in progress locked: already, once every participant answered, or else
+    /// by the end of their countdown.
+    /// </summary>
+    public static GameState Closed(GameState state) =>
+        RoundOf(state).Phase == QuizPhase.Answering ? Accepted(state, AnswersTimerElapsed(state)) : state;
 
     /// <summary>
     /// The same game, the answers of its question in progress opened, answered by the given players, locked, then

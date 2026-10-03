@@ -100,8 +100,11 @@ public sealed class QuizPointsTests
     [Fact]
     public void Handle_RevealAnswerLockedEarly_MeasuresTheTimeLeftAgainstTheEndOfTheCountdown()
     {
-        // Given: Zoé answers after 5 seconds, then the game master locks the answers at once
+        // Given: Zoé answers after 5 seconds, then Max and Léa right after, which locks the answers at once
         var state = AnsweredAfter(_fast, 5_000);
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 2, QuizChoiceLetter.B, Games.Now.AddMilliseconds(5_500)));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 3, QuizChoiceLetter.C, Games.Now.AddMilliseconds(6_000)));
+        Assert.Equal(QuizPhase.Locked, QuizGames.RoundOf(state).Phase);
 
         // When
         var revealed = Reveal(state);
@@ -142,12 +145,12 @@ public sealed class QuizPointsTests
     [InlineData(QuizPhase.Locked)]
     public void Handle_BeforeTheReveal_AwardsNoPoint(QuizPhase phase)
     {
-        // Given / When: everybody answers right
+        // Given / When: everybody answers right, but the last one while the answers are still open
         var presented = Presented(_fast);
         var state = phase switch
         {
             QuizPhase.Presentation => presented,
-            QuizPhase.Answering => QuizGames.Answering(presented, (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.A)),
+            QuizPhase.Answering => QuizGames.Answering(presented, (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A)),
             _ => QuizGames.Locked(presented, (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.A)),
         };
 
@@ -342,10 +345,10 @@ public sealed class QuizPointsTests
         return QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddMilliseconds(milliseconds)));
     }
 
-    /// <summary>The same game, its answers locked by the game master, then revealed.</summary>
+    /// <summary>The same game, its answers locked, then revealed.</summary>
     private static GameState Reveal(GameState state)
     {
-        state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+        state = QuizGames.Closed(state);
         return QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
     }
 }

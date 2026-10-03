@@ -9,6 +9,7 @@
       "questions": [
         {
           "text": "Combien de pattes a une araignée ?",
+          "answerSeconds": 20,
           "choices": [{ "text": "6" }, { "text": "8", "correct": true }]
         },
         {
@@ -17,6 +18,7 @@
         },
         {
           "text": "Combien de côtés a un hexagone ?",
+          "answerSeconds": 15,
           "choices": [{ "text": "5" }, { "text": "6", "correct": true }]
         }
       ]
@@ -24,7 +26,7 @@
     {
       "type": "quiz",
       "title": "Finale",
-      "answerSeconds": 120,
+      "answerSeconds": 10,
       "questions": [
         {
           "text": "Quel est le plus grand océan ?",

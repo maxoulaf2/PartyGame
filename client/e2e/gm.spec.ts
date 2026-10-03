@@ -365,7 +365,7 @@ test('/gm/ follows what each player answers while the answers are open', async (
     await expect(
         page.getByText(fill(fr.modes.quiz.answered, { answered: 1, participants: 2 })),
     ).toBeVisible();
-    await expect(page.getByText(fr.modes.quiz.gm.allAnswered)).toHaveCount(0);
+    await expect(page.getByText(fr.modes.quiz.allAnswered)).toHaveCount(0);
     await expect(
         page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel }).getByRole('listitem'),
     ).toHaveText(['Zoé B', `Max ${fr.modes.quiz.gm.waitingAnswer}`]);
@@ -376,25 +376,36 @@ test('/gm/ follows what each player answers while the answers are open', async (
         `A Sydney ${countText(fr.modes.quiz.choiceAnswers, 0)}`,
         `B Canberra ${fr.modes.quiz.correct} ${countText(fr.modes.quiz.choiceAnswers, 1)}`,
     ]);
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toBeEnabled();
+    // Only the countdown or the last answer locks them: the game master can only skip the question.
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeEnabled();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toHaveCount(0);
 });
 
-test('/gm/ tells when every player taking part answered', async ({ page }) => {
+test('/gm/ tells when every player taking part answered, which locks the answers', async ({
+    page,
+}) => {
     const view = answeringView([
         { playerId: zoe, nickname: 'Zoé', choice: 'B', points: null },
         { playerId: max, nickname: 'Max', choice: 'A', points: null },
     ]);
-    await serveGameMasterSnapshot(page, fakeRound(view));
+    await serveGameMasterSnapshot(
+        page,
+        fakeRound({ ...view, phase: 'Locked', answersCloseAt: null }),
+    );
 
     await openConsole(page);
 
-    await expect(page.getByText(fr.modes.quiz.gm.allAnswered)).toBeVisible();
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toBeEnabled();
+    await expect(page.getByText(fr.modes.quiz.allAnswered)).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toBeEnabled();
 });
 
-test('/gm/ offers to reveal the answer once the answers are locked', async ({ page }) => {
-    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B', points: null }]);
+test('/gm/ offers to reveal the answer once the countdown locked the answers', async ({ page }) => {
+    const view = answeringView([
+        { playerId: zoe, nickname: 'Zoé', choice: 'B', points: null },
+        { playerId: max, nickname: 'Max', choice: null, points: null },
+    ]);
     await serveGameMasterSnapshot(
         page,
         fakeRound({ ...view, phase: 'Locked', answersCloseAt: null }),
@@ -403,8 +414,8 @@ test('/gm/ offers to reveal the answer once the answers are locked', async ({ pa
     await openConsole(page);
 
     await expect(page.getByText(fr.modes.quiz.timeUp)).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.allAnswered)).toHaveCount(0);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toBeEnabled();
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toHaveCount(0);
 });
 
 test('/gm/ shows who chose what once the answer is revealed', async ({ page }) => {

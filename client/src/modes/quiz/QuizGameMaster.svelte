@@ -4,7 +4,6 @@
     import type {
         QuizChoiceLetter,
         QuizGameMasterView,
-        QuizLockAnswers,
         QuizNextQuestion,
         QuizOpenAnswers,
         QuizRevealAnswer,
@@ -22,8 +21,7 @@
     let { view, round, clock, interactive, send }: GameMasterViewProps<QuizGameMasterView, Intent> =
         $props();
 
-    type Intent =
-        QuizOpenAnswers | QuizLockAnswers | QuizRevealAnswer | QuizNextQuestion | QuizSkipQuestion;
+    type Intent = QuizOpenAnswers | QuizRevealAnswer | QuizNextQuestion | QuizSkipQuestion;
 
     let sending = $state(false);
     // The question the game master asked to skip, until they confirm or cancel. The dialog goes away
@@ -72,7 +70,8 @@
             <p class="countdown">
                 <Countdown closeAt={view.answersCloseAt} {clock} label={fr.modes.quiz.timeLeft} />
             </p>
-        {:else if view.phase === 'Locked'}
+        {:else if view.phase === 'Locked' && !allAnswered}
+            <!-- Locked early once everybody answered: the line of answers already says so. -->
             <p class="time-up">{fr.modes.quiz.timeUp}</p>
         {/if}
     </div>
@@ -104,7 +103,7 @@
                 answered: answeredCount,
                 participants: view.answers.length,
             })}{#if allAnswered}
-                · <strong>{fr.modes.quiz.gm.allAnswered}</strong>{/if}
+                · <strong>{fr.modes.quiz.allAnswered}</strong>{/if}
         </p>
         <ul class="players" aria-label={fr.modes.quiz.gm.answersLabel}>
             {#each view.answers as answer (answer.playerId)}
@@ -142,14 +141,6 @@
                 onclick={() => act('quiz.openAnswers')}
             >
                 {fr.modes.quiz.gm.openAnswers}
-            </button>
-        {:else if view.phase === 'Answering'}
-            <button
-                type="button"
-                disabled={!interactive || sending}
-                onclick={() => act('quiz.lockAnswers')}
-            >
-                {fr.modes.quiz.gm.lockAnswers}
             </button>
         {:else if view.phase === 'Locked'}
             <button

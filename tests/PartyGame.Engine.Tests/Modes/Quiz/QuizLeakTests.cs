@@ -35,11 +35,10 @@ public sealed class QuizLeakTests
             ("player joined during the presentation", QuizGames.Accepted(QuizGames.Started(_rounds, ["Zoé", "Max"]), Games.Join("Léa", player: 3))),
             ("answers just opened", QuizGames.Answering(QuizGames.Started(_rounds, _players))),
             ("some answers", QuizGames.Answering(QuizGames.Started(_shuffled, _players), (2, QuizChoiceLetter.C), (1, QuizChoiceLetter.A))),
-            ("everybody answered", QuizGames.Answering(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.D))),
+            ("locked once everybody answered", QuizGames.Answering(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.D))),
             ("player joined during the answers", QuizGames.Accepted(QuizGames.Answering(QuizGames.Started(_rounds, ["Zoé", "Max"]), (1, QuizChoiceLetter.B)), Games.Join("Léa", player: 3))),
             ("locked without answer", QuizGames.Locked(QuizGames.Started(_rounds, _players))),
             ("locked with answers", QuizGames.Locked(QuizGames.Started(_rounds, _players), (3, QuizChoiceLetter.B), (1, QuizChoiceLetter.C))),
-            ("locked by the timer", ByTheTimer(QuizGames.Answering(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.A)))),
             ("revealed without answer", QuizGames.Revealed(QuizGames.Started(_rounds, _players))),
             ("revealed with answers", QuizGames.Revealed(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.B), (3, QuizChoiceLetter.D))),
             ("revealed to a player who joined during the answers", RevealedAfterLateJoin()),
@@ -155,7 +154,7 @@ public sealed class QuizLeakTests
     private static GameState RevealedAfterLateJoin()
     {
         var state = QuizGames.Accepted(QuizGames.Answering(QuizGames.Started(_rounds, ["Zoé", "Max"]), (1, QuizChoiceLetter.B)), Games.Join("Léa", player: 3));
-        state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+        state = QuizGames.Closed(state);
         return QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
     }
 
@@ -166,7 +165,7 @@ public sealed class QuizLeakTests
     {
         state = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
         state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddSeconds(seconds)));
-        return QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+        return QuizGames.Closed(state);
     }
 
     /// <summary>
@@ -185,11 +184,6 @@ public sealed class QuizLeakTests
     /// The same game, its question in progress skipped for the next one.
     /// </summary>
     private static GameState Skip(GameState state) => QuizGames.Accepted(state, QuizGames.SkipQuestion(state));
-
-    /// <summary>
-    /// The same game, its answers locked by their timer rather than by the game master.
-    /// </summary>
-    private static GameState ByTheTimer(GameState state) => QuizGames.Accepted(state, QuizGames.AnswersTimerElapsed(state));
 
     private static IEnumerable<Secret> SecretsOf(GameState state)
     {

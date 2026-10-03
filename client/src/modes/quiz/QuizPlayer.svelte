@@ -46,11 +46,12 @@
         if (!view.participating) {
             return fr.modes.quiz.player.nextQuestion;
         }
-        if (view.phase === 'Locked') {
-            return fr.modes.quiz.timeUp;
-        }
         if (view.answer !== null) {
             return fr.modes.quiz.player.recorded;
+        }
+        // Without an answer, only the end of the countdown locks them: the others lock once everybody answered.
+        if (view.phase === 'Locked') {
+            return fr.modes.quiz.timeUp;
         }
         return pendingLetter !== null ? fr.modes.quiz.player.pending : null;
     });

@@ -56,7 +56,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SubmitAnswer_ThreePlayers_CountedOnTheDisplayAndListedOnTheConsoleOnly()
+    public async Task SubmitAnswer_ThreePlayers_CountedOnTheDisplayAndListedOnTheConsoleOnlyThenLocked()
     {
         // Given: the answers of the question are open
         await using var display = await HubClients.ConnectAsync(_factory);
@@ -79,11 +79,13 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await AnswerAsync(max, QuizChoiceLetter.A);
         await AnswerAsync(lea, QuizChoiceLetter.B);
 
-        // Then
+        // Then: the last answer locks them, without waiting for the end of the countdown
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
         var closeAt = _start.AddSeconds(QuizRoundDescriptor.DefaultAnswerSeconds).ToUnixTimeMilliseconds();
+        var beforeLast = Assert.IsType<QuizDisplayView>(toDisplay.Display[^2].RoundView);
+        Assert.Equal((QuizQuestionPhase.Answering, closeAt, 2, 3), (beforeLast.Phase, beforeLast.AnswersCloseAt, beforeLast.AnsweredCount, beforeLast.ParticipantCount));
         var onDisplay = Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView);
-        Assert.Equal((QuizQuestionPhase.Answering, closeAt, 3, 3), (onDisplay.Phase, onDisplay.AnswersCloseAt, onDisplay.AnsweredCount, onDisplay.ParticipantCount));
+        Assert.Equal((QuizQuestionPhase.Locked, null, 3, 3), (onDisplay.Phase, onDisplay.AnswersCloseAt, onDisplay.AnsweredCount, onDisplay.ParticipantCount));
         var onConsole = Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView);
         Assert.Equal(
             [("Zoé", QuizChoiceLetter.B), ("Max", QuizChoiceLetter.A), ("Léa", QuizChoiceLetter.B)],
@@ -102,9 +104,10 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     [Fact]
     public async Task SubmitAnswer_Twice_KeepsTheFirstChoice()
     {
-        // Given
+        // Given: Max has not answered, so that the answers stay open
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
+        await using var max = await JoinAsync("Max");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
         await AnswerAsync(zoe, QuizChoiceLetter.B);
@@ -116,7 +119,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         // Then
         Assert.Equal(version, Game.State.Version);
         var view = Assert.IsType<QuizGameMasterView>(_factory.Services.GetRequiredService<Engine.Projections.Snapshots>().ForGameMaster(Game.State).RoundView);
-        Assert.Equal(QuizChoiceLetter.B, Assert.Single(view.Answers).Choice);
+        Assert.Equal(QuizChoiceLetter.B, view.Answers[0].Choice);
     }
 
     [Fact]
@@ -180,23 +183,21 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task LockAnswers_BeforeTheEndOfTheCountdown_LocksThemAndCancelsTheTimer()
+    public async Task SubmitAnswer_LastParticipant_LocksTheAnswersAndCancelsTheTimer()
     {
         // Given
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
-        await AnswerAsync(zoe, QuizChoiceLetter.A);
 
-        // When: the game master locks, then sends it again, as a second console would
-        await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
+        // When: the only participant answers, then the countdown would have run out
+        await AnswerAsync(zoe, QuizChoiceLetter.A);
         var locked = Game.State;
-        await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
         _time.Advance(TimeSpan.FromSeconds(QuizRoundDescriptor.DefaultAnswerSeconds));
         await FlushAsync(gameMaster);
 
-        // Then: neither the second lock nor the cancelled timer changes anything
+        // Then: the cancelled timer changes nothing
         Assert.Same(locked, Game.State);
         var view = Assert.IsType<QuizGameMasterView>(_factory.Services.GetRequiredService<Engine.Projections.Snapshots>().ForGameMaster(locked).RoundView);
         Assert.Equal((QuizQuestionPhase.Locked, QuizChoiceLetter.A), (view.Phase, Assert.Single(view.Answers).Choice));
@@ -216,7 +217,9 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
         await AnswerAsync(zoe, QuizChoiceLetter.A);
         await AnswerAsync(max, QuizChoiceLetter.B);
-        await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
+        var version = Game.State.Version;
+        _time.Advance(TimeSpan.FromSeconds(QuizRoundDescriptor.DefaultAnswerSeconds));
+        await WaitUntilAsync(() => Game.State.Version > version);
         // What the previous intents sent is received first: only what follows is recorded.
         await Task.WhenAll(FlushAsync(display), FlushAsync(zoe), FlushAsync(max), FlushAsync(lea));
         using var toDisplay = new ReceivedSnapshots(display);

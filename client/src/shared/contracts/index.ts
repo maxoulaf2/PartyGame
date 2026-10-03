@@ -43,7 +43,6 @@ export type * from './QuizDisplayView';
 export type * from './QuizGameMasterAnswer';
 export type * from './QuizGameMasterChoice';
 export type * from './QuizGameMasterView';
-export type * from './QuizLockAnswers';
 export type * from './QuizNextQuestion';
 export type * from './QuizOpenAnswers';
 export type * from './QuizPlayerView';

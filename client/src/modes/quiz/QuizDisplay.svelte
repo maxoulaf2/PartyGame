@@ -57,7 +57,11 @@
                     />
                 </p>
             {:else if view.phase === 'Locked'}
-                <p class="time-up">{fr.modes.quiz.timeUp}</p>
+                <p class="time-up">
+                    {view.answeredCount === view.participantCount
+                        ? fr.modes.quiz.allAnswered
+                        : fr.modes.quiz.timeUp}
+                </p>
             {/if}
         </div>
     </header>

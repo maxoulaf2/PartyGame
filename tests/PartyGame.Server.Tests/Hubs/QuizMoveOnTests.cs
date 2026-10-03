@@ -64,8 +64,8 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        // Her answer, the only one expected, locks the answers.
         await AnswerAsync(zoe, 1, QuizChoiceLetter.A);
-        await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
         await SendAsync(gameMaster, new QuizRevealAnswer(RoundId, 1));
         // What the previous intents sent is received first: only what follows is recorded.
         await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
@@ -90,11 +90,12 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
     [Fact]
     public async Task SkipQuestion_WhileTheAnswersAreOpen_MovesOnAndStopsTheirCountdown()
     {
-        // Given: the answers of the first question are open, and Zoé answered
+        // Given: the answers of the first question are open, Zoé answered, and Max not yet
         await using var display = await HubClients.ConnectAsync(_factory);
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
+        await using var max = await JoinAsync("Max");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
         await AnswerAsync(zoe, 1, QuizChoiceLetter.A);
@@ -134,7 +135,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await SendAsync(gameMaster, new QuizSkipQuestion(RoundId, 1));
         await SendAsync(gameMaster, new QuizSkipQuestion(RoundId, 2));
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 3));
-        await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 3));
+        await AnswerAsync(zoe, 3, QuizChoiceLetter.A);
         await SendAsync(gameMaster, new QuizRevealAnswer(RoundId, 3));
         // What the previous intents sent is received first: only what follows is recorded.
         await FlushAsync(display);

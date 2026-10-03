@@ -65,7 +65,7 @@ public sealed class QuizRevealTests
     [Fact]
     public void Handle_RevealAnswerWhileTheAnswersAreOpen_IsRejected()
     {
-        // Given: the game master locks the answers first
+        // Given: Max and Léa have not answered yet, and the countdown runs
         var state = QuizGames.Answering(Presented(), (1, QuizChoiceLetter.A));
 
         // When
@@ -125,19 +125,6 @@ public sealed class QuizRevealTests
 
         // When
         var transition = QuizGames.Engine.Handle(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A), Games.Context());
-
-        // Then
-        AssertRejected(state, transition, RejectionReason.PhaseMismatch);
-    }
-
-    [Fact]
-    public void Handle_LockAnswersOnceRevealed_IsRejectedAsObsolete()
-    {
-        // Given
-        var state = QuizGames.Revealed(Presented());
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, QuizGames.LockAnswers(state), Games.Context());
 
         // Then
         AssertRejected(state, transition, RejectionReason.PhaseMismatch);
@@ -241,7 +228,7 @@ public sealed class QuizRevealTests
     {
         // Given
         var state = QuizGames.Accepted(QuizGames.Answering(Presented(), (1, QuizChoiceLetter.A)), Games.Join("Noé", player: 4));
-        state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+        state = QuizGames.Closed(state);
         state = QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
 
         // When
