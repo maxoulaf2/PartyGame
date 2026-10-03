@@ -15,6 +15,8 @@ export const fr = {
         finished: 'Partie terminée',
         // The ranking shown between two rounds, written by rankText and standingText.
         rankingAfter: 'Classement après la manche {number}',
+        // The ranking shown once the last round is over.
+        finalRanking: 'Classement final',
         rank: {
             first: '{rank}er',
             other: '{rank}e',
@@ -25,6 +27,11 @@ export const fr = {
         },
         // Read by screen readers: the ranked players.
         rankingLabel: 'Classement',
+        // Read by screen readers on the TV screen: the steps of the final ranking, then the others.
+        podiumLabel: 'Podium',
+        // The players who share a step of the podium, `{rank}` written by rankText.
+        podiumStepLabel: 'Sur la marche {rank}',
+        restLabel: 'Suite du classement',
         // The points of a player since the start of the game, in a ranking.
         points: {
             zero: '0 point',
@@ -38,6 +45,10 @@ export const fr = {
         inProgress: 'La partie est en cours : garde un œil sur l’écran !',
         betweenRounds: 'La suite arrive bientôt : garde un œil sur l’écran !',
         finished: 'Merci d’avoir joué !',
+        // Once the game is finished, under the final rank of a player on the podium.
+        podium: 'Bravo, tu es sur le podium !',
+        // Shown to a phone that joined once the game was finished: it has no rank.
+        joinedAfterEnd: 'Cette partie vient de se terminer : rendez-vous à la prochaine !',
         registeredAs: 'Tu es inscrit sous le nom {nickname}',
         // Shown while a phone that joined before waits to be recognized by the server.
         resuming: 'Retour dans la partie…',
@@ -75,7 +86,6 @@ export const fr = {
         inProgress: 'Partie en cours',
         // Shown next to the QR code between two rounds, for late arrivals.
         lateArrivals: 'Pas encore inscrit ? Scannez pour rejoindre',
-        finished: 'Merci d’avoir joué !',
     },
     gm: {
         waiting: 'Console du game master : connexion en cours…',

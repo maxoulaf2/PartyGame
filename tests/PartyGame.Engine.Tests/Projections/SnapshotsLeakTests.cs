@@ -34,6 +34,9 @@ public sealed class SnapshotsLeakTests
 
         yield return ("tied scores", Games.WithScores(Games.InPhase(phase, "Zoé", "Max", "Léa"), 2000, 1000, 2000));
 
+        // Once the game is finished, a late arrival is not ranked: neither are they shown to the others.
+        yield return ("late arrival", Games.Accepted(Games.WithScores(Games.InPhase(phase, "Zoé", "Max"), 1000, 2000), Games.Join("Léa", player: 3)));
+
         var neighbour = Games.ValidPack("pack-voisin", "Titre voisin", [new FakeRoundDescriptor { Title = "Manche voisine" }]);
         var packs = Games.Loaded(Games.Pack, neighbour, Games.InvalidPack("pack-casse", "Titre cassé"));
         yield return ("other packs", Games.PlayedUpTo(phase, Games.Accepted(Games.LobbyWith("Zoé", "Max"), packs)));

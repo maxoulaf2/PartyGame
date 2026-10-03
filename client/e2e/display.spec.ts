@@ -61,6 +61,15 @@ function fakePlayer(index: number, nickname: string, isConnected = true): Displa
     return { id, nickname, isConnected };
 }
 
+/** `count` players with nicknames of 16 wide characters, the longest allowed, the fourth one disconnected. */
+function longNicknames(count: number): DisplayPlayer[] {
+    const players = Array.from({ length: count }, (_, index) =>
+        fakePlayer(index + 1, `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`, index !== 3),
+    );
+    expect(players.every((player) => [...player.nickname].length === 16)).toBe(true);
+    return players;
+}
+
 /** Checks that `box` stays clear of the 5% a TV may crop on each side. */
 function expectWithinSafeArea(
     box: { x: number; y: number; width: number; height: number } | null,
@@ -123,60 +132,43 @@ test('/display/ shows players as they join, then dims those who leave', async ({
     await Promise.all(phones.slice(1).map((phone) => phone.context().close()));
 });
 
-// Outside a round and its ranking, the lobby stays on the TV with what is going on, for late
-// arrivals to join.
-const notices = {
-    Lobby: [],
-    Finished: [fr.game.finished, fr.display.finished],
-} as const;
+test('/display/ fits 20 long nicknames on a 1080p screen in the lobby, readable and clear of the edges', async ({
+    page,
+}) => {
+    const players = longNicknames(20);
+    await serveDisplaySnapshot(page, fakeSnapshot(players));
 
-for (const phase of ['Lobby', 'Finished'] as const) {
-    test(`/display/ fits 20 long nicknames on a 1080p screen in phase ${phase}, readable and clear of the edges`, async ({
-        page,
-    }) => {
-        const players = Array.from({ length: 20 }, (_, index) =>
-            fakePlayer(
-                index + 1,
-                `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`,
-                index !== 3,
-            ),
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    await expect(playerList(page).locator('li')).toHaveCount(20);
+    await expect(page.getByText(countText(fr.display.playersJoined, 20))).toBeVisible();
+    for (const player of players) {
+        const nickname = playerList(page).getByText(player.nickname, { exact: true });
+        await expect(nickname).toBeVisible();
+        expectWithinSafeArea(await nickname.boundingBox(), viewport);
+        // About 3 cm high on a 55" TV: readable from 3 m.
+        const fontSize = await nickname.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
         );
-        expect(players.every((player) => [...player.nickname].length === 16)).toBe(true);
-        await serveDisplaySnapshot(page, fakeSnapshot(players, advertisedAddress, phase));
-
-        await page.goto('/display/');
-
-        const viewport = page.viewportSize();
-        if (!viewport) {
-            throw new Error('The test needs a fixed viewport');
-        }
-        await expect(playerList(page).locator('li')).toHaveCount(20);
-        await expect(page.getByText(countText(fr.display.playersJoined, 20))).toBeVisible();
-        for (const player of players) {
-            const nickname = playerList(page).getByText(player.nickname, { exact: true });
-            await expect(nickname).toBeVisible();
-            expectWithinSafeArea(await nickname.boundingBox(), viewport);
-            // About 3 cm high on a 55" TV: readable from 3 m.
-            const fontSize = await nickname.evaluate((element) =>
-                parseFloat(getComputedStyle(element).fontSize),
-            );
-            expect(fontSize).toBeGreaterThanOrEqual(30);
-        }
-        for (const element of [
-            page.getByRole('img', { name: fr.display.qrCodeLabel }),
-            page.getByText(expectedUrl),
-            page.getByRole('heading', { name: fr.app.name }),
-            ...notices[phase].map((notice) => page.getByText(notice, { exact: true })),
-        ]) {
-            expectWithinSafeArea(await element.boundingBox(), viewport);
-        }
-        const overflows = await page.evaluate(() => {
-            const root = document.documentElement;
-            return root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth;
-        });
-        expect(overflows).toBe(false);
+        expect(fontSize).toBeGreaterThanOrEqual(30);
+    }
+    for (const element of [
+        page.getByRole('img', { name: fr.display.qrCodeLabel }),
+        page.getByText(expectedUrl),
+        page.getByRole('heading', { name: fr.app.name }),
+    ]) {
+        expectWithinSafeArea(await element.boundingBox(), viewport);
+    }
+    const overflows = await page.evaluate(() => {
+        const root = document.documentElement;
+        return root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth;
     });
-}
+    expect(overflows).toBe(false);
+});
 
 /** The ranking of `players` as the server sends it: by score, ties sharing their rank. */
 function fakeRanking(players: readonly DisplayPlayer[], scores: readonly number[]): RankedPlayer[] {
@@ -232,10 +224,7 @@ test('/display/ ranks the players between two rounds as the server sends them', 
 test('/display/ fits a ranking of 20 long nicknames on a 1080p screen, readable and clear of the edges', async ({
     page,
 }) => {
-    const players = Array.from({ length: 20 }, (_, index) =>
-        fakePlayer(index + 1, `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`, index !== 3),
-    );
-    expect(players.every((player) => [...player.nickname].length === 16)).toBe(true);
+    const players = longNicknames(20);
     const ranking = fakeRanking(
         players,
         players.map((_, index) => 12_350 - 650 * Math.floor(index / 2)),
@@ -278,6 +267,152 @@ test('/display/ fits a ranking of 20 long nicknames on a 1080p screen, readable 
     });
     expect(overflows).toBe(false);
 });
+
+function podium(page: Page) {
+    return page.getByRole('list', { name: fr.game.podiumLabel });
+}
+
+/** The players the podium shows on the step of `rank`. */
+function podiumStep(page: Page, rank: number) {
+    return podium(page).getByRole('list', {
+        name: fill(fr.game.podiumStepLabel, { rank: rankText(fr.game.rank, rank) }),
+    });
+}
+
+/** The block of the step of `rank`, which shows its rank and its score. */
+function podiumBlock(page: Page, rank: number) {
+    return podium(page).locator(`[data-rank="${rank}"]`);
+}
+
+test('/display/ shows the final ranking as the server sends it: a podium, then the others', async ({
+    page,
+}) => {
+    const players = [
+        fakePlayer(1, 'Max'),
+        fakePlayer(2, 'Léa', false),
+        fakePlayer(3, 'Zoé'),
+        fakePlayer(4, '<b>&🎉'),
+        fakePlayer(5, 'Tom'),
+    ];
+    const ranking = fakeRanking(players, [3000, 2000, 2000, 1000, 0]);
+    await serveDisplaySnapshot(page, {
+        ...fakeSnapshot(players, advertisedAddress, 'Finished'),
+        ranking,
+    });
+
+    await page.goto('/display/');
+
+    await expect(page.getByRole('heading', { name: fr.game.finalRanking })).toBeVisible();
+    await expect(page.getByText(fr.game.finished, { exact: true })).toBeVisible();
+    const points = (count: number) => countText(fr.game.points, count);
+    // Ex aequo share their step, and the rank after them is skipped: no third step.
+    await expect(podiumStep(page, 1).getByRole('listitem')).toHaveText(['Max']);
+    await expect(podiumStep(page, 2).getByRole('listitem')).toHaveText([
+        `Léa (${fr.display.disconnected})`,
+        'Zoé',
+    ]);
+    await expect(podiumStep(page, 3)).toHaveCount(0);
+    await expect(podiumBlock(page, 1)).toHaveText(`${rankText(fr.game.rank, 1)} ${points(3000)}`);
+    await expect(podiumBlock(page, 2)).toHaveText(`${rankText(fr.game.rank, 2)} ${points(2000)}`);
+    await expect(
+        page.getByRole('list', { name: fr.game.restLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `${rankText(fr.game.rank, 4)} <b>&🎉 ${points(1000)}`,
+        `${rankText(fr.game.rank, 5)} Tom ${points(0)}`,
+    ]);
+    await expect(page.locator('main b')).toHaveCount(0);
+    // A disconnected player is dimmed and marked with an icon, never by colour alone.
+    await expect(podiumStep(page, 2).getByRole('listitem').first().locator('svg')).toBeVisible();
+
+    // A podium: the first step in the middle and higher, the second on its left.
+    const first = await podiumBlock(page, 1).boundingBox();
+    const second = await podiumBlock(page, 2).boundingBox();
+    expect(second?.x).toBeLessThan(first?.x ?? -Infinity);
+    expect(first?.height).toBeGreaterThan(second?.height ?? Infinity);
+    expect(first?.y).toBeLessThan(second?.y ?? -Infinity);
+
+    // The game is over: neither the lobby nor its QR code anymore.
+    await expect(playerList(page)).toHaveCount(0);
+    await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
+});
+
+// Scores of 20 players: distinct but for a few ex aequo, every player ex aequo, and one player
+// ahead of 19 ex aequo.
+const finalScores = {
+    'mostly distinct scores': Array.from(
+        { length: 20 },
+        (_, index) => 12_350 - 650 * Math.floor(index / 2),
+    ),
+    'every player ex aequo': Array.from({ length: 20 }, () => 0),
+    'one player ahead of 19 ex aequo': Array.from({ length: 20 }, (_, index) =>
+        index === 0 ? 1000 : 0,
+    ),
+    '18 ex aequo on the third step': Array.from({ length: 20 }, (_, index) =>
+        index === 0 ? 2000 : index === 1 ? 1000 : 0,
+    ),
+};
+
+for (const [scenario, scores] of Object.entries(finalScores)) {
+    test(`/display/ fits a final ranking of 20 long nicknames on a 1080p screen with ${scenario}, readable and clear of the edges`, async ({
+        page,
+    }) => {
+        const players = longNicknames(20);
+        await serveDisplaySnapshot(page, {
+            ...fakeSnapshot(players, advertisedAddress, 'Finished'),
+            ranking: fakeRanking(players, scores),
+        });
+
+        await page.goto('/display/');
+
+        const viewport = page.viewportSize();
+        if (!viewport) {
+            throw new Error('The test needs a fixed viewport');
+        }
+        const onPodium = podium(page).getByRole('list').getByRole('listitem');
+        const rest = page.getByRole('list', { name: fr.game.restLabel }).getByRole('listitem');
+        await expect(page.getByRole('heading', { name: fr.game.finalRanking })).toBeVisible();
+        expect((await onPodium.count()) + (await rest.count())).toBe(20);
+        for (const player of players) {
+            const nickname = page.locator('main').getByText(player.nickname, { exact: true });
+            await expect(nickname).toBeVisible();
+            expectWithinSafeArea(await nickname.boundingBox(), viewport);
+            // About 3 cm high on a 55" TV: readable from 3 m.
+            const fontSize = await nickname.evaluate((element) =>
+                parseFloat(getComputedStyle(element).fontSize),
+            );
+            expect(fontSize).toBeGreaterThanOrEqual(30);
+        }
+        // On the podium, each nickname stays whole on a single line.
+        for (const item of await onPodium.all()) {
+            const whole = await item.evaluate(
+                (element) =>
+                    element.getClientRects().length === 1 &&
+                    element.scrollWidth <= element.clientWidth,
+            );
+            expect(whole).toBe(true);
+        }
+        for (const element of [
+            page.getByRole('heading', { name: fr.game.finalRanking }),
+            ...(await podium(page).locator('[data-rank]').all()),
+            ...(await rest.all()),
+        ]) {
+            expectWithinSafeArea(await element.boundingBox(), viewport);
+        }
+        // Nothing scrolls, and nothing is cut by the screen either.
+        const overflows = await page.evaluate(() => {
+            const root = document.documentElement;
+            const main = document.querySelector('main');
+            return (
+                root.scrollHeight > root.clientHeight ||
+                root.scrollWidth > root.clientWidth ||
+                !main ||
+                main.scrollHeight > main.clientHeight ||
+                main.scrollWidth > main.clientWidth
+            );
+        });
+        expect(overflows).toBe(false);
+    });
+}
 
 test('/display/ keeps the player list when the server knows no address', async ({ page }) => {
     await serveDisplaySnapshot(page, fakeSnapshot([fakePlayer(1, 'Zoé')], null));

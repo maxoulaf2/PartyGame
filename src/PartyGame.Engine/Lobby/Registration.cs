@@ -3,7 +3,8 @@ using PartyGame.Engine.Inputs;
 namespace PartyGame.Engine.Lobby;
 
 /// <summary>
-/// Registration of players. It stays open in every phase: phones may join after the game started.
+/// Registration of players. It stays open in every phase: phones may join after the game started, and even once it is
+/// finished, to see its end.
 /// </summary>
 internal static class Registration
 {
@@ -27,7 +28,8 @@ internal static class Registration
 
         var newState = state with
         {
-            Players = state.Players.Add(new Player(join.PlayerId, nickname, IsConnected: true)),
+            Players = state.Players.Add(
+                new Player(join.PlayerId, nickname, IsConnected: true, JoinedAfterEnd: state.Phase == GamePhase.Finished)),
             PlayerTokens = state.PlayerTokens.Add(join.Token, join.PlayerId),
         };
         return new Transition(newState, []);

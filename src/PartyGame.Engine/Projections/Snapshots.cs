@@ -117,27 +117,32 @@ public sealed class Snapshots(GameModes modes)
             : null;
 
     /// <summary>
-    /// The ranking between two rounds, when every point of the round that just finished is awarded: during a round, the
-    /// screens show the round alone.
+    /// The ranking between two rounds and once the game is finished, when every point of the round that just finished is
+    /// awarded: during a round, the screens show the round alone.
     /// </summary>
     private static ImmutableArray<RankedPlayer> RankingOf(GameState state) =>
-        state.Phase == GamePhase.BetweenRounds
-            ? [.. Ranking.Of(state.Players).Select(s => new RankedPlayer(s.Player.Id, s.Player.Nickname, s.Player.IsConnected, s.Rank, s.IsTied, s.Player.Score))]
-            : [];
+        [.. StandingsOf(state).Select(s => new RankedPlayer(s.Player.Id, s.Player.Nickname, s.Player.IsConnected, s.Rank, s.IsTied, s.Player.Score))];
 
     /// <summary>
-    /// The rank of <paramref name="player"/> alone: the phone of a player learns nothing else of the others.
+    /// The rank of <paramref name="player"/> alone: the phone of a player learns nothing else of the others. A player
+    /// who joined once the game was finished has none.
     /// </summary>
     private static PlayerStanding? StandingOf(GameState state, Player player)
     {
-        if (state.Phase != GamePhase.BetweenRounds)
-        {
-            return null;
-        }
-
-        var standing = Ranking.Of(state.Players).First(s => s.Player.Id == player.Id);
-        return new PlayerStanding(standing.Rank, standing.IsTied);
+        var standings = StandingsOf(state);
+        return standings.FirstOrDefault(s => s.Player.Id == player.Id) is { } standing
+            ? new PlayerStanding(standing.Rank, standing.IsTied, standings.Length)
+            : null;
     }
+
+    /// <summary>
+    /// The players by rank, between two rounds and once the game is finished; none otherwise. Those who joined once the
+    /// game was finished played no round: they are not ranked, so that the final ranking stays that of the game.
+    /// </summary>
+    private static ImmutableArray<Standing> StandingsOf(GameState state) =>
+        state.Phase is GamePhase.BetweenRounds or GamePhase.Finished
+            ? Ranking.Of([.. state.Players.Where(p => !p.JoinedAfterEnd)])
+            : [];
 
     private static string? NextRoundTitleOf(GameState state) =>
         state is { Phase: GamePhase.BetweenRounds, CurrentRound: { } round } ? state.Rounds[round.Index + 1].Title : null;

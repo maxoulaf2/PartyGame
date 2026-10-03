@@ -1,8 +1,8 @@
 namespace PartyGame.Contracts;
 
 /// <summary>
-/// A player in the ranking of the game, as the TV screen and the game master console show it between two rounds. The
-/// server ranks the players: a client neither sorts nor ranks anything.
+/// A player in the ranking of the game, as the TV screen and the game master console show it between two rounds and once
+/// the game is finished. The server ranks the players: a client neither sorts nor ranks anything.
 /// </summary>
 /// <param name="Id">Identifier of the player, which lets a client follow them through a rename.</param>
 /// <param name="Nickname">Nickname of the player, to show as plain text.</param>

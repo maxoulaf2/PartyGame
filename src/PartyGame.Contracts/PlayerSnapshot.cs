@@ -22,7 +22,8 @@ namespace PartyGame.Contracts;
 /// round. A player who joins during a round gets it too: the game mode decides whether they take part.
 /// </param>
 /// <param name="Standing">
-/// Where this player stands in the ranking, between two rounds; <see langword="null"/> otherwise.
+/// Where this player stands in the ranking, between two rounds and once the game is finished; <see langword="null"/>
+/// otherwise, and for a player who joined once the game was finished, who played no round.
 /// </param>
 public sealed record PlayerSnapshot(
     GameId GameId,

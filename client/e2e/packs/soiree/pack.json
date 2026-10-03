@@ -24,6 +24,7 @@
     {
       "type": "quiz",
       "title": "Finale",
+      "answerSeconds": 120,
       "questions": [
         {
           "text": "Quel est le plus grand océan ?",

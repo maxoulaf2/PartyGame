@@ -12,7 +12,8 @@
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
     import { findDisplayView } from '../modes/registry';
-    import LobbyScreen, { type Notice } from './LobbyScreen.svelte';
+    import FinalRankingScreen from './FinalRankingScreen.svelte';
+    import LobbyScreen from './LobbyScreen.svelte';
     import RankingScreen from './RankingScreen.svelte';
 
     const game = new SnapshotStore<DisplaySnapshot>();
@@ -22,18 +23,9 @@
     const status = new ConnectionStatus(() => game.fresh);
 
     const screen = $derived(game.current && selectGameScreen(game.current, findDisplayView));
-    // Outside a round and its ranking, the lobby stays on screen with what is going on: its QR code
+    // Outside a round and the rankings, the lobby stays on screen with what is going on: its QR code
     // still lets late arrivals join, since registration stays open.
-    const notice = $derived.by((): Notice | null => {
-        switch (screen?.kind) {
-            case 'finished':
-                return { headline: fr.game.finished, detail: fr.display.finished };
-            case 'waiting':
-                return { headline: fr.display.inProgress, detail: null };
-            default:
-                return null;
-        }
-    });
+    const notice = $derived(screen?.kind === 'waiting' ? fr.display.inProgress : null);
 
     onMount(() => {
         const stopStatus = status.start();
@@ -58,6 +50,8 @@
     {/key}
 {:else if game.current && screen?.kind === 'betweenRounds'}
     <RankingScreen snapshot={game.current} round={screen.round} />
+{:else if game.current && screen?.kind === 'finished'}
+    <FinalRankingScreen ranking={game.current.ranking} />
 {:else if game.current}
     <LobbyScreen snapshot={game.current} {notice} />
 {:else}
