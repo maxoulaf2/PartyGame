@@ -15,6 +15,26 @@ internal static class TestPacks
         Descriptor(title, roundTitles.Select(round => Round(round, correct: true)));
 
     /// <summary>
+    /// A valid pack of a single quiz round of <paramref name="questionCount"/> questions, "Question 1 ?" to the last
+    /// one, "Oui" (A) being the correct answer of each.
+    /// </summary>
+    public static string LongQuiz(string title, int questionCount) =>
+        Descriptor(
+            title,
+            [
+                new
+                {
+                    type = "quiz",
+                    title = "Longue manche",
+                    questions = Enumerable.Range(1, questionCount).Select(number => new
+                    {
+                        text = $"Question {number} ?",
+                        choices = new[] { new { text = "Oui", correct = true }, new { text = "Non", correct = false } },
+                    }),
+                },
+            ]);
+
+    /// <summary>
     /// An invalid pack: the question of its only round has no correct choice.
     /// </summary>
     public static string Broken(string title) => Descriptor(title, [Round("Manche cassée", correct: false)]);

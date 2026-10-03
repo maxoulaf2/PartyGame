@@ -72,7 +72,8 @@ public enum RejectionReason
 
     /// <summary>
     /// The question in progress is not in the phase the intent acts in: answers opened or locked twice, locked before
-    /// they open, or an answer while they are not open.
+    /// they open, an answer while they are not open, a move to the next question before the reveal, or a question
+    /// skipped once revealed.
     /// </summary>
     PhaseMismatch,
 

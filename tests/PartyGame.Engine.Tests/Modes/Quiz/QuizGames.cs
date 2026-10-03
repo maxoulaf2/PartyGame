@@ -106,6 +106,14 @@ internal static class QuizGames
     public static GameMasterRoundInput RevealAnswer(GameState state, int? questionNumber = null) =>
         new(new QuizRevealAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
 
+    /// <summary>The game master moves on from the question in progress, once revealed.</summary>
+    public static GameMasterRoundInput NextQuestion(GameState state, int? questionNumber = null) =>
+        new(new QuizNextQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>The game master skips the question in progress.</summary>
+    public static GameMasterRoundInput SkipQuestion(GameState state, int? questionNumber = null) =>
+        new(new QuizSkipQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
     /// <summary>A player answers the question in progress, received by the hub at <paramref name="receivedAt"/>.</summary>
     public static PlayerRoundInput Answer(
         GameState state,
