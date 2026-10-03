@@ -39,7 +39,7 @@ export default defineConfig({
         },
     },
     test: {
-        include: ['src/**/*.test.ts'],
+        include: ['src/**/*.test.ts', 'eslint/**/*.test.ts'],
         // Runes behave as in the pages, effects included: modules are compiled for the client, and
         // `svelte` is resolved by Vite with the browser condition rather than imported by Node,
         // which would load its server build, where effects never run.

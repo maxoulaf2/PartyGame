@@ -2,6 +2,7 @@
     import type { GameMasterPack, GameMasterSnapshot } from '../shared/contracts';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { countText } from '../shared/i18n/countText';
+    import { fill } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { describeMode, describeProblem } from './packProblemText';
 
@@ -31,14 +32,6 @@
         void selected;
         pending = null;
     });
-
-    // Function replacements: a title or a path such as « $& » must show as written in the pack.
-    function fill(text: string, values: Record<string, string>): string {
-        return text.replace(
-            /\{(\w+)\}/g,
-            (placeholder, name: string) => values[name] ?? placeholder,
-        );
-    }
 
     function stateOf(pack: GameMasterPack): string {
         return pack.isValid

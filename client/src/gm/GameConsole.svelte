@@ -7,6 +7,7 @@
     import AddressControl from './AddressControl.svelte';
     import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
+    import RoundControl from './RoundControl.svelte';
     import StartControl from './StartControl.svelte';
 
     interface Props {
@@ -31,11 +32,18 @@
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
 
+    {#if snapshot.phase !== 'Lobby'}
+        <RoundControl {snapshot} {session} {interactive} />
+    {/if}
+
+    <!-- Registration stays open once started: the address of the QR code may still change. -->
     <AddressControl {snapshot} {session} {interactive} />
 
     <PackControl {snapshot} {session} {interactive} />
 
-    <StartControl {snapshot} {session} {interactive} />
+    {#if snapshot.phase === 'Lobby'}
+        <StartControl {snapshot} {session} {interactive} />
+    {/if}
 
     {#if snapshot.players.length > 0}
         <ul aria-label={fr.gm.playerListLabel}>

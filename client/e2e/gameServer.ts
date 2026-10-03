@@ -21,5 +21,9 @@ export const advertisedAddress = '192.168.1.42';
  */
 export const packDirectory = fileURLToPath(new URL('./packs', import.meta.url));
 
-/** The valid pack the tests choose, and its title. */
-export const playedPack = { id: 'soiree', title: 'Grande soirée' } as const;
+/** The valid pack the tests choose, its title and the titles of its rounds. */
+export const playedPack = {
+    id: 'soiree',
+    title: 'Grande soirée',
+    rounds: ['Échauffement', 'Finale'],
+} as const;

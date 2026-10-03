@@ -1,3 +1,11 @@
+<script lang="ts" module>
+    /** What the lobby says is going on, once the game has started. */
+    export interface Notice {
+        readonly headline: string;
+        readonly detail: string | null;
+    }
+</script>
+
 <script lang="ts">
     import QrCode from '../shared/components/QrCode.svelte';
     import type { DisplaySnapshot } from '../shared/contracts';
@@ -8,9 +16,10 @@
 
     interface Props {
         snapshot: DisplaySnapshot;
+        notice?: Notice | null;
     }
 
-    let { snapshot }: Props = $props();
+    let { snapshot, notice = null }: Props = $props();
 
     const joinUrl = $derived(
         snapshot.joinAddress ? composeJoinUrl(snapshot.joinAddress, location) : null,
@@ -22,9 +31,6 @@
             ? null
             : fr.display.packTitle.replace('{title}', () => snapshot.packTitle ?? ''),
     );
-    // Registration stays open once started: the QR code and the list stay for late arrivals.
-    // Provisional screen for every phase after the lobby, until the views of the modes (US-E07-02).
-    const started = $derived(snapshot.phase !== 'Lobby');
 </script>
 
 <main>
@@ -46,8 +52,11 @@
         {#if packTitle !== null}
             <p class="pack">{packTitle}</p>
         {/if}
-        {#if started}
-            <p class="started">{fr.display.started}</p>
+        {#if notice !== null}
+            <p class="headline">{notice.headline}</p>
+            {#if notice.detail !== null}
+                <p class="detail">{notice.detail}</p>
+            {/if}
         {/if}
         <p class="status">{status}</p>
         <PlayerList players={snapshot.players} />
@@ -122,9 +131,13 @@
         overflow-wrap: anywhere;
     }
 
-    .started {
+    .headline {
         font-size: var(--font-size-title);
         font-weight: 700;
         line-height: 1.1;
+    }
+
+    .detail {
+        font-weight: 700;
     }
 </style>

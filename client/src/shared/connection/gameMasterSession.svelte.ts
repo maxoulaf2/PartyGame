@@ -1,14 +1,16 @@
 import type {
     ChooseAdvertisedAddressRefusal,
+    GameMasterRoundIntent,
     GameMasterSnapshot,
     PlayerId,
     ReloadPacksRefusal,
     RenamePlayerRefusal,
+    RoundId,
     SelectPackRefusal,
     StartGameRefusal,
 } from '../contracts';
 import type { CodeStorage } from './codeStorage';
-import type { GameConnection, GameHubMethods } from './gameHub';
+import type { GameConnection, GameHubMethods, IntentOutcome } from './gameHub';
 import type { SnapshotStore } from './snapshotStore.svelte';
 
 /**
@@ -58,9 +60,12 @@ export type SelectPackOutcome = 'selected' | 'unreachable' | SelectPackRefusal;
  */
 export type ReloadPacksOutcome = 'reloaded' | 'unreachable' | ReloadPacksRefusal;
 
-/** The hub methods the game master alone may call: the server ignores them otherwise. */
+/** The hub methods the game master alone may call, and their answer: the server ignores them otherwise. */
 type GameMasterMethod =
     'RenamePlayer' | 'StartGame' | 'ChooseAdvertisedAddress' | 'SelectPack' | 'ReloadPacks';
+
+/** The hub methods the game master alone may call, which answer nothing. */
+type GameMasterIntentMethod = 'NextRound' | 'SendGameMasterRoundIntent';
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -192,6 +197,42 @@ export class GameMasterSession {
     async reloadPacks(): Promise<ReloadPacksOutcome> {
         const result = await this.#request('ReloadPacks');
         return result === null ? 'unreachable' : (result.refusal ?? 'reloaded');
+    }
+
+    /**
+     * Starts the round that follows `afterRound`, the one that just finished. Naming it makes the
+     * request safe to repeat: a second one, from a double tap or another console, is ignored by
+     * the server. The new round reaches every page through the next snapshots.
+     */
+    nextRound(afterRound: RoundId): Promise<IntentOutcome> {
+        return this.#send('NextRound', { afterRound });
+    }
+
+    /**
+     * Sends what the game master does in the round in progress to its game mode. The server alone
+     * decides whether it is accepted; the outcome reaches the console through the next snapshot.
+     */
+    sendRoundIntent(intent: GameMasterRoundIntent): Promise<IntentOutcome> {
+        return this.#send('SendGameMasterRoundIntent', intent);
+    }
+
+    /**
+     * Calls a game master method the server answers nothing to: whether it was sent at all, since
+     * an ignored call and an accepted one look the same.
+     */
+    async #send<M extends GameMasterIntentMethod>(
+        method: M,
+        ...args: GameHubMethods[M]['args']
+    ): Promise<IntentOutcome> {
+        if (!this.#connected || this.#access !== 'granted') {
+            return 'unreachable';
+        }
+        try {
+            await this.#connection.invoke(method, ...args);
+            return 'sent';
+        } catch {
+            return 'unreachable';
+        }
     }
 
     /**

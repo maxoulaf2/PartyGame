@@ -8,6 +8,7 @@ import type {
     PlayerId,
     ReloadPacksResult,
     RenamePlayerResult,
+    RoundId,
     SelectPackResult,
     StartGameResult,
 } from '../contracts';
@@ -19,6 +20,7 @@ import { SnapshotStore } from './snapshotStore.svelte';
 const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
 const goodCode = '123456';
 const playerId = '00000001-0000-0000-0000-000000000000' as PlayerId;
+const roundId = '0f8fad5b-d9cb-469f-a165-70867728950e' as RoundId;
 
 function memoryStorage(initial: string | null = null): CodeStorage & { value: string | null } {
     const storage = {
@@ -84,6 +86,9 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                 }
                 if (method === 'ReloadPacks') {
                     return reloadAnswer;
+                }
+                if (method === 'NextRound' || method === 'SendGameMasterRoundIntent') {
+                    return null;
                 }
                 return {
                     refusal: announcement.gameMasterCode === code ? null : 'GameMasterCodeInvalid',
@@ -608,6 +613,75 @@ describe('GameMasterSession', () => {
             expect(await session.reloadPacks()).toBe('unreachable');
 
             expect(server.connection.invoke).not.toHaveBeenCalledWith('ReloadPacks');
+        });
+    });
+
+    describe('nextRound', () => {
+        it('names the round that just finished', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.nextRound(roundId);
+
+            expect(outcome).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('NextRound', {
+                afterRound: roundId,
+            });
+        });
+
+        it('reports a request lost with the connection as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.becomeUnreachable();
+
+            expect(await session.nextRound(roundId)).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.nextRound(roundId)).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.nextRound(roundId)).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'NextRound',
+                expect.anything(),
+            );
+        });
+    });
+
+    describe('sendRoundIntent', () => {
+        it('hands the intent to the server', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.sendRoundIntent({ type: 'quiz', roundId });
+
+            expect(outcome).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('SendGameMasterRoundIntent', {
+                type: 'quiz',
+                roundId,
+            });
+        });
+
+        it('reports an intent lost with the connection as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.becomeUnreachable();
+
+            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'SendGameMasterRoundIntent',
+                expect.anything(),
+            );
         });
     });
 });

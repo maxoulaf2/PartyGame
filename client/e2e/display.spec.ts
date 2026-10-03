@@ -1,12 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 import type {
     DisplayPlayer,
+    DisplayRoundView,
     DisplaySnapshot,
     GameId,
     Phase,
     PlayerId,
+    RoundId,
+    RoundInfo,
 } from '../src/shared/contracts';
 import { countText } from '../src/shared/i18n/countText.ts';
+import { roundText } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { serveDisplaySnapshot } from './fakeHub.ts';
 import { advertisedAddress } from './gameServer.ts';
@@ -22,10 +26,18 @@ function playerList(page: Page) {
     return page.getByRole('list', { name: fr.display.playerListLabel });
 }
 
+const fakeRound: RoundInfo = {
+    roundId: '0f8fad5b-d9cb-469f-a165-70867728950e' as RoundId,
+    number: 1,
+    count: 3,
+    title: 'Échauffement',
+};
+
 function fakeSnapshot(
     players: readonly DisplayPlayer[],
     joinAddress: string | null = advertisedAddress,
     phase: Phase = 'Lobby',
+    roundView: DisplayRoundView | null = null,
 ): DisplaySnapshot {
     return {
         gameId: '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId,
@@ -34,8 +46,8 @@ function fakeSnapshot(
         joinAddress,
         players,
         packTitle: null,
-        round: null,
-        roundView: null,
+        round: phase === 'Lobby' ? null : fakeRound,
+        roundView,
     };
 }
 
@@ -106,8 +118,14 @@ test('/display/ shows players as they join, then dims those who leave', async ({
     await Promise.all(phones.slice(1).map((phone) => phone.context().close()));
 });
 
-// Without any pack chosen yet (US-E06-03), a started game has no round: it is finished at once.
-for (const phase of ['Lobby', 'Finished'] as const) {
+// Outside a round, the lobby stays on the TV with what is going on, for late arrivals to join.
+const notices = {
+    Lobby: [],
+    BetweenRounds: [roundText(fr.game.roundEnded, fakeRound), fr.display.betweenRounds],
+    Finished: [fr.game.finished, fr.display.finished],
+} as const;
+
+for (const phase of ['Lobby', 'BetweenRounds', 'Finished'] as const) {
     test(`/display/ fits 20 long nicknames on a 1080p screen in phase ${phase}, readable and clear of the edges`, async ({
         page,
     }) => {
@@ -143,7 +161,7 @@ for (const phase of ['Lobby', 'Finished'] as const) {
             page.getByRole('img', { name: fr.display.qrCodeLabel }),
             page.getByText(expectedUrl),
             page.getByRole('heading', { name: fr.app.name }),
-            ...(phase === 'Finished' ? [page.getByText(fr.display.started)] : []),
+            ...notices[phase].map((notice) => page.getByText(notice, { exact: true })),
         ]) {
             expectWithinSafeArea(await element.boundingBox(), viewport);
         }
@@ -163,4 +181,33 @@ test('/display/ keeps the player list when the server knows no address', async (
     await expect(page.getByText(fr.display.joinUnavailable)).toBeVisible();
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
     await expect(playerList(page).getByText('Zoé', { exact: true })).toBeVisible();
+});
+
+test('/display/ shows the round in progress with the view of its mode', async ({ page }) => {
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', { type: 'quiz' }),
+    );
+
+    await page.goto('/display/');
+
+    await expect(page.getByRole('heading', { name: fakeRound.title })).toBeVisible();
+    await expect(page.getByText(roundText(fr.game.round, fakeRound))).toBeVisible();
+    await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
+});
+
+test('/display/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
+    const unknownView = { type: 'blindtest' } as unknown as DisplayRoundView;
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', unknownView),
+    );
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fr.display.inProgress, { exact: true })).toBeVisible();
+    // Never an empty screen: the lobby stays, with its QR code and its players.
+    await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
+    await expect(playerList(page).getByText('Zoé', { exact: true })).toBeVisible();
+    await expect(page.getByText('blindtest')).toHaveCount(0);
 });

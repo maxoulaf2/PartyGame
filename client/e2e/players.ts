@@ -20,6 +20,7 @@ export async function joinOnNewPhone(
     await phone.goto('/');
     await phone.getByLabel(fr.player.join.label).fill(nickname);
     await phone.getByRole('button', { name: fr.player.join.submit }).click();
-    await phone.getByText(fr.player.registeredAs.replace('{nickname}', () => nickname)).waitFor();
+    // The form gives way once the server registered the player, whatever the phase shown then.
+    await phone.getByLabel(fr.player.join.label).waitFor({ state: 'detached' });
     return phone;
 }

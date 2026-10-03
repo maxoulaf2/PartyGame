@@ -9,9 +9,12 @@ import type {
     AnnouncementResult,
     ChooseAdvertisedAddressRequest,
     ChooseAdvertisedAddressResult,
+    GameMasterRoundIntent,
     IGameClient,
     JoinRequest,
     JoinResult,
+    NextRoundRequest,
+    PlayerRoundIntent,
     ReloadPacksResult,
     RenamePlayerRequest,
     RenamePlayerResult,
@@ -44,9 +47,20 @@ export interface GameHubMethods {
     };
     SelectPack: { args: [request: SelectPackRequest]; result: SelectPackResult | null };
     ReloadPacks: { args: []; result: ReloadPacksResult | null };
+    // The next three answer nothing: the snapshots show whether the intent was accepted.
+    NextRound: { args: [request: NextRoundRequest]; result: null };
+    SendRoundIntent: { args: [intent: PlayerRoundIntent]; result: null };
+    SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
     SyncClock: { args: []; result: ClockSyncResult };
     ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };
 }
+
+/**
+ * What became of an intent the server answers nothing to: handed to the server, or not sent
+ * (connection lost, or the page not identified yet). Whether the server accepted it shows in the
+ * next snapshot.
+ */
+export type IntentOutcome = 'sent' | 'unreachable';
 
 /** The part of a SignalR connection this module relies on, so that tests can stand in for it. */
 export type HubTransport = Pick<

@@ -8,9 +8,19 @@ export const fr = {
         // Shown on every page once the server has been out of reach for a few seconds.
         reconnecting: 'Reconnexion…',
     },
+    // The progress of the game, the same on every page.
+    game: {
+        round: 'Manche {number}/{count}',
+        roundEnded: 'Fin de la manche {number}/{count}',
+        finished: 'Partie terminée',
+    },
     player: {
         waiting: 'Bienvenue ! La partie va bientôt commencer.',
-        started: 'La partie est lancée : garde un œil sur l’écran !',
+        // Shown during the game when the phone has nothing more precise to show.
+        inProgress: 'La partie est en cours : garde un œil sur l’écran !',
+        // Provisional, until the rankings of E09.
+        betweenRounds: 'La suite arrive bientôt : garde un œil sur l’écran !',
+        finished: 'Merci d’avoir joué !',
         registeredAs: 'Tu es inscrit sous le nom {nickname}',
         // Shown while a phone that joined before waits to be recognized by the server.
         resuming: 'Retour dans la partie…',
@@ -44,8 +54,11 @@ export const fr = {
         packTitle: 'Au programme : {title}',
         // Read by screen readers next to the icon of a player whose phone is disconnected.
         disconnected: 'déconnecté',
-        // Provisional: the first round of the pack replaces this screen (E07).
-        started: 'La partie commence !',
+        // Shown during the game when the TV screen has nothing more precise to show.
+        inProgress: 'Partie en cours',
+        // Provisional, until the rankings of E09.
+        betweenRounds: 'La manche suivante arrive bientôt',
+        finished: 'Merci d’avoir joué !',
     },
     gm: {
         waiting: 'Console du game master : connexion en cours…',
@@ -181,8 +194,12 @@ export const fr = {
             cancel: 'Annuler',
             failed: 'Le lancement n’a pas abouti : réessayez.',
         },
-        // Provisional: the rounds of the pack replace this state (E07).
-        started: 'Partie en cours',
+        // Shown during the game when the console has nothing more precise to show.
+        inProgress: 'Partie en cours',
+        nextRound: {
+            action: 'Lancer la manche suivante',
+            hint: 'La manche suivante démarre sur tous les écrans dès que vous la lancez.',
+        },
         connected: 'Connecté',
         disconnected: 'Déconnecté',
         rename: {
@@ -200,6 +217,15 @@ export const fr = {
                 unknown: 'Ce joueur est introuvable.',
                 failed: 'Le renommage n’a pas abouti : réessayez.',
             },
+        },
+    },
+    // The texts of each game mode, under the type of its rounds.
+    modes: {
+        quiz: {
+            // Provisional, until the questions are played (US-E08-02).
+            player: { ready: 'Prépare-toi : les questions arrivent !' },
+            display: { ready: 'Préparez-vous : les questions arrivent !' },
+            gm: { ready: 'Les questions de « {title} » s’afficheront ici.' },
         },
     },
 } as const;
