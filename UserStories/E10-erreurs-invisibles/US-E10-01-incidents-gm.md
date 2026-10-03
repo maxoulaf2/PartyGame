@@ -1,0 +1,33 @@
+### US-E10-01 — Incidents serveur signalés au GM
+
+**Statut :** Prête
+
+**En tant que** game master
+**je veux** être informé discrètement quand le serveur rencontre un bug pendant la partie
+**afin de** savoir ce qui se passe sans que les joueurs ni le public ne voient quoi que ce soit
+
+**Critères d'acceptation**
+- Étant donné une manche en cours, quand le traitement d'une entrée lève une exception dans le moteur ou dans le mode, alors l'état précédent est conservé, aucun snapshot n'est diffusé, l'erreur est journalisée en `Error` et un incident `RoundHandlerFailed` est signalé au GM, avec la manche concernée.
+- Étant donné une projection qui lève une exception pour un rôle ou pour un joueur, quand le snapshot est diffusé, alors les autres destinataires reçoivent quand même le leur, celui qui n'a pas pu être projeté garde son dernier snapshot, et un incident `ProjectionFailed` est signalé avec le rôle concerné (jamais le contenu de la projection).
+- Étant donné un effet qui échoue à l'exécution (timer impossible à programmer, par exemple), quand l'échec survient, alors les autres effets s'exécutent, la diffusion a lieu, et un incident `EffectFailed` est signalé.
+- Étant donné un incident signalé, quand la console GM l'affiche, alors un compteur discret apparaît dans l'en-tête (« 2 incidents »). Son appui ouvre un panneau qui liste les incidents du plus récent au plus ancien : heure, description en français, manche concernée. Un même incident répété dans la même manche n'occupe qu'une ligne, avec son nombre d'occurrences et l'heure de la dernière.
+- Étant donné le panneau ouvert, quand le GM appuie sur « Tout marquer comme lu », alors le compteur disparaît jusqu'au prochain incident. La liste reste consultable.
+- Étant donné une console GM qui se connecte ou se reconnecte, quand son code est accepté, alors elle reçoit aussitôt la liste complète des incidents.
+- Étant donné un incident, quand les téléphones et la TV reçoivent leurs messages, alors rien ne le trahit : ni nouveau snapshot, ni changement de version, ni message. Un test d'intégration du hub le vérifie avec `LeakAssert.NoSecretReceived`, l'incident tenant lieu de secret caché au public et aux joueurs.
+- Étant donné les textes des incidents, quand ils s'affichent, alors ils viennent de `fr.ts`, à partir d'un code et de paramètres : le serveur n'envoie aucun texte ni aucune trace d'exception.
+
+**Comportement en cas d'erreur**
+Joueurs et public : rien, la partie continue avec l'état précédent. GM : le compteur et le panneau. Si la console GM est déconnectée, les incidents l'attendent et lui sont envoyés à sa reconnexion.
+
+**Notes techniques**
+- Codes dans une énumération `IncidentCode` de `PartyGame.Contracts`, régénérée en TypeScript : `RoundHandlerFailed`, `ProjectionFailed`, `EffectFailed`, complétée par US-E10-04 (`DisplayViewFailed`, `DisplayMediaFailed`) et E11 (`PersistenceFailed`, `SavedGameUnreadable`).
+- Journal des incidents dans `PartyGame.Server` (décision 2 du README) : un service unique, alimenté par `GameLoop`, `SnapshotBroadcaster` et `EffectExecutor`, qui regroupe les répétitions et borne sa taille (100 entrées). Il pousse la liste au groupe `gm` par une nouvelle méthode de `IGameClient` (`ReceiveIncidents`), toujours la liste complète, jamais un diff. Il garde aussi le nombre d'échecs par manche, utile à US-E10-02.
+- `GameLoop` protège déjà le traitement, les effets et les listeners ([GameLoop.cs](../../src/PartyGame.Server/Games/GameLoop.cs)) : il s'agit de signaler l'incident en plus du log. `SnapshotBroadcaster` protège désormais chaque projection séparément.
+- Le marquage « lu » vit dans la console (état local), pas sur le serveur : deux consoles GM ont chacune le leur.
+- L'effet `ReportIncident` prévu par l'ADR 0001 reste disponible pour les incidents qu'un mode voudrait signaler lui-même. Aucun mode n'en a besoin pour l'instant : ne pas l'introduire avant.
+- Tests : `GameLoopTests` (exception du moteur, d'un effet, d'un listener → incident), tests du journal (regroupement, bornage), test d'intégration du hub (console GM qui reçoit la liste à la connexion et à chaque incident, rien chez les joueurs ni la TV), Vitest du panneau (regroupement affiché, marquage lu), E2E dans US-E12-03.
+
+**Hors périmètre**
+- La proposition de passer une manche (US-E10-02).
+- Les erreurs remontées par les clients (US-E10-03, US-E10-04).
+- La conservation des incidents après un redémarrage.

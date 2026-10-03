@@ -128,6 +128,8 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 **Critère de sortie :** si on tue le serveur en pleine question, la partie reprend sans que les joueurs fassent quoi que ce soit. Si on injecte une exception, seul le GM en est informé.
 
+**Décisions :** reprise confirmée par le GM, compte à rebours qui reprend le temps restant, nouveau code GM après un redémarrage, manche défaillante passée en entier, bots en .NET, diagnostic réseau sur une page dédiée et dans la console GM. Voir les README des épopées E10 à E12.
+
 ---
 
 ## Phase 4 — Buzzer et blind test
