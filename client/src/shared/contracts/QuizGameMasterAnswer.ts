@@ -10,4 +10,5 @@ export interface QuizGameMasterAnswer {
     readonly playerId: PlayerId;
     readonly nickname: string;
     readonly choice: QuizChoiceLetter | null;
+    readonly points: number | null;
 }

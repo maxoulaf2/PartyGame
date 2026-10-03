@@ -548,9 +548,9 @@ public sealed class QuizAnswersTests
         // Then: in order of arrival, not of answer
         Assert.Equal(
             [
-                new QuizGameMasterAnswer(Games.PlayerIdOf(1), "Zoé", null),
-                new QuizGameMasterAnswer(Games.PlayerIdOf(2), "Max", QuizChoiceLetter.B),
-                new QuizGameMasterAnswer(Games.PlayerIdOf(3), "Léa", QuizChoiceLetter.B),
+                new QuizGameMasterAnswer(Games.PlayerIdOf(1), "Zoé", null, null),
+                new QuizGameMasterAnswer(Games.PlayerIdOf(2), "Max", QuizChoiceLetter.B, null),
+                new QuizGameMasterAnswer(Games.PlayerIdOf(3), "Léa", QuizChoiceLetter.B, null),
             ],
             view.Answers);
         Assert.Equal([0, 2, 0, 0], view.Choices.Select(choice => choice.AnswerCount));

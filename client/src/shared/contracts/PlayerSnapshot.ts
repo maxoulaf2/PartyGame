@@ -15,6 +15,7 @@ export interface PlayerSnapshot {
     readonly phase: Phase;
     readonly playerId: PlayerId;
     readonly nickname: string;
+    readonly score: number;
     readonly playerCount: number;
     readonly round: RoundInfo | null;
     readonly roundView: PlayerRoundView | null;

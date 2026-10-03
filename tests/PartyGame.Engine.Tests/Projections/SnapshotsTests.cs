@@ -80,9 +80,9 @@ public sealed class SnapshotsTests
         Assert.Equal((state.GameId, 7, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
         Assert.Equal(
             [
-                new GameMasterPlayer(Games.PlayerIdOf(1), "Zoé", IsConnected: true),
-                new GameMasterPlayer(Games.PlayerIdOf(2), "Max", IsConnected: false),
-                new GameMasterPlayer(Games.PlayerIdOf(3), "Léa", IsConnected: true),
+                new GameMasterPlayer(Games.PlayerIdOf(1), "Zoé", IsConnected: true, Score: 0),
+                new GameMasterPlayer(Games.PlayerIdOf(2), "Max", IsConnected: false, Score: 0),
+                new GameMasterPlayer(Games.PlayerIdOf(3), "Léa", IsConnected: true, Score: 0),
             ],
             snapshot.Players);
     }
@@ -241,7 +241,7 @@ public sealed class SnapshotsTests
 
         // Then
         Assert.Equal(
-            new PlayerSnapshot(state.GameId, 7, Phase.Lobby, Games.PlayerIdOf(2), "Max", PlayerCount: 2, Round: null, RoundView: null),
+            new PlayerSnapshot(state.GameId, 7, Phase.Lobby, Games.PlayerIdOf(2), "Max", Score: 0, PlayerCount: 2, Round: null, RoundView: null),
             snapshot);
     }
 

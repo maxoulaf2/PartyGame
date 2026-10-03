@@ -7,7 +7,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E09-01](US-E09-01-points-par-question.md) | Points gagnés à chaque question | À faire | US-E08-04 |
+| [US-E09-01](US-E09-01-points-par-question.md) | Points gagnés à chaque question | Terminée | US-E08-04 |
 | [US-E09-02](US-E09-02-classement-intermediaire.md) | Classement entre deux manches | À faire | US-E09-01, US-E08-05 |
 | [US-E09-03](US-E09-03-classement-final.md) | Classement final | À faire | US-E09-02 |
 
@@ -20,6 +20,7 @@ Toutes les décisions qui bloquaient l'épopée sont prises.
 3. **Points attribués à la révélation :** les points d'une question s'ajoutent aux scores au moment de la révélation, pas du verrouillage. Une question passée avant sa révélation ne rapporte rien, et aucun score ne peut trahir une bonne réponse avant l'heure.
 4. **Joueurs arrivés en cours de partie :** ils commencent à 0 point et figurent dans les classements (décision 5 du README de E08). La règle définitive reste à trancher en phase 6.
 5. **Ex aequo :** des joueurs à égalité partagent le même rang, et le rang suivant tient compte de leur nombre (1, 1, 3). À égalité, l'affichage suit l'ordre alphabétique des pseudos. Choix de réalisation, ajustable sans nouvelle décision.
+6. **Total du joueur dans le snapshot de la partie** (décidé pendant US-E09-01) : le score cumulé appartient à la partie, pas à une manche. `PlayerSnapshot` porte donc le total du joueur, dans toutes les phases, et la page joueur le transmet aux vues des modes (`score`). La vue de manche ne porte que les points gagnés à la question. Option écartée : le total recopié dans la vue de chaque mode, que chaque mode aurait dû relayer, et qui aurait disparu entre deux manches.
 
 ## Ordre de réalisation suggéré
 

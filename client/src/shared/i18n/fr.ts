@@ -83,6 +83,12 @@ export const fr = {
             other: '{count} connectés',
         },
         playerListLabel: 'Joueurs inscrits',
+        // The points of a player since the start of the game, next to their nickname.
+        score: {
+            zero: '0 point',
+            one: '{count} point',
+            other: '{count} points',
+        },
         address: {
             label: 'Adresse des joueurs',
             // One address the QR code may encode, with the network it belongs to.
@@ -235,6 +241,8 @@ export const fr = {
             correct: 'Bonne réponse',
             // A player taking part who did not choose before the answers were locked.
             noAnswer: 'Pas de réponse',
+            // The points a player earned with the question revealed, 0 included, written by formatNumber.
+            pointsEarned: '+{points}',
             // How many players chose a choice.
             choiceAnswers: {
                 zero: 'aucune réponse',
@@ -265,6 +273,12 @@ export const fr = {
                 },
                 // Heads the correct choice once revealed, unless the player chose it.
                 correctChoice: 'La bonne réponse',
+                // The points of the player since the start of the game, under those of the question.
+                score: {
+                    zero: 'Total : 0 point',
+                    one: 'Total : {count} point',
+                    other: 'Total : {count} points',
+                },
             },
             gm: {
                 openAnswers: 'Ouvrir les réponses',

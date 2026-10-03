@@ -16,6 +16,8 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
 
     public static readonly TimeSpan CountdownDuration = TimeSpan.FromSeconds(20);
 
+    public const int AwardedPoints = 10;
+
     public override ImmutableArray<PackProblem> Validate(FakeRoundDescriptor descriptor, string path) => [];
 
     public override RoundTransition Start(FakeRoundDescriptor descriptor, GameState game, GameContext context)
@@ -39,6 +41,8 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
                 new RoundTransition(round, []) { IsFinished = true },
             GameMasterRoundInput { RoundIntent: FakeGameMasterIntent { Action: FakeGameMasterIntent.Nothing } } =>
                 new RoundTransition(round, []),
+            GameMasterRoundInput { RoundIntent: FakeGameMasterIntent { Action: FakeGameMasterIntent.Award } } =>
+                new RoundTransition(round, []) { Points = game.Players.ToImmutableDictionary(p => p.Id, _ => AwardedPoints) },
             GameMasterRoundInput { RoundIntent: FakeGameMasterIntent intent } => Record(round, $"game master {intent.Action}"),
 
             // A replaced countdown may still elapse: only the one the round waits for counts.

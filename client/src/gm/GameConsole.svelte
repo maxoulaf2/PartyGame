@@ -55,6 +55,10 @@
                     <div class="player">
                         <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
                         <span class="nickname">{player.nickname}</span>
+                        {#if snapshot.phase !== 'Lobby'}
+                            <!-- Computed by the server, at every moment of the game. -->
+                            <span class="score">{countText(fr.gm.score, player.score)}</span>
+                        {/if}
                         <span class="status">
                             <ConnectionIcon connected={player.isConnected} />
                             {player.isConnected ? fr.gm.connected : fr.gm.disconnected}
@@ -144,6 +148,10 @@
         font-weight: 700;
         /* A long nickname wraps rather than being cut. */
         overflow-wrap: anywhere;
+    }
+
+    .score {
+        font-weight: 700;
     }
 
     .status {

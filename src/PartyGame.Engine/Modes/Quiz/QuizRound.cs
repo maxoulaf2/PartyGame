@@ -48,6 +48,12 @@ public sealed record QuizRound(QuizRoundDescriptor Descriptor, int QuestionIndex
     public ImmutableDictionary<PlayerId, QuizAnswer> Answers { get; init; } = ImmutableDictionary<PlayerId, QuizAnswer>.Empty;
 
     /// <summary>
+    /// The points each participant earned with the question in progress, 0 included, set when its answer is revealed and
+    /// added to the scores at that moment. Empty before: no score moves before the reveal.
+    /// </summary>
+    public ImmutableDictionary<PlayerId, int> Points { get; init; } = ImmutableDictionary<PlayerId, int>.Empty;
+
+    /// <summary>
     /// The positions in <see cref="Descriptor"/> of the questions the game master skipped before their reveal, in order,
     /// kept for the history of the round: they score nothing.
     /// </summary>

@@ -117,8 +117,8 @@ internal static class RoundFlow
     }
 
     /// <summary>
-    /// Folds what the game mode did into the game: its new round state, its effects with the timers marked, and the end of
-    /// the round, after which the game goes between two rounds, or is finished after the last one.
+    /// Folds what the game mode did into the game: its new round state, its effects with the timers marked, the points it
+    /// awards, and the end of the round, after which the game goes between two rounds, or is finished after the last one.
     /// </summary>
     private static Transition Apply(GameState state, PlayedRound round, RoundTransition handled)
     {
@@ -130,7 +130,7 @@ internal static class RoundFlow
         ImmutableArray<Effect> effects =
             [.. handled.Effects.Select(effect => effect is ScheduleTimer timer ? timer with { RoundId = round.Id } : effect)];
 
-        if (!handled.IsFinished && ReferenceEquals(handled.State, round.State))
+        if (!handled.IsFinished && ReferenceEquals(handled.State, round.State) && handled.Points.IsEmpty)
         {
             // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
             return new Transition(state, effects);
@@ -139,8 +139,24 @@ internal static class RoundFlow
         var phase = !handled.IsFinished ? GamePhase.Round
             : round.Index == state.Rounds.Length - 1 ? GamePhase.Finished
             : GamePhase.BetweenRounds;
-        return new Transition(state with { Phase = phase, CurrentRound = round with { State = handled.State } }, effects);
+        return new Transition(
+            state with
+            {
+                Phase = phase,
+                Players = Award(state.Players, handled.Points),
+                CurrentRound = round with { State = handled.State },
+            },
+            effects);
     }
+
+    /// <summary>
+    /// Adds the points a round awards to the scores of the players. Players are never removed, so every player a round
+    /// awards points to is still registered.
+    /// </summary>
+    private static ImmutableArray<Player> Award(ImmutableArray<Player> players, ImmutableDictionary<PlayerId, int> points) =>
+        points.IsEmpty
+            ? players
+            : [.. players.Select(player => points.TryGetValue(player.Id, out var earned) ? player with { Score = player.Score + earned } : player)];
 
     /// <summary>
     /// A round identifier drawn from the random generator of the context, so that a replayed game gets the same ones.

@@ -41,7 +41,7 @@ public sealed class Snapshots(GameModes modes)
             state.GameId,
             state.Version,
             PhaseOf(state),
-            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected))],
+            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected, p.Score))],
             Launch.MinimumPlayerCount,
             state.JoinAddress,
             [.. state.JoinAddressCandidates.Select(c => new GameMasterJoinAddress(c.Address, c.InterfaceName))],
@@ -67,6 +67,7 @@ public sealed class Snapshots(GameModes modes)
             PhaseOf(state),
             player.Id,
             player.Nickname,
+            player.Score,
             state.Players.Length,
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State, state, player) : null);

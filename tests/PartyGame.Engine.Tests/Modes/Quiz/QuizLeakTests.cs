@@ -8,8 +8,8 @@ namespace PartyGame.Engine.Tests.Modes.Quiz;
 
 /// <summary>
 /// What the views of a quiz round may show to each viewer: the correct answer and the choices of the players to the game
-/// master only before the reveal, the choice of a player never to the other phones, the questions as they come, a
-/// skipped question to nobody once the round moved on, the paths of the images to nobody.
+/// master only before the reveal, the choice of a player never to the other phones, no score before the reveal, the
+/// questions as they come, a skipped question to nobody once the round moved on, the paths of the images to nobody.
 /// </summary>
 public sealed class QuizLeakTests
 {
@@ -19,6 +19,8 @@ public sealed class QuizLeakTests
         [QuizGames.Round(QuizGames.CapitalQuestion, QuizGames.IllustratedQuestion, QuizGames.LastQuestion)];
 
     private static readonly ImmutableArray<QuizRoundDescriptor> _shuffled = [_rounds[0] with { ShuffleChoices = true }];
+
+    private static readonly ImmutableArray<QuizRoundDescriptor> _fast = [_rounds[0] with { SpeedBonus = 500 }];
 
     private static readonly LeakSuite<GameState, QuizPhase> _suite = new()
     {
@@ -41,8 +43,10 @@ public sealed class QuizLeakTests
             ("revealed without answer", QuizGames.Revealed(QuizGames.Started(_rounds, _players))),
             ("revealed with answers", QuizGames.Revealed(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.B), (3, QuizChoiceLetter.D))),
             ("revealed to a player who joined during the answers", RevealedAfterLateJoin()),
+            ("revealed with a speed bonus", QuizGames.Revealed(QuizGames.Started(_fast, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B))),
             ("second question, after a revealed one", Next(QuizGames.Revealed(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.A)))),
             ("second question, after a skipped one", Skip(QuizGames.Locked(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.B)))),
+            ("second question locked, after scores", QuizGames.Locked(Next(QuizGames.Revealed(QuizGames.Started(_fast, _players), (1, QuizChoiceLetter.A))), (1, QuizChoiceLetter.A))),
             ("second question answered, after a skipped one", QuizGames.Answering(Skip(QuizGames.Answering(QuizGames.Started(_rounds, _players), (1, QuizChoiceLetter.A))), (2, QuizChoiceLetter.B))),
         ],
         SecretsOf = SecretsOf,
@@ -52,6 +56,22 @@ public sealed class QuizLeakTests
             CorrectAnswerPair("correct answer, shuffled", _shuffled),
             CorrectAnswerPair("correct answer, answers open", _rounds, state => QuizGames.Answering(state, (1, QuizChoiceLetter.A))),
             CorrectAnswerPair("correct answer, locked", _shuffled, state => QuizGames.Locked(state, (1, QuizChoiceLetter.A))),
+
+            // No score moves before the reveal, whether the answers received are right or wrong, fast or slow.
+            CorrectAnswerPair(
+                "correct answer, locked with a speed bonus",
+                _fast,
+                state => QuizGames.Locked(state, (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A), (3, QuizChoiceLetter.C))),
+            new SecretPair<GameState>(
+                "correct answer of the second question, locked after scores",
+                LockedAfterScores(_fast[0]),
+                LockedAfterScores(_fast[0] with { Questions = _fast[0].Questions.SetItem(1, QuizGames.WithCorrectChoice(_fast[0].Questions[1], 1)) }),
+                Audience.AllButGameMaster),
+            new SecretPair<GameState>(
+                "how fast Zoé answered right, locked with a speed bonus",
+                LockedAfter(QuizGames.Started(_fast, _players), seconds: 1),
+                LockedAfter(QuizGames.Started(_fast, _players), seconds: 15),
+                Audience.AllButGameMaster),
 
             // The choice of a player is told to nobody but them and the game master before the reveal.
             ChoicePair("choice of Zoé, answers open", QuizGames.Answering, QuizChoiceLetter.A, QuizChoiceLetter.C),
@@ -138,6 +158,23 @@ public sealed class QuizLeakTests
         state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
         return QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
     }
+
+    /// <summary>
+    /// The same game, its answers opened, answered right by Zoé the given time after the opening, then locked.
+    /// </summary>
+    private static GameState LockedAfter(GameState state, int seconds)
+    {
+        state = QuizGames.Accepted(state, QuizGames.OpenAnswers(state));
+        state = QuizGames.Accepted(state, QuizGames.Answer(state, 1, QuizChoiceLetter.A, Games.Now.AddSeconds(seconds)));
+        return QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+    }
+
+    /// <summary>
+    /// A game of the given round whose first question gave Zoé and Max points, its second question answered by Zoé, then
+    /// locked.
+    /// </summary>
+    private static GameState LockedAfterScores(QuizRoundDescriptor round) =>
+        QuizGames.Locked(Next(QuizGames.Revealed(QuizGames.Started([round], _players), (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A))), (1, QuizChoiceLetter.A));
 
     /// <summary>
     /// The same game, moved on from its revealed question to the next one.

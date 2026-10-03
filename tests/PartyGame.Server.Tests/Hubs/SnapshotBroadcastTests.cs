@@ -68,7 +68,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
         await FlushAsync(connection);
         var snapshot = Assert.Single(received.GameMaster);
         Assert.Equal((GameId, 2, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
-        Assert.Equal([new GameMasterPlayer(PlayerIdOf(1), "Zoé", IsConnected: true)], snapshot.Players);
+        Assert.Equal([new GameMasterPlayer(PlayerIdOf(1), "Zoé", IsConnected: true, Score: 0)], snapshot.Players);
         Assert.Single(received.Json);
     }
 
@@ -115,7 +115,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
             [[], ["Zoé"], ["Zoé", "Max"]],
             toDisplay.Display.Select(s => s.Players.Select(p => p.Nickname).ToArray()));
         Assert.Equal([1, 2, 3], toGameMaster.GameMaster.Select(s => s.Version));
-        Assert.Equal([new PlayerSnapshot(GameId, 3, Phase.Lobby, zoeId, "Zoé", PlayerCount: 2, Round: null, RoundView: null)], toZoe.Player);
+        Assert.Equal([new PlayerSnapshot(GameId, 3, Phase.Lobby, zoeId, "Zoé", Score: 0, PlayerCount: 2, Round: null, RoundView: null)], toZoe.Player);
 
         // Each connection gets the projection of its role only.
         Assert.Equal(toDisplay.Display.Count, toDisplay.Json.Count);

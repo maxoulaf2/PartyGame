@@ -351,8 +351,8 @@ const max = '7c9e6679-7425-40de-944b-e07fc1f90ae7' as PlayerId;
 
 test('/gm/ follows what each player answers while the answers are open', async ({ page }) => {
     const view = answeringView([
-        { playerId: zoe, nickname: 'Zoé', choice: 'B' },
-        { playerId: max, nickname: 'Max', choice: null },
+        { playerId: zoe, nickname: 'Zoé', choice: 'B', points: null },
+        { playerId: max, nickname: 'Max', choice: null, points: null },
     ]);
     await serveGameMasterSnapshot(page, fakeRound(view));
 
@@ -379,8 +379,8 @@ test('/gm/ follows what each player answers while the answers are open', async (
 
 test('/gm/ tells when every player taking part answered', async ({ page }) => {
     const view = answeringView([
-        { playerId: zoe, nickname: 'Zoé', choice: 'B' },
-        { playerId: max, nickname: 'Max', choice: 'A' },
+        { playerId: zoe, nickname: 'Zoé', choice: 'B', points: null },
+        { playerId: max, nickname: 'Max', choice: 'A', points: null },
     ]);
     await serveGameMasterSnapshot(page, fakeRound(view));
 
@@ -391,7 +391,7 @@ test('/gm/ tells when every player taking part answered', async ({ page }) => {
 });
 
 test('/gm/ offers to reveal the answer once the answers are locked', async ({ page }) => {
-    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B', points: null }]);
     await serveGameMasterSnapshot(
         page,
         fakeRound({ ...view, phase: 'Locked', answersCloseAt: null }),
@@ -406,8 +406,8 @@ test('/gm/ offers to reveal the answer once the answers are locked', async ({ pa
 
 test('/gm/ shows who chose what once the answer is revealed', async ({ page }) => {
     const view = answeringView([
-        { playerId: zoe, nickname: 'Zoé', choice: 'B' },
-        { playerId: max, nickname: 'Max', choice: null },
+        { playerId: zoe, nickname: 'Zoé', choice: 'B', points: null },
+        { playerId: max, nickname: 'Max', choice: null, points: null },
     ]);
     await serveGameMasterSnapshot(
         page,
@@ -433,7 +433,7 @@ test('/gm/ shows who chose what once the answer is revealed', async ({ page }) =
 });
 
 test('/gm/ moves on from the revealed question to the next one', async ({ page }) => {
-    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B', points: null }]);
     const hub = await serveGameMasterSnapshot(
         page,
         fakeRound({ ...view, phase: 'Revealed', answersCloseAt: null }),
@@ -449,7 +449,7 @@ test('/gm/ moves on from the revealed question to the next one', async ({ page }
 });
 
 test('/gm/ ends the round once its last question is revealed', async ({ page }) => {
-    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B', points: null }]);
     const hub = await serveGameMasterSnapshot(
         page,
         fakeRound({ ...view, questionNumber: 5, phase: 'Revealed', answersCloseAt: null }),
@@ -465,7 +465,7 @@ test('/gm/ ends the round once its last question is revealed', async ({ page }) 
 });
 
 test('/gm/ skips the question in progress once the game master confirms', async ({ page }) => {
-    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B', points: null }]);
     const hub = await serveGameMasterSnapshot(page, fakeRound(view));
     const skip = page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion });
     const dialog = page.getByRole('dialog', {

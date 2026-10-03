@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using PartyGame.Contracts;
 using PartyGame.Engine.Effects;
 
 namespace PartyGame.Engine.Modes;
@@ -19,6 +20,12 @@ public sealed record RoundTransition(RoundState State, ImmutableArray<Effect> Ef
     /// Whether the round is over. The game then goes between two rounds, or is finished after the last one.
     /// </summary>
     public bool IsFinished { get; init; }
+
+    /// <summary>
+    /// The points the round awards with this transition, by player, which the engine adds to their scores: a mode never
+    /// keeps the scores of the game itself. Empty when it awards none.
+    /// </summary>
+    public ImmutableDictionary<PlayerId, int> Points { get; init; } = ImmutableDictionary<PlayerId, int>.Empty;
 
     /// <summary>
     /// Why the input was rejected, or <see langword="null"/> when it was accepted.

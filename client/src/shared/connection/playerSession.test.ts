@@ -39,6 +39,7 @@ function snapshot(version: number, nickname = 'Zoé'): PlayerSnapshot {
         phase: 'Lobby',
         playerId,
         nickname,
+        score: 0,
         playerCount: 1,
         round: null,
         roundView: null,

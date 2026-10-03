@@ -9,6 +9,9 @@ namespace PartyGame.Contracts;
 /// <param name="Phase">Current phase of the game.</param>
 /// <param name="PlayerId">The player the snapshot is meant for.</param>
 /// <param name="Nickname">Nickname of this player.</param>
+/// <param name="Score">
+/// The points of this player since the start of the game, computed by the server alone: 0 until their first points.
+/// </param>
 /// <param name="PlayerCount">Number of registered players.</param>
 /// <param name="Round">
 /// The round in progress, or the round that just finished between two rounds and once the game is finished, or
@@ -24,6 +27,7 @@ public sealed record PlayerSnapshot(
     Phase Phase,
     PlayerId PlayerId,
     string Nickname,
+    int Score,
     int PlayerCount,
     RoundInfo? Round,
     PlayerRoundView? RoundView);

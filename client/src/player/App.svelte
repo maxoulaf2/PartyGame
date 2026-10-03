@@ -68,6 +68,7 @@
             <ModeView
                 view={screen.view}
                 round={screen.round}
+                score={game.current.score}
                 {clock}
                 interactive={status.interactive}
                 {send}
