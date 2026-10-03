@@ -3,11 +3,11 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { PlayerId } from './PlayerId';
 import type { QuizChoiceLetter } from './QuizChoiceLetter';
 
-export interface QuizGameMasterChoice {
-    readonly letter: QuizChoiceLetter;
-    readonly text: string;
-    readonly correct: boolean;
-    readonly answerCount: number;
+export interface QuizGameMasterAnswer {
+    readonly playerId: PlayerId;
+    readonly nickname: string;
+    readonly choice: QuizChoiceLetter | null;
 }

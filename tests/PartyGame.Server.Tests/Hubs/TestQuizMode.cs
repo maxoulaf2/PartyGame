@@ -9,9 +9,8 @@ using PartyGame.Engine.Modes.Quiz;
 namespace PartyGame.Server.Tests.Hubs;
 
 /// <summary>
-/// Plays quiz rounds for the hub tests, with the placeholder intents of the contracts until the quiz mode plays its own
-/// (US-E08-03 to US-E08-05): it counts the intents of the players, and any intent of the game master finishes the round.
-/// Its views are those of the quiz mode.
+/// Plays quiz rounds for the hub tests that need rounds to end, which the quiz mode cannot do before US-E08-05: it counts
+/// the intents of the players, and any intent of the game master finishes the round. Its views are those of the quiz mode.
 /// </summary>
 internal sealed class TestQuizMode : GameMode<QuizRoundDescriptor, TestQuizRound>
 {

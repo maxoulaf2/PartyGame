@@ -63,4 +63,33 @@ public enum RejectionReason
 
     /// <summary>The game mode of the round in progress plays no such intent.</summary>
     IntentUnsupported,
+
+    /// <summary>
+    /// The intent names another question than the one in progress: it is obsolete, for instance delayed by the network
+    /// until the next question, or aimed at the wrong question.
+    /// </summary>
+    QuestionMismatch,
+
+    /// <summary>
+    /// The question in progress is not in the phase the intent acts in: answers opened or locked twice, locked before
+    /// they open, or an answer while they are not open.
+    /// </summary>
+    PhaseMismatch,
+
+    /// <summary>
+    /// The answer was received after the answers closed, although the loop had not handled their lock yet: what counts is
+    /// when the answer arrived.
+    /// </summary>
+    AnswerTooLate,
+
+    /// <summary>The player already answered the question: only their first answer counts.</summary>
+    AlreadyAnswered,
+
+    /// <summary>
+    /// The player does not take part in the question, having joined after its answers opened: they play from the next one.
+    /// </summary>
+    NotParticipating,
+
+    /// <summary>The answer names a choice the question does not have.</summary>
+    ChoiceUnknown,
 }

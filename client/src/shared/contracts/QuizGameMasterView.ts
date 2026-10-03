@@ -3,6 +3,7 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { QuizGameMasterAnswer } from './QuizGameMasterAnswer';
 import type { QuizGameMasterChoice } from './QuizGameMasterChoice';
 import type { QuizQuestionPhase } from './QuizQuestionPhase';
 
@@ -13,4 +14,6 @@ export interface QuizGameMasterView {
     readonly phase: QuizQuestionPhase;
     readonly text: string;
     readonly choices: readonly QuizGameMasterChoice[];
+    readonly answersCloseAt: number | null;
+    readonly answers: readonly QuizGameMasterAnswer[];
 }

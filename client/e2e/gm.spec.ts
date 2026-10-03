@@ -4,6 +4,7 @@ import type {
     GameId,
     GameMasterRoundView,
     GameMasterSnapshot,
+    PlayerId,
     QuizGameMasterView,
     RoundId,
     RoundInfo,
@@ -278,10 +279,12 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
         phase: 'Presentation',
         text: 'Quelle est la capitale de l’Australie ?',
         choices: [
-            { letter: 'A', text: 'Sydney', correct: false },
-            { letter: 'B', text: 'Canberra', correct: true },
-            { letter: 'C', text: 'Melbourne', correct: false },
+            { letter: 'A', text: 'Sydney', correct: false, answerCount: 0 },
+            { letter: 'B', text: 'Canberra', correct: true, answerCount: 0 },
+            { letter: 'C', text: 'Melbourne', correct: false, answerCount: 0 },
         ],
+        answersCloseAt: null,
+        answers: [],
     };
     await serveGameMasterSnapshot(page, fakeRound(view));
 
@@ -303,9 +306,12 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
         `B Canberra ${fr.modes.quiz.gm.correct}`,
         'C Melbourne',
     ]);
-    // Their intents come with the next stories of the quiz.
-    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeDisabled();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeEnabled();
+    // Skipping a question comes with US-E08-05.
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeDisabled();
+    // Nothing to count before the answers open.
+    await expect(page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel })).toHaveCount(0);
+    await expect(page.getByRole('timer')).toHaveCount(0);
     await expect(page.getByRole('button', { name: fr.gm.start.action })).toHaveCount(0);
 });
 
@@ -321,4 +327,66 @@ test('/gm/ waits neutrally on a round of a mode it does not know', async ({ page
     await expect(page.getByText('blindtest')).toHaveCount(0);
     // The rest of the console stays usable: the players, and the address of the QR code.
     await expect(page.getByText(fr.gm.address.label)).toBeVisible();
+});
+
+/** The question of the round in progress, its answers open, as the console shows it. */
+function answeringView(answers: QuizGameMasterView['answers']): QuizGameMasterView {
+    const countOf = (letter: string) => answers.filter((answer) => answer.choice === letter).length;
+    return {
+        type: 'quiz',
+        questionNumber: 2,
+        questionCount: 5,
+        phase: 'Answering',
+        text: 'Quelle est la capitale de l’Australie ?',
+        choices: [
+            { letter: 'A', text: 'Sydney', correct: false, answerCount: countOf('A') },
+            { letter: 'B', text: 'Canberra', correct: true, answerCount: countOf('B') },
+        ],
+        answersCloseAt: Date.now() + 20_000,
+        answers,
+    };
+}
+
+const zoe = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as PlayerId;
+const max = '7c9e6679-7425-40de-944b-e07fc1f90ae7' as PlayerId;
+
+test('/gm/ follows what each player answers while the answers are open', async ({ page }) => {
+    const view = answeringView([
+        { playerId: zoe, nickname: 'Zoé', choice: 'B' },
+        { playerId: max, nickname: 'Max', choice: null },
+    ]);
+    await serveGameMasterSnapshot(page, fakeRound(view));
+
+    await openConsole(page);
+
+    await expect(page.getByRole('timer')).toBeVisible();
+    await expect(
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 1, participants: 2 })),
+    ).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.gm.allAnswered)).toHaveCount(0);
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel }).getByRole('listitem'),
+    ).toHaveText(['Zoé B', `Max ${fr.modes.quiz.gm.waitingAnswer}`]);
+    // The distribution, live.
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `A Sydney ${countText(fr.modes.quiz.gm.choiceAnswers, 0)}`,
+        `B Canberra ${fr.modes.quiz.gm.correct} ${countText(fr.modes.quiz.gm.choiceAnswers, 1)}`,
+    ]);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toBeEnabled();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toHaveCount(0);
+});
+
+test('/gm/ tells when every player taking part answered', async ({ page }) => {
+    const view = answeringView([
+        { playerId: zoe, nickname: 'Zoé', choice: 'B' },
+        { playerId: max, nickname: 'Max', choice: 'A' },
+    ]);
+    await serveGameMasterSnapshot(page, fakeRound(view));
+
+    await openConsole(page);
+
+    await expect(page.getByText(fr.modes.quiz.gm.allAnswered)).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toBeEnabled();
 });

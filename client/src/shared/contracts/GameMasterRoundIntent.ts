@@ -3,6 +3,7 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-import type { QuizGameMasterIntent } from './QuizGameMasterIntent';
+import type { QuizLockAnswers } from './QuizLockAnswers';
+import type { QuizOpenAnswers } from './QuizOpenAnswers';
 
-export type GameMasterRoundIntent = QuizGameMasterIntent;
+export type GameMasterRoundIntent = QuizLockAnswers | QuizOpenAnswers;

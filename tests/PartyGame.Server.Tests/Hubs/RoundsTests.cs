@@ -91,13 +91,13 @@ public sealed class RoundsTests : IAsyncDisposable
         var first = Game.State.CurrentRound!.Id;
 
         // When: a player acts, the game master ends the round, asks for the next one and ends it as well
-        await zoe.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizPlayerIntent(first)), Ct);
+        await zoe.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A)), Ct);
         var played = (TestQuizRound)Game.State.CurrentRound!.State;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizGameMasterIntent(first)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
         var betweenRounds = Game.State.Phase;
         await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
         var second = Game.State.CurrentRound!;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizGameMasterIntent(second.Id)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(second.Id, 1)), Ct);
 
         // Then
         Assert.Equal(1, played.PlayerIntents);
@@ -120,7 +120,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await JoinAsync(zoe, "Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         var first = Game.State.CurrentRound!.Id;
-        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizGameMasterIntent(first)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
         var version = Game.State.Version;
 
         // When
@@ -144,7 +144,7 @@ public sealed class RoundsTests : IAsyncDisposable
         var state = Game.State;
 
         // When: the console, which identified no player, tries to act for one
-        await gameMaster.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizPlayerIntent(state.CurrentRound!.Id)), Ct);
+        await gameMaster.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(state.CurrentRound!.Id, 1, QuizChoiceLetter.A)), Ct);
 
         // Then
         Assert.Same(state, Game.State);
@@ -155,6 +155,9 @@ public sealed class RoundsTests : IAsyncDisposable
     [InlineData("""{"type":"buzz","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}""")]
     [InlineData("""{"roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}""")]
     [InlineData("""{"type":"quiz"}""")]
+    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}""")]
+    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"E"}""")]
+    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":1}""")]
     public async Task SendRoundIntent_Malformed_IsIgnoredWithAWarning(string json)
     {
         // Given
@@ -189,13 +192,13 @@ public sealed class RoundsTests : IAsyncDisposable
         var roundId = Game.State.CurrentRound!.Id;
         if (method == GameHub.NextRound)
         {
-            await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizGameMasterIntent(roundId)), Ct);
+            await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(roundId, 1)), Ct);
         }
 
         var state = Game.State;
         var message = method == GameHub.NextRound
             ? Message(new NextRoundRequest(roundId))
-            : Message<GameMasterRoundIntent>(new QuizGameMasterIntent(roundId));
+            : Message<GameMasterRoundIntent>(new QuizLockAnswers(roundId, 1));
 
         // When: a player sends what only the game master may send
         await zoe.InvokeAsync(method, message, Ct);

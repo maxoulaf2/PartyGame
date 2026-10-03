@@ -31,6 +31,12 @@ const performanceClock: LocalClock = {
     now: () => performance.now(),
 };
 
+/** The clock of the server, as the views of the modes read it to count down. */
+export interface ServerClock {
+    /** The current time of the server, in milliseconds since the Unix epoch. */
+    serverNow(): number;
+}
+
 /**
  * Keeps an estimate of the clock of the server, as NTP does: a burst of round trips, of which the
  * fastest count, at every connection and every minute. Countdowns, buzzes and synchronized sounds
@@ -38,7 +44,7 @@ const performanceClock: LocalClock = {
  *
  * Before the first burst completes, conversions assume both clocks agree.
  */
-export class ClockSync {
+export class ClockSync implements ServerClock {
     #estimate = $state.raw<ClockEstimate | null>(null);
     #synchronized = $state(false);
 

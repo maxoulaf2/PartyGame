@@ -60,6 +60,7 @@
             <ModeView
                 view={screen.view}
                 round={screen.round}
+                {clock}
                 interactive={status.interactive}
                 {send}
             />

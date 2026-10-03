@@ -1,6 +1,7 @@
 <script lang="ts">
     import ConnectionIcon from '../shared/components/ConnectionIcon.svelte';
     import type { GameMasterSnapshot, PlayerId } from '../shared/contracts';
+    import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
@@ -13,11 +14,13 @@
     interface Props {
         snapshot: GameMasterSnapshot;
         session: GameMasterSession;
+        /** The clock of the server, for the countdowns of the rounds. */
+        clock: ServerClock;
         /** Whether the page is synchronized with the server: everything is disabled otherwise. */
         interactive: boolean;
     }
 
-    let { snapshot, session, interactive }: Props = $props();
+    let { snapshot, session, clock, interactive }: Props = $props();
 
     // One rename at a time: the player whose form is open, followed by identifier through renames.
     let renaming = $state<PlayerId | null>(null);
@@ -33,7 +36,7 @@
     </p>
 
     {#if snapshot.phase !== 'Lobby'}
-        <RoundControl {snapshot} {session} {interactive} />
+        <RoundControl {snapshot} {session} {clock} {interactive} />
     {/if}
 
     <!-- Registration stays open once started: the address of the QR code may still change. -->

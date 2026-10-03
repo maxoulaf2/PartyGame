@@ -3,6 +3,10 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-import type { QuizSubmitAnswer } from './QuizSubmitAnswer';
+import type { RoundId } from './RoundId';
 
-export type PlayerRoundIntent = QuizSubmitAnswer;
+export interface QuizOpenAnswers {
+    readonly type: 'quiz.openAnswers';
+    readonly roundId: RoundId;
+    readonly questionNumber: number;
+}

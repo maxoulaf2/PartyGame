@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
+import { countText } from '../src/shared/i18n/countText.ts';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { gameMasterCode, playedPack } from './gameServer.ts';
@@ -42,7 +43,7 @@ async function expectQuestionOnPhone(phone: Page, question: string, progress: st
     await expect(phone.getByText('araignée')).toHaveCount(0);
 }
 
-test('the game master starts the game, and every interface presents its first question', async ({
+test('the game master starts the game, then the players answer its first question', async ({
     page,
     browser,
     baseURL,
@@ -112,5 +113,83 @@ test('the game master starts the game, and every interface presents its first qu
         await expect(other.getByText(fr.modes.quiz.gm.correct)).toHaveCount(0);
     }
 
-    await Promise.all([phone, latePhone, display].map((other) => other.context().close()));
+    // Two more phones take part: one answers, the other lets the time run out.
+    const thirdPhone = await joinOnNewPhone(browser, baseURL, uniqueNickname('Léa'));
+    const silentPhone = await joinOnNewPhone(browser, baseURL, uniqueNickname('Noé'));
+    await expectQuestionOnPhone(silentPhone, question, progress);
+
+    // The game master opens the answers: the countdown starts on every screen.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    const answers = page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel });
+    await expect(answers).toBeVisible();
+    // Every registered player takes part, those of the other tests included, connected or not.
+    const participants = await answers.getByRole('listitem').count();
+    expect(participants).toBeGreaterThanOrEqual(4);
+    for (const screen of [display, phone, page]) {
+        await expect(screen.getByRole('timer')).toBeVisible();
+    }
+    await expect(display.getByText(answeredText(0, participants))).toBeVisible();
+
+    // A phone that joins now plays from the next question.
+    const tooLatePhone = await joinOnNewPhone(browser, baseURL, uniqueNickname('Tom'));
+    await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toBeVisible();
+    await expect(choiceButton(tooLatePhone, 'A')).toBeDisabled();
+
+    // Three players answer: each choice shows at once, then is confirmed by the server.
+    await answer(phone, 'B');
+    await answer(latePhone, 'A');
+    await answer(thirdPhone, 'B');
+    await expect(display.getByText(answeredText(3, participants))).toBeVisible();
+    // The TV screen tells how many answered, never what.
+    await expect(display.getByText(nickname)).toHaveCount(0);
+
+    await expect(answers.getByRole('listitem').filter({ hasText: nickname })).toHaveText(
+        `${nickname} B`,
+    );
+    await expect(answers.getByRole('listitem').filter({ hasText: lateNickname })).toHaveText(
+        `${lateNickname} A`,
+    );
+    await expect(choicesOf(page)).toHaveText([
+        `A 6 ${countText(fr.modes.quiz.gm.choiceAnswers, 1)}`,
+        `B 8 ${fr.modes.quiz.gm.correct} ${countText(fr.modes.quiz.gm.choiceAnswers, 2)}`,
+    ]);
+
+    // The game master locks the answers before the end of the countdown.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
+    for (const screen of [display, phone, silentPhone, page]) {
+        await expect(screen.getByText(fr.modes.quiz.timeUp)).toBeVisible();
+        await expect(screen.getByRole('timer')).toHaveCount(0);
+    }
+    await expect(display.getByText(answeredText(3, participants))).toBeVisible();
+    // The phone that answered keeps its choice; the silent one shows none.
+    await expect(choiceButton(phone, 'B')).toHaveAttribute('aria-pressed', 'true');
+    for (const letter of ['A', 'B']) {
+        await expect(choiceButton(silentPhone, letter)).toHaveAttribute('aria-pressed', 'false');
+        await expect(choiceButton(silentPhone, letter)).toBeDisabled();
+    }
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toHaveCount(0);
+
+    await Promise.all(
+        [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, display].map((other) =>
+            other.context().close(),
+        ),
+    );
 });
+
+function choiceButton(phone: Page, letter: string) {
+    return phone.getByRole('button', { name: fill(fr.modes.quiz.player.choiceLabel, { letter }) });
+}
+
+function answeredText(answered: number, participants: number): string {
+    return fill(fr.modes.quiz.answered, { answered, participants });
+}
+
+/** Chooses `letter` on `phone`, then checks that the server recorded it and nothing else is free. */
+async function answer(phone: Page, letter: string) {
+    await choiceButton(phone, letter).click();
+    await expect(phone.getByText(fr.modes.quiz.player.recorded)).toBeVisible();
+    await expect(choiceButton(phone, letter)).toHaveAttribute('aria-pressed', 'true');
+    for (const button of await choicesOf(phone).getByRole('button').all()) {
+        await expect(button).toBeDisabled();
+    }
+}

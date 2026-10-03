@@ -3,6 +3,7 @@ using System.Globalization;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Quiz;
+using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Text;
 
@@ -12,11 +13,16 @@ namespace PartyGame.Engine.Modes.Quiz;
 /// Plays the multiple-choice quiz rounds of the packs.
 /// </summary>
 /// <remarks>
-/// For now, a round presents its first question and stays there: the answers open from US-E08-03, and the round moves
-/// on to its next questions from US-E08-05.
+/// For now, a round plays its first question up to the lock of its answers and stays there: the reveal comes with
+/// US-E08-04, and the next questions with US-E08-05.
 /// </remarks>
 public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 {
+    /// <summary>
+    /// The timer that locks the answers at the end of the countdown.
+    /// </summary>
+    public static readonly TimerId AnswersTimer = new("quiz-answers");
+
     /// <summary>
     /// Checks that each question has exactly one correct choice, and no two choices players would take for the same.
     /// </summary>
@@ -69,27 +75,42 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         return new(Present(descriptor, 0, context.Random), []);
     }
 
+    /// <summary>
+    /// Plays the intents of the quiz, each aimed at the question it names, and locks the answers when their timer elapses.
+    /// </summary>
     /// <inheritdoc />
-    /// <remarks>
-    /// The round schedules no timer, and plays no intent yet: the intents of the contracts are placeholders until
-    /// US-E08-03.
-    /// </remarks>
-    public override RoundTransition Handle(QuizRound round, GameInput input, GameState game, GameContext context) =>
-        input switch
+    public override RoundTransition Handle(QuizRound round, GameInput input, GameState game, GameContext context)
+    {
+        ArgumentNullException.ThrowIfNull(round);
+        ArgumentNullException.ThrowIfNull(game);
+        ArgumentNullException.ThrowIfNull(context);
+
+        return input switch
         {
-            TimerElapsed => RoundTransition.Rejected(round, RejectionReason.UnexpectedTimer),
+            GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
+            GameMasterRoundInput { RoundIntent: QuizLockAnswers locking } => LockAnswers(round, locking),
+            PlayerRoundInput { RoundIntent: QuizSubmitAnswer answer } submitted =>
+                SubmitAnswer(round, submitted.PlayerId, answer, submitted.ReceivedAt),
+            TimerElapsed timer => CloseAnswers(round, timer),
             _ => RoundTransition.Rejected(round, RejectionReason.IntentUnsupported),
         };
+    }
 
     /// <inheritdoc />
     public override PlayerRoundView ProjectForPlayer(QuizRound round, GameState game, Player player)
     {
         ArgumentNullException.ThrowIfNull(round);
+        ArgumentNullException.ThrowIfNull(player);
         return new QuizPlayerView(
-            round.QuestionIndex + 1,
+            round.QuestionNumber,
             round.Descriptor.Questions.Length,
             PhaseOf(round),
-            [.. ShownChoicesOf(round).Select(shown => shown.Letter)]);
+            [.. ShownChoicesOf(round).Select(shown => shown.Letter)],
+            CloseTimeOf(round),
+
+            // Whoever is registered during the presentation takes part once the answers open.
+            round.Phase == QuizPhase.Presentation || round.Participants.Contains(player.Id),
+            round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null);
     }
 
     /// <inheritdoc />
@@ -98,24 +119,47 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         ArgumentNullException.ThrowIfNull(round);
         ArgumentNullException.ThrowIfNull(game);
         return new QuizDisplayView(
-            round.QuestionIndex + 1,
+            round.QuestionNumber,
             round.Descriptor.Questions.Length,
             PhaseOf(round),
             round.Question.Text,
             round.Question.Image is { } image ? game.Media.UrlOf(image) : null,
-            PublicChoicesOf(round));
+            PublicChoicesOf(round),
+            CloseTimeOf(round),
+
+            // How many answered, never what: the choices stay secret until the reveal.
+            round.Answers.Count,
+            round.Participants.Length);
     }
 
     /// <inheritdoc />
     public override GameMasterRoundView ProjectForGameMaster(QuizRound round, GameState game)
     {
         ArgumentNullException.ThrowIfNull(round);
+        ArgumentNullException.ThrowIfNull(game);
         return new QuizGameMasterView(
-            round.QuestionIndex + 1,
+            round.QuestionNumber,
             round.Descriptor.Questions.Length,
             PhaseOf(round),
             round.Question.Text,
-            [.. ShownChoicesOf(round).Select(shown => new QuizGameMasterChoice(shown.Letter, shown.Choice.Text, shown.Choice.Correct))]);
+            [
+                .. ShownChoicesOf(round).Select(shown => new QuizGameMasterChoice(
+                    shown.Letter,
+                    shown.Choice.Text,
+                    shown.Choice.Correct,
+                    round.Answers.Values.Count(answer => answer.Choice == shown.Letter))),
+            ],
+            CloseTimeOf(round),
+
+            // Players are never removed: every participant is still registered, under their current nickname.
+            [
+                .. game.Players
+                    .Where(player => round.Participants.Contains(player.Id))
+                    .Select(player => new QuizGameMasterAnswer(
+                        player.Id,
+                        player.Nickname,
+                        round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null)),
+            ]);
     }
 
     /// <summary>
@@ -134,6 +178,86 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
+    /// Opens the answers of the question presented to the players registered now, until the end of its countdown.
+    /// </summary>
+    private static RoundTransition OpenAnswers(QuizRound round, QuizOpenAnswers open, GameState game, GameContext context)
+    {
+        if (open.QuestionNumber != round.QuestionNumber)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+        }
+
+        if (round.Phase != QuizPhase.Presentation)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
+        }
+
+        var closeAt = context.Now.AddSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds);
+        var opened = round with
+        {
+            Phase = QuizPhase.Answering,
+            AnswersCloseAt = closeAt,
+            Participants = [.. game.Players.Select(player => player.Id)],
+        };
+        return new(opened, [new ScheduleTimer(AnswersTimer, closeAt)]);
+    }
+
+    /// <summary>
+    /// Locks the answers before the end of the countdown, at the request of the game master.
+    /// </summary>
+    private static RoundTransition LockAnswers(QuizRound round, QuizLockAnswers locking)
+    {
+        if (locking.QuestionNumber != round.QuestionNumber)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+        }
+
+        if (round.Phase != QuizPhase.Answering)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
+        }
+
+        return new(round with { Phase = QuizPhase.Locked }, [new CancelTimer(AnswersTimer)]);
+    }
+
+    /// <summary>
+    /// Locks the answers at the end of the countdown. The timer of answers already locked, or of another question, is
+    /// obsolete.
+    /// </summary>
+    private static RoundTransition CloseAnswers(QuizRound round, TimerElapsed timer)
+    {
+        if (timer.TimerId != AnswersTimer || round.Phase != QuizPhase.Answering || timer.DueAt != round.AnswersCloseAt)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.UnexpectedTimer);
+        }
+
+        return new(round with { Phase = QuizPhase.Locked }, []);
+    }
+
+    /// <summary>
+    /// Records the first answer of a participant, received before the answers close.
+    /// </summary>
+    private static RoundTransition SubmitAnswer(QuizRound round, PlayerId playerId, QuizSubmitAnswer answer, DateTimeOffset receivedAt)
+    {
+        RejectionReason? rejection =
+            answer.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != QuizPhase.Answering ? RejectionReason.PhaseMismatch
+
+            // Received once closed, although the loop has not handled the timer yet: the time of reception decides.
+            : receivedAt >= round.AnswersCloseAt ? RejectionReason.AnswerTooLate
+            : !round.Participants.Contains(playerId) ? RejectionReason.NotParticipating
+            : (int)answer.Choice < 0 || (int)answer.Choice >= round.ChoiceOrder.Length ? RejectionReason.ChoiceUnknown
+            : round.Answers.ContainsKey(playerId) ? RejectionReason.AlreadyAnswered
+            : null;
+        if (rejection is { } reason)
+        {
+            return RoundTransition.Rejected(round, reason);
+        }
+
+        return new(round with { Answers = round.Answers.Add(playerId, new QuizAnswer(answer.Choice, receivedAt)) }, []);
+    }
+
+    /// <summary>
     /// The choices of the question in progress in the order shown, each with its letter.
     /// </summary>
     private static IEnumerable<(QuizChoiceLetter Letter, QuizChoice Choice)> ShownChoicesOf(QuizRound round) =>
@@ -145,9 +269,17 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     private static ImmutableArray<QuizChoiceView> PublicChoicesOf(QuizRound round) =>
         [.. ShownChoicesOf(round).Select(shown => new QuizChoiceView(shown.Letter, shown.Choice.Text))];
 
+    /// <summary>
+    /// When the answers close, while they are open: the screens count down to it.
+    /// </summary>
+    private static long? CloseTimeOf(QuizRound round) =>
+        round.Phase == QuizPhase.Answering ? round.AnswersCloseAt?.ToUnixTimeMilliseconds() : null;
+
     private static QuizQuestionPhase PhaseOf(QuizRound round) => round.Phase switch
     {
         QuizPhase.Presentation => QuizQuestionPhase.Presentation,
+        QuizPhase.Answering => QuizQuestionPhase.Answering,
+        QuizPhase.Locked => QuizQuestionPhase.Locked,
         _ => throw new InvalidOperationException($"Phase {round.Phase} has no projection."),
     };
 

@@ -5,7 +5,8 @@
 
 import type { RoundId } from './RoundId';
 
-export interface QuizGameMasterIntent {
-    readonly type: 'quiz';
+export interface QuizLockAnswers {
+    readonly type: 'quiz.lockAnswers';
     readonly roundId: RoundId;
+    readonly questionNumber: number;
 }

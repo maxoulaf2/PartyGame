@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Countdown from '../../shared/components/Countdown.svelte';
     import type { QuizDisplayView } from '../../shared/contracts';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
@@ -6,7 +7,7 @@
     import ChoiceMarker from './ChoiceMarker.svelte';
     import { choiceColor } from './choiceTheme';
 
-    let { view, round }: DisplayViewProps<QuizDisplayView> = $props();
+    let { view, round, clock }: DisplayViewProps<QuizDisplayView> = $props();
 
     // An image that cannot be loaded leaves the question on screen without it: never a broken
     // image on the TV.
@@ -17,12 +18,34 @@
 <main>
     <header>
         <p class="round">{round.title}</p>
-        <p class="progress">
-            {fill(fr.modes.quiz.question, {
-                number: view.questionNumber,
-                count: view.questionCount,
-            })}
-        </p>
+        <div class="status">
+            <p class="progress">
+                {fill(fr.modes.quiz.question, {
+                    number: view.questionNumber,
+                    count: view.questionCount,
+                })}
+            </p>
+            {#if view.phase !== 'Presentation'}
+                <!-- How many answered, never what: the choices stay secret until the reveal. -->
+                <p class="answered">
+                    {fill(fr.modes.quiz.answered, {
+                        answered: view.answeredCount,
+                        participants: view.participantCount,
+                    })}
+                </p>
+            {/if}
+            {#if view.answersCloseAt !== null}
+                <p class="countdown">
+                    <Countdown
+                        closeAt={view.answersCloseAt}
+                        {clock}
+                        label={fr.modes.quiz.timeLeft}
+                    />
+                </p>
+            {:else if view.phase === 'Locked'}
+                <p class="time-up">{fr.modes.quiz.timeUp}</p>
+            {/if}
+        </div>
     </header>
     <div class="question">
         {#if image}
@@ -60,7 +83,7 @@
     header {
         display: flex;
         justify-content: space-between;
-        align-items: baseline;
+        align-items: center;
         gap: 4vw;
         font-weight: 700;
     }
@@ -75,9 +98,30 @@
         overflow-wrap: anywhere;
     }
 
-    .progress {
+    .status {
+        display: flex;
         flex: none;
+        align-items: center;
+        gap: 3vw;
+    }
+
+    .progress,
+    .answered {
         color: var(--color-text-muted);
+    }
+
+    /* The seconds left, readable from the back of the room. */
+    .countdown {
+        min-width: 2.5ch;
+        color: var(--color-accent);
+        font-size: 3.5rem;
+        line-height: 1;
+        text-align: right;
+    }
+
+    .time-up {
+        color: var(--color-accent);
+        font-size: 2rem;
     }
 
     .question {

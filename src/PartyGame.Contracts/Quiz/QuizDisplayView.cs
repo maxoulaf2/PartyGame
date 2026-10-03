@@ -3,7 +3,8 @@ using System.Collections.Immutable;
 namespace PartyGame.Contracts.Quiz;
 
 /// <summary>
-/// What a quiz round shows on the TV screen: the question in progress, never its correct answer before the reveal.
+/// What a quiz round shows on the TV screen: the question in progress, never its correct answer before the reveal, nor
+/// what any player chose: only how many answered.
 /// </summary>
 /// <param name="QuestionNumber">Number of the question in the round, from 1.</param>
 /// <param name="QuestionCount">Number of questions of the round.</param>
@@ -13,10 +14,22 @@ namespace PartyGame.Contracts.Quiz;
 /// The URL of the image of the question, or <see langword="null"/> when it has none. Only the TV screen shows it.
 /// </param>
 /// <param name="Choices">The choices, in the order shown, which is the order of their letters.</param>
+/// <param name="AnswersCloseAt">
+/// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while they are open;
+/// <see langword="null"/> otherwise. The countdown is computed from it and from the offset of the clock.
+/// </param>
+/// <param name="AnsweredCount">How many players taking part answered: 0 until the answers open.</param>
+/// <param name="ParticipantCount">
+/// How many players take part in the question, the players registered when its answers opened, connected or not: 0 until
+/// the answers open.
+/// </param>
 public sealed record QuizDisplayView(
     int QuestionNumber,
     int QuestionCount,
     QuizQuestionPhase Phase,
     string Text,
     string? ImageUrl,
-    ImmutableArray<QuizChoiceView> Choices) : DisplayRoundView;
+    ImmutableArray<QuizChoiceView> Choices,
+    long? AnswersCloseAt,
+    int AnsweredCount,
+    int ParticipantCount) : DisplayRoundView;

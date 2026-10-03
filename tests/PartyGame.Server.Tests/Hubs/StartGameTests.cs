@@ -69,7 +69,7 @@ public sealed class StartGameTests : IAsyncDisposable
         Assert.Equal((Phase.Round, QuizQuestionPhase.Presentation), (toZoe.Player[^1].Phase, toThePlayer.Phase));
         Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B], toThePlayer.Choices);
         Assert.Equal(
-            [new QuizGameMasterChoice(QuizChoiceLetter.A, "Oui", Correct: true), new QuizGameMasterChoice(QuizChoiceLetter.B, "Non", Correct: false)],
+            [new QuizGameMasterChoice(QuizChoiceLetter.A, "Oui", Correct: true, AnswerCount: 0), new QuizGameMasterChoice(QuizChoiceLetter.B, "Non", Correct: false, AnswerCount: 0)],
             toTheGameMaster.Choices);
         Assert.Equal([new QuizChoiceView(QuizChoiceLetter.A, "Oui"), new QuizChoiceView(QuizChoiceLetter.B, "Non")], toTheDisplay.Choices);
         Assert.DoesNotContain("correct", toDisplay.Json[^1], StringComparison.OrdinalIgnoreCase);

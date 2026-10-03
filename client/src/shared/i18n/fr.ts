@@ -225,6 +225,12 @@ export const fr = {
             question: 'Question {number}/{count}',
             // Read by screen readers: the choices of the question, each with its letter.
             choicesLabel: 'Propositions',
+            // Shown everywhere once the answers are locked, by the countdown or by the game master.
+            timeUp: 'Temps écoulé',
+            // Read by screen readers before the seconds left to answer.
+            timeLeft: 'Temps restant',
+            // How many of the players taking part answered, never what.
+            answered: 'Réponses : {answered} / {participants}',
             display: {
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
@@ -232,11 +238,28 @@ export const fr = {
             player: {
                 // Read by screen readers: the buttons show a shape and a letter only.
                 choiceLabel: 'Proposition {letter}',
+                // The choice is sent, not confirmed by the server yet.
+                pending: 'Envoi de ta réponse…',
+                recorded: 'Réponse enregistrée',
+                // For a player who joined once the answers were open.
+                nextQuestion: 'Tu joueras à la question suivante',
             },
             gm: {
                 correct: 'Bonne réponse',
                 openAnswers: 'Ouvrir les réponses',
+                lockAnswers: 'Verrouiller maintenant',
                 skipQuestion: 'Passer la question',
+                allAnswered: 'Tous les joueurs ont répondu',
+                answersLabel: 'Réponses des joueurs',
+                // A player taking part who has not chosen, while the answers are open, then once locked.
+                waitingAnswer: 'Pas encore de réponse',
+                noAnswer: 'Pas de réponse',
+                // How many players chose a choice.
+                choiceAnswers: {
+                    zero: 'aucune réponse',
+                    one: '{count} réponse',
+                    other: '{count} réponses',
+                },
             },
         },
     },

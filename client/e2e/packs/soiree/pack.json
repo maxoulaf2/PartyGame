@@ -5,6 +5,7 @@
     {
       "type": "quiz",
       "title": "Échauffement",
+      "answerSeconds": 120,
       "questions": [
         {
           "text": "Combien de pattes a une araignée ?",

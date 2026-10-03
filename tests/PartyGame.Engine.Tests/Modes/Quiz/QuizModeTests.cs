@@ -178,47 +178,17 @@ public sealed class QuizModeTests
     }
 
     [Fact]
-    public void Handle_Timer_IsRejected()
+    public void Handle_TimerDuringThePresentation_IsRejected()
     {
-        // Given: the round scheduled none
+        // Given: the round scheduled none yet
         var state = QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]);
-        var timer = new TimerElapsed(new TimerId("countdown"), Games.Now) { RoundId = state.CurrentRound!.Id };
+        var timer = new TimerElapsed(QuizMode.AnswersTimer, Games.Now) { RoundId = state.CurrentRound!.Id };
 
         // When
         var transition = QuizGames.Engine.Handle(state, timer, Games.Context());
 
         // Then
         Assert.Equal(RejectionReason.UnexpectedTimer, transition.Rejection);
-        Assert.Same(state, transition.State);
-    }
-
-    [Fact]
-    public void Handle_IntentOfAPlayer_IsRejectedUntilTheAnswersOpen()
-    {
-        // Given: the intents of the contracts are placeholders until US-E08-03
-        var state = QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]);
-        var intent = new PlayerRoundInput(Games.PlayerIdOf(1), new QuizPlayerIntent(state.CurrentRound!.Id), Games.Now);
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, intent, Games.Context());
-
-        // Then
-        Assert.Equal(RejectionReason.IntentUnsupported, transition.Rejection);
-        Assert.Same(state, transition.State);
-    }
-
-    [Fact]
-    public void Handle_IntentOfTheGameMaster_IsRejectedUntilTheAnswersOpen()
-    {
-        // Given
-        var state = QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]);
-        var intent = new GameMasterRoundInput(new QuizGameMasterIntent(state.CurrentRound!.Id), Games.Now);
-
-        // When
-        var transition = QuizGames.Engine.Handle(state, intent, Games.Context());
-
-        // Then
-        Assert.Equal(RejectionReason.IntentUnsupported, transition.Rejection);
         Assert.Same(state, transition.State);
     }
 
