@@ -11,7 +11,7 @@
 - Étant donné la révélation, quand la TV l'affiche, alors la bonne proposition est mise en évidence par une icône et un libellé en plus de la couleur, et les autres sont atténuées.
 - Étant donné la révélation, quand la TV l'affiche, alors elle montre sous chaque proposition le nombre de joueurs qui l'ont choisie et leurs pseudos, puis les joueurs participants sans réponse (décision 4 du README).
 - Étant donné 20 joueurs aux pseudos de 16 caractères, quand ils ont tous choisi la même proposition, alors leurs pseudos restent lisibles à 3 m sur la TV en 1080p, sans débordement ni défilement.
-- Étant donné un téléphone de joueur, quand la réponse est révélée, alors il affiche « Bonne réponse ! », « Raté » avec la bonne proposition (lettre, forme et texte), ou « Pas de réponse ».
+- Étant donné un téléphone de joueur, quand la réponse est révélée, alors il affiche « Bonne réponse ! », « Raté » avec la bonne proposition (lettre, forme et couleur, sans texte : décision 9 du README), ou « Pas de réponse ».
 - Étant donné un joueur qui n'a pas participé (arrivé après l'ouverture), quand la réponse est révélée, alors son téléphone montre la bonne réponse, sans verdict.
 - Étant donné la console GM, quand la réponse est révélée, alors elle affiche la même répartition que la TV et le bouton « Question suivante » (US-E08-05).
 - Étant donné deux consoles GM, ou un renvoi après une reconnexion, quand deux intentions de révélation visent la même question, alors la seconde est rejetée sans effet.

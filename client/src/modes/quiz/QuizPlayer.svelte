@@ -6,6 +6,8 @@
     import ChoiceMarker from './ChoiceMarker.svelte';
     import { choiceColor } from './choiceTheme';
 
+    // An answer pad: the question and the choices are read on the TV screen, so that players look
+    // up from their phones. Each button has the letter, the shape and the color of its choice.
     let { view }: PlayerViewProps<QuizPlayerView, QuizPlayerIntent> = $props();
 </script>
 
@@ -13,14 +15,17 @@
     <p class="progress">
         {fill(fr.modes.quiz.question, { number: view.questionNumber, count: view.questionCount })}
     </p>
-    <h1>{view.text}</h1>
     <ol class="choices" aria-label={fr.modes.quiz.choicesLabel}>
-        {#each view.choices as choice (choice.letter)}
+        {#each view.choices as letter (letter)}
             <li>
                 <!-- Nothing to choose while the question is presented: the answers open next. -->
-                <button type="button" disabled style:--choice-color={choiceColor(choice.letter)}>
-                    <ChoiceMarker letter={choice.letter} />
-                    <span class="text">{choice.text}</span>
+                <button
+                    type="button"
+                    disabled
+                    aria-label={fill(fr.modes.quiz.player.choiceLabel, { letter })}
+                    style:background={choiceColor(letter)}
+                >
+                    <ChoiceMarker {letter} color="currentColor" />
                 </button>
             </li>
         {/each}
@@ -38,13 +43,8 @@
         padding: var(--space-l) var(--space-m);
     }
 
-    h1,
     p {
         margin: 0;
-    }
-
-    .progress,
-    .hint {
         color: var(--color-text-muted);
         text-align: center;
     }
@@ -53,16 +53,12 @@
         font-weight: 700;
     }
 
-    h1 {
-        font-size: 1.375rem;
-        line-height: 1.3;
-        overflow-wrap: anywhere;
-    }
-
     .choices {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
+        display: grid;
+        flex: 1 1 auto;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: 1fr;
+        gap: var(--space-m);
         margin: 0;
         padding: 0;
         list-style: none;
@@ -71,28 +67,21 @@
     button {
         display: flex;
         align-items: center;
-        gap: var(--space-m);
+        justify-content: center;
         width: 100%;
-        min-height: var(--touch-target-min);
-        padding: var(--space-s) var(--space-m);
-        border: 2px solid var(--choice-color);
-        border-left-width: 0.5rem;
+        height: 100%;
+        min-height: 6rem;
+        border: none;
         border-radius: var(--radius);
-        background: var(--color-surface);
-        color: var(--color-text);
+        /* Dark on the light colors of the choices: the shape and the letter stay contrasted. */
+        color: var(--color-bg);
         font: inherit;
-        font-size: 1.125rem;
-        text-align: left;
+        font-size: 2.5rem;
         touch-action: manipulation;
     }
 
-    /* Waiting for the answers to open, not out of order: dimmed, still readable. */
+    /* Waiting for the answers to open, not out of order: dimmed, still recognizable. */
     button:disabled {
-        opacity: 0.75;
-    }
-
-    .text {
-        min-width: 0;
-        overflow-wrap: anywhere;
+        opacity: 0.6;
     }
 </style>

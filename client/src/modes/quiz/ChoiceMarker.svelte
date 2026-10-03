@@ -4,9 +4,11 @@
 
     interface Props {
         letter: QuizChoiceLetter;
+        /** The color of the shape: the one of the letter, unless it stands on that very color. */
+        color?: string;
     }
 
-    let { letter }: Props = $props();
+    let { letter, color = choiceColor(letter) }: Props = $props();
 </script>
 
 <!-- The shape repeats what the letter says, for those who tell the choices apart at a glance:
@@ -15,7 +17,7 @@
     <span
         class="shape"
         aria-hidden="true"
-        style:background={choiceColor(letter)}
+        style:background={color}
         style:clip-path={choiceShape(letter)}
     ></span>
     <span class="letter">{letter}</span>

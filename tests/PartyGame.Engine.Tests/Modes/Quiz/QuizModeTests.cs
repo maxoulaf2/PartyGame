@@ -1,6 +1,8 @@
+using System.Text.Json;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Quiz;
+using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Modes.Quiz;
@@ -235,7 +237,7 @@ public sealed class QuizModeTests
         var question = (1, 2, QuizQuestionPhase.Presentation, QuizGames.CapitalQuestion.Text);
         Assert.Equal(question, (display.QuestionNumber, display.QuestionCount, display.Phase, display.Text));
         Assert.Equal(question, (gameMaster.QuestionNumber, gameMaster.QuestionCount, gameMaster.Phase, gameMaster.Text));
-        Assert.Equal(question, (player.QuestionNumber, player.QuestionCount, player.Phase, player.Text));
+        Assert.Equal((1, 2, QuizQuestionPhase.Presentation), (player.QuestionNumber, player.QuestionCount, player.Phase));
     }
 
     [Fact]
@@ -307,7 +309,7 @@ public sealed class QuizModeTests
         var expected = quiz.ChoiceOrder.Select(i => QuizGames.CapitalQuestion.Choices[i].Text).ToList();
         Assert.Equal(expected, display.Choices.Select(c => c.Text));
         Assert.Equal(expected, gameMaster.Choices.Select(c => c.Text));
-        Assert.All(phones, phone => Assert.Equal(display.Choices, phone.Choices));
+        Assert.All(phones, phone => Assert.Equal(display.Choices.Select(c => c.Letter), phone.Choices));
     }
 
     [Fact]
@@ -322,7 +324,7 @@ public sealed class QuizModeTests
         var max = (QuizPlayerView)QuizGames.Snapshots.ForPlayer(state, state.Players[1]).RoundView!;
 
         // Then
-        Assert.Equal((zoe.QuestionNumber, zoe.Phase, zoe.Text), (max.QuestionNumber, max.Phase, max.Text));
+        Assert.Equal((zoe.QuestionNumber, zoe.Phase), (max.QuestionNumber, max.Phase));
         Assert.Equal(zoe.Choices, max.Choices);
     }
 
@@ -337,7 +339,24 @@ public sealed class QuizModeTests
         var view = (QuizPlayerView)QuizGames.Mode.ProjectForPlayer(QuizGames.RoundOf(state), state, state.Players[0]);
 
         // Then
-        Assert.Equal((3, 3, QuizGames.LastQuestion.Text), (view.QuestionNumber, view.QuestionCount, view.Text));
+        Assert.Equal((3, 3), (view.QuestionNumber, view.QuestionCount));
+        Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B, QuizChoiceLetter.C], view.Choices);
+    }
+
+    [Fact]
+    public void ProjectForPlayer_Presentation_SendsTheLettersOfTheChoicesWithoutAnyText()
+    {
+        // Given: the question and the choices are read on the TV screen, the phone is an answer pad
+        var state = QuizGames.Started([Round(QuizGames.CapitalQuestion)], ["Zoé"]);
+
+        // When
+        var json = JsonSerializer.Serialize(QuizGames.Snapshots.ForPlayer(state, state.Players[0]), ContractJsonOptions.Default);
+
+        // Then
+        var view = (QuizPlayerView)QuizGames.Snapshots.ForPlayer(state, state.Players[0]).RoundView!;
+        Assert.Equal([QuizChoiceLetter.A, QuizChoiceLetter.B, QuizChoiceLetter.C, QuizChoiceLetter.D], view.Choices);
+        string[] texts = ["capitale", "Australie", .. QuizGames.CapitalQuestion.Choices.Select(c => c.Text)];
+        Assert.All(texts, text => Assert.DoesNotContain(text, json, StringComparison.Ordinal));
     }
 
     private static QuizRoundDescriptor Round(params QuizQuestion[] questions) =>

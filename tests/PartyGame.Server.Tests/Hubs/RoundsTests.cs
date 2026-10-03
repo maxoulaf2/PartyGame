@@ -75,7 +75,7 @@ public sealed class RoundsTests : IAsyncDisposable
         Assert.Equal((Phase.Round, round), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round));
         Assert.Equal("Question ?", Assert.IsType<QuizDisplayView>(toDisplay.Display[^1].RoundView).Text);
         Assert.Equal("Question ?", Assert.IsType<QuizGameMasterView>(toGameMaster.GameMaster[^1].RoundView).Text);
-        Assert.Equal("Question ?", Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView).Text);
+        Assert.Equal(1, Assert.IsType<QuizPlayerView>(toZoe.Player[^1].RoundView).QuestionNumber);
         Assert.Contains("\"roundView\":{\"type\":\"quiz\",", toZoe.Json[^1], StringComparison.Ordinal);
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Round {RoundNumber} of {RoundCount} started", StringComparison.Ordinal));
     }

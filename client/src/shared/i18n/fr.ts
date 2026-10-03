@@ -230,8 +230,11 @@ export const fr = {
                 imageLabel: 'Illustration de la question',
             },
             player: {
-                // Shown while the question is presented, before the answers open.
-                presentation: 'Lis bien la question : les réponses vont s’ouvrir.',
+                // Read by screen readers: the buttons show a shape and a letter only.
+                choiceLabel: 'Proposition {letter}',
+                // Shown while the question is presented, before the answers open: it is read on
+                // the TV screen, not on the phone.
+                presentation: 'Lis la question sur l’écran : les réponses vont s’ouvrir.',
             },
             gm: {
                 correct: 'Bonne réponse',
