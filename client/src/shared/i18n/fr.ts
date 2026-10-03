@@ -232,9 +232,6 @@ export const fr = {
             player: {
                 // Read by screen readers: the buttons show a shape and a letter only.
                 choiceLabel: 'Proposition {letter}',
-                // Shown while the question is presented, before the answers open: it is read on
-                // the TV screen, not on the phone.
-                presentation: 'Lis la question sur l’écran : les réponses vont s’ouvrir.',
             },
             gm: {
                 correct: 'Bonne réponse',

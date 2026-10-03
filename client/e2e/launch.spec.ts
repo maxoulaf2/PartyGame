@@ -38,7 +38,6 @@ async function expectQuestionOnPhone(phone: Page, question: string, progress: st
         await expect(button).toBeDisabled();
         await expect(button).toHaveText(letter);
     }
-    await expect(phone.getByText(fr.modes.quiz.player.presentation)).toBeVisible();
     await expect(phone.getByText(question)).toHaveCount(0);
     await expect(phone.getByText('araignée')).toHaveCount(0);
 }

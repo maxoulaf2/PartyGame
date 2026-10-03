@@ -30,7 +30,6 @@
             </li>
         {/each}
     </ol>
-    <p class="hint" role="status">{fr.modes.quiz.player.presentation}</p>
 </main>
 
 <style>
