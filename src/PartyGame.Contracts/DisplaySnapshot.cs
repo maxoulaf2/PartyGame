@@ -25,6 +25,10 @@ namespace PartyGame.Contracts;
 /// <param name="RoundView">
 /// What the game mode of the round in progress shows on the TV screen, or <see langword="null"/> outside a round.
 /// </param>
+/// <param name="Ranking">
+/// Every registered player by rank, then in alphabetical order of nickname within a rank, between two rounds; empty
+/// otherwise.
+/// </param>
 public sealed record DisplaySnapshot(
     GameId GameId,
     long Version,
@@ -33,4 +37,5 @@ public sealed record DisplaySnapshot(
     ImmutableArray<DisplayPlayer> Players,
     string? PackTitle,
     RoundInfo? Round,
-    DisplayRoundView? RoundView);
+    DisplayRoundView? RoundView,
+    ImmutableArray<RankedPlayer> Ranking);

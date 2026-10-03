@@ -8,12 +8,14 @@ import type {
     Phase,
     PlayerId,
     QuizDisplayView,
+    RankedPlayer,
     RoundId,
     RoundInfo,
 } from '../src/shared/contracts';
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fill, roundText } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { rankText } from '../src/shared/i18n/rankText.ts';
 import { serveDisplaySnapshot } from './fakeHub.ts';
 import { advertisedAddress } from './gameServer.ts';
 import { trackExternalRequests } from './localRequests.ts';
@@ -50,6 +52,7 @@ function fakeSnapshot(
         packTitle: null,
         round: phase === 'Lobby' ? null : fakeRound,
         roundView,
+        ranking: [],
     };
 }
 
@@ -120,14 +123,14 @@ test('/display/ shows players as they join, then dims those who leave', async ({
     await Promise.all(phones.slice(1).map((phone) => phone.context().close()));
 });
 
-// Outside a round, the lobby stays on the TV with what is going on, for late arrivals to join.
+// Outside a round and its ranking, the lobby stays on the TV with what is going on, for late
+// arrivals to join.
 const notices = {
     Lobby: [],
-    BetweenRounds: [roundText(fr.game.roundEnded, fakeRound), fr.display.betweenRounds],
     Finished: [fr.game.finished, fr.display.finished],
 } as const;
 
-for (const phase of ['Lobby', 'BetweenRounds', 'Finished'] as const) {
+for (const phase of ['Lobby', 'Finished'] as const) {
     test(`/display/ fits 20 long nicknames on a 1080p screen in phase ${phase}, readable and clear of the edges`, async ({
         page,
     }) => {
@@ -174,6 +177,107 @@ for (const phase of ['Lobby', 'BetweenRounds', 'Finished'] as const) {
         expect(overflows).toBe(false);
     });
 }
+
+/** The ranking of `players` as the server sends it: by score, ties sharing their rank. */
+function fakeRanking(players: readonly DisplayPlayer[], scores: readonly number[]): RankedPlayer[] {
+    return players.map((player, index) => {
+        const score = scores[index] ?? 0;
+        const rank = scores.filter((other) => other > score).length + 1;
+        const isTied = scores.filter((other) => other === score).length > 1;
+        return { ...player, rank, isTied, score };
+    });
+}
+
+function rankingList(page: Page) {
+    return page.getByRole('list', { name: fr.game.rankingLabel });
+}
+
+test('/display/ ranks the players between two rounds as the server sends them', async ({
+    page,
+}) => {
+    const players = [
+        fakePlayer(1, 'Max'),
+        fakePlayer(2, 'Zoé'),
+        fakePlayer(3, 'Léa', false),
+        fakePlayer(4, '<b>&🎉'),
+    ];
+    const ranking = fakeRanking(players, [2350, 1000, 1000, 0]);
+    await serveDisplaySnapshot(page, {
+        ...fakeSnapshot(players, advertisedAddress, 'BetweenRounds'),
+        ranking,
+    });
+
+    await page.goto('/display/');
+
+    await expect(
+        page.getByRole('heading', { name: fill(fr.game.rankingAfter, { number: 1 }) }),
+    ).toBeVisible();
+    await expect(page.getByText(roundText(fr.game.roundEnded, fakeRound))).toBeVisible();
+    const points = (count: number) => countText(fr.game.points, count);
+    await expect(rankingList(page).getByRole('listitem')).toHaveText([
+        `${rankText(fr.game.rank, 1)} Max ${points(2350)}`,
+        `${rankText(fr.game.rank, 2)} Zoé ${points(1000)}`,
+        `${rankText(fr.game.rank, 2)} Léa (${fr.display.disconnected}) ${points(1000)}`,
+        `${rankText(fr.game.rank, 4)} <b>&🎉 ${points(0)}`,
+    ]);
+    await expect(rankingList(page).locator('b')).toHaveCount(0);
+    // Dimmed and marked with an icon, never by colour alone.
+    const left = rankingList(page).getByRole('listitem').nth(2);
+    await expect(left.locator('svg')).toBeVisible();
+    // The lobby gives way to the ranking, but late arrivals can still join.
+    await expect(playerList(page)).toHaveCount(0);
+    await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
+});
+
+test('/display/ fits a ranking of 20 long nicknames on a 1080p screen, readable and clear of the edges', async ({
+    page,
+}) => {
+    const players = Array.from({ length: 20 }, (_, index) =>
+        fakePlayer(index + 1, `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`, index !== 3),
+    );
+    expect(players.every((player) => [...player.nickname].length === 16)).toBe(true);
+    const ranking = fakeRanking(
+        players,
+        players.map((_, index) => 12_350 - 650 * Math.floor(index / 2)),
+    );
+    await serveDisplaySnapshot(page, {
+        ...fakeSnapshot(players, advertisedAddress, 'BetweenRounds'),
+        ranking,
+    });
+
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    const items = rankingList(page).getByRole('listitem');
+    await expect(items).toHaveCount(20);
+    for (const item of await items.all()) {
+        await expect(item).toBeVisible();
+        expectWithinSafeArea(await item.boundingBox(), viewport);
+        // About 3 cm high on a 55" TV: readable from 3 m.
+        const fontSize = await item.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        );
+        expect(fontSize).toBeGreaterThanOrEqual(30);
+    }
+    // Ranks read top to bottom, column by column.
+    const first = await items.nth(0).boundingBox();
+    const second = await items.nth(1).boundingBox();
+    expect(second?.y).toBeGreaterThan(first?.y ?? Infinity);
+    for (const element of [
+        page.getByRole('heading', { name: fill(fr.game.rankingAfter, { number: 1 }) }),
+        page.getByRole('img', { name: fr.display.qrCodeLabel }),
+    ]) {
+        expectWithinSafeArea(await element.boundingBox(), viewport);
+    }
+    const overflows = await page.evaluate(() => {
+        const root = document.documentElement;
+        return root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth;
+    });
+    expect(overflows).toBe(false);
+});
 
 test('/display/ keeps the player list when the server knows no address', async ({ page }) => {
     await serveDisplaySnapshot(page, fakeSnapshot([fakePlayer(1, 'Zoé')], null));

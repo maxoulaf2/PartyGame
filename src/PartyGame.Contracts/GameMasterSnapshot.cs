@@ -35,6 +35,14 @@ namespace PartyGame.Contracts;
 /// <param name="RoundView">
 /// What the game mode of the round in progress shows on the console, or <see langword="null"/> outside a round.
 /// </param>
+/// <param name="Ranking">
+/// Every registered player by rank, then in alphabetical order of nickname within a rank, between two rounds; empty
+/// otherwise.
+/// </param>
+/// <param name="NextRoundTitle">
+/// The title of the round the game master starts next, between two rounds; <see langword="null"/> otherwise. Only this
+/// projection holds it: the others discover the rounds as they are played.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -47,4 +55,6 @@ public sealed record GameMasterSnapshot(
     string? SelectedPackId,
     string? PackTitle,
     RoundInfo? Round,
-    GameMasterRoundView? RoundView);
+    GameMasterRoundView? RoundView,
+    ImmutableArray<RankedPlayer> Ranking,
+    string? NextRoundTitle);

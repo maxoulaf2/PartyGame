@@ -111,6 +111,43 @@ public sealed class RoundsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task RoundFinished_BeforeTheLast_SendsTheRankingToEachInterface()
+    {
+        // Given
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await using var max = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+        await JoinAsync(max, "Max");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var first = Game.State.CurrentRound!.Id;
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+        using var toZoe = new ReceivedSnapshots(zoe);
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
+
+        // Then: nobody scored, so both share the first rank, in alphabetical order
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
+        var ids = Game.State.Players.ToDictionary(p => p.Nickname, p => p.Id);
+        RankedPlayer[] expected =
+        [
+            new(ids["Max"], "Max", IsConnected: true, Rank: 1, IsTied: true, Score: 0),
+            new(ids["Zoé"], "Zoé", IsConnected: true, Rank: 1, IsTied: true, Score: 0),
+        ];
+        Assert.Equal(Phase.BetweenRounds, toDisplay.Display[^1].Phase);
+        Assert.Equal(expected, toDisplay.Display[^1].Ranking);
+        Assert.Equal(expected, toGameMaster.GameMaster[^1].Ranking);
+        Assert.Equal("Finale", toGameMaster.GameMaster[^1].NextRoundTitle);
+        Assert.Equal((new PlayerStanding(1, IsTied: true), 2), (toZoe.Player[^1].Standing, toZoe.Player[^1].PlayerCount));
+        Assert.Contains("\"standing\":{\"rank\":1,\"isTied\":true}", toZoe.Json[^1], StringComparison.Ordinal);
+        Assert.DoesNotContain("Finale", toDisplay.Json[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task NextRound_TwiceAtOnce_StartsTheNextRoundOnce()
     {
         // Given: two game master consoles between the rounds

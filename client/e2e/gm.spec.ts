@@ -12,6 +12,7 @@ import type {
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fill, roundText } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { rankText } from '../src/shared/i18n/rankText.ts';
 import { serveGameMasterSnapshot } from './fakeHub.ts';
 import { gameMasterCode } from './gameServer.ts';
 import { trackExternalRequests } from './localRequests.ts';
@@ -48,6 +49,8 @@ function fakeLobby(
         packTitle: null,
         round: null,
         roundView: null,
+        ranking: [],
+        nextRoundTitle: null,
     };
 }
 
@@ -504,4 +507,45 @@ test('/gm/ warns that skipping the last question ends the round', async ({ page 
         name: fill(fr.modes.quiz.gm.skipConfirm.title, { number: 5 }),
     });
     await expect(dialog.getByText(fr.modes.quiz.gm.skipConfirm.lastMessage)).toBeVisible();
+});
+
+test('/gm/ ranks the players between two rounds, then offers to start the next one by its title', async ({
+    page,
+}) => {
+    await serveGameMasterSnapshot(page, {
+        ...fakeLobby(),
+        phase: 'BetweenRounds',
+        players: [
+            { id: zoe, nickname: 'Zoé', isConnected: true, score: 1000 },
+            { id: max, nickname: 'Max', isConnected: false, score: 2350 },
+        ],
+        packCatalog: null,
+        selectedPackId: 'soiree',
+        packTitle: 'Grande soirée',
+        round: firstRound,
+        ranking: [
+            { id: max, nickname: 'Max', isConnected: false, rank: 1, isTied: false, score: 2350 },
+            { id: zoe, nickname: 'Zoé', isConnected: true, rank: 2, isTied: false, score: 1000 },
+        ],
+        nextRoundTitle: 'Culture générale',
+    });
+
+    await openConsole(page);
+
+    await expect(page.getByText(roundText(fr.game.roundEnded, firstRound))).toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: fill(fr.game.rankingAfter, { number: 1 }) }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('list', { name: fr.game.rankingLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `${rankText(fr.game.rank, 1)} Max ${countText(fr.game.points, 2350)}`,
+        `${rankText(fr.game.rank, 2)} Zoé ${countText(fr.game.points, 1000)}`,
+    ]);
+    await expect(
+        page.getByText(
+            fill(fr.gm.nextRound.upcoming, { number: 2, count: 3, title: 'Culture générale' }),
+        ),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.gm.nextRound.action })).toBeEnabled();
 });

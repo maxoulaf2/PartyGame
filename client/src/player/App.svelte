@@ -15,12 +15,12 @@
     import { createGameConnection } from '../shared/connection/gameHub';
     import { PlayerSession } from '../shared/connection/playerSession.svelte';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
-    import { roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
     import { findPlayerView } from '../modes/registry';
     import JoinForm from './JoinForm.svelte';
     import LobbyScreen from './LobbyScreen.svelte';
+    import RankingScreen from './RankingScreen.svelte';
 
     const game = new SnapshotStore<PlayerSnapshot>();
     const connection = createGameConnection();
@@ -75,10 +75,12 @@
                 {pending}
             />
         {/key}
-    {:else if screen.kind === 'betweenRounds'}
-        <WaitingScreen
-            title={roundText(fr.game.roundEnded, screen.round)}
-            message={fr.player.betweenRounds}
+    {:else if screen.kind === 'betweenRounds' && game.current.standing}
+        <RankingScreen
+            round={screen.round}
+            standing={game.current.standing}
+            playerCount={game.current.playerCount}
+            score={game.current.score}
         />
     {:else if screen.kind === 'finished'}
         <WaitingScreen title={fr.game.finished} message={fr.player.finished} />

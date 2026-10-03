@@ -182,6 +182,12 @@ internal static class Games
     }
 
     /// <summary>
+    /// The state with the given scores, one per player in order of arrival, as the rounds played would have awarded them.
+    /// </summary>
+    public static GameState WithScores(GameState state, params int[] scores) =>
+        state with { Players = [.. state.Players.Zip(scores, (player, score) => player with { Score = score })] };
+
+    /// <summary>
     /// The state after an input the test expects to be accepted.
     /// </summary>
     /// <param name="state">The state to handle the input in.</param>

@@ -9,11 +9,11 @@
     import { connectDisplay } from '../shared/connection/displayConnection';
     import { createGameConnection } from '../shared/connection/gameHub';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
-    import { roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
     import { findDisplayView } from '../modes/registry';
     import LobbyScreen, { type Notice } from './LobbyScreen.svelte';
+    import RankingScreen from './RankingScreen.svelte';
 
     const game = new SnapshotStore<DisplaySnapshot>();
     const connection = createGameConnection();
@@ -22,15 +22,10 @@
     const status = new ConnectionStatus(() => game.fresh);
 
     const screen = $derived(game.current && selectGameScreen(game.current, findDisplayView));
-    // Outside a round, the lobby stays on screen with what is going on: its QR code still lets
-    // late arrivals join, since registration stays open.
+    // Outside a round and its ranking, the lobby stays on screen with what is going on: its QR code
+    // still lets late arrivals join, since registration stays open.
     const notice = $derived.by((): Notice | null => {
         switch (screen?.kind) {
-            case 'betweenRounds':
-                return {
-                    headline: roundText(fr.game.roundEnded, screen.round),
-                    detail: fr.display.betweenRounds,
-                };
             case 'finished':
                 return { headline: fr.game.finished, detail: fr.display.finished };
             case 'waiting':
@@ -61,6 +56,8 @@
     {#key screen.round.roundId}
         <ModeView view={screen.view} round={screen.round} {clock} />
     {/key}
+{:else if game.current && screen?.kind === 'betweenRounds'}
+    <RankingScreen snapshot={game.current} round={screen.round} />
 {:else if game.current}
     <LobbyScreen snapshot={game.current} {notice} />
 {:else}

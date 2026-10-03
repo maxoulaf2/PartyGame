@@ -43,6 +43,7 @@ function snapshot(version: number, nickname = 'Zoé'): PlayerSnapshot {
         playerCount: 1,
         round: null,
         roundView: null,
+        standing: null,
     };
 }
 

@@ -7,6 +7,7 @@ import type { DisplayPlayer } from './DisplayPlayer';
 import type { DisplayRoundView } from './DisplayRoundView';
 import type { GameId } from './GameId';
 import type { Phase } from './Phase';
+import type { RankedPlayer } from './RankedPlayer';
 import type { RoundInfo } from './RoundInfo';
 
 export interface DisplaySnapshot {
@@ -18,4 +19,5 @@ export interface DisplaySnapshot {
     readonly packTitle: string | null;
     readonly round: RoundInfo | null;
     readonly roundView: DisplayRoundView | null;
+    readonly ranking: readonly RankedPlayer[];
 }
