@@ -48,14 +48,33 @@ internal static class RoundFlow
         return Start(state, finished.Index + 1, modes, context);
     }
 
+    /// <summary>
+    /// Hands an intent of a player to the round it names, once: an intent numbered up to the last one accepted from the
+    /// player was already handled, and never reaches the game mode again. Only an accepted intent counts as handled: a
+    /// rejected one leaves the state as it is, and is judged again if sent again.
+    /// </summary>
     public static Transition HandlePlayerIntent(GameState state, PlayerRoundInput input, GameModes modes, GameContext context)
     {
-        if (!state.Players.Any(p => p.Id == input.PlayerId))
+        var player = state.Players.FirstOrDefault(p => p.Id == input.PlayerId);
+        if (player is null)
         {
             return Transition.Rejected(state, RejectionReason.PlayerUnknown);
         }
 
-        return HandleIntent(state, input, input.RoundIntent.RoundId, modes, context);
+        if (input.ClientSeq <= player.LastClientSeq)
+        {
+            return Transition.Rejected(state, RejectionReason.IntentAlreadyHandled);
+        }
+
+        var handled = HandleIntent(state, input, input.RoundIntent.RoundId, modes, context);
+        if (handled.Rejection is not null)
+        {
+            return handled;
+        }
+
+        // Even when the mode changes nothing, so that the intent sent again is not handled again.
+        var players = handled.State.Players.Replace(player, player with { LastClientSeq = input.ClientSeq });
+        return new Transition(handled.State with { Players = players }, handled.Effects);
     }
 
     public static Transition HandleGameMasterIntent(GameState state, GameMasterRoundInput input, GameModes modes, GameContext context) =>

@@ -123,6 +123,7 @@ internal static class QuizGames
         int? questionNumber = null) =>
         new(
             Games.PlayerIdOf(player),
+            Games.NextClientSeq(state, player),
             new QuizSubmitAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber, choice),
             receivedAt ?? Games.Now);
 

@@ -91,7 +91,7 @@ public sealed class RoundsTests : IAsyncDisposable
         var first = Game.State.CurrentRound!.Id;
 
         // When: a player acts, the game master ends the round, asks for the next one and ends it as well
-        await zoe.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A)), Ct);
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
         var played = (TestQuizRound)Game.State.CurrentRound!.State;
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizLockAnswers(first, 1)), Ct);
         var betweenRounds = Game.State.Phase;
@@ -144,7 +144,7 @@ public sealed class RoundsTests : IAsyncDisposable
         var state = Game.State;
 
         // When: the console, which identified no player, tries to act for one
-        await gameMaster.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(state.CurrentRound!.Id, 1, QuizChoiceLetter.A)), Ct);
+        await PlayerIntents.SendAsync(gameMaster, clientSeq: 1, new QuizSubmitAnswer(state.CurrentRound!.Id, 1, QuizChoiceLetter.A));
 
         // Then
         Assert.Same(state, Game.State);
@@ -152,12 +152,18 @@ public sealed class RoundsTests : IAsyncDisposable
     }
 
     [Theory]
-    [InlineData("""{"type":"buzz","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}""")]
-    [InlineData("""{"roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}""")]
-    [InlineData("""{"type":"quiz"}""")]
-    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}""")]
-    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"E"}""")]
-    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":1}""")]
+    [InlineData("""{"clientSeq":1,"intent":{"type":"buzz","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}}""")]
+    [InlineData("""{"clientSeq":1,"intent":{"roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}}""")]
+    [InlineData("""{"clientSeq":1,"intent":{"type":"quiz"}}""")]
+    [InlineData("""{"clientSeq":1,"intent":{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff"}}""")]
+    [InlineData("""{"clientSeq":1,"intent":{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"E"}}""")]
+    [InlineData("""{"clientSeq":1,"intent":{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":1}}""")]
+    [InlineData("""{"clientSeq":1,"intent":null}""")]
+    [InlineData("""{"clientSeq":1}""")]
+    [InlineData("""{"intent":{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"A"}}""")]
+    [InlineData("""{"clientSeq":"1","intent":{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"A"}}""")]
+    [InlineData("""{"clientSeq":0,"intent":{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"A"}}""")]
+    [InlineData("""{"type":"quiz.submitAnswer","roundId":"6f9619ff-8b86-d011-b42d-00cf4fc964ff","questionNumber":1,"choice":"A"}""")]
     public async Task SendRoundIntent_Malformed_IsIgnoredWithAWarning(string json)
     {
         // Given

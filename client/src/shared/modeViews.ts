@@ -24,8 +24,16 @@ export interface PlayerViewProps<
     readonly clock: ServerClock;
     /** Whether the page is synchronized with the server: every action is disabled otherwise. */
     readonly interactive: boolean;
-    /** Sends an intent to the mode on the server, which alone decides whether it is accepted. */
-    readonly send: (intent: I) => Promise<IntentOutcome>;
+    /**
+     * Sends an intent to the mode on the server, which alone decides whether it is accepted. Never
+     * lost: an intent the connection drops is sent again once it is back, even after a reload.
+     */
+    readonly send: (intent: I) => void;
+    /**
+     * The intents of this round sent and not acknowledged yet, oldest first, to show at once as
+     * pending. Once acknowledged, the snapshot tells what became of them.
+     */
+    readonly pending: readonly I[];
 }
 
 /** What the TV page hands to the display view of a mode. The TV screen never acts. */

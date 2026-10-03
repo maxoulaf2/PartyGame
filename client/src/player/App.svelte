@@ -8,6 +8,7 @@
         playerNicknameKey,
         playerTokenKey,
     } from '../shared/connection/codeStorage';
+    import { playerIntentsKey } from '../shared/connection/intentQueue.svelte';
     import { watchBuild } from '../shared/connection/buildCheck';
     import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
@@ -27,6 +28,7 @@
         game,
         localCodeStorage(playerTokenKey),
         localCodeStorage(playerNicknameKey),
+        localCodeStorage(playerIntentsKey),
         connection,
     );
     const clock = new ClockSync(connection);
@@ -34,6 +36,12 @@
 
     const screen = $derived(game.current && selectGameScreen(game.current, findPlayerView));
     const send = (intent: PlayerRoundIntent) => session.sendRoundIntent(intent);
+    // Those of the round shown only, which are intents of its mode.
+    const pending = $derived(
+        screen?.kind === 'round'
+            ? session.pendingIntents.filter((intent) => intent.roundId === screen.round.roundId)
+            : [],
+    );
 
     onMount(() => {
         const stopStatus = status.start();
@@ -63,6 +71,7 @@
                 {clock}
                 interactive={status.interactive}
                 {send}
+                {pending}
             />
         {/key}
     {:else if screen.kind === 'betweenRounds'}

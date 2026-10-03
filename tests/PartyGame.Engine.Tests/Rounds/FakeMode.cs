@@ -29,6 +29,10 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
     public override RoundTransition Handle(FakeRoundState round, GameInput input, GameState game, GameContext context) =>
         input switch
         {
+            PlayerRoundInput { RoundIntent: FakePlayerIntent { Action: FakePlayerIntent.Nothing } } =>
+                new RoundTransition(round, []),
+            PlayerRoundInput { RoundIntent: FakePlayerIntent { Action: FakePlayerIntent.Refused } } =>
+                RoundTransition.Rejected(round, RejectionReason.PhaseMismatch),
             PlayerRoundInput { RoundIntent: FakePlayerIntent intent } player =>
                 Record(round, $"player {player.PlayerId.Value} {intent.Action}"),
             GameMasterRoundInput { RoundIntent: FakeGameMasterIntent { Action: FakeGameMasterIntent.Finish } } =>

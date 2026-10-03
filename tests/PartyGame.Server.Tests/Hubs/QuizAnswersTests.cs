@@ -28,6 +28,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     private readonly TempDirectory _logs = new();
     private readonly TempDirectory _packs = new();
     private readonly FakeTimeProvider _time = new(_start);
+    private readonly PlayerIntents _playerIntents = new();
     private readonly WebApplicationFactory<Program> _factory;
 
     public QuizAnswersTests()
@@ -114,6 +115,34 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         Assert.Equal(version, Game.State.Version);
         var view = Assert.IsType<QuizGameMasterView>(_factory.Services.GetRequiredService<Engine.Projections.Snapshots>().ForGameMaster(Game.State).RoundView);
         Assert.Equal(QuizChoiceLetter.B, Assert.Single(view.Answers).Choice);
+    }
+
+    [Fact]
+    public async Task SubmitAnswer_SentAgainWithTheSameClientSeq_IsHandledOnce()
+    {
+        // Given: Zoé answered, and her phone lost the acknowledgment
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        var joined = await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        var answer = new QuizSubmitAnswer(RoundId, 1, QuizChoiceLetter.B);
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, answer);
+
+        // When: identified again on a new connection, before the server noticed the first one dropped, it sends the
+        // answer again with the same number, then a stray copy of it with another choice
+        await using var reconnected = await HubClients.ConnectAsync(_factory);
+        var resumed = await reconnected.InvokeAsync<ResumeSessionResult>(GameHub.ResumeSession, new ResumeSessionRequest(joined.Token!), Ct);
+        var version = Game.State.Version;
+        await PlayerIntents.SendAsync(reconnected, clientSeq: 1, answer);
+        await PlayerIntents.SendAsync(reconnected, clientSeq: 1, answer with { Choice = QuizChoiceLetter.A });
+
+        // Then: neither changes the game
+        Assert.Null(resumed.Refusal);
+        Assert.Equal(version, Game.State.Version);
+        var view = Assert.IsType<QuizGameMasterView>(_factory.Services.GetRequiredService<Engine.Projections.Snapshots>().ForGameMaster(Game.State).RoundView);
+        Assert.Equal(QuizChoiceLetter.B, Assert.Single(view.Answers).Choice);
+        Assert.Equal(1, Assert.Single(Game.State.Players).LastClientSeq);
     }
 
     [Fact]
@@ -252,7 +281,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message(intent), Ct);
 
     private Task AnswerAsync(HubConnection player, QuizChoiceLetter choice) =>
-        player.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(RoundId, 1, choice)), Ct);
+        _playerIntents.SendAsync(player, new QuizSubmitAnswer(RoundId, 1, choice));
 
     /// <summary>
     /// A message as the client sends it: serialized as its declared type, so that a round intent carries its <c>type</c>.

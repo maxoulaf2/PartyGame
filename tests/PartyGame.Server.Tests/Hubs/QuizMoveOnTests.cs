@@ -27,6 +27,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
     private readonly TempDirectory _logs = new();
     private readonly TempDirectory _packs = new();
     private readonly FakeTimeProvider _time = new(_start);
+    private readonly PlayerIntents _playerIntents = new();
     private readonly WebApplicationFactory<Program> _factory;
 
     public QuizMoveOnTests()
@@ -171,7 +172,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message(intent), Ct);
 
     private Task AnswerAsync(HubConnection player, int questionNumber, QuizChoiceLetter choice) =>
-        player.InvokeAsync(GameHub.SendRoundIntent, Message<PlayerRoundIntent>(new QuizSubmitAnswer(RoundId, questionNumber, choice)), Ct);
+        _playerIntents.SendAsync(player, new QuizSubmitAnswer(RoundId, questionNumber, choice));
 
     /// <summary>
     /// A message as the client sends it: serialized as its declared type, so that a round intent carries its <c>type</c>.

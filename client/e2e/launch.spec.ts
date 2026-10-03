@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page, type WebSocketRoute } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fill } from '../src/shared/i18n/fill.ts';
@@ -246,8 +246,26 @@ test('the game master starts the game, then plays the questions of its first rou
         await expect(tooLatePhone.getByText(verdict, { exact: true })).toHaveCount(0);
     }
 
-    // The last question played, the console offers to end the round, which ends on every screen.
+    // A phone loses its connection right after sending its answer, before the server acknowledges
+    // it: once back, it sends the answer again, with the same number, and it counts once.
+    const flakyNickname = uniqueNickname('Eva');
+    const flaky = await joinWithRelayedNetwork(browser, baseURL, flakyNickname);
+    await expectQuestionOnPhone(flaky.phone, third, thirdProgress);
     await page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers }).click();
+    // Listed once the console shows the opened answers: every participant is listed with it.
+    await expect(answers.getByRole('listitem').filter({ hasText: flakyNickname })).toBeVisible();
+    const thirdParticipants = await answers.getByRole('listitem').count();
+    flaky.cutAfterNextIntent();
+    await choiceButton(flaky.phone, 'B').click();
+    await expect(flaky.phone.getByText(fr.modes.quiz.player.recorded)).toBeVisible();
+    await expect(choiceButton(flaky.phone, 'B')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => flaky.sentClientSeqs()).toEqual([1, 1]);
+    await expect(answers.getByRole('listitem').filter({ hasText: flakyNickname })).toHaveText(
+        `${flakyNickname} B`,
+    );
+    await expect(display.getByText(answeredText(1, thirdParticipants))).toBeVisible();
+
+    // The last question played, the console offers to end the round, which ends on every screen.
     await page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers }).click();
     await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toHaveCount(0);
@@ -259,11 +277,78 @@ test('the game master starts the game, then plays the questions of its first rou
     }
 
     await Promise.all(
-        [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, display].map((other) =>
-            other.context().close(),
+        [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, flaky.phone, display].map(
+            (other) => other.context().close(),
         ),
     );
 });
+
+/**
+ * Joins on a new phone whose WebSockets are relayed by the test, which records the numbers of the
+ * intents the phone sends, and can cut its connection right after it sends one: the server gets
+ * the intent, the phone never gets its acknowledgment.
+ */
+async function joinWithRelayedNetwork(
+    browser: Browser,
+    baseURL: string | undefined,
+    nickname: string,
+) {
+    const phone = await (await browser.newContext({ baseURL })).newPage();
+    const clientSeqs: number[] = [];
+    let cutting = false;
+    await phone.routeWebSocket(/\/hub\/game/, (toPage: WebSocketRoute) => {
+        const toServer = toPage.connectToServer();
+        let cut = false;
+        toServer.onMessage((message) => {
+            // Once cut, nothing reaches the phone anymore: neither the acknowledgment nor snapshots.
+            if (!cut) {
+                toPage.send(message);
+            }
+        });
+        toPage.onMessage((message) => {
+            toServer.send(message);
+            const seqs = intentClientSeqs(message);
+            clientSeqs.push(...seqs);
+            if (cutting && seqs.length > 0) {
+                cutting = false;
+                cut = true;
+                void toServer.close().then(() => toPage.close());
+            }
+        });
+    });
+    await phone.goto('/');
+    await phone.getByLabel(fr.player.join.label).fill(nickname);
+    await phone.getByRole('button', { name: fr.player.join.submit }).click();
+    await phone.getByLabel(fr.player.join.label).waitFor({ state: 'detached' });
+    return {
+        phone,
+        /** Cuts the connection once the next intent is handed to the server. */
+        cutAfterNextIntent: () => {
+            cutting = true;
+        },
+        /** The numbers of the intents the phone sent, in order, sent again ones included. */
+        sentClientSeqs: () => [...clientSeqs],
+    };
+}
+
+/** The numbers of the intents a frame of the SignalR JSON protocol hands to the hub. */
+function intentClientSeqs(message: string | Buffer): number[] {
+    const seqs: number[] = [];
+    for (const part of message.toString().split('\u001e')) {
+        if (!part.includes('SendRoundIntent')) {
+            continue;
+        }
+        const invocation = JSON.parse(part) as {
+            target?: string;
+            arguments?: { clientSeq?: number }[];
+        };
+        const clientSeq = invocation.arguments?.[0]?.clientSeq;
+        if (invocation.target === 'SendRoundIntent' && clientSeq !== undefined) {
+            seqs.push(clientSeq);
+        }
+    }
+    return seqs;
+}
 
 function choiceButton(phone: Page, letter: string) {
     return phone.getByRole('button', { name: fill(fr.modes.quiz.player.choiceLabel, { letter }) });
