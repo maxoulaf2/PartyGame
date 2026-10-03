@@ -10,7 +10,7 @@
 | [US-E08-01](US-E08-01-descripteur-quiz.md) | Descripteur d'une manche de quiz | Terminée | US-E06-01, US-E07-01 |
 | [US-E08-02](US-E08-02-presentation-question.md) | Présentation de la question | Terminée | US-E06-04, US-E07-02, US-E07-03, US-E08-01 |
 | [US-E08-03](US-E08-03-reponses-et-compte-a-rebours.md) | Réponses ouvertes et compte à rebours | Terminée | US-E08-02 |
-| [US-E08-04](US-E08-04-revelation.md) | Révélation de la bonne réponse | À faire | US-E08-03 |
+| [US-E08-04](US-E08-04-revelation.md) | Révélation de la bonne réponse | Terminée | US-E08-03 |
 | [US-E08-05](US-E08-05-avancer-et-passer.md) | Question suivante, question passée et fin de manche | À faire | US-E08-04 |
 | [US-E08-06](US-E08-06-renvoi-des-intentions.md) | Renvoi des intentions après une coupure | À faire | US-E08-03 |
 

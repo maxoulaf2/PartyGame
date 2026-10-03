@@ -5,7 +5,7 @@
 
 Le game master présente chaque question sur l'écran TV, ouvre les réponses, puis révèle la bonne. Les joueurs choisissent une proposition sur leur téléphone avant la fin d'un compte à rebours.
 
-> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), puis l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03). La révélation et le passage d'une question à l'autre arrivent avec US-E08-04 et US-E08-05 : d'ici là, une manche de quiz s'arrête sur sa première question, une fois ses réponses verrouillées.
+> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03), puis la révélation (US-E08-04). Le passage d'une question à l'autre arrive avec US-E08-05, et les points avec E09 : d'ici là, une manche de quiz s'arrête sur sa première question, une fois sa réponse révélée.
 
 ## Règles
 
@@ -25,10 +25,10 @@ Le game master présente chaque question sur l'écran TV, ouvre les réponses, p
 |---|---|---|
 | `Presentation` | La question et ses propositions s'affichent : sur la TV avec le titre de la manche, le numéro de la question (« Question 3/5 ») et son image, sur les téléphones un bouton désactivé par proposition (lettre, forme et couleur, sans texte), et sur la console GM avec la bonne réponse signalée. | Le GM ouvre les réponses. |
 | `Answering` | Les joueurs inscrits à l'ouverture, connectés ou non, répondent : un toucher sur le téléphone, affiché aussitôt « en attente » puis « Réponse enregistrée ». Le compte à rebours, calculé depuis l'échéance en heure serveur, tourne sur la TV, les téléphones et la console GM. La TV montre le nombre de réponses reçues sur le nombre de participants (« 7 / 9 »), jamais leur contenu ; la console GM montre le choix de chaque joueur et la répartition. Un joueur arrivé après l'ouverture jouera à la question suivante. | Fin du compte à rebours, ou « Verrouiller maintenant » sur la console GM. Une réponse reçue par le serveur après l'échéance est refusée. |
-| `Locked` | Plus aucune réponse n'est acceptée : la TV, les téléphones et la console affichent « Temps écoulé », chaque téléphone avec le choix de son joueur s'il en a fait un. | Le GM révèle la réponse. |
-| `Revealed` | La bonne réponse, la répartition des choix et les points gagnés s'affichent. | Le GM passe à la question suivante, ou termine la manche après la dernière. |
+| `Locked` | Plus aucune réponse n'est acceptée : la TV, les téléphones et la console affichent « Temps écoulé », chaque téléphone avec le choix de son joueur s'il en a fait un. | « Révéler » sur la console GM. |
+| `Revealed` | La TV encadre la bonne proposition, marquée d'une coche et de « Bonne réponse », et atténue les autres ; sous chacune, le nombre de joueurs qui l'ont choisie et leurs pseudos, puis les participants sans réponse. Chaque téléphone affiche son verdict (« Bonne réponse ! », « Raté » ou « Pas de réponse ») et la bonne proposition (lettre, forme et couleur) ; un joueur arrivé après l'ouverture voit la bonne proposition, sans verdict. La console GM montre la même répartition. Les points gagnés s'y ajouteront avec E09. | Le GM passe à la question suivante, ou termine la manche après la dernière. |
 
-Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`. Seule la console GM connaît la bonne réponse et le choix de chaque joueur avant la phase `Revealed` : un téléphone ne connaît que celui de son joueur, et la TV que le nombre de réponses.
+Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`. Seule la console GM connaît la bonne réponse et le choix de chaque joueur avant la phase `Revealed` : un téléphone ne connaît que celui de son joueur, et la TV que le nombre de réponses. Après la révélation, la TV montre qui a choisi quoi, mais un téléphone ne connaît toujours que le choix et le verdict de son joueur.
 
 ## Format du descripteur
 
