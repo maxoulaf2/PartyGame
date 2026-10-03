@@ -5,7 +5,7 @@
 
 Le game master présente chaque question sur l'écran TV, ouvre les réponses, puis révèle la bonne. Les joueurs choisissent une proposition sur leur téléphone avant la fin d'un compte à rebours.
 
-> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03), la révélation (US-E08-04), le passage d'une question à l'autre, la question passée et la fin de manche (US-E08-05), puis le renvoi des réponses après une coupure (US-E08-06), et les points gagnés à chaque question (US-E09-01). Le classement entre deux manches est commun à tous les modes (US-E09-02) ; le classement final arrive avec US-E09-03.
+> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03), la révélation (US-E08-04), le passage d'une question à l'autre, la question passée et la fin de manche (US-E08-05), puis le renvoi des réponses après une coupure (US-E08-06), et les points gagnés à chaque question (US-E09-01). Le classement entre deux manches (US-E09-02) et le classement final (US-E09-03) sont communs à tous les modes.
 
 ## Règles
 

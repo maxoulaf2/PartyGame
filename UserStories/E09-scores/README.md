@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E09-01](US-E09-01-points-par-question.md) | Points gagnés à chaque question | Terminée | US-E08-04 |
 | [US-E09-02](US-E09-02-classement-intermediaire.md) | Classement entre deux manches | Terminée | US-E09-01, US-E08-05 |
-| [US-E09-03](US-E09-03-classement-final.md) | Classement final | À faire | US-E09-02 |
+| [US-E09-03](US-E09-03-classement-final.md) | Classement final | Terminée | US-E09-02 |
 
 ## Décisions
 
@@ -21,6 +21,7 @@ Toutes les décisions qui bloquaient l'épopée sont prises.
 4. **Joueurs arrivés en cours de partie :** ils commencent à 0 point et figurent dans les classements (décision 5 du README de E08). La règle définitive reste à trancher en phase 6.
 5. **Ex aequo :** des joueurs à égalité partagent le même rang, et le rang suivant tient compte de leur nombre (1, 1, 3). À égalité, l'affichage suit l'ordre alphabétique des pseudos. Choix de réalisation, ajustable sans nouvelle décision.
 6. **Total du joueur dans le snapshot de la partie** (décidé pendant US-E09-01) : le score cumulé appartient à la partie, pas à une manche. `PlayerSnapshot` porte donc le total du joueur, dans toutes les phases, et la page joueur le transmet aux vues des modes (`score`). La vue de manche ne porte que les points gagnés à la question. Option écartée : le total recopié dans la vue de chaque mode, que chaque mode aurait dû relayer, et qui aurait disparu entre deux manches.
+7. **Joueurs inscrits après la fin de la partie** (décidé pendant US-E09-03) : ils n'ont joué aucune manche et ne sont pas classés. Le classement final reste celui de la partie, et leur téléphone affiche l'écran de fin sans rang. Les joueurs arrivés en cours de partie, eux, restent classés (décision 4). Option écartée : les classer derniers avec 0 point, ce qui aurait fait bouger le classement final après coup.
 
 ## Ordre de réalisation suggéré
 
