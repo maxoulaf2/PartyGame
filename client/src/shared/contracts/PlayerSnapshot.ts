@@ -7,6 +7,7 @@ import type { GameId } from './GameId';
 import type { Phase } from './Phase';
 import type { PlayerId } from './PlayerId';
 import type { PlayerRoundView } from './PlayerRoundView';
+import type { PlayerStanding } from './PlayerStanding';
 import type { RoundInfo } from './RoundInfo';
 
 export interface PlayerSnapshot {
@@ -19,4 +20,5 @@ export interface PlayerSnapshot {
     readonly playerCount: number;
     readonly round: RoundInfo | null;
     readonly roundView: PlayerRoundView | null;
+    readonly standing: PlayerStanding | null;
 }

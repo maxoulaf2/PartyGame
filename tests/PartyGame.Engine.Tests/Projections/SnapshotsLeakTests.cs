@@ -32,6 +32,8 @@ public sealed class SnapshotsLeakTests
     {
         yield return ("three players", Games.InPhase(phase, "Zoé", "Max", "Léa"));
 
+        yield return ("tied scores", Games.WithScores(Games.InPhase(phase, "Zoé", "Max", "Léa"), 2000, 1000, 2000));
+
         var neighbour = Games.ValidPack("pack-voisin", "Titre voisin", [new FakeRoundDescriptor { Title = "Manche voisine" }]);
         var packs = Games.Loaded(Games.Pack, neighbour, Games.InvalidPack("pack-casse", "Titre cassé"));
         yield return ("other packs", Games.PlayedUpTo(phase, Games.Accepted(Games.LobbyWith("Zoé", "Max"), packs)));
@@ -54,6 +56,13 @@ public sealed class SnapshotsLeakTests
             Catalog = new PackCatalog(string.Empty, [new CatalogPack(Games.PackId, Games.Pack.Title, RoundCount: null, Descriptor: null, [])]),
         };
         yield return new SecretPair<GameState>("secrets of the game master", state, withoutSecrets, Audience.AllButGameMaster);
+
+        // A phone learns its own rank, never by how much the others lead.
+        yield return new SecretPair<GameState>(
+            "score of another player",
+            Games.WithScores(state, 3000, 1000),
+            Games.WithScores(state, 5000, 1000),
+            Audience.OtherPlayersThan("Zoé"));
     }
 
     private static IEnumerable<Secret> SecretsOf(GameState state)

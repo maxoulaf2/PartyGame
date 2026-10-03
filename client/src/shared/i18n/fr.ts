@@ -13,12 +13,29 @@ export const fr = {
         round: 'Manche {number}/{count}',
         roundEnded: 'Fin de la manche {number}/{count}',
         finished: 'Partie terminée',
+        // The ranking shown between two rounds, written by rankText and standingText.
+        rankingAfter: 'Classement après la manche {number}',
+        rank: {
+            first: '{rank}er',
+            other: '{rank}e',
+        },
+        standing: {
+            alone: '{rank} sur {count}',
+            tied: '{rank} ex aequo sur {count}',
+        },
+        // Read by screen readers: the ranked players.
+        rankingLabel: 'Classement',
+        // The points of a player since the start of the game, in a ranking.
+        points: {
+            zero: '0 point',
+            one: '{count} point',
+            other: '{count} points',
+        },
     },
     player: {
         waiting: 'Bienvenue ! La partie va bientôt commencer.',
         // Shown during the game when the phone has nothing more precise to show.
         inProgress: 'La partie est en cours : garde un œil sur l’écran !',
-        // Provisional, until the rankings of E09.
         betweenRounds: 'La suite arrive bientôt : garde un œil sur l’écran !',
         finished: 'Merci d’avoir joué !',
         registeredAs: 'Tu es inscrit sous le nom {nickname}',
@@ -56,8 +73,8 @@ export const fr = {
         disconnected: 'déconnecté',
         // Shown during the game when the TV screen has nothing more precise to show.
         inProgress: 'Partie en cours',
-        // Provisional, until the rankings of E09.
-        betweenRounds: 'La manche suivante arrive bientôt',
+        // Shown next to the QR code between two rounds, for late arrivals.
+        lateArrivals: 'Pas encore inscrit ? Scannez pour rejoindre',
         finished: 'Merci d’avoir joué !',
     },
     gm: {
@@ -203,6 +220,8 @@ export const fr = {
         // Shown during the game when the console has nothing more precise to show.
         inProgress: 'Partie en cours',
         nextRound: {
+            // The round the game master starts next, with its title from the pack.
+            upcoming: 'Manche suivante ({number}/{count}) : {title}',
             action: 'Lancer la manche suivante',
             hint: 'La manche suivante démarre sur tous les écrans dès que vous la lancez.',
         },

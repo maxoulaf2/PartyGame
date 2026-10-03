@@ -21,6 +21,9 @@ namespace PartyGame.Contracts;
 /// What the game mode of the round in progress shows on the phone of this player, or <see langword="null"/> outside a
 /// round. A player who joins during a round gets it too: the game mode decides whether they take part.
 /// </param>
+/// <param name="Standing">
+/// Where this player stands in the ranking, between two rounds; <see langword="null"/> otherwise.
+/// </param>
 public sealed record PlayerSnapshot(
     GameId GameId,
     long Version,
@@ -30,4 +33,5 @@ public sealed record PlayerSnapshot(
     int Score,
     int PlayerCount,
     RoundInfo? Round,
-    PlayerRoundView? RoundView);
+    PlayerRoundView? RoundView,
+    PlayerStanding? Standing);

@@ -16,6 +16,7 @@ function snapshot(version: number): DisplaySnapshot {
         packTitle: null,
         round: null,
         roundView: null,
+        ranking: [],
     };
 }
 

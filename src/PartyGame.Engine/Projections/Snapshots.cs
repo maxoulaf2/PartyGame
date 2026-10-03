@@ -1,6 +1,8 @@
+using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Engine.Lobby;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Scores;
 
 namespace PartyGame.Engine.Projections;
 
@@ -27,7 +29,8 @@ public sealed class Snapshots(GameModes modes)
             [.. state.Players.Select(p => new DisplayPlayer(p.Id, p.Nickname, p.IsConnected))],
             PackTitleOf(state),
             RoundInfoOf(state),
-            RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State, state) : null);
+            RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State, state) : null,
+            RankingOf(state));
     }
 
     /// <summary>
@@ -49,7 +52,9 @@ public sealed class Snapshots(GameModes modes)
             state.SelectedPackId,
             PackTitleOf(state),
             RoundInfoOf(state),
-            RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State, state) : null);
+            RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State, state) : null,
+            RankingOf(state),
+            NextRoundTitleOf(state));
     }
 
     /// <summary>
@@ -70,7 +75,8 @@ public sealed class Snapshots(GameModes modes)
             player.Score,
             state.Players.Length,
             RoundInfoOf(state),
-            RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State, state, player) : null);
+            RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State, state, player) : null,
+            StandingOf(state, player));
     }
 
     private static Phase PhaseOf(GameState state) => state.Phase switch
@@ -109,6 +115,32 @@ public sealed class Snapshots(GameModes modes)
         state.CurrentRound is { } round
             ? new RoundInfo(round.Id, round.Index + 1, state.Rounds.Length, state.Rounds[round.Index].Title)
             : null;
+
+    /// <summary>
+    /// The ranking between two rounds, when every point of the round that just finished is awarded: during a round, the
+    /// screens show the round alone.
+    /// </summary>
+    private static ImmutableArray<RankedPlayer> RankingOf(GameState state) =>
+        state.Phase == GamePhase.BetweenRounds
+            ? [.. Ranking.Of(state.Players).Select(s => new RankedPlayer(s.Player.Id, s.Player.Nickname, s.Player.IsConnected, s.Rank, s.IsTied, s.Player.Score))]
+            : [];
+
+    /// <summary>
+    /// The rank of <paramref name="player"/> alone: the phone of a player learns nothing else of the others.
+    /// </summary>
+    private static PlayerStanding? StandingOf(GameState state, Player player)
+    {
+        if (state.Phase != GamePhase.BetweenRounds)
+        {
+            return null;
+        }
+
+        var standing = Ranking.Of(state.Players).First(s => s.Player.Id == player.Id);
+        return new PlayerStanding(standing.Rank, standing.IsTied);
+    }
+
+    private static string? NextRoundTitleOf(GameState state) =>
+        state is { Phase: GamePhase.BetweenRounds, CurrentRound: { } round } ? state.Rounds[round.Index + 1].Title : null;
 
     /// <summary>
     /// The round in progress and its game mode, which alone knows what each role may see of it. Between two rounds, the

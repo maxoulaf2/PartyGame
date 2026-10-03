@@ -9,6 +9,7 @@ import type { GameMasterPackCatalog } from './GameMasterPackCatalog';
 import type { GameMasterPlayer } from './GameMasterPlayer';
 import type { GameMasterRoundView } from './GameMasterRoundView';
 import type { Phase } from './Phase';
+import type { RankedPlayer } from './RankedPlayer';
 import type { RoundInfo } from './RoundInfo';
 
 export interface GameMasterSnapshot {
@@ -24,4 +25,6 @@ export interface GameMasterSnapshot {
     readonly packTitle: string | null;
     readonly round: RoundInfo | null;
     readonly roundView: GameMasterRoundView | null;
+    readonly ranking: readonly RankedPlayer[];
+    readonly nextRoundTitle: string | null;
 }

@@ -3,8 +3,10 @@
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { selectGameScreen } from '../shared/gameScreen';
-    import { roundText } from '../shared/i18n/fill';
+    import { countText } from '../shared/i18n/countText';
+    import { fill, roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
+    import { rankText } from '../shared/i18n/rankText';
     import { findGameMasterView } from '../modes/registry';
 
     interface Props {
@@ -48,6 +50,15 @@
         {@const round = screen.round}
         <p class="progress">{roundText(fr.game.roundEnded, round)}</p>
         <h2>{round.title}</h2>
+        {#if snapshot.nextRoundTitle !== null}
+            <p class="upcoming">
+                {fill(fr.gm.nextRound.upcoming, {
+                    number: round.number + 1,
+                    count: round.count,
+                    title: snapshot.nextRoundTitle,
+                })}
+            </p>
+        {/if}
         <button
             type="button"
             disabled={!interactive || sending}
@@ -57,6 +68,19 @@
             {fr.gm.nextRound.action}
         </button>
         <p id="next-round-hint" class="hint">{fr.gm.nextRound.hint}</p>
+        <!-- After the action: with many players, a long ranking would push it out of sight. -->
+        <h3>{fill(fr.game.rankingAfter, { number: round.number })}</h3>
+        <!-- Ranked by the server, ties in alphabetical order: shown as received, never sorted here. -->
+        <ol aria-label={fr.game.rankingLabel}>
+            {#each snapshot.ranking as player (player.id)}
+                <li>
+                    <span class="rank">{rankText(fr.game.rank, player.rank)}</span>
+                    <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
+                    <span class="nickname">{player.nickname}</span>
+                    <span class="score">{countText(fr.game.points, player.score)}</span>
+                </li>
+            {/each}
+        </ol>
     {:else if screen.kind === 'finished'}
         <h2>{fr.game.finished}</h2>
     {:else}
@@ -75,8 +99,13 @@
     }
 
     h2,
+    h3,
     p {
         margin: 0;
+    }
+
+    h3 {
+        margin-top: var(--space-s);
     }
 
     h2 {
@@ -90,6 +119,47 @@
 
     .hint {
         color: var(--color-text-muted);
+    }
+
+    ol {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    li {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        border-radius: var(--radius);
+        background: var(--color-surface);
+    }
+
+    .rank {
+        flex: 0 0 3em;
+        color: var(--color-accent);
+        font-weight: 700;
+    }
+
+    .nickname {
+        flex: 1;
+        min-width: 0;
+        font-weight: 700;
+        /* A long nickname wraps rather than being cut. */
+        overflow-wrap: anywhere;
+    }
+
+    .score {
+        white-space: nowrap;
+    }
+
+    .upcoming {
+        font-weight: 700;
+        overflow-wrap: anywhere;
     }
 
     button {

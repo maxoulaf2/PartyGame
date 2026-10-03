@@ -159,6 +159,8 @@ function snapshot(version: number): GameMasterSnapshot {
         packTitle: null,
         round: null,
         roundView: null,
+        ranking: [],
+        nextRoundTitle: null,
     };
 }
 

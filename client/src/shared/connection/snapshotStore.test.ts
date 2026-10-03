@@ -16,6 +16,7 @@ function snapshot(version: number, gameId: GameId = gameA, host = 1): DisplaySna
         packTitle: null,
         round: null,
         roundView: null,
+        ranking: [],
     };
 }
 

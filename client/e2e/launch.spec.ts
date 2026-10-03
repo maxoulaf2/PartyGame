@@ -4,6 +4,7 @@ import { countText } from '../src/shared/i18n/countText.ts';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { formatNumber } from '../src/shared/i18n/numberText.ts';
+import { rankText, standingText } from '../src/shared/i18n/rankText.ts';
 import { gameMasterCode, playedPack } from './gameServer.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
 
@@ -24,6 +25,11 @@ async function openConsole(page: Page): Promise<void> {
 /** The points a player earned with a question, as the phones and the console show them. */
 function earnedText(points: number): string {
     return fill(fr.modes.quiz.pointsEarned, { points: formatNumber(points) });
+}
+
+/** The total of a player in a ranking. */
+function pointsText(points: number): string {
+    return countText(fr.game.points, points);
 }
 
 function choicesOf(page: Page) {
@@ -305,6 +311,56 @@ test('the game master starts the game, then plays the questions of its first rou
     for (const screen of [display, phone]) {
         await expect(screen.getByText(thirdProgress)).toHaveCount(0);
     }
+
+    // Between the two rounds, the TV screen ranks every player: the three who scored share the
+    // first rank, in alphabetical order, and all the others, those of the other tests included,
+    // share the fourth.
+    const rankingAfter = fill(fr.game.rankingAfter, { number: 1 });
+    await expect(display.getByRole('heading', { name: rankingAfter })).toBeVisible();
+    const ranked = display.getByRole('list', { name: fr.game.rankingLabel }).getByRole('listitem');
+    const playerCount = await ranked.count();
+    expect(playerCount).toBeGreaterThanOrEqual(7);
+    const first = rankText(fr.game.rank, 1);
+    const fourth = rankText(fr.game.rank, 4);
+    await expect(ranked.nth(0)).toHaveText(`${first} ${flakyNickname} ${pointsText(1000)}`);
+    await expect(ranked.nth(1)).toHaveText(`${first} ${thirdNickname} ${pointsText(1000)}`);
+    await expect(ranked.nth(2)).toHaveText(`${first} ${nickname} ${pointsText(1000)}`);
+    await expect(ranked.filter({ hasText: lateNickname })).toHaveText(
+        `${fourth} ${lateNickname} ${pointsText(0)}`,
+    );
+    // The TV screen still lets late arrivals join.
+    await expect(display.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
+
+    // Each phone shows its own rank out of every player, and its score.
+    const standings = [
+        [phone, 1, 1000],
+        [latePhone, 4, 0],
+        [tooLatePhone, 4, 0],
+    ] as const;
+    for (const [other, rank, points] of standings) {
+        await expect(
+            other.getByText(
+                standingText(fr.game.standing, fr.game.rank, { rank, isTied: true }, playerCount),
+                { exact: true },
+            ),
+        ).toBeVisible();
+        await expect(other.getByText(pointsText(points), { exact: true })).toBeVisible();
+    }
+
+    // The console shows the same ranking, and the title of the round to start next.
+    await expect(page.getByRole('heading', { name: rankingAfter })).toBeVisible();
+    await expect(
+        page.getByRole('list', { name: fr.game.rankingLabel }).getByRole('listitem'),
+    ).toHaveCount(playerCount);
+    await expect(
+        page.getByText(
+            fill(fr.gm.nextRound.upcoming, {
+                number: 2,
+                count: playedPack.rounds.length,
+                title: playedPack.rounds[1] ?? '',
+            }),
+        ),
+    ).toBeVisible();
 
     await Promise.all(
         [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, flaky.phone, display].map(
