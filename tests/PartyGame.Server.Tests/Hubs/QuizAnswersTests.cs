@@ -66,6 +66,8 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var max = await JoinAsync("Max");
         await using var lea = await JoinAsync("Léa");
         Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
         using var toZoe = new ReceivedSnapshots(zoe);
@@ -155,6 +157,8 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
         await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toZoe = new ReceivedSnapshots(zoe);
         var version = Game.State.Version;
@@ -213,6 +217,8 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await AnswerAsync(zoe, QuizChoiceLetter.A);
         await AnswerAsync(max, QuizChoiceLetter.B);
         await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
+        // What the previous intents sent is received first: only what follows is recorded.
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe), FlushAsync(max), FlushAsync(lea));
         using var toDisplay = new ReceivedSnapshots(display);
         using var toZoe = new ReceivedSnapshots(zoe);
         using var toMax = new ReceivedSnapshots(max);
