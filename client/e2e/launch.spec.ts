@@ -82,7 +82,7 @@ test('the game master starts the game, then the players answer its first questio
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: playedPack.rounds[0] })).toBeVisible();
     await expect(page.getByRole('heading', { name: question })).toBeVisible();
-    await expect(choicesOf(page)).toHaveText(['A 6', `B 8 ${fr.modes.quiz.gm.correct}`]);
+    await expect(choicesOf(page)).toHaveText(['A 6', `B 8 ${fr.modes.quiz.correct}`]);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeVisible();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeVisible();
     await expect(start).toHaveCount(0);
@@ -110,12 +110,14 @@ test('the game master starts the game, then the players answer its first questio
     ).toBeVisible();
 
     for (const other of [display, phone, latePhone]) {
-        await expect(other.getByText(fr.modes.quiz.gm.correct)).toHaveCount(0);
+        await expect(other.getByText(fr.modes.quiz.correct)).toHaveCount(0);
     }
 
     // Two more phones take part: one answers, the other lets the time run out.
-    const thirdPhone = await joinOnNewPhone(browser, baseURL, uniqueNickname('Léa'));
-    const silentPhone = await joinOnNewPhone(browser, baseURL, uniqueNickname('Noé'));
+    const thirdNickname = uniqueNickname('Léa');
+    const silentNickname = uniqueNickname('Noé');
+    const thirdPhone = await joinOnNewPhone(browser, baseURL, thirdNickname);
+    const silentPhone = await joinOnNewPhone(browser, baseURL, silentNickname);
     await expectQuestionOnPhone(silentPhone, question, progress);
 
     // The game master opens the answers: the countdown starts on every screen.
@@ -131,7 +133,8 @@ test('the game master starts the game, then the players answer its first questio
     await expect(display.getByText(answeredText(0, participants))).toBeVisible();
 
     // A phone that joins now plays from the next question.
-    const tooLatePhone = await joinOnNewPhone(browser, baseURL, uniqueNickname('Tom'));
+    const tooLateNickname = uniqueNickname('Tom');
+    const tooLatePhone = await joinOnNewPhone(browser, baseURL, tooLateNickname);
     await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toBeVisible();
     await expect(choiceButton(tooLatePhone, 'A')).toBeDisabled();
 
@@ -150,8 +153,8 @@ test('the game master starts the game, then the players answer its first questio
         `${lateNickname} A`,
     );
     await expect(choicesOf(page)).toHaveText([
-        `A 6 ${countText(fr.modes.quiz.gm.choiceAnswers, 1)}`,
-        `B 8 ${fr.modes.quiz.gm.correct} ${countText(fr.modes.quiz.gm.choiceAnswers, 2)}`,
+        `A 6 ${countText(fr.modes.quiz.choiceAnswers, 1)}`,
+        `B 8 ${fr.modes.quiz.correct} ${countText(fr.modes.quiz.choiceAnswers, 2)}`,
     ]);
 
     // The game master locks the answers before the end of the countdown.
@@ -169,6 +172,40 @@ test('the game master starts the game, then the players answer its first questio
     }
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toHaveCount(0);
 
+    // The game master reveals the answer: the TV screen shows who chose what, in order of arrival,
+    // then the players taking part who did not answer.
+    await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
+    await expect(chosenOnDisplay(display, 'B')).toHaveText([nickname, thirdNickname]);
+    await expect(chosenOnDisplay(display, 'A')).toHaveText([lateNickname]);
+    await expect(display.getByText(fr.modes.quiz.correct, { exact: true })).toBeVisible();
+    const unanswered = display.getByRole('list', { name: fr.modes.quiz.display.unanswered });
+    await expect(unanswered.getByText(silentNickname, { exact: true })).toBeVisible();
+    await expect(display.getByText(tooLateNickname)).toHaveCount(0);
+
+    // Each phone tells its own verdict, with the correct choice when its player missed it.
+    const { verdicts } = fr.modes.quiz.player;
+    for (const right of [phone, thirdPhone]) {
+        await expect(right.getByText(verdicts.Correct, { exact: true })).toBeVisible();
+    }
+    await expect(latePhone.getByText(verdicts.Wrong, { exact: true })).toBeVisible();
+    await expect(silentPhone.getByText(verdicts.NoAnswer, { exact: true })).toBeVisible();
+    for (const missed of [latePhone, silentPhone]) {
+        await expect(missed.getByText(fr.modes.quiz.player.correctChoice)).toBeVisible();
+        await expect(correctChoiceOn(missed, 'B')).toBeVisible();
+    }
+    // The phone that joined too late to take part sees the correct answer, without verdict.
+    await expect(correctChoiceOn(tooLatePhone, 'B')).toBeVisible();
+    for (const verdict of Object.values(verdicts)) {
+        await expect(tooLatePhone.getByText(verdict, { exact: true })).toHaveCount(0);
+    }
+
+    // The console shows the same distribution, and moving on comes next.
+    await expect(choicesOf(page).filter({ hasText: fr.modes.quiz.correct })).toContainText(
+        `${nickname} · ${thirdNickname}`,
+    );
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toBeVisible();
+
     await Promise.all(
         [phone, latePhone, thirdPhone, silentPhone, tooLatePhone, display].map((other) =>
             other.context().close(),
@@ -178,6 +215,18 @@ test('the game master starts the game, then the players answer its first questio
 
 function choiceButton(phone: Page, letter: string) {
     return phone.getByRole('button', { name: fill(fr.modes.quiz.player.choiceLabel, { letter }) });
+}
+
+/** The nicknames the TV screen shows under the choice `letter`, once revealed. */
+function chosenOnDisplay(display: Page, letter: string) {
+    return display
+        .getByRole('list', { name: fill(fr.modes.quiz.display.choicePlayersLabel, { letter }) })
+        .getByRole('listitem');
+}
+
+/** The correct choice as a phone shows it once revealed: its letter, its shape and its color. */
+function correctChoiceOn(phone: Page, letter: string) {
+    return phone.getByRole('img', { name: fill(fr.modes.quiz.player.choiceLabel, { letter }) });
 }
 
 function answeredText(answered: number, participants: number): string {

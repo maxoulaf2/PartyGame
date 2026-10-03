@@ -7,8 +7,9 @@ using PartyGame.Tests.Shared.Leaks;
 namespace PartyGame.Engine.Tests.Modes.Quiz;
 
 /// <summary>
-/// What the views of a quiz round may show to each viewer: the correct answer to the game master only before its reveal,
-/// the questions as they come, the paths of the images to nobody.
+/// What the views of a quiz round may show to each viewer: the correct answer and the choices of the players to the game
+/// master only before the reveal, the choice of a player never to the other phones, the questions as they come, the
+/// paths of the images to nobody.
 /// </summary>
 public sealed class QuizLeakTests
 {
@@ -37,6 +38,9 @@ public sealed class QuizLeakTests
             ("locked without answer", QuizGames.Locked(QuizGames.Started(_rounds, _players))),
             ("locked with answers", QuizGames.Locked(QuizGames.Started(_rounds, _players), (3, QuizChoiceLetter.B), (1, QuizChoiceLetter.C))),
             ("locked by the timer", ByTheTimer(QuizGames.Answering(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.A)))),
+            ("revealed without answer", QuizGames.Revealed(QuizGames.Started(_rounds, _players))),
+            ("revealed with answers", QuizGames.Revealed(QuizGames.Started(_shuffled, _players), (1, QuizChoiceLetter.B), (3, QuizChoiceLetter.D))),
+            ("revealed to a player who joined during the answers", RevealedAfterLateJoin()),
         ],
         SecretsOf = SecretsOf,
         Pairs =
@@ -50,11 +54,21 @@ public sealed class QuizLeakTests
             ChoicePair("choice of Zoé, answers open", QuizGames.Answering, QuizChoiceLetter.A, QuizChoiceLetter.C),
             ChoicePair("choice of Zoé, locked", QuizGames.Locked, QuizChoiceLetter.D, QuizChoiceLetter.B),
 
+            // Once revealed, the TV screen shows who chose what, but a phone still tells its own player only: a wrong
+            // answer looks the same to the others whichever it was.
+            ChoicePair("wrong choice of Zoé, revealed", QuizGames.Revealed, QuizChoiceLetter.D, QuizChoiceLetter.B, Audience.OtherPlayersThan("Zoé")),
+            ChoicePair("right or wrong choice of Zoé, revealed", QuizGames.Revealed, QuizChoiceLetter.A, QuizChoiceLetter.C, Audience.OtherPlayersThan("Zoé")),
+
             // Whether a player answered shows on the TV screen as a count, never on the phones of the others.
             new SecretPair<GameState>(
                 "whether Zoé answered",
                 QuizGames.Answering(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B), (1, QuizChoiceLetter.A)),
                 QuizGames.Answering(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B)),
+                Audience.OtherPlayersThan("Zoé")),
+            new SecretPair<GameState>(
+                "whether Zoé answered, revealed",
+                QuizGames.Revealed(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B), (1, QuizChoiceLetter.A)),
+                QuizGames.Revealed(QuizGames.Started(_rounds, _players), (2, QuizChoiceLetter.B)),
                 Audience.OtherPlayersThan("Zoé")),
         ],
     };
@@ -87,18 +101,30 @@ public sealed class QuizLeakTests
     }
 
     /// <summary>
-    /// The same game, where Zoé chose one choice or another, Max having answered as well.
+    /// The same game, where Zoé chose one choice or another, Max having answered as well. Hidden by default from all but
+    /// the game master and Zoé, as before the reveal.
     /// </summary>
     private static SecretPair<GameState> ChoicePair(
         string name,
         Func<GameState, (int, QuizChoiceLetter)[], GameState> play,
         QuizChoiceLetter one,
-        QuizChoiceLetter other) =>
+        QuizChoiceLetter other,
+        Audience? hiddenFrom = null) =>
         new(
             name,
             play(QuizGames.Started(_rounds, _players), [(1, one), (2, QuizChoiceLetter.B)]),
             play(QuizGames.Started(_rounds, _players), [(1, other), (2, QuizChoiceLetter.B)]),
-            Audience.AllButGameMasterAnd("Zoé"));
+            hiddenFrom ?? Audience.AllButGameMasterAnd("Zoé"));
+
+    /// <summary>
+    /// A game revealed with Léa, who joined once the answers were open: she sees the correct answer without verdict.
+    /// </summary>
+    private static GameState RevealedAfterLateJoin()
+    {
+        var state = QuizGames.Accepted(QuizGames.Answering(QuizGames.Started(_rounds, ["Zoé", "Max"]), (1, QuizChoiceLetter.B)), Games.Join("Léa", player: 3));
+        state = QuizGames.Accepted(state, QuizGames.LockAnswers(state));
+        return QuizGames.Accepted(state, QuizGames.RevealAnswer(state));
+    }
 
     /// <summary>
     /// The same game, its answers locked by their timer rather than by the game master.

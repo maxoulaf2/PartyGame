@@ -5,6 +5,7 @@
 
 import type { QuizChoiceLetter } from './QuizChoiceLetter';
 import type { QuizQuestionPhase } from './QuizQuestionPhase';
+import type { QuizVerdict } from './QuizVerdict';
 
 export interface QuizPlayerView {
     readonly type: 'quiz';
@@ -15,4 +16,6 @@ export interface QuizPlayerView {
     readonly answersCloseAt: number | null;
     readonly participating: boolean;
     readonly answer: QuizChoiceLetter | null;
+    readonly correctChoice: QuizChoiceLetter | null;
+    readonly verdict: QuizVerdict | null;
 }

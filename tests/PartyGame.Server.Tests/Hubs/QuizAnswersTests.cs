@@ -17,7 +17,7 @@ using PartyGame.Tests.Shared.Leaks;
 namespace PartyGame.Server.Tests.Hubs;
 
 /// <summary>
-/// The answers of a quiz question through the hub, with the real quiz mode and a clock the test drives.
+/// The answers of a quiz question through the hub, up to their reveal, with the real quiz mode and a clock the test drives.
 /// </summary>
 public sealed class QuizAnswersTests : IAsyncDisposable
 {
@@ -167,6 +167,48 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         Assert.Same(locked, Game.State);
         var view = Assert.IsType<QuizGameMasterView>(_factory.Services.GetRequiredService<Engine.Projections.Snapshots>().ForGameMaster(locked).RoundView);
         Assert.Equal((QuizQuestionPhase.Locked, QuizChoiceLetter.A), (view.Phase, Assert.Single(view.Answers).Choice));
+    }
+
+    [Fact]
+    public async Task RevealAnswer_OnceLocked_ShowsWhoChoseWhatOnTheDisplayAndEachVerdictOnThePhones()
+    {
+        // Given: Zoé is right, Max is wrong, Léa did not answer, and the answers are locked
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await AnnounceAsync(display, Role.Display);
+        await using var zoe = await JoinAsync("Zoé");
+        await using var max = await JoinAsync("Max");
+        await using var lea = await JoinAsync("Léa");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await SendAsync(gameMaster, new QuizOpenAnswers(RoundId, 1));
+        await AnswerAsync(zoe, QuizChoiceLetter.A);
+        await AnswerAsync(max, QuizChoiceLetter.B);
+        await SendAsync(gameMaster, new QuizLockAnswers(RoundId, 1));
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toZoe = new ReceivedSnapshots(zoe);
+        using var toMax = new ReceivedSnapshots(max);
+        using var toLea = new ReceivedSnapshots(lea);
+
+        // When: the game master reveals, then sends it again, as a second console would
+        await SendAsync(gameMaster, new QuizRevealAnswer(RoundId, 1));
+        var revealed = Game.State;
+        await SendAsync(gameMaster, new QuizRevealAnswer(RoundId, 1));
+
+        // Then
+        Assert.Same(revealed, Game.State);
+        await Task.WhenAll(FlushAsync(display), FlushAsync(zoe), FlushAsync(max), FlushAsync(lea));
+        var onDisplay = Assert.IsType<QuizDisplayView>(Assert.Single(toDisplay.Display).RoundView);
+        Assert.Equal(QuizQuestionPhase.Revealed, onDisplay.Phase);
+        Assert.Equal(QuizChoiceLetter.A, onDisplay.Reveal!.CorrectChoice);
+        Assert.Equal(
+            [("Zoé", QuizChoiceLetter.A), ("Max", QuizChoiceLetter.B), ("Léa", null)],
+            onDisplay.Reveal.Answers.Select(answer => (answer.Nickname, answer.Choice)));
+        Assert.Equal(
+            [QuizVerdict.Correct, QuizVerdict.Wrong, QuizVerdict.NoAnswer],
+            new[] { toZoe, toMax, toLea }.Select(to => Assert.IsType<QuizPlayerView>(Assert.Single(to.Player).RoundView).Verdict!.Value));
+
+        // A phone learns its own verdict only, never who the others are nor what they chose.
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Léa"), toLea.Json, new Secret("Zoé", Audience.Everyone), new Secret("Max", Audience.Everyone));
     }
 
     [Fact]

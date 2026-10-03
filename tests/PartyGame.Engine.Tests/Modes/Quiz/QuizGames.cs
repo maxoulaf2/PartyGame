@@ -102,6 +102,10 @@ internal static class QuizGames
     public static GameMasterRoundInput LockAnswers(GameState state, int? questionNumber = null) =>
         new(new QuizLockAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
 
+    /// <summary>The game master reveals the answer of the question in progress.</summary>
+    public static GameMasterRoundInput RevealAnswer(GameState state, int? questionNumber = null) =>
+        new(new QuizRevealAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
     /// <summary>A player answers the question in progress, received by the hub at <paramref name="receivedAt"/>.</summary>
     public static PlayerRoundInput Answer(
         GameState state,
@@ -139,6 +143,16 @@ internal static class QuizGames
     {
         state = Answering(state, answers);
         return Accepted(state, LockAnswers(state));
+    }
+
+    /// <summary>
+    /// The same game, the answers of its question in progress opened, answered by the given players, locked, then
+    /// revealed.
+    /// </summary>
+    public static GameState Revealed(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)
+    {
+        state = Locked(state, answers);
+        return Accepted(state, RevealAnswer(state));
     }
 
     /// <summary>

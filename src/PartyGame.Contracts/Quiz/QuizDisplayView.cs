@@ -4,7 +4,7 @@ namespace PartyGame.Contracts.Quiz;
 
 /// <summary>
 /// What a quiz round shows on the TV screen: the question in progress, never its correct answer before the reveal, nor
-/// what any player chose: only how many answered.
+/// what any player chose: only how many answered. Both show once the answer is revealed.
 /// </summary>
 /// <param name="QuestionNumber">Number of the question in the round, from 1.</param>
 /// <param name="QuestionCount">Number of questions of the round.</param>
@@ -23,6 +23,9 @@ namespace PartyGame.Contracts.Quiz;
 /// How many players take part in the question, the players registered when its answers opened, connected or not: 0 until
 /// the answers open.
 /// </param>
+/// <param name="Reveal">
+/// The correct choice and what each player chose, once the answer is revealed; <see langword="null"/> before.
+/// </param>
 public sealed record QuizDisplayView(
     int QuestionNumber,
     int QuestionCount,
@@ -32,4 +35,5 @@ public sealed record QuizDisplayView(
     ImmutableArray<QuizChoiceView> Choices,
     long? AnswersCloseAt,
     int AnsweredCount,
-    int ParticipantCount) : DisplayRoundView;
+    int ParticipantCount,
+    QuizDisplayReveal? Reveal) : DisplayRoundView;

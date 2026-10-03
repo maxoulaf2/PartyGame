@@ -73,7 +73,8 @@ public sealed class StartGameTests : IAsyncDisposable
             toTheGameMaster.Choices);
         Assert.Equal([new QuizChoiceView(QuizChoiceLetter.A, "Oui"), new QuizChoiceView(QuizChoiceLetter.B, "Non")], toTheDisplay.Choices);
         Assert.DoesNotContain("correct", toDisplay.Json[^1], StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("correct", toZoe.Json[^1], StringComparison.OrdinalIgnoreCase);
+        // The phone has a place for the correct choice and the verdict, both empty until the reveal.
+        Assert.Equal((null, null), (toThePlayer.CorrectChoice, toThePlayer.Verdict));
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Game started", StringComparison.Ordinal));
     }
 

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type {
+    QuizChoiceLetter,
     DisplayPlayer,
     DisplayRoundView,
     DisplaySnapshot,
@@ -202,6 +203,7 @@ function quizView(view: Partial<QuizDisplayView> = {}): QuizDisplayView {
         answersCloseAt: null,
         answeredCount: 0,
         participantCount: 0,
+        reveal: null,
         ...view,
     };
 }
@@ -436,4 +438,146 @@ test('/display/ shows that the time is up once the answers are locked', async ({
         page.getByText(fill(fr.modes.quiz.answered, { answered: 3, participants: 3 })),
     ).toBeVisible();
     await expect(page.getByRole('timer')).toHaveCount(0);
+});
+
+/** The question revealed, B being its correct choice, the players given having answered in order of arrival. */
+function revealedView(
+    answers: readonly { nickname: string; choice: QuizChoiceLetter | null }[],
+    view: Partial<QuizDisplayView> = {},
+): QuizDisplayView {
+    return quizView({
+        phase: 'Revealed',
+        answeredCount: answers.filter((answer) => answer.choice !== null).length,
+        participantCount: answers.length,
+        reveal: {
+            correctChoice: 'B',
+            answers: answers.map((answer, index) => ({
+                playerId: fakePlayer(index + 1, answer.nickname).id,
+                ...answer,
+            })),
+        },
+        ...view,
+    });
+}
+
+function choicePlayers(page: Page, letter: QuizChoiceLetter) {
+    return page.getByRole('list', {
+        name: fill(fr.modes.quiz.display.choicePlayersLabel, { letter }),
+    });
+}
+
+test('/display/ reveals the correct answer, who chose each choice, and who did not answer', async ({
+    page,
+}) => {
+    const view = revealedView([
+        { nickname: 'Zoé', choice: 'B' },
+        { nickname: 'Max', choice: 'A' },
+        { nickname: 'Léa', choice: null },
+        { nickname: 'Noé', choice: 'B' },
+    ]);
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    // The correct choice is told by an icon and a label, the others are dimmed.
+    const choices = page.getByRole('list', { name: fr.modes.quiz.choicesLabel });
+    const correct = choices.locator(':scope > li', { hasText: 'Canberra' });
+    await expect(correct.getByText(fr.modes.quiz.correct)).toBeVisible();
+    await expect(page.getByText(fr.modes.quiz.correct)).toHaveCount(1);
+    const opacities = await choices
+        .locator(':scope > li .choice')
+        .evaluateAll((items) => items.map((item) => Number(getComputedStyle(item).opacity)));
+    expect(opacities).toEqual([0.45, 1, 0.45, 0.45]);
+    // Under each choice, how many chose it and who, in order of arrival.
+    await expect(choicePlayers(page, 'B').getByRole('listitem')).toHaveText(['Zoé', 'Noé']);
+    await expect(choicePlayers(page, 'A').getByRole('listitem')).toHaveText(['Max']);
+    await expect(choicePlayers(page, 'C')).toHaveCount(0);
+    await expect(correct.getByText(countText(fr.modes.quiz.choiceAnswers, 2))).toBeVisible();
+    await expect(
+        choices
+            .locator(':scope > li', { hasText: 'Perth' })
+            .getByText(countText(fr.modes.quiz.choiceAnswers, 0)),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.display.unanswered }).getByRole('listitem'),
+    ).toHaveText(['Léa']);
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
+});
+
+test('/display/ fits 20 long nicknames under a single choice on a 1080p screen, readable and clear of the edges', async ({
+    page,
+}) => {
+    const nicknames = Array.from(
+        { length: 20 },
+        (_, index) => `Joueur n°${String(index + 1).padStart(2, '0')} WMWM`,
+    );
+    expect(nicknames.every((nickname) => [...nickname].length === 16)).toBe(true);
+    const imageUrl = '/media/illustration-de-test';
+    await serveImage(page, imageUrl);
+    const view = revealedView(
+        nicknames.map((nickname) => ({ nickname, choice: 'B' })),
+        {
+            text: longText('Laquelle de ces propositions est la bonne', 200),
+            imageUrl,
+            choices: (['A', 'B', 'C', 'D'] as const).map((letter) => ({
+                letter,
+                text: longText(`Proposition ${letter}`, 80),
+            })),
+        },
+    );
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    const shown = choicePlayers(page, 'B').getByRole('listitem');
+    await expect(shown).toHaveText(nicknames);
+    const choices = page
+        .getByRole('list', { name: fr.modes.quiz.choicesLabel })
+        .locator(':scope > li');
+    for (const element of [
+        page.getByRole('heading', { name: view.text }),
+        ...(await choices.all()),
+        ...(await shown.all()),
+    ]) {
+        await expect(element).toBeVisible();
+        expectWithinSafeArea(await element.boundingBox(), viewport);
+    }
+    // About 3 cm high on a 55" TV: readable from 3 m.
+    for (const text of [...(await shown.all()), ...(await choices.locator('.text').all())]) {
+        const fontSize = await text.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        );
+        expect(fontSize).toBeGreaterThanOrEqual(30);
+    }
+    // Each nickname stays whole on a single line.
+    for (const nickname of await shown.all()) {
+        const whole = await nickname.evaluate(
+            (element) =>
+                element.getClientRects().length === 1 && element.scrollWidth <= element.clientWidth,
+        );
+        expect(whole).toBe(true);
+    }
+    // Nothing scrolls, and nothing is cut by the screen of the quiz either.
+    const overflows = await page.evaluate(() => {
+        const root = document.documentElement;
+        const main = document.querySelector('main');
+        return (
+            root.scrollHeight > root.clientHeight ||
+            root.scrollWidth > root.clientWidth ||
+            !main ||
+            main.scrollHeight > main.clientHeight ||
+            main.scrollWidth > main.clientWidth
+        );
+    });
+    expect(overflows).toBe(false);
 });

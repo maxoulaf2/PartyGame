@@ -303,7 +303,7 @@ test('/gm/ presents the question of the round in progress, its correct answer ma
     // Told by a label, never by the color alone: only the correct choice has it.
     await expect(choices).toHaveText([
         'A Sydney',
-        `B Canberra ${fr.modes.quiz.gm.correct}`,
+        `B Canberra ${fr.modes.quiz.correct}`,
         'C Melbourne',
     ]);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toBeEnabled();
@@ -371,8 +371,8 @@ test('/gm/ follows what each player answers while the answers are open', async (
     await expect(
         page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
     ).toHaveText([
-        `A Sydney ${countText(fr.modes.quiz.gm.choiceAnswers, 0)}`,
-        `B Canberra ${fr.modes.quiz.gm.correct} ${countText(fr.modes.quiz.gm.choiceAnswers, 1)}`,
+        `A Sydney ${countText(fr.modes.quiz.choiceAnswers, 0)}`,
+        `B Canberra ${fr.modes.quiz.correct} ${countText(fr.modes.quiz.choiceAnswers, 1)}`,
     ]);
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toBeEnabled();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.openAnswers })).toHaveCount(0);
@@ -389,4 +389,45 @@ test('/gm/ tells when every player taking part answered', async ({ page }) => {
 
     await expect(page.getByText(fr.modes.quiz.gm.allAnswered)).toBeVisible();
     await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toBeEnabled();
+});
+
+test('/gm/ offers to reveal the answer once the answers are locked', async ({ page }) => {
+    const view = answeringView([{ playerId: zoe, nickname: 'Zoé', choice: 'B' }]);
+    await serveGameMasterSnapshot(
+        page,
+        fakeRound({ ...view, phase: 'Locked', answersCloseAt: null }),
+    );
+
+    await openConsole(page);
+
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toBeEnabled();
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.lockAnswers })).toHaveCount(0);
+});
+
+test('/gm/ shows who chose what once the answer is revealed', async ({ page }) => {
+    const view = answeringView([
+        { playerId: zoe, nickname: 'Zoé', choice: 'B' },
+        { playerId: max, nickname: 'Max', choice: null },
+    ]);
+    await serveGameMasterSnapshot(
+        page,
+        fakeRound({ ...view, phase: 'Revealed', answersCloseAt: null }),
+    );
+
+    await openConsole(page);
+
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveText([
+        `A Sydney ${countText(fr.modes.quiz.choiceAnswers, 0)}`,
+        `B Canberra ${fr.modes.quiz.correct} ${countText(fr.modes.quiz.choiceAnswers, 1)} Zoé`,
+    ]);
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel }).getByRole('listitem'),
+    ).toHaveText(['Zoé B', `Max ${fr.modes.quiz.noAnswer}`]);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toHaveCount(0);
+    // Moving on comes with US-E08-05.
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.nextQuestion })).toBeVisible();
 });

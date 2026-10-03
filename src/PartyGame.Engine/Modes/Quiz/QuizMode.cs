@@ -13,8 +13,8 @@ namespace PartyGame.Engine.Modes.Quiz;
 /// Plays the multiple-choice quiz rounds of the packs.
 /// </summary>
 /// <remarks>
-/// For now, a round plays its first question up to the lock of its answers and stays there: the reveal comes with
-/// US-E08-04, and the next questions with US-E08-05.
+/// For now, a round plays its first question up to the reveal of its answer and stays there: the next questions come
+/// with US-E08-05.
 /// </remarks>
 public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 {
@@ -89,6 +89,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         {
             GameMasterRoundInput { RoundIntent: QuizOpenAnswers open } => OpenAnswers(round, open, game, context),
             GameMasterRoundInput { RoundIntent: QuizLockAnswers locking } => LockAnswers(round, locking),
+            GameMasterRoundInput { RoundIntent: QuizRevealAnswer reveal } => RevealAnswer(round, reveal),
             PlayerRoundInput { RoundIntent: QuizSubmitAnswer answer } submitted =>
                 SubmitAnswer(round, submitted.PlayerId, answer, submitted.ReceivedAt),
             TimerElapsed timer => CloseAnswers(round, timer),
@@ -110,7 +111,9 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 
             // Whoever is registered during the presentation takes part once the answers open.
             round.Phase == QuizPhase.Presentation || round.Participants.Contains(player.Id),
-            round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null);
+            round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null,
+            round.Phase == QuizPhase.Revealed ? CorrectLetterOf(round) : null,
+            round.Phase == QuizPhase.Revealed ? VerdictOf(round, player.Id) : null);
     }
 
     /// <inheritdoc />
@@ -129,7 +132,12 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
 
             // How many answered, never what: the choices stay secret until the reveal.
             round.Answers.Count,
-            round.Participants.Length);
+            round.Participants.Length,
+            round.Phase == QuizPhase.Revealed
+                ? new QuizDisplayReveal(
+                    CorrectLetterOf(round),
+                    [.. ParticipantsOf(round, game).Select(p => new QuizRevealedAnswer(p.Player.Id, p.Player.Nickname, p.Choice))])
+                : null);
     }
 
     /// <inheritdoc />
@@ -151,15 +159,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
             ],
             CloseTimeOf(round),
 
-            // Players are never removed: every participant is still registered, under their current nickname.
-            [
-                .. game.Players
-                    .Where(player => round.Participants.Contains(player.Id))
-                    .Select(player => new QuizGameMasterAnswer(
-                        player.Id,
-                        player.Nickname,
-                        round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : null)),
-            ]);
+            [.. ParticipantsOf(round, game).Select(p => new QuizGameMasterAnswer(p.Player.Id, p.Player.Nickname, p.Choice))]);
     }
 
     /// <summary>
@@ -221,6 +221,24 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
+    /// Reveals the correct answer once the answers are locked: the game master locks them first.
+    /// </summary>
+    private static RoundTransition RevealAnswer(QuizRound round, QuizRevealAnswer reveal)
+    {
+        if (reveal.QuestionNumber != round.QuestionNumber)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+        }
+
+        if (round.Phase != QuizPhase.Locked)
+        {
+            return RoundTransition.Rejected(round, RejectionReason.PhaseMismatch);
+        }
+
+        return new(round with { Phase = QuizPhase.Revealed }, []);
+    }
+
+    /// <summary>
     /// Locks the answers at the end of the countdown. The timer of answers already locked, or of another question, is
     /// obsolete.
     /// </summary>
@@ -264,6 +282,30 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         round.ChoiceOrder.Select((index, position) => ((QuizChoiceLetter)position, round.Question.Choices[index]));
 
     /// <summary>
+    /// The letter of the correct choice of the question in progress, as shown on every screen.
+    /// </summary>
+    private static QuizChoiceLetter CorrectLetterOf(QuizRound round) =>
+        ShownChoicesOf(round).First(shown => shown.Choice.Correct).Letter;
+
+    /// <summary>
+    /// What the reveal tells a player: nothing to one who did not take part in the question.
+    /// </summary>
+    private static QuizVerdict? VerdictOf(QuizRound round, PlayerId playerId) =>
+        !round.Participants.Contains(playerId) ? null
+        : !round.Answers.TryGetValue(playerId, out var answer) ? QuizVerdict.NoAnswer
+        : answer.Choice == CorrectLetterOf(round) ? QuizVerdict.Correct
+        : QuizVerdict.Wrong;
+
+    /// <summary>
+    /// The players taking part in the question in progress, in order of arrival, each with their choice. Players are
+    /// never removed: every participant is still registered, under their current nickname.
+    /// </summary>
+    private static IEnumerable<(Player Player, QuizChoiceLetter? Choice)> ParticipantsOf(QuizRound round, GameState game) =>
+        game.Players
+            .Where(player => round.Participants.Contains(player.Id))
+            .Select(player => (player, round.Answers.TryGetValue(player.Id, out var answer) ? answer.Choice : (QuizChoiceLetter?)null));
+
+    /// <summary>
     /// The choices of the question in progress as the TV screen shows them: nothing tells the correct one.
     /// </summary>
     private static ImmutableArray<QuizChoiceView> PublicChoicesOf(QuizRound round) =>
@@ -280,6 +322,7 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         QuizPhase.Presentation => QuizQuestionPhase.Presentation,
         QuizPhase.Answering => QuizQuestionPhase.Answering,
         QuizPhase.Locked => QuizQuestionPhase.Locked,
+        QuizPhase.Revealed => QuizQuestionPhase.Revealed,
         _ => throw new InvalidOperationException($"Phase {round.Phase} has no projection."),
     };
 
