@@ -1,6 +1,6 @@
 ### US-E09-01 — Points gagnés à chaque question
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** voir à chaque révélation les points que je viens de gagner et mon total
@@ -25,6 +25,10 @@ Défaut : rien côté joueurs et public. Les scores sont calculés uniquement pa
 - Les points gagnés à la dernière question révélée font partie de la vue de manche, pour l'affichage du téléphone et de la console.
 - Calcul en entiers, sans flottant, pour un résultat exact et reproductible.
 - Les nombres sont formatés à la française (« 1 350 ») par une fonction partagée du client.
+- Réalisation : contrats. `PlayerSnapshot.Score` porte le total du joueur et `GameMasterPlayer.Score` celui de chaque joueur, dans toutes les phases (décision 6 du README). `QuizPlayerView.Points` et `QuizGameMasterAnswer.Points` portent les points gagnés à la question révélée, 0 compris, et valent `null` avant la révélation ou pour un joueur qui n'y participe pas. La vue TV ne change pas : les classements arrivent avec US-E09-02.
+- Réalisation : moteur. `Player.Score` tient le score cumulé, 0 à l'inscription, et fait partie de l'état persisté. Un mode déclare les points qu'il attribue dans `RoundTransition.Points`, que `RoundFlow` ajoute aux scores ; une transition qui attribue des points change l'état même si la manche reste la même instance. `QuizMode` les calcule à la révélation pour chaque participant et les garde dans `QuizRound.Points`, remis à zéro à la question suivante. Le bonus vaut `speedBonus × restant ÷ durée`, en ticks et en entiers 64 bits, arrondi au plus proche (demi vers le haut) ; le temps restant se mesure entre `ReceivedAt` et l'échéance, même si le GM a verrouillé plus tôt, et il est borné à la durée de la question.
+- Réalisation : client. `formatNumber` (`shared/i18n/numberText.ts`) écrit un entier à la française avec `Intl.NumberFormat('fr-FR')`, l'espace fine insécable groupant les chiffres ; `countText` s'en sert désormais. Les vues joueur des modes reçoivent `score`, le total du snapshot. Téléphone : sous le verdict, « +1 350 » puis « Total : 2 350 points ». Console GM : le score de chaque joueur dans la liste des joueurs dès le lancement, et « +1 350 » à côté du choix de chaque participant à la révélation.
+- Réalisation : tests. Moteur : `QuizPointsTests` (bonne, mauvaise et absence de réponse, bonus à l'ouverture, au milieu, juste avant l'échéance et arrondis, durée de la question, verrouillage anticipé, réponse horodatée avant l'ouverture, rien avant la révélation, question passée, question suivante, cumul sur plusieurs questions et manches, joueur arrivé en cours de partie, projections) et `RoundFlowTests` (points d'un mode ajoutés aux scores, cumul entre deux manches). Non-fuite : `QuizLeakTests` ajoute des scénarios avec bonus et après des points, et des paires qui ne diffèrent que par la bonne réponse ou la rapidité d'une réponse avant la révélation, identiques pour tous sauf le GM. Hub : `QuizAnswersTests` vérifie les points et le score reçus par chaque téléphone, attribués une seule fois malgré une révélation envoyée deux fois. Vitest : `numberText.test.ts` et `countText.test.ts`. E2E : `launch.spec.ts` vérifie les points et le total sur les téléphones, et les points et scores sur la console.
 
 **Hors périmètre**
 - Les classements (US-E09-02, US-E09-03).
