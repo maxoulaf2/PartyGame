@@ -36,7 +36,7 @@
 </script>
 
 {#if session.access === 'granted' && game.current}
-    <GameConsole snapshot={game.current} {session} interactive={status.interactive} />
+    <GameConsole snapshot={game.current} {session} {clock} interactive={status.interactive} />
 {:else if session.access === 'codeRequired'}
     <CodeForm {session} interactive={status.interactive} />
 {:else}

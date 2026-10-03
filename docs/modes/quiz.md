@@ -5,7 +5,7 @@
 
 Le game master présente chaque question sur l'écran TV, ouvre les réponses, puis révèle la bonne. Les joueurs choisissent une proposition sur leur téléphone avant la fin d'un compte à rebours.
 
-> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02). L'ouverture des réponses, la révélation et le passage d'une question à l'autre arrivent avec US-E08-03 à US-E08-05 : d'ici là, une manche de quiz reste sur la présentation de sa première question.
+> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E08-01), ainsi que la présentation des questions (US-E08-02), puis l'ouverture des réponses, le compte à rebours et leur verrouillage (US-E08-03). La révélation et le passage d'une question à l'autre arrivent avec US-E08-04 et US-E08-05 : d'ici là, une manche de quiz s'arrête sur sa première question, une fois ses réponses verrouillées.
 
 ## Règles
 
@@ -24,11 +24,11 @@ Le game master présente chaque question sur l'écran TV, ouvre les réponses, p
 | Phase | Ce qui se passe | Passage à la suivante |
 |---|---|---|
 | `Presentation` | La question et ses propositions s'affichent : sur la TV avec le titre de la manche, le numéro de la question (« Question 3/5 ») et son image, sur les téléphones un bouton désactivé par proposition (lettre, forme et couleur, sans texte), et sur la console GM avec la bonne réponse signalée. | Le GM ouvre les réponses. |
-| `Answering` | Les joueurs répondent. Le compte à rebours tourne sur la TV et les téléphones, et la TV montre le nombre de réponses reçues. | Fin du compte à rebours, ou verrouillage par le GM. |
-| `Locked` | Plus aucune réponse n'est acceptée (« Temps écoulé »). | Le GM révèle la réponse. |
+| `Answering` | Les joueurs inscrits à l'ouverture, connectés ou non, répondent : un toucher sur le téléphone, affiché aussitôt « en attente » puis « Réponse enregistrée ». Le compte à rebours, calculé depuis l'échéance en heure serveur, tourne sur la TV, les téléphones et la console GM. La TV montre le nombre de réponses reçues sur le nombre de participants (« 7 / 9 »), jamais leur contenu ; la console GM montre le choix de chaque joueur et la répartition. Un joueur arrivé après l'ouverture jouera à la question suivante. | Fin du compte à rebours, ou « Verrouiller maintenant » sur la console GM. Une réponse reçue par le serveur après l'échéance est refusée. |
+| `Locked` | Plus aucune réponse n'est acceptée : la TV, les téléphones et la console affichent « Temps écoulé », chaque téléphone avec le choix de son joueur s'il en a fait un. | Le GM révèle la réponse. |
 | `Revealed` | La bonne réponse, la répartition des choix et les points gagnés s'affichent. | Le GM passe à la question suivante, ou termine la manche après la dernière. |
 
-Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`. Seule la console GM connaît la bonne réponse avant la phase `Revealed`.
+Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`. Seule la console GM connaît la bonne réponse et le choix de chaque joueur avant la phase `Revealed` : un téléphone ne connaît que celui de son joueur, et la TV que le nombre de réponses.
 
 ## Format du descripteur
 

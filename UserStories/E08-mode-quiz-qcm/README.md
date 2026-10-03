@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E08-01](US-E08-01-descripteur-quiz.md) | Descripteur d'une manche de quiz | Terminée | US-E06-01, US-E07-01 |
 | [US-E08-02](US-E08-02-presentation-question.md) | Présentation de la question | Terminée | US-E06-04, US-E07-02, US-E07-03, US-E08-01 |
-| [US-E08-03](US-E08-03-reponses-et-compte-a-rebours.md) | Réponses ouvertes et compte à rebours | À faire | US-E08-02 |
+| [US-E08-03](US-E08-03-reponses-et-compte-a-rebours.md) | Réponses ouvertes et compte à rebours | Terminée | US-E08-02 |
 | [US-E08-04](US-E08-04-revelation.md) | Révélation de la bonne réponse | À faire | US-E08-03 |
 | [US-E08-05](US-E08-05-avancer-et-passer.md) | Question suivante, question passée et fin de manche | À faire | US-E08-04 |
 | [US-E08-06](US-E08-06-renvoi-des-intentions.md) | Renvoi des intentions après une coupure | À faire | US-E08-03 |
@@ -27,6 +27,7 @@ Toutes les décisions qui bloquaient l'épopée sont prises. Les valeurs numéri
 7. **Images :** une question peut avoir une image, affichée sur la TV seulement. Les téléphones n'affichent aucun média.
 8. **Mode quiz enregistré avant de jouer ses questions** (décidé pendant US-E08-01) : la vérification d'un descripteur appartient au mode (`IGameMode`), et le chargement des packs (US-E06-02) en a besoin avant que les questions soient jouées (US-E08-02). `QuizMode` est donc créé et enregistré dès US-E08-01, avec sa vérification complète et un déroulé provisoire : la manche se termine dès son démarrage. `PackProblem` et `IGameMode.Validate`, prévus par US-E06-02, sont introduits en même temps, avec les seuls codes du quiz. Option écartée : des règles du quiz dans une classe à part, que US-E06-02 aurait dû relier au chargement sans mode enregistré.
 9. **Téléphone en simple pavé de réponse** (décidé pendant US-E08-02) : le téléphone n'affiche ni la question ni le texte des propositions, seulement un bouton par proposition, avec sa lettre, sa forme et sa couleur. Les joueurs lisent tout sur la TV et gardent la tête levée, comme dans une salle de jeu. La projection `Player` ne contient donc que les lettres des propositions. Option écartée : la question et les propositions recopiées sur chaque téléphone, qui gardent les joueurs le nez sur leur écran.
+10. **Un type par intention, préfixé par le mode** (décidé pendant US-E08-03) : chaque intention du quiz est un type de contrat à part (`QuizSubmitAnswer`, `QuizOpenAnswers`, `QuizLockAnswers`, puis ceux de US-E08-04 et US-E08-05), dont le `type` sur le fil est celui des manches du mode, un point, puis le nom de l'intention : `quiz.submitAnswer`, `quiz.openAnswers`, `quiz.lockAnswers`. Chacune ne porte que ses champs, et le client associe une intention à son mode par ce préfixe (`ModeViews` dans `shared/modeViews.ts`). Les types `quiz` provisoires de E07 (décision 3 du README de E07) disparaissent. Option écartée : un seul type d'intention par rôle et par mode, avec un champ `action` et des champs facultatifs selon l'action.
 
 ## Tests E2E
 

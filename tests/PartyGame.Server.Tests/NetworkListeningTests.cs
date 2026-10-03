@@ -38,9 +38,12 @@ public sealed class NetworkListeningTests : IDisposable
         using var loopback = await server.WaitForResponseAsync(client, new Uri($"http://localhost:{port}/health"), _startupTimeout);
         using var network = await client.GetAsync(new Uri($"http://{localAddress}:{port}/health"), TestContext.Current.CancellationToken);
 
+        // The console output is read asynchronously: it may lag behind the first response.
+        var output = await server.WaitForOutputAsync($"http://0.0.0.0:{port}", _startupTimeout);
+
         Assert.Equal(HttpStatusCode.OK, loopback.StatusCode);
         Assert.Equal(HttpStatusCode.OK, network.StatusCode);
-        Assert.Contains($"http://0.0.0.0:{port}", server.Output, StringComparison.Ordinal);
+        Assert.Contains($"http://0.0.0.0:{port}", output, StringComparison.Ordinal);
     }
 
     [Fact]

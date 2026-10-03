@@ -59,7 +59,7 @@
     {@const ModeView = screen.component}
     <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
     {#key screen.round.roundId}
-        <ModeView view={screen.view} round={screen.round} />
+        <ModeView view={screen.view} round={screen.round} {clock} />
     {/key}
 {:else if game.current}
     <LobbyScreen snapshot={game.current} {notice} />

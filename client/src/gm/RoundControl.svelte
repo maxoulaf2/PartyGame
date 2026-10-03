@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { GameMasterRoundIntent, GameMasterSnapshot, RoundId } from '../shared/contracts';
+    import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { selectGameScreen } from '../shared/gameScreen';
     import { roundText } from '../shared/i18n/fill';
@@ -9,11 +10,13 @@
     interface Props {
         snapshot: GameMasterSnapshot;
         session: GameMasterSession;
+        /** The clock of the server, for the countdowns of the rounds. */
+        clock: ServerClock;
         /** Whether the page is synchronized with the server: everything is disabled otherwise. */
         interactive: boolean;
     }
 
-    let { snapshot, session, interactive }: Props = $props();
+    let { snapshot, session, clock, interactive }: Props = $props();
 
     let sending = $state(false);
 
@@ -39,7 +42,7 @@
         <h2>{screen.round.title}</h2>
         <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
         {#key screen.round.roundId}
-            <ModeView view={screen.view} round={screen.round} {interactive} {send} />
+            <ModeView view={screen.view} round={screen.round} {clock} {interactive} {send} />
         {/key}
     {:else if screen.kind === 'betweenRounds'}
         {@const round = screen.round}

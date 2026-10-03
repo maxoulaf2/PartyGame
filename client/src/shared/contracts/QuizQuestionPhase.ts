@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type QuizQuestionPhase = 'Presentation';
+export type QuizQuestionPhase = 'Presentation' | 'Answering' | 'Locked';

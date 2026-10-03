@@ -354,26 +354,30 @@ describe('PlayerSession', () => {
     });
 
     describe('sendRoundIntent', () => {
+        const answer = {
+            type: 'quiz.submitAnswer',
+            roundId,
+            questionNumber: 1,
+            choice: 'A',
+        } as const;
+
         it('hands the intent to the server once joined', async () => {
             const { session, server } = await startedSession();
             await session.join('Zoé');
 
-            const outcome = await session.sendRoundIntent({ type: 'quiz', roundId });
+            const outcome = await session.sendRoundIntent(answer);
 
             expect(outcome).toBe('sent');
-            expect(server.connection.invoke).toHaveBeenLastCalledWith('SendRoundIntent', {
-                type: 'quiz',
-                roundId,
-            });
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('SendRoundIntent', answer);
         });
 
         it('sends nothing before the player is recognized, or while disconnected', async () => {
             const { session, server } = await startedSession();
 
-            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+            expect(await session.sendRoundIntent(answer)).toBe('unreachable');
             await session.join('Zoé');
             server.drop();
-            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+            expect(await session.sendRoundIntent(answer)).toBe('unreachable');
 
             expect(server.connection.invoke).not.toHaveBeenCalledWith(
                 'SendRoundIntent',
@@ -386,7 +390,7 @@ describe('PlayerSession', () => {
             await session.join('Zoé');
             server.connection.invoke.mockRejectedValueOnce(new Error('disconnected'));
 
-            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+            expect(await session.sendRoundIntent(answer)).toBe('unreachable');
         });
     });
 });

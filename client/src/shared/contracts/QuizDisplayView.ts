@@ -14,4 +14,7 @@ export interface QuizDisplayView {
     readonly text: string;
     readonly imageUrl: string | null;
     readonly choices: readonly QuizChoiceView[];
+    readonly answersCloseAt: number | null;
+    readonly answeredCount: number;
+    readonly participantCount: number;
 }

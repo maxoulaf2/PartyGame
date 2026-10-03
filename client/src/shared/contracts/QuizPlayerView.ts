@@ -12,4 +12,7 @@ export interface QuizPlayerView {
     readonly questionCount: number;
     readonly phase: QuizQuestionPhase;
     readonly choices: readonly QuizChoiceLetter[];
+    readonly answersCloseAt: number | null;
+    readonly participating: boolean;
+    readonly answer: QuizChoiceLetter | null;
 }

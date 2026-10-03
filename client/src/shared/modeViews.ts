@@ -1,4 +1,5 @@
 import type { Component } from 'svelte';
+import type { ServerClock } from './connection/clockSync.svelte';
 import type { IntentOutcome } from './connection/gameHub';
 import type {
     DisplayRoundView,
@@ -19,6 +20,8 @@ export interface PlayerViewProps<
 > {
     readonly view: V;
     readonly round: RoundInfo;
+    /** The clock of the server, to count down to the times of the view. */
+    readonly clock: ServerClock;
     /** Whether the page is synchronized with the server: every action is disabled otherwise. */
     readonly interactive: boolean;
     /** Sends an intent to the mode on the server, which alone decides whether it is accepted. */
@@ -29,6 +32,8 @@ export interface PlayerViewProps<
 export interface DisplayViewProps<V extends DisplayRoundView = DisplayRoundView> {
     readonly view: V;
     readonly round: RoundInfo;
+    /** The clock of the server, to count down to the times of the view. */
+    readonly clock: ServerClock;
 }
 
 /**
@@ -41,22 +46,30 @@ export interface GameMasterViewProps<
 > {
     readonly view: V;
     readonly round: RoundInfo;
+    /** The clock of the server, to count down to the times of the view. */
+    readonly clock: ServerClock;
     /** Whether the console is synchronized with the server: every action is disabled otherwise. */
     readonly interactive: boolean;
     /** Sends an intent to the mode on the server, which alone decides whether it is accepted. */
     readonly send: (intent: I) => Promise<IntentOutcome>;
 }
 
-/** The views and intents of a role whose `type` names the mode `T`. */
-type OfMode<U, T extends string> = Extract<U, { readonly type: T }>;
+/** The views of a role whose `type` names the mode `T`. */
+type ViewOfMode<U, T extends string> = Extract<U, { readonly type: T }>;
+
+/** The intents of a role whose `type` is the one of the mode `T`, a dot, then their name. */
+type IntentOfMode<U, T extends string> = Extract<U, { readonly type: `${T}.${string}` }>;
 
 /** The three views of the mode whose rounds have the type `T`, one per role. */
 export interface ModeViews<T extends string> {
     readonly player: Component<
-        PlayerViewProps<OfMode<PlayerRoundView, T>, OfMode<PlayerRoundIntent, T>>
+        PlayerViewProps<ViewOfMode<PlayerRoundView, T>, IntentOfMode<PlayerRoundIntent, T>>
     >;
-    readonly display: Component<DisplayViewProps<OfMode<DisplayRoundView, T>>>;
+    readonly display: Component<DisplayViewProps<ViewOfMode<DisplayRoundView, T>>>;
     readonly gm: Component<
-        GameMasterViewProps<OfMode<GameMasterRoundView, T>, OfMode<GameMasterRoundIntent, T>>
+        GameMasterViewProps<
+            ViewOfMode<GameMasterRoundView, T>,
+            IntentOfMode<GameMasterRoundIntent, T>
+        >
     >;
 }

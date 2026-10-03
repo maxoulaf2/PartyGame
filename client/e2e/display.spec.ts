@@ -199,6 +199,9 @@ function quizView(view: Partial<QuizDisplayView> = {}): QuizDisplayView {
             { letter: 'C', text: 'Melbourne' },
             { letter: 'D', text: 'Perth' },
         ],
+        answersCloseAt: null,
+        answeredCount: 0,
+        participantCount: 0,
         ...view,
     };
 }
@@ -257,6 +260,11 @@ test('/display/ fits a long illustrated question and four long choices on a 1080
     const view = quizView({
         text: longText('Laquelle de ces propositions est la bonne', 200),
         imageUrl,
+        // Answering, so that the countdown and the count of the answers are on screen as well.
+        phase: 'Answering',
+        answersCloseAt: Date.now() + 60_000,
+        answeredCount: 19,
+        participantCount: 20,
         choices: (['A', 'B', 'C', 'D'] as const).map((letter) => ({
             letter,
             text: longText(`Proposition ${letter}`, 80),
@@ -287,6 +295,8 @@ test('/display/ fits a long illustrated question and four long choices on a 1080
         page.getByText(fakeRound.title, { exact: true }),
         page.getByText(fill(fr.modes.quiz.question, { number: 3, count: 5 })),
         image,
+        page.getByRole('timer'),
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 19, participants: 20 })),
         question,
         ...(await choices.all()),
     ]) {
@@ -350,4 +360,80 @@ test('/display/ waits neutrally on a round of a mode it does not know', async ({
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
     await expect(playerList(page).getByText('Zoé', { exact: true })).toBeVisible();
     await expect(page.getByText('blindtest')).toHaveCount(0);
+});
+
+/** The seconds a countdown of the page shows. */
+async function shownSeconds(page: Page): Promise<number> {
+    return Number(await page.getByRole('timer').locator('.seconds').textContent());
+}
+
+test('/display/ counts down the answers and shows how many players answered, never what', async ({
+    page,
+}) => {
+    // The fake hub answers no clock synchronization: the page takes its clock for the server's.
+    const view = quizView({
+        phase: 'Answering',
+        answersCloseAt: Date.now() + 15_500,
+        answeredCount: 7,
+        participantCount: 9,
+    });
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    await expect(
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 7, participants: 9 })),
+    ).toBeVisible();
+    const timer = page.getByRole('timer');
+    await expect(timer).toBeVisible();
+    await expect(timer).toContainText(fr.modes.quiz.timeLeft);
+    const first = await shownSeconds(page);
+    expect(first).toBeGreaterThanOrEqual(13);
+    expect(first).toBeLessThanOrEqual(16);
+    await expect.poll(() => shownSeconds(page), { timeout: 3_000 }).toBe(first - 1);
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
+    // The question and its choices stay on screen while the players answer.
+    await expect(
+        page.getByRole('list', { name: fr.modes.quiz.choicesLabel }).getByRole('listitem'),
+    ).toHaveText(['A Sydney', 'B Canberra', 'C Melbourne', 'D Perth']);
+});
+
+test('/display/ stops the countdown at 0 and waits for the server to lock the answers', async ({
+    page,
+}) => {
+    const view = quizView({
+        phase: 'Answering',
+        answersCloseAt: Date.now() + 1_200,
+        answeredCount: 1,
+        participantCount: 2,
+    });
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    await expect.poll(() => shownSeconds(page), { timeout: 4_000 }).toBe(0);
+    // The countdown decides nothing: only a snapshot ends the answers.
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toHaveCount(0);
+});
+
+test('/display/ shows that the time is up once the answers are locked', async ({ page }) => {
+    const view = quizView({ phase: 'Locked', answeredCount: 3, participantCount: 3 });
+    await serveDisplaySnapshot(
+        page,
+        fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', view),
+    );
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fr.modes.quiz.timeUp)).toBeVisible();
+    await expect(
+        page.getByText(fill(fr.modes.quiz.answered, { answered: 3, participants: 3 })),
+    ).toBeVisible();
+    await expect(page.getByRole('timer')).toHaveCount(0);
 });

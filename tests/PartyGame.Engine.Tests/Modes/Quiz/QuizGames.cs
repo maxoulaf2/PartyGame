@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using PartyGame.Contracts.Packs;
+using PartyGame.Contracts.Quiz;
 using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
@@ -89,8 +90,55 @@ internal static class QuizGames
     {
         var round = RoundOf(state);
         var order = Enumerable.Range(0, round.Descriptor.Questions[questionIndex].Choices.Length);
-        var moved = round with { QuestionIndex = questionIndex, Phase = QuizPhase.Presentation, ChoiceOrder = [.. order] };
+        var moved = new QuizRound(round.Descriptor, questionIndex, QuizPhase.Presentation, [.. order]);
         return state with { CurrentRound = state.CurrentRound! with { State = moved } };
+    }
+
+    /// <summary>The game master opens the answers of the question in progress.</summary>
+    public static GameMasterRoundInput OpenAnswers(GameState state, int? questionNumber = null) =>
+        new(new QuizOpenAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>The game master locks the answers of the question in progress.</summary>
+    public static GameMasterRoundInput LockAnswers(GameState state, int? questionNumber = null) =>
+        new(new QuizLockAnswers(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>A player answers the question in progress, received by the hub at <paramref name="receivedAt"/>.</summary>
+    public static PlayerRoundInput Answer(
+        GameState state,
+        int player,
+        QuizChoiceLetter choice,
+        DateTimeOffset? receivedAt = null,
+        int? questionNumber = null) =>
+        new(
+            Games.PlayerIdOf(player),
+            new QuizSubmitAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber, choice),
+            receivedAt ?? Games.Now);
+
+    /// <summary>The timer that locks the answers of the question in progress elapses, when it was due.</summary>
+    public static TimerElapsed AnswersTimerElapsed(GameState state, DateTimeOffset? dueAt = null) =>
+        new(QuizMode.AnswersTimer, dueAt ?? RoundOf(state).AnswersCloseAt!.Value) { RoundId = state.CurrentRound!.Id };
+
+    /// <summary>
+    /// The same game, the answers of its question in progress opened, then answered by the given players, in this order.
+    /// </summary>
+    public static GameState Answering(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)
+    {
+        state = Accepted(state, OpenAnswers(state));
+        foreach (var (player, choice) in answers)
+        {
+            state = Accepted(state, Answer(state, player, choice));
+        }
+
+        return state;
+    }
+
+    /// <summary>
+    /// The same game, the answers of its question in progress opened, answered by the given players, then locked.
+    /// </summary>
+    public static GameState Locked(GameState state, params (int Player, QuizChoiceLetter Choice)[] answers)
+    {
+        state = Answering(state, answers);
+        return Accepted(state, LockAnswers(state));
     }
 
     /// <summary>
