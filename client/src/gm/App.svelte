@@ -12,7 +12,7 @@
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
     import { fr } from '../shared/i18n/fr';
     import CodeForm from './CodeForm.svelte';
-    import LobbyConsole from './LobbyConsole.svelte';
+    import GameConsole from './GameConsole.svelte';
 
     const game = new SnapshotStore<GameMasterSnapshot>();
     const connection = createGameConnection();
@@ -36,7 +36,7 @@
 </script>
 
 {#if session.access === 'granted' && game.current}
-    <LobbyConsole snapshot={game.current} {session} interactive={status.interactive} />
+    <GameConsole snapshot={game.current} {session} interactive={status.interactive} />
 {:else if session.access === 'codeRequired'}
     <CodeForm {session} interactive={status.interactive} />
 {:else}

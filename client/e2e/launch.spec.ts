@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
+import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { gameMasterCode, playedPack } from './gameServer.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
@@ -18,7 +19,7 @@ async function openConsole(page: Page): Promise<void> {
     await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
 }
 
-test('the game master starts the game, and every interface leaves the lobby together', async ({
+test('the game master starts the game, and every interface follows its rounds to the end', async ({
     page,
     browser,
     baseURL,
@@ -48,7 +49,13 @@ test('the game master starts the game, and every interface leaves the lobby toge
     await start.click();
     await dialog.getByRole('button', { name: fr.gm.start.confirm, exact: true }).click();
 
-    await expect(page.getByText(fr.gm.started)).toBeVisible();
+    // Until the questions are played (US-E08-02), a quiz round finishes as soon as it starts: the
+    // game lands at once between the first two rounds of the pack.
+    const firstEnded = fill(fr.game.roundEnded, { number: 1, count: playedPack.rounds.length });
+    const nextRound = page.getByRole('button', { name: fr.gm.nextRound.action });
+    await expect(page.getByText(firstEnded)).toBeVisible();
+    await expect(page.getByRole('heading', { name: playedPack.rounds[0] })).toBeVisible();
+    await expect(nextRound).toBeEnabled();
     await expect(start).toHaveCount(0);
     // The pack is fixed: neither the list of packs nor their reload are offered anymore.
     await expect(page.getByRole('radio')).toHaveCount(0);
@@ -56,12 +63,15 @@ test('the game master starts the game, and every interface leaves the lobby toge
     await expect(
         page.getByText(fr.gm.packs.played.replace('{title}', () => playedPack.title)),
     ).toBeVisible();
-    await expect(display.getByText(fr.display.started)).toBeVisible();
-    await expect(phone.getByText(fr.player.started)).toBeVisible();
+    await expect(display.getByText(firstEnded)).toBeVisible();
+    await expect(display.getByText(fr.display.betweenRounds)).toBeVisible();
+    await expect(phone.getByText(firstEnded)).toBeVisible();
+    await expect(phone.getByText(fr.player.betweenRounds)).toBeVisible();
 
-    // Registration stays open: a late phone joins the started game.
+    // Registration stays open: a late phone joins the started game, and the TV still invites.
+    await expect(display.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
     const latePhone = await joinOnNewPhone(browser, baseURL, lateNickname);
-    await expect(latePhone.getByText(fr.player.started)).toBeVisible();
+    await expect(latePhone.getByText(fr.player.betweenRounds)).toBeVisible();
     await expect(
         page
             .getByRole('list', { name: fr.gm.playerListLabel })
@@ -72,6 +82,14 @@ test('the game master starts the game, and every interface leaves the lobby toge
             .getByRole('list', { name: fr.display.playerListLabel })
             .getByText(lateNickname, { exact: true }),
     ).toBeVisible();
+
+    // The last round finishes as soon as it starts too: the game is over on every interface.
+    await nextRound.click();
+    await expect(page.getByRole('heading', { name: fr.game.finished })).toBeVisible();
+    await expect(nextRound).toHaveCount(0);
+    for (const other of [display, phone, latePhone]) {
+        await expect(other.getByText(fr.game.finished, { exact: true })).toBeVisible();
+    }
 
     await Promise.all([phone, latePhone, display].map((other) => other.context().close()));
 });

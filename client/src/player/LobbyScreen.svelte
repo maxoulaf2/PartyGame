@@ -17,7 +17,7 @@
 <main>
     <h1>{fr.app.name}</h1>
     <p class="nickname">{registeredAs}</p>
-    <p class="status">{snapshot.phase === 'Lobby' ? fr.player.waiting : fr.player.started}</p>
+    <p class="status">{fr.player.waiting}</p>
 </main>
 
 <style>

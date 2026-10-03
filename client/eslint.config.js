@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
 import ts from 'typescript-eslint';
+import { partygame } from './eslint/modeBoundaries.js';
 import svelteConfig from './svelte.config.js';
 
 const signalrOnlyInConnection =
@@ -50,6 +51,14 @@ export default ts.config(
                     ],
                 },
             ],
+        },
+    },
+    {
+        // A game mode depends on nothing but src/shared and its own folder.
+        files: ['src/modes/**'],
+        plugins: { partygame },
+        rules: {
+            'partygame/mode-boundaries': 'error',
         },
     },
     {

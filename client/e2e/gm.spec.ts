@@ -1,7 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
-import type { GameId, GameMasterSnapshot } from '../src/shared/contracts';
+import type {
+    GameId,
+    GameMasterRoundView,
+    GameMasterSnapshot,
+    RoundId,
+    RoundInfo,
+} from '../src/shared/contracts';
 import { countText } from '../src/shared/i18n/countText.ts';
+import { fill, roundText } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { serveGameMasterSnapshot } from './fakeHub.ts';
 import { gameMasterCode } from './gameServer.ts';
@@ -39,6 +46,26 @@ function fakeLobby(
         packTitle: null,
         round: null,
         roundView: null,
+    };
+}
+
+const firstRound: RoundInfo = {
+    roundId: '0f8fad5b-d9cb-469f-a165-70867728950e' as RoundId,
+    number: 1,
+    count: 3,
+    title: 'Échauffement',
+};
+
+/** The first of three rounds in progress, shown by `roundView`. */
+function fakeRound(roundView: GameMasterRoundView): GameMasterSnapshot {
+    return {
+        ...fakeLobby(),
+        phase: 'Round',
+        packCatalog: null,
+        selectedPackId: 'soiree',
+        packTitle: 'Grande soirée',
+        round: firstRound,
+        roundView,
     };
 }
 
@@ -238,4 +265,32 @@ test('/gm/ lets the game master choose the address among the networks of the hos
     await expect(select).toHaveValue('10.0.0.2');
     await expect(select).toBeEnabled();
     expect(hub.chosen).toEqual(['10.0.0.2']);
+});
+
+test('/gm/ shows the round in progress with the view of its mode', async ({ page }) => {
+    await serveGameMasterSnapshot(page, fakeRound({ type: 'quiz' }));
+
+    await openConsole(page);
+
+    const round = firstRound;
+    await expect(page.getByText(roundText(fr.game.round, round))).toBeVisible();
+    await expect(page.getByRole('heading', { name: round.title })).toBeVisible();
+    await expect(
+        page.getByText(fill(fr.modes.quiz.gm.ready, { title: round.title })),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.gm.start.action })).toHaveCount(0);
+});
+
+test('/gm/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
+    await serveGameMasterSnapshot(
+        page,
+        fakeRound({ type: 'blindtest' } as unknown as GameMasterRoundView),
+    );
+
+    await openConsole(page);
+
+    await expect(page.getByText(fr.gm.inProgress, { exact: true })).toBeVisible();
+    await expect(page.getByText('blindtest')).toHaveCount(0);
+    // The rest of the console stays usable: the players, and the address of the QR code.
+    await expect(page.getByText(fr.gm.address.label)).toBeVisible();
 });

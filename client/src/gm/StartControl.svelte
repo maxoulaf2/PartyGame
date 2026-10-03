@@ -43,44 +43,40 @@
     }
 </script>
 
-{#if snapshot.phase === 'Lobby'}
-    <section class="start">
-        <button
-            type="button"
-            disabled={!canStart}
-            aria-describedby={hints.length > 0 ? hints.join(' ') : undefined}
-            onclick={() => {
-                failed = false;
-                confirming = true;
-            }}
-        >
-            {fr.gm.start.action}
-        </button>
-        {#if !packChosen}
-            <p id="start-pack-hint" class="hint">{fr.gm.start.packRequired}</p>
-        {/if}
-        {#if !enoughPlayers}
-            <p id="start-players-hint" class="hint">
-                {countText(fr.gm.start.minimumPlayers, snapshot.minimumPlayerCount)}
-            </p>
-        {/if}
-        {#if failed && hints.length === 0}
-            <p class="problem" role="alert">{fr.gm.start.failed}</p>
-        {/if}
-    </section>
-    {#if confirming}
-        <ConfirmDialog
-            title={fr.gm.start.confirmTitle}
-            message={countText(fr.gm.start.confirmMessage, playerCount)}
-            confirmLabel={fr.gm.start.confirm}
-            cancelLabel={fr.gm.start.cancel}
-            confirmDisabled={!canStart}
-            onconfirm={start}
-            oncancel={() => (confirming = false)}
-        />
+<section class="start">
+    <button
+        type="button"
+        disabled={!canStart}
+        aria-describedby={hints.length > 0 ? hints.join(' ') : undefined}
+        onclick={() => {
+            failed = false;
+            confirming = true;
+        }}
+    >
+        {fr.gm.start.action}
+    </button>
+    {#if !packChosen}
+        <p id="start-pack-hint" class="hint">{fr.gm.start.packRequired}</p>
     {/if}
-{:else}
-    <p class="started" role="status">{fr.gm.started}</p>
+    {#if !enoughPlayers}
+        <p id="start-players-hint" class="hint">
+            {countText(fr.gm.start.minimumPlayers, snapshot.minimumPlayerCount)}
+        </p>
+    {/if}
+    {#if failed && hints.length === 0}
+        <p class="problem" role="alert">{fr.gm.start.failed}</p>
+    {/if}
+</section>
+{#if confirming}
+    <ConfirmDialog
+        title={fr.gm.start.confirmTitle}
+        message={countText(fr.gm.start.confirmMessage, playerCount)}
+        confirmLabel={fr.gm.start.confirm}
+        cancelLabel={fr.gm.start.cancel}
+        confirmDisabled={!canStart}
+        onconfirm={start}
+        oncancel={() => (confirming = false)}
+    />
 {/if}
 
 <style>
@@ -118,15 +114,6 @@
     }
 
     .problem {
-        color: var(--color-accent);
-        font-weight: 700;
-    }
-
-    .started {
-        align-self: flex-start;
-        padding: var(--space-s) var(--space-m);
-        border: 2px solid var(--color-accent);
-        border-radius: var(--radius);
         color: var(--color-accent);
         font-weight: 700;
     }
