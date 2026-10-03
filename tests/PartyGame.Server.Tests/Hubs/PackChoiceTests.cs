@@ -7,6 +7,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Packs;
 using PartyGame.Server.Tests.Packs;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -90,12 +91,9 @@ public sealed class PackChoiceTests : IAsyncDisposable
         await Task.WhenAll(FlushAsync(secondGameMaster), FlushAsync(display), FlushAsync(zoe));
         Assert.Equal(("soiree", "Grande soirée"), (toSecondGameMaster.GameMaster[^1].SelectedPackId, toSecondGameMaster.GameMaster[^1].PackTitle));
         Assert.Equal("Grande soirée", toDisplay.Display[^1].PackTitle);
-        Assert.All(toDisplay.Json.Concat(toZoe.Json), json =>
-        {
-            Assert.DoesNotContain("apero", json, StringComparison.Ordinal);
-            Assert.DoesNotContain("Échauffement", json, StringComparison.Ordinal);
-            Assert.DoesNotContain(nameof(PackProblemCode.QuizCorrectChoiceMissing), json, StringComparison.Ordinal);
-        });
+        Secret[] secrets = [.. new[] { "apero", "Échauffement", nameof(PackProblemCode.QuizCorrectChoiceMissing) }.Select(s => new Secret(s, Audience.AllButGameMaster))];
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, secrets);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, secrets);
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Pack {PackId} chosen", StringComparison.Ordinal));
     }
 

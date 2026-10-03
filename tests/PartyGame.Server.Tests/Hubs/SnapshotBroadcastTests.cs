@@ -7,6 +7,7 @@ using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -163,14 +164,11 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(player));
-        List<string> json = [.. toDisplay.Json, .. toGameMaster.Json, .. toPlayer.Json];
-        Assert.Equal(3 + 3 + 2, json.Count);
-        foreach (var snapshot in json)
-        {
-            Assert.DoesNotContain(Code, snapshot, StringComparison.Ordinal);
-            Assert.DoesNotContain(TokenOf(1).Value, snapshot, StringComparison.Ordinal);
-            Assert.DoesNotContain(TokenOf(2).Value, snapshot, StringComparison.Ordinal);
-        }
+        Assert.Equal(3 + 3 + 2, toDisplay.Json.Count + toGameMaster.Json.Count + toPlayer.Json.Count);
+        Secret[] secrets = [new(Code, Audience.Everyone), new(TokenOf(1).Value, Audience.Everyone), new(TokenOf(2).Value, Audience.Everyone)];
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, secrets);
+        LeakAssert.NoSecretReceived(Viewer.GameMaster, toGameMaster.Json, secrets);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toPlayer.Json, secrets);
     }
 
     private static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));

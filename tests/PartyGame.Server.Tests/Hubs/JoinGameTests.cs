@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PartyGame.Contracts;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -193,7 +194,10 @@ public sealed class JoinGameTests : IAsyncDisposable
         await using var gameMaster = await HubClients.ConnectAsync(_factory);
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await using var max = await HubClients.ConnectAsync(_factory);
-        List<ReceivedSnapshots> received = [new(display), new(gameMaster), new(zoe), new(max)];
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+        using var toZoe = new ReceivedSnapshots(zoe);
+        using var toMax = new ReceivedSnapshots(max);
         await display.InvokeAsync<AnnouncementResult>(GameHub.Announce, new Announcement(Role.Display, null), Ct);
         await gameMaster.InvokeAsync<AnnouncementResult>(GameHub.Announce, new Announcement(Role.GameMaster, Code), Ct);
 
@@ -202,17 +206,15 @@ public sealed class JoinGameTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
-        var json = received.SelectMany(r => r.Json).ToList();
-        Assert.True(json.Count >= 3 + 3 + 2 + 1);
+        Assert.True(toDisplay.Json.Count + toGameMaster.Json.Count + toZoe.Json.Count + toMax.Json.Count >= 3 + 3 + 2 + 1);
+        var secrets = tokens.Select(token => new Secret(token, Audience.Everyone)).ToArray();
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, secrets);
+        LeakAssert.NoSecretReceived(Viewer.GameMaster, toGameMaster.Json, secrets);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, secrets);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Max"), toMax.Json, secrets);
         var logs = _logs.ReadAllLogs();
         Assert.Contains("joined as", logs, StringComparison.Ordinal);
-        foreach (var token in tokens)
-        {
-            Assert.All(json, snapshot => Assert.DoesNotContain(token, snapshot, StringComparison.Ordinal));
-            Assert.DoesNotContain(token, logs, StringComparison.Ordinal);
-        }
-
-        received.ForEach(r => r.Dispose());
+        Assert.All(tokens, token => Assert.DoesNotContain(token, logs, StringComparison.Ordinal));
     }
 
     [Fact]

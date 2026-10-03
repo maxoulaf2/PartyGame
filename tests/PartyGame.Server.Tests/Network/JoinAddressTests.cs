@@ -8,6 +8,7 @@ using PartyGame.Contracts;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Network;
 using PartyGame.Server.Tests.Hubs;
+using PartyGame.Tests.Shared.Leaks;
 using static PartyGame.Server.Tests.Network.TestInterfaces;
 
 namespace PartyGame.Server.Tests.Network;
@@ -31,10 +32,13 @@ public sealed class JoinAddressTests : IDisposable
 
         Assert.Equal("192.168.1.42", snapshot.JoinAddress);
         // The other candidates and the names of the interfaces stay on the operator console.
-        Assert.DoesNotContain("10.0.0.2", json, StringComparison.Ordinal);
-        Assert.DoesNotContain("172.29.0.1", json, StringComparison.Ordinal);
-        Assert.DoesNotContain("Wi-Fi", json, StringComparison.Ordinal);
-        Assert.DoesNotContain("Ethernet", json, StringComparison.Ordinal);
+        LeakAssert.NoSecretReceived(
+            Viewer.Display,
+            [json],
+            new Secret("10.0.0.2", Audience.AllButGameMaster),
+            new Secret("172.29.0.1", Audience.AllButGameMaster),
+            new Secret("Wi-Fi", Audience.AllButGameMaster),
+            new Secret("Ethernet", Audience.AllButGameMaster));
     }
 
     [Fact]

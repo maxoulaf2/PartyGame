@@ -10,6 +10,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Packs;
 using PartyGame.Server.Tests.Hubs;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Server.Tests.Packs;
 
@@ -204,12 +205,9 @@ public sealed class PackMediaTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
-        string[] secrets = ["images", "drapeau", "monuments", "tour-eiffel", "portrait", ".png", ".jpg", ".webp", _packs.Path.Replace("\\", "\\\\", StringComparison.Ordinal)];
-        foreach (var json in toDisplay.Json.Concat(toZoe.Json))
-        {
-            Assert.All(secrets, secret => Assert.DoesNotContain(secret, json, StringComparison.OrdinalIgnoreCase));
-        }
-
+        string[] secrets = ["images", "drapeau", "monuments", "tour-eiffel", "portrait", ".png", ".jpg", ".webp", _packs.Path];
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, [.. secrets.Select(s => new Secret(s, Audience.Everyone))]);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, [.. secrets.Select(s => new Secret(s, Audience.Everyone))]);
         Assert.All(Game.State.Media.Files.Keys, id => Assert.All(secrets, secret => Assert.DoesNotContain(secret, id.Value, StringComparison.OrdinalIgnoreCase)));
     }
 

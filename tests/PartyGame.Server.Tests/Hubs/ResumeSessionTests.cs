@@ -7,6 +7,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Packs;
 using PartyGame.Server.Tests.Packs;
+using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -225,10 +226,8 @@ public sealed class ResumeSessionTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(phone));
-        Assert.NotEmpty(toPhone.Json);
-        Assert.All(
-            toDisplay.Json.Concat(toPhone.Json),
-            snapshot => Assert.DoesNotContain(token, snapshot, StringComparison.Ordinal));
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, new Secret(token, Audience.Everyone));
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toPhone.Json, new Secret(token, Audience.Everyone));
         var logs = _logs.ReadAllLogs();
         Assert.Contains("resumed their session", logs, StringComparison.Ordinal);
         Assert.DoesNotContain(token, logs, StringComparison.Ordinal);
