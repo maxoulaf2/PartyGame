@@ -17,12 +17,13 @@ Le game master présente chaque question sur l'écran TV, ouvre les réponses, p
 - **Joueurs arrivés en cours de partie.** Un joueur inscrit pendant une manche participe à toute question dont les réponses s'ouvrent après son inscription, et commence à 0 point. La règle définitive sera tranchée en phase 6.
 - **Propositions.** Chaque question a de 2 à 4 propositions, dont exactement une bonne. Chacune est distinguée par une lettre (A à D), une forme (A triangle, B losange, C cercle, D carré) et une couleur, jamais par la couleur seule. L'ordre est celui du descripteur, sauf si la manche demande un mélange (`shuffleChoices`) : l'ordre mélangé, tiré à la présentation de chaque question, est alors le même sur tous les écrans.
 - **Images.** Une question peut avoir une image, affichée sur l'écran TV seulement. Les téléphones n'affichent aucun média.
+- **Téléphone en pavé de réponse.** Le téléphone n'affiche ni la question ni le texte des propositions : seulement un bouton par proposition, avec sa lettre, sa forme et sa couleur. Les joueurs lisent tout sur l'écran TV, et gardent la tête levée.
 
 ## Phases d'une question
 
 | Phase | Ce qui se passe | Passage à la suivante |
 |---|---|---|
-| `Presentation` | La question et ses propositions s'affichent : sur la TV avec le titre de la manche, le numéro de la question (« Question 3/5 ») et son image, sur les téléphones désactivées, et sur la console GM avec la bonne réponse signalée. | Le GM ouvre les réponses. |
+| `Presentation` | La question et ses propositions s'affichent : sur la TV avec le titre de la manche, le numéro de la question (« Question 3/5 ») et son image, sur les téléphones un bouton désactivé par proposition (lettre, forme et couleur, sans texte), et sur la console GM avec la bonne réponse signalée. | Le GM ouvre les réponses. |
 | `Answering` | Les joueurs répondent. Le compte à rebours tourne sur la TV et les téléphones, et la TV montre le nombre de réponses reçues. | Fin du compte à rebours, ou verrouillage par le GM. |
 | `Locked` | Plus aucune réponse n'est acceptée (« Temps écoulé »). | Le GM révèle la réponse. |
 | `Revealed` | La bonne réponse, la répartition des choix et les points gagnés s'affichent. | Le GM passe à la question suivante, ou termine la manche après la dernière. |
