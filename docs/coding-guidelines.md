@@ -163,6 +163,8 @@ catch (Exception ex)
   - chacune de ses transitions ;
   - chacun de ses cas de rejet ;
   - chaque couple phase/rôle, avec un test de non-fuite des informations secrètes.
+- Les tests de non-fuite s'appuient sur l'outil commun de `tests/Shared/Leaks/`. Un mode décrit une `LeakSuite` : des scénarios qui couvrent chacune des phases de son énumération, les secrets de chaque état avec ceux à qui ils sont cachés (`Audience`), et des paires d'états qui ne diffèrent que par un secret (`SecretPair`). La suite vérifie, sur le JSON sérialisé comme sur le fil, qu'aucun secret n'apparaît chez qui il est caché, que les projections des deux états d'une paire sont identiques pour ces mêmes destinataires, et qu'aucun couple phase/rôle n'est sans scénario. Les tests d'intégration du hub utilisent `LeakAssert.NoSecretReceived` sur les snapshots reçus.
+- Un secret se cherche dans le JSON décodé, jamais par une recherche dans le texte brut : le sérialiseur échappe les caractères non ASCII (`É` devient `\u00C9`), ce qui rendrait une telle recherche aveugle.
 - Le hub se teste en intégration avec `WebApplicationFactory` et un vrai client `Microsoft.AspNetCore.SignalR.Client`.
 - La résilience est testée explicitement :
   - une exception injectée dans un mode laisse la boucle vivante et l'état inchangé ;
