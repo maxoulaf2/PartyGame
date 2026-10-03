@@ -6,6 +6,7 @@ import type {
     PlayerId,
     PlayerSnapshot,
     ResumeSessionResult,
+    RoundId,
 } from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
@@ -15,6 +16,7 @@ import { SnapshotStore } from './snapshotStore.svelte';
 const gameId = '6f9619ff-8b86-d011-b42d-00cf4fc964ff' as GameId;
 const playerId = '00000001-0000-0000-0000-000000000000' as PlayerId;
 const token = 'q1w2e3r4t5y6u7i8o9p0aa';
+const roundId = '0f8fad5b-d9cb-469f-a165-70867728950e' as RoundId;
 
 function memoryStorage(initial: string | null = null): CodeStorage & { value: string | null } {
     const storage = {
@@ -61,9 +63,15 @@ function fakeServer(options: { startFails?: boolean; taken?: string[]; known?: s
         ),
         stop: vi.fn(() => Promise.resolve()),
         invoke: vi.fn(
-            async (method: string, request: Request): Promise<JoinResult | ResumeSessionResult> => {
+            async (
+                method: string,
+                request: Request,
+            ): Promise<JoinResult | ResumeSessionResult | null> => {
                 if (!reachable) {
                     throw new Error('disconnected');
+                }
+                if (method === 'SendRoundIntent') {
+                    return null;
                 }
                 if ('token' in request) {
                     if (!known.has(request.token)) {
@@ -342,6 +350,43 @@ describe('PlayerSession', () => {
 
             expect(session.status).toBe('resuming');
             expect(tokens.value).toBe(token);
+        });
+    });
+
+    describe('sendRoundIntent', () => {
+        it('hands the intent to the server once joined', async () => {
+            const { session, server } = await startedSession();
+            await session.join('Zoé');
+
+            const outcome = await session.sendRoundIntent({ type: 'quiz', roundId });
+
+            expect(outcome).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('SendRoundIntent', {
+                type: 'quiz',
+                roundId,
+            });
+        });
+
+        it('sends nothing before the player is recognized, or while disconnected', async () => {
+            const { session, server } = await startedSession();
+
+            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+            await session.join('Zoé');
+            server.drop();
+            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'SendRoundIntent',
+                expect.anything(),
+            );
+        });
+
+        it('reports an intent lost with the connection as unreachable', async () => {
+            const { session, server } = await startedSession();
+            await session.join('Zoé');
+            server.connection.invoke.mockRejectedValueOnce(new Error('disconnected'));
+
+            expect(await session.sendRoundIntent({ type: 'quiz', roundId })).toBe('unreachable');
         });
     });
 });

@@ -1,6 +1,6 @@
-import type { JoinRefusal, PlayerSnapshot } from '../contracts';
+import type { JoinRefusal, PlayerRoundIntent, PlayerSnapshot } from '../contracts';
 import type { CodeStorage } from './codeStorage';
-import type { GameConnection } from './gameHub';
+import type { GameConnection, IntentOutcome } from './gameHub';
 import type { SnapshotStore } from './snapshotStore.svelte';
 
 /** What became of a nickname the player submitted: joined, refused by the server, or not sent. */
@@ -120,6 +120,23 @@ export class PlayerSession {
         this.#nickname.save(nickname.trim());
         this.#status = 'joined';
         return 'joined';
+    }
+
+    /**
+     * Sends what the player does in the round in progress to its game mode. The server alone
+     * decides whether it is accepted; the outcome reaches the phone through the next snapshot.
+     */
+    async sendRoundIntent(intent: PlayerRoundIntent): Promise<IntentOutcome> {
+        // Before being recognized, the server would not know whom the intent comes from.
+        if (!this.#connected || this.#status !== 'joined') {
+            return 'unreachable';
+        }
+        try {
+            await this.#connection.invoke('SendRoundIntent', intent);
+            return 'sent';
+        } catch {
+            return 'unreachable';
+        }
     }
 
     #onConnected(): void {
