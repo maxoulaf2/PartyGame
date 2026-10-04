@@ -6,6 +6,7 @@
     <Project Path="src/PartyGame.Server/PartyGame.Server.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/PartyGame.Bots.Tests/PartyGame.Bots.Tests.csproj" />
     <Project Path="tests/PartyGame.Content.Tests/PartyGame.Content.Tests.csproj" />
     <Project Path="tests/PartyGame.Contracts.Tests/PartyGame.Contracts.Tests.csproj" />
     <Project Path="tests/PartyGame.Engine.Tests/PartyGame.Engine.Tests.csproj" />
@@ -19,6 +20,7 @@
     <File Path="global.json" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/PartyGame.Bots/PartyGame.Bots.csproj" />
     <Project Path="tools/PartyGame.TypeGen/PartyGame.TypeGen.csproj" />
   </Folder>
 </Solution>

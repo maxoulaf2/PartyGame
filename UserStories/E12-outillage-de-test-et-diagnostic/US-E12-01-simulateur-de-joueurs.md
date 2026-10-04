@@ -1,6 +1,6 @@
 ### US-E12-01 — Simulateur de joueurs
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant que** opérateur
 **je veux** lancer en une commande des joueurs simulés qui rejoignent la partie et jouent comme de vrais téléphones

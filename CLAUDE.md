@@ -67,13 +67,14 @@ client/
   src/modes/<mode>/      Vues player, display et gm de chaque mode de jeu
 tools/
   PartyGame.TypeGen/     Générateur des types TypeScript, par réflexion sur PartyGame.Contracts
+  PartyGame.Bots/        Simulateur de joueurs (bots clients SignalR) et bot GM, outil console et bibliothèque des tests
 tests/                   Un projet de test par projet de src/ et de tools/
 packs/                   Packs d'exemple, utilisés en développement et dans les tests
 schemas/                 JSON Schema des descripteurs de packs
 docs/                    Documentation et décisions d'architecture
 ```
 
-Sens des dépendances : `Contracts` ne dépend de rien, `Engine` et `Content` ne dépendent que de `Contracts`, `Server` dépend de tous. L'outil `TypeGen` ne dépend que de `Contracts`. `Engine` ne référence jamais ASP.NET Core ni SignalR.
+Sens des dépendances : `Contracts` ne dépend de rien, `Engine` et `Content` ne dépendent que de `Contracts`, `Server` dépend de tous. Les outils `TypeGen` et `Bots` ne dépendent que de `Contracts`. `Engine` ne référence jamais ASP.NET Core ni SignalR.
 
 ## Commandes
 
@@ -106,6 +107,12 @@ npm run test       # Vitest
 npm run e2e        # Playwright sur le build : iPhone (WebKit), Pixel (Chromium), desktop
                    # démarre aussi le serveur .NET (port 5199, GameMaster:Code=246810, packs de e2e/packs) derrière le proxy
                    # les projets « address » puis « launch » (changement d'adresse, lancement de la partie : tout le serveur partagé) passent après tous les autres
+
+# Simulateur de joueurs (serveur déjà lancé) : N bots rejoignent la partie et jouent comme des téléphones
+dotnet run --project tools/PartyGame.Bots -- --url http://192.168.1.10:5000 --count 10
+                   # --behavior random|fast|slow|silent|flaky, ou un mélange : random:6,flaky:2,silent:2
+                   # --gm-code 123456 : un bot GM mène la partie seul (--pack <id> choisit le pack, sinon le premier valide)
+                   # résumé toutes les 5 s (connectés, intentions envoyées et rejetées, reconnexions, délai de diffusion)
 
 # Publication pour Raspberry Pi
 dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained

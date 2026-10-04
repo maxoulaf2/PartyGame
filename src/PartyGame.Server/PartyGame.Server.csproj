@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="PartyGame.Server.Tests" />
+    <InternalsVisibleTo Include="PartyGame.Bots.Tests" />
   </ItemGroup>
 
 </Project>
