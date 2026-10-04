@@ -1,6 +1,6 @@
 ### US-E12-02 — Table complète sur un serveur dédié en E2E
 
-**Statut :** Prête
+**Statut :** Terminée
 
 Un test E2E réunit l'écran TV, la console GM et trois joueurs sur des téléphones émulés, contre un serveur qui lui est propre. Il teste ainsi de bout en bout une partie, un redémarrage ou une reprise, sans dépendre de l'ordre des autres tests.
 
@@ -21,6 +21,7 @@ Sans objet : outillage de test. Un serveur dédié qui ne démarre pas fait éch
 - Le code GM du serveur dédié est fixé par `GameMaster:Code`, comme aujourd'hui.
 - Le projet `address` peut suivre le même chemin ; à décider pendant l'US selon le gain. Mettre à jour la section « Commandes » de CLAUDE.md.
 - Une partie E2E plus longue qu'aujourd'hui allonge `npm run e2e` : garder des packs de test courts et des comptes à rebours brefs.
+- Réalisation : `e2e/fixtures/table.ts` fournit `dedicatedServer` (le `PartyGame.Server.dll` construit par le `dotnet run` du serveur partagé, lancé depuis `src/PartyGame.Server` pour servir `wwwroot`, sur un port libre, avec un dossier temporaire de données et de logs ; `kill` tue le processus, `start` le relance sur le même port et le même dossier) et `table` (TV et console GM sur Chrome bureau, Zoé sur un iPhone WebKit, Max et Léa sur des Pixel Chromium). La fixture redéfinit `baseURL` : toutes les pages du test s'ouvrent sur son serveur. En cas d'échec, `server.log` et une capture par page de la table sont joints au rapport et écrits dans `test-results/`. `launch.spec.ts` joue sur une table, avec des décomptes exacts (4 participants, 6 joueurs classés) ; `address.spec.ts` passe aussi sur un serveur dédié, ce qui supprime les projets `address` et `launch` : les deux tournent dans `desktop-chrome`, en parallèle des autres, et `npm run e2e` ne les attend plus. `dedicatedServer.spec.ts` vérifie l'arrêt brutal et la relance : la console se voit proposer de reprendre le lobby enregistré.
 
 **Hors périmètre**
 - Les scénarios de chaos (US-E12-03).

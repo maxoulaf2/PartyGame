@@ -1,4 +1,4 @@
-import type { Browser, Page } from '@playwright/test';
+import type { Browser, BrowserContextOptions, Page } from '@playwright/test';
 import { fr } from '../src/shared/i18n/fr.ts';
 
 /**
@@ -9,13 +9,17 @@ export function uniqueNickname(name: string): string {
     return `${name} ${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Opens the player page in a browser context of its own and joins under `nickname`. */
+/**
+ * Opens the player page in a browser context of its own, emulating `device` if given, and joins
+ * under `nickname`.
+ */
 export async function joinOnNewPhone(
     browser: Browser,
     baseURL: string | undefined,
     nickname: string,
+    device: BrowserContextOptions = {},
 ): Promise<Page> {
-    const context = await browser.newContext({ baseURL });
+    const context = await browser.newContext({ ...device, baseURL });
     const phone = await context.newPage();
     await phone.goto('/');
     await phone.getByLabel(fr.player.join.label).fill(nickname);

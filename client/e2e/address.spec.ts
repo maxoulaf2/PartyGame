@@ -1,11 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { expect, test } from './fixtures/table.ts';
 import { advertisedAddress, gameMasterCode } from './gameServer.ts';
 
-// Changing the advertised address changes the QR code of every TV screen of the shared server:
-// playwright.config.ts runs this file once all the other tests are done, and it puts the
-// configured address back before it ends.
+// Changing the advertised address changes the QR code of every TV screen: on a server of its own.
 
 async function openConsole(page: Page): Promise<void> {
     await page.addInitScript(
@@ -18,16 +17,13 @@ async function openConsole(page: Page): Promise<void> {
     await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
 }
 
-function joinUrl(address: string): string {
-    // The preview server listens on the port set in playwright.config.ts.
-    return `http://${address}:4173/`;
-}
-
 test('the address chosen by the game master reaches the TV screen without a reload', async ({
     page,
     browser,
     baseURL,
 }) => {
+    // The dedicated server serves the pages, on its own port.
+    const joinUrl = (address: string) => `http://${address}:${new URL(baseURL ?? '').port}/`;
     const display = await (await browser.newContext({ baseURL })).newPage();
     await display.goto('/display/');
     await expect(display.getByText(joinUrl(advertisedAddress))).toBeVisible();
