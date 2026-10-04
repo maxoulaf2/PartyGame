@@ -112,7 +112,7 @@ Le dossier se règle par le paramètre `Persistence:Directory` (variable d'envir
 
 Au démarrage, si `current-game.json` contient une partie avec au moins un joueur, le serveur ne la reprend pas d'office : la bannière de la console l'annonce, et la console GM, une fois le **nouveau** code saisi, décrit la partie trouvée (pack, avancement, nombre de joueurs, heure de l'enregistrement) avec deux choix :
 
-- **Reprendre la partie** : les téléphones, l'écran TV et la console la retrouvent là où elle en était. Si des médias du pack ont disparu du disque depuis, le bouton reste désactivé et la console les liste : remettez-les à leur place, puis « Vérifier de nouveau ».
+- **Reprendre la partie** : les téléphones, l'écran TV et la console la retrouvent là où elle en était, sans que les joueurs aient rien à faire. Un compte à rebours en cours repart avec le temps qui lui restait. Si des médias du pack ont disparu du disque depuis, le bouton reste désactivé et la console les liste : remettez-les à leur place, puis « Vérifier de nouveau ».
 - **Nouvelle partie** : après confirmation, la partie trouvée est mise de côté dans `previous-game.json` (qui remplace le précédent), les packs sont relus et une partie neuve démarre dans le lobby. Les joueurs se réinscrivent, leur pseudo prérempli.
 
 En attendant la décision, les téléphones affichent « Retour dans la partie… » (ou un écran d'attente s'ils ne s'étaient jamais inscrits) et l'écran TV « Reprise de la partie… ». Une partie sans joueur n'est pas proposée.

@@ -55,6 +55,15 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
             _ => throw new NotSupportedException($"The fake mode does not handle {input.GetType().Name}."),
         };
 
+    /// <summary>Moves the countdown on by the time spent offline, schedules it again, and records the shift.</summary>
+    public override RoundTransition ResumeRound(FakeRoundState round, GameState game, TimeSpan shift, GameContext context)
+    {
+        var dueAt = round.CountdownDueAt + shift;
+        return new RoundTransition(
+            round with { CountdownDueAt = dueAt, Inputs = round.Inputs.Add($"resume after {shift.TotalMinutes} min") },
+            [new ScheduleTimer(Countdown, dueAt)]);
+    }
+
     public override PlayerRoundView ProjectForPlayer(FakeRoundState round, GameState game, Player player) =>
         new FakePlayerView(player.Nickname, round.Inputs.Count);
 

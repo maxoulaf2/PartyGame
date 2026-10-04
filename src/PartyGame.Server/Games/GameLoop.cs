@@ -157,6 +157,13 @@ internal sealed class GameLoop : BackgroundService
             await NotifyAsync(newState, stoppingToken).ConfigureAwait(false);
         }
 
+        if (input is ResumeSavedGame && state.PendingGame is { } pending)
+        {
+            // Before any other input, so that none is judged against the deadlines of before the stop. Handled on its own,
+            // so that a round failing to resume leaves the game resumed, with an incident naming the round.
+            await ApplyAsync(new GameResumed(pending.SavedAt), stoppingToken).ConfigureAwait(false);
+        }
+
         return InputOutcome.Accepted;
     }
 

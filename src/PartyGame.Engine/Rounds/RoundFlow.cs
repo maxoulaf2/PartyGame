@@ -120,6 +120,28 @@ internal static class RoundFlow
         return Handle(state, timer, modes, context);
     }
 
+    /// <summary>
+    /// Hands the time spent offline to the round in progress of a game just resumed, for it to move its deadlines on and
+    /// schedule its timers again. Out of a round, nothing waits for any time: there is nothing to resume.
+    /// </summary>
+    public static Transition Resume(GameState state, GameResumed resumed, GameModes modes, GameContext context)
+    {
+        if (state.Phase != GamePhase.Round)
+        {
+            return new Transition(state, []);
+        }
+
+        var round = state.CurrentRound!;
+        var descriptor = state.Rounds[round.Index];
+        var handled = modes.For(descriptor).ResumeRound(round.State, state, context.Now - resumed.SavedAt, context);
+        if (handled.Rejection is { } rejection)
+        {
+            throw new InvalidOperationException($"Game mode for {descriptor.GetType().Name} rejected the resumption of a round: {rejection}.");
+        }
+
+        return Apply(state, round, handled);
+    }
+
     private static Transition HandleIntent(GameState state, GameInput input, RoundId roundId, GameModes modes, GameContext context)
     {
         if (state.Phase != GamePhase.Round)

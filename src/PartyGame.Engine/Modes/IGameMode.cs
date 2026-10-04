@@ -59,6 +59,19 @@ public interface IGameMode
     RoundTransition Handle(RoundState round, GameInput input, GameState game, GameContext context);
 
     /// <summary>
+    /// Resumes a round of a game saved before the server stopped, once the game master resumed it: the time spent offline
+    /// must cost nobody anything. The mode moves its deadlines and its time stamps on by <paramref name="shift"/>, and
+    /// schedules again the timers its round waits for, since timers are not part of the state. A deadline already passed
+    /// when the game was saved stays passed: its timer elapses at once.
+    /// </summary>
+    /// <param name="round">The state of the round, as this mode produced it and the game was saved with it.</param>
+    /// <param name="game">The game resumed.</param>
+    /// <param name="shift">The time spent offline: now minus the time of the last save.</param>
+    /// <param name="context">Current time and random generator.</param>
+    /// <returns>The round resumed and its timers. A rejection is a bug of the mode.</returns>
+    RoundTransition ResumeRound(RoundState round, GameState game, TimeSpan shift, GameContext context);
+
+    /// <summary>
     /// What the phone of <paramref name="player"/> shows. The player may have joined during the round: the mode decides
     /// whether they take part.
     /// </summary>

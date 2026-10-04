@@ -10,7 +10,8 @@ namespace PartyGame.Server.Tests.Hubs;
 
 /// <summary>
 /// Plays quiz rounds with injected bugs: every intent of a player throws, any intent of the game master finishes the round,
-/// and the projection of <paramref name="failingRole"/>, if any, throws. Its views are those of the quiz mode.
+/// resuming a round throws, and the projection of <paramref name="failingRole"/>, if any, throws. Its views are those of
+/// the quiz mode.
 /// </summary>
 internal sealed class FaultyQuizMode(Role? failingRole = null) : GameMode<QuizRoundDescriptor, TestQuizRound>
 {
@@ -28,6 +29,9 @@ internal sealed class FaultyQuizMode(Role? failingRole = null) : GameMode<QuizRo
             GameMasterRoundInput => new RoundTransition(round, []) { IsFinished = true },
             _ => RoundTransition.Rejected(round, RejectionReason.UnexpectedTimer),
         };
+
+    public override RoundTransition ResumeRound(TestQuizRound round, GameState game, TimeSpan shift, GameContext context) =>
+        throw new InvalidOperationException("Injected resume failure");
 
     public override PlayerRoundView ProjectForPlayer(TestQuizRound round, GameState game, Player player)
     {

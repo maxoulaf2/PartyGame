@@ -57,6 +57,7 @@ Contraintes :
 - Renommer un type d'état de manche, ou changer la forme de `GameState`, impose d'incrémenter `formatVersion` : les parties enregistrées avant la mise à jour ne sont plus reprises.
 - Le fichier contient les jetons et les bonnes réponses : quiconque a accès au disque du serveur peut les lire.
 - Le catalogue des packs fait partie de l'état et est réécrit à chaque transition.
+- Les timers ne font pas partie de l'état : à la reprise, chaque mode décale ses échéances du temps passé hors ligne et reprogramme ses timers (`IGameMode.ResumeRound`, abstrait dans `GameMode<TDescriptor, TState>`, US-E11-03).
 
 ### Suivi
 

@@ -1,6 +1,6 @@
 ### US-E11-03 — Reprise transparente pour les joueurs et la TV
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** retrouver la partie exactement où elle en était après un redémarrage du serveur, sans rien toucher
@@ -28,6 +28,8 @@ Joueurs : « Reconnexion… » pendant la coupure, puis « Retour dans la partie
 - Les timers ne font pas partie de l'état : ils sont reprogrammés par les effets de la reprise, jamais relus du fichier.
 - La synchronisation d'horloge est refaite à la reconnexion (US-E05-03) : le compte à rebours affiché se cale sur la nouvelle échéance.
 - Mettre à jour [docs/modes/quiz.md](../../docs/modes/quiz.md) (comportement à la reprise) et le guide d'ajout d'un mode s'il existe.
+- Réalisation : moteur. La reprise étant décidée par le GM (US-E11-02), `GameResumed(savedAt)` suit `ResumeSavedGame` : quand celle-ci est acceptée, `GameLoop` traite aussitôt `GameResumed` avec l'heure d'enregistrement de la partie trouvée, avant toute autre entrée de la file. Traitée à part, une reprise de manche en échec laisse la partie reprise, avec l'incident `RoundHandlerFailed` qui nomme la manche (la proposition de passer la manche suit la règle de US-E10-02 ; le GM peut aussi passer la question). `RoundFlow.Resume` transmet le décalage (`context.Now - savedAt`) au mode par `IGameMode.ResumeRound` (le nom `Resume` est un mot réservé de VB, CA1716) et marque ses timers avec la manche ; hors d'une manche, rien n'attend : l'état est inchangé. Le quiz décale `AnswersCloseAt` et les `ReceivedAt` dans toutes ses phases, et reprogramme le timer des réponses en phase `Answering` ; une échéance passée déclenche le timer aussitôt (`TimerScheduler`). Le jeton, le dernier `ClientSeq` de chaque joueur et les identifiants des médias faisaient déjà partie de l'état enregistré (US-E11-01).
+- Réalisation : tests. Moteur : `QuizResumeTests` (temps restant et timer, bonus des réponses déjà reçues, réponse reçue après la reprise, échéance dépassée, phases sans compte à rebours), `RoundFlowTests` (décalage transmis au mode, timers marqués, rien hors d'une manche). Serveur : `TransparentResumeTests` (deux hôtes successifs sur le même dossier et la même horloge simulée : TV, console et téléphone repris par jeton dans le compte à rebours, image servie à son URL d'origine, renvoi ignoré d'une réponse déjà traitée et réponse jamais reçue acceptée, verrouillage à la nouvelle échéance, mode qui échoue à reprendre). Aucun changement côté client : le compte à rebours se calcule depuis l'échéance du snapshot et l'horloge resynchronisée à la reconnexion.
 
 **Hors périmètre**
 - Le scénario E2E de redémarrage (US-E12-03).
