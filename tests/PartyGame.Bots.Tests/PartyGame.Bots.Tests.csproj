@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\PartyGame.Bots\PartyGame.Bots.csproj" />
+    <!-- Aliased: the server and the bots both have a Program class -->
+    <ProjectReference Include="..\..\src\PartyGame.Server\PartyGame.Server.csproj" Aliases="Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Waits for the test server to close its log file before deleting it -->
+    <Compile Include="..\PartyGame.Server.Tests\TempDirectory.cs" Link="TempDirectory.cs" />
+  </ItemGroup>
+
+</Project>
