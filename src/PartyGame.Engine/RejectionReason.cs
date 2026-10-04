@@ -110,4 +110,19 @@ public enum RejectionReason
     /// phone that lost its connection before knowing it.
     /// </summary>
     IntentAlreadyHandled,
+
+    /// <summary>
+    /// The server waits for the game master to resume the saved game or start a new one: nothing else is accepted
+    /// meanwhile.
+    /// </summary>
+    GamePending,
+
+    /// <summary>
+    /// The decision names another game than the one found saved, or comes once the decision is made: it is obsolete, for
+    /// instance sent twice or by a second game master console.
+    /// </summary>
+    SavedGameObsolete,
+
+    /// <summary>The saved game cannot be resumed while media files of its pack are missing from the disk.</summary>
+    SavedGameMediaMissing,
 }

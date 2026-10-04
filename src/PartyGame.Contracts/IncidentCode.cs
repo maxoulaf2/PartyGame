@@ -42,4 +42,10 @@ public enum IncidentCode
     /// lose it. Reported once per series of failures, and forgotten as soon as the game is saved again.
     /// </summary>
     PersistenceFailed,
+
+    /// <summary>
+    /// The game saved before the server restarted could not be read, or was saved in a format this server does not know:
+    /// it was set aside under another name, and a new game started. The players register again.
+    /// </summary>
+    SavedGameUnreadable,
 }

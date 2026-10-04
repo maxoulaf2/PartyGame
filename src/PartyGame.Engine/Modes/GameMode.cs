@@ -45,6 +45,12 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     /// <inheritdoc cref="IGameMode.LocateMedia" />
     public virtual int? LocateMedia(TState round, MediaPath media) => null;
 
+    /// <summary>
+    /// Tells no step unless overridden: the game master then sees the round alone.
+    /// </summary>
+    /// <inheritdoc cref="IGameMode.StepOf" />
+    public virtual RoundStep? StepOf(TState round) => null;
+
     ImmutableArray<PackProblem> IGameMode.Validate(RoundDescriptor descriptor, string path) =>
         Validate((TDescriptor)descriptor, path);
 
@@ -63,4 +69,6 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
         ProjectForGameMaster((TState)round, game);
 
     int? IGameMode.LocateMedia(RoundState round, MediaPath media) => LocateMedia((TState)round, media);
+
+    RoundStep? IGameMode.StepOf(RoundState round) => StepOf((TState)round);
 }

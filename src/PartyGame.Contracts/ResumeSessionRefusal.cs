@@ -19,4 +19,10 @@ public enum ResumeSessionRefusal
 
     /// <summary>The message does not have the expected shape.</summary>
     MessageInvalid,
+
+    /// <summary>
+    /// The server restarted and waits for the game master to resume the saved game or start a new one. The phone keeps its
+    /// token and presents it again after the next <see cref="Welcome"/>.
+    /// </summary>
+    GamePending,
 }

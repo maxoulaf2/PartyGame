@@ -36,7 +36,7 @@ public sealed class WelcomeTests : IAsyncDisposable
         var welcome = await ConnectAndReadWelcomeAsync(factory);
 
         // Then
-        Assert.Equal(new Welcome("2026-10-02T14-30-00Z-ab12cd"), welcome);
+        Assert.Equal(new Welcome("2026-10-02T14-30-00Z-ab12cd", GamePending: false), welcome);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class WelcomeTests : IAsyncDisposable
         var welcome = await ConnectAndReadWelcomeAsync(factory);
 
         // Then
-        Assert.Equal(new Welcome("first"), welcome);
+        Assert.Equal(new Welcome("first", GamePending: false), welcome);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class WelcomeTests : IAsyncDisposable
         var welcome = await ConnectAndReadWelcomeAsync(factory);
 
         // Then
-        Assert.Equal(new Welcome("abc"), welcome);
+        Assert.Equal(new Welcome("abc", GamePending: false), welcome);
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class WelcomeTests : IAsyncDisposable
         var welcome = await ConnectAndReadWelcomeAsync(factory);
 
         // Then
-        Assert.Equal(new Welcome(BuildId: null), welcome);
+        Assert.Equal(new Welcome(BuildId: null, GamePending: false), welcome);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class WelcomeTests : IAsyncDisposable
         var welcome = await ConnectAndReadWelcomeAsync(factory);
 
         // Then
-        Assert.Equal(new Welcome(BuildId: null), welcome);
+        Assert.Equal(new Welcome(BuildId: null, GamePending: false), welcome);
         var warning = Assert.Single(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Client build has no", StringComparison.Ordinal));
         Assert.Equal("Warning", warning.Level);
     }
@@ -134,7 +134,7 @@ public sealed class WelcomeTests : IAsyncDisposable
         var welcome = await ConnectAndReadWelcomeAsync(factory);
 
         // Then
-        Assert.Equal(new Welcome(BuildId: null), welcome);
+        Assert.Equal(new Welcome(BuildId: null, GamePending: false), welcome);
         var warning = Assert.Single(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Client build identifier unreadable", StringComparison.Ordinal));
         Assert.Equal("Warning", warning.Level);
     }

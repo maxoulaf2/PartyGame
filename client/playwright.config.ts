@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import {
     advertisedAddress,
+    dataDirectory,
     gameMasterCode,
     gameServerPort,
     packDirectory,
@@ -57,7 +58,7 @@ export default defineConfig({
         // The real server behind the preview proxy, for the hub. Started once the build has
         // rewritten its web root.
         {
-            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode} --Network:AdvertisedAddress=${advertisedAddress} "--Packs:Directory=${packDirectory}"`,
+            command: `dotnet run --project src/PartyGame.Server -- --Network:Port=${gameServerPort} --GameMaster:Code=${gameMasterCode} --Network:AdvertisedAddress=${advertisedAddress} "--Packs:Directory=${packDirectory}" "--Persistence:Directory=${dataDirectory}"`,
             cwd: '..',
             url: `http://localhost:${gameServerPort}/health`,
             reuseExistingServer: false,

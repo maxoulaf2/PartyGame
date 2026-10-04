@@ -3,6 +3,7 @@ import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
 import type {
     GameId,
     GameMasterRoundView,
+    GameMasterSavedGame,
     GameMasterSnapshot,
     IncidentList,
     PlayerId,
@@ -53,6 +54,7 @@ function fakeLobby(
         ranking: [],
         nextRoundTitle: null,
         roundSkipped: false,
+        savedGame: null,
     };
 }
 
@@ -777,4 +779,82 @@ test('/gm/ shows the final ranking once the game is finished, with nothing left 
     for (const action of [fr.gm.nextRound.action, fr.gm.start.action]) {
         await expect(page.getByRole('button', { name: action })).toHaveCount(0);
     }
+});
+
+/** The console of a restarted server that found `savedGame`. */
+function fakeResumePending(savedGame: Partial<GameMasterSavedGame> = {}): GameMasterSnapshot {
+    return {
+        ...fakeLobby(),
+        phase: 'ResumePending',
+        packCatalog: null,
+        savedGame: {
+            gameId: '0b7c4a5e-5d3e-4b8a-9c3f-2a1d6e8f9b70' as GameId,
+            savedAt: Date.UTC(2026, 9, 4, 21, 4, 5),
+            phase: 'Round',
+            packTitle: 'Grande soirée',
+            round: { ...firstRound, number: 2, count: 3, title: 'Finale' },
+            step: { number: 4, count: 10 },
+            playerCount: 3,
+            missingMedia: [],
+            ...savedGame,
+        },
+    };
+}
+
+test('/gm/ offers to resume the game found, describing where it stopped', async ({ page }) => {
+    const hub = await serveGameMasterSnapshot(page, fakeResumePending());
+
+    await openConsole(page);
+
+    await expect(page.getByRole('heading', { name: fr.gm.resume.title })).toBeVisible();
+    await expect(page.getByText('Grande soirée')).toBeVisible();
+    await expect(page.getByText('Manche 2/3 · Finale · Question 4/10')).toBeVisible();
+    await expect(page.getByText(countText(fr.gm.resume.players, 3))).toBeVisible();
+    // Nothing of the usual console while the game master decides.
+    await expect(page.getByRole('button', { name: fr.gm.start.action })).toHaveCount(0);
+    await page.getByRole('button', { name: fr.gm.resume.resume }).click();
+    await expect
+        .poll(() => hub.resolved)
+        .toEqual([{ savedGameId: '0b7c4a5e-5d3e-4b8a-9c3f-2a1d6e8f9b70', resume: true }]);
+});
+
+test('/gm/ starts a new game instead only once confirmed', async ({ page }) => {
+    const hub = await serveGameMasterSnapshot(page, fakeResumePending());
+    await openConsole(page);
+
+    await page.getByRole('button', { name: fr.gm.resume.newGame }).click();
+    const dialog = page.getByRole('dialog', { name: fr.gm.resume.confirmTitle });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: fr.gm.resume.cancel }).click();
+    expect(hub.resolved).toEqual([]);
+    await page.getByRole('button', { name: fr.gm.resume.newGame }).click();
+    await page
+        .getByRole('dialog', { name: fr.gm.resume.confirmTitle })
+        .getByRole('button', { name: fr.gm.resume.confirm })
+        .click();
+
+    await expect
+        .poll(() => hub.resolved)
+        .toEqual([{ savedGameId: '0b7c4a5e-5d3e-4b8a-9c3f-2a1d6e8f9b70', resume: false }]);
+});
+
+test('/gm/ cannot resume while media files are missing, until they are checked again', async ({
+    page,
+}) => {
+    await serveGameMasterSnapshot(
+        page,
+        fakeResumePending({ missingMedia: ['images/drapeau.png', 'images/tour.jpg'] }),
+    );
+    await openConsole(page);
+
+    const resume = page.getByRole('button', { name: fr.gm.resume.resume });
+    await expect(resume).toBeDisabled();
+    await expect(page.getByText(countText(fr.gm.resume.missingMedia, 2))).toBeVisible();
+    await expect(
+        page.getByRole('list', { name: fr.gm.resume.missingMediaLabel }).getByRole('listitem'),
+    ).toHaveText(['images/drapeau.png', 'images/tour.jpg']);
+    await page.getByRole('button', { name: fr.gm.resume.checkAgain }).click();
+
+    await expect(resume).toBeEnabled();
+    await expect(page.getByRole('list', { name: fr.gm.resume.missingMediaLabel })).toHaveCount(0);
 });

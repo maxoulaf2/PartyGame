@@ -146,6 +146,7 @@ function gameMasterSnapshot(
         ranking: [],
         nextRoundTitle: null,
         roundSkipped: false,
+        savedGame: null,
     };
 }
 

@@ -71,6 +71,12 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="SendGameMasterRoundIntentAsync"/>, as the clients call it.</summary>
     public const string SendGameMasterRoundIntent = nameof(SendGameMasterRoundIntent);
 
+    /// <summary>SignalR target of <see cref="ResolveSavedGameAsync"/>, as the clients call it.</summary>
+    public const string ResolveSavedGame = nameof(ResolveSavedGame);
+
+    /// <summary>SignalR target of <see cref="CheckSavedGameMediaAsync"/>, as the clients call it.</summary>
+    public const string CheckSavedGameMedia = nameof(CheckSavedGameMedia);
+
     /// <summary>SignalR target of <see cref="ReadClock"/>, as the clients call it.</summary>
     public const string SyncClock = nameof(SyncClock);
 
@@ -102,11 +108,19 @@ internal sealed class GameHub(
 
     /// <summary>
     /// Tells the new connection, before anything else, which client build the server serves: a page built otherwise is
-    /// outdated and reloads itself. Sent again on every restored connection, which the server sees as a new one.
+    /// outdated and reloads itself. Sent again on every restored connection, which the server sees as a new one. It also
+    /// tells whether the game master has yet to resolve the game found saved, which a phone waits for.
     /// </summary>
     public override async Task OnConnectedAsync()
     {
-        await Clients.Caller.ReceiveWelcome(new Welcome(frontEndBuild.Id)).ConfigureAwait(false);
+        var pending = IsPending(game.State);
+        await Clients.Caller.ReceiveWelcome(new Welcome(frontEndBuild.Id, pending)).ConfigureAwait(false);
+        if (pending && !IsPending(game.State))
+        {
+            // Resolved meanwhile: its announcement to every connection may have come before this welcome.
+            await Clients.Caller.ReceiveWelcome(new Welcome(frontEndBuild.Id, GamePending: false)).ConfigureAwait(false);
+        }
+
         await base.OnConnectedAsync().ConfigureAwait(false);
     }
 
@@ -201,6 +215,7 @@ internal sealed class GameHub(
             {
                 RejectionReason.NicknameInvalid => JoinRefusal.NicknameInvalid,
                 RejectionReason.NicknameTaken => JoinRefusal.NicknameTaken,
+                RejectionReason.GamePending => JoinRefusal.GamePending,
                 _ => JoinRefusal.JoinFailed,
             });
         }
@@ -246,6 +261,13 @@ internal sealed class GameHub(
         {
             logger.ResumeRepeated(Context.ConnectionId);
             return new ResumeSessionResult(ResumeSessionRefusal.AlreadyIdentified, PlayerId: null);
+        }
+
+        if (IsPending(game.State))
+        {
+            // The token may belong to the game found saved: kept until the game master decides.
+            logger.ResumeWhileGamePending(Context.ConnectionId);
+            return new ResumeSessionResult(ResumeSessionRefusal.GamePending, PlayerId: null);
         }
 
         if (!game.State.PlayerTokens.TryGetValue(new PlayerToken(request.Token), out var playerId))
@@ -534,6 +556,65 @@ internal sealed class GameHub(
     }
 
     /// <summary>
+    /// Resumes the game the server found saved when it restarted, or starts a new game in the lobby with the packs read
+    /// again, at the request of the game master. The loop alone decides whether the request still names the game found, so
+    /// that a double tap or two consoles decide only once. Every connection is then welcomed again, for the phones to
+    /// resume their session or register. Nothing is answered: the snapshots show the game either way.
+    /// </summary>
+    /// <param name="message">A <see cref="ResolveSavedGameRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(ResolveSavedGame)]
+    public async Task ResolveSavedGameAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ResolveSavedGameRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ResolveSavedGame, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the decision may be accepted whoever is left to see it.
+        var now = timeProvider.GetUtcNow();
+        var outcome = await inputs
+            .SubmitAsync(
+                request.Resume ? new Engine.Inputs.ResumeSavedGame(request.SavedGameId, now) : new Engine.Inputs.DiscardSavedGame(request.SavedGameId, now),
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status != InputStatus.Accepted)
+        {
+            return;
+        }
+
+        logger.SavedGameResolved(request.SavedGameId.Value, request.Resume);
+        if (!request.Resume)
+        {
+            // The packs may have been fixed while the game master decided.
+            await packReloader.ReloadAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+
+        await Clients.All.ReceiveWelcome(new Welcome(frontEndBuild.Id, GamePending: false)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Checks again the media files of the game found saved at the request of the game master, once they put them back on
+    /// the disk. The files are read here, outside the loop; the result reaches every console through the snapshots.
+    /// </summary>
+    /// <remarks>No message: there is nothing to tell but the intent itself.</remarks>
+    [GameMasterOnly]
+    [HubMethodName(CheckSavedGameMedia)]
+    public async Task CheckSavedGameMediaAsync()
+    {
+        if (game.State.PendingGame is not { } pending)
+        {
+            return;
+        }
+
+        // Not cancelled with the connection: the other consoles get the result whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.SavedGameMediaChecked(pending.Game.GameId, PackMediaFiles.Missing(pending.Game)), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Answers the current time of the server, for any connection, identified or not: the clients estimate from it the
     /// offset of their clock, as NTP does. A mere reading of the clock, it never goes through the loop, whose queue would
     /// add a variable delay to the measure, and logs nothing: every client calls it in bursts.
@@ -695,6 +776,8 @@ internal sealed class GameHub(
     }
 
     private static JoinResult Refused(JoinRefusal refusal) => new(refusal, PlayerId: null, Token: null);
+
+    private static bool IsPending(GameState state) => state.Phase == GamePhase.ResumePending;
 
     /// <summary>
     /// The round in progress, or <see langword="null"/> outside a round: between two rounds, the last round played is over.

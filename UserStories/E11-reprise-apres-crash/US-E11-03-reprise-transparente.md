@@ -1,6 +1,6 @@
 ### US-E11-03 — Reprise transparente pour les joueurs et la TV
 
-**Statut :** À faire
+**Statut :** Prête
 
 **En tant que** joueur
 **je veux** retrouver la partie exactement où elle en était après un redémarrage du serveur, sans rien toucher

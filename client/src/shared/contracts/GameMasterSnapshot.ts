@@ -8,6 +8,7 @@ import type { GameMasterJoinAddress } from './GameMasterJoinAddress';
 import type { GameMasterPackCatalog } from './GameMasterPackCatalog';
 import type { GameMasterPlayer } from './GameMasterPlayer';
 import type { GameMasterRoundView } from './GameMasterRoundView';
+import type { GameMasterSavedGame } from './GameMasterSavedGame';
 import type { Phase } from './Phase';
 import type { RankedPlayer } from './RankedPlayer';
 import type { RoundInfo } from './RoundInfo';
@@ -28,4 +29,5 @@ export interface GameMasterSnapshot {
     readonly ranking: readonly RankedPlayer[];
     readonly nextRoundTitle: string | null;
     readonly roundSkipped: boolean;
+    readonly savedGame: GameMasterSavedGame | null;
 }

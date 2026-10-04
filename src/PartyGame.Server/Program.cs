@@ -42,11 +42,13 @@ try
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
     var packs = app.LoadPacks();
     app.PrepareDataDirectory();
+    var game = app.LoadGame();
     app.Lifetime.ApplicationStarted.Register(() => Console.Out.Write(StartupBanner.Format(
         app.Services.GetRequiredService<AddressSelection>(),
         app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port,
         app.Services.GetRequiredService<GameMasterCode>(),
-        packs)));
+        packs,
+        game.State.Phase == PartyGame.Engine.GamePhase.ResumePending)));
 
     app.Run();
     return 0;

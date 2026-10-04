@@ -33,6 +33,12 @@ internal sealed class LeakSuite<TState, TPhase> : ILeakSuite<TState>
     public IReadOnlyList<SecretPair<TState>> Pairs { get; init; } = [];
 
     /// <summary>
+    /// The couples of a phase and a role that no state can produce, such as a phone while nobody can be registered: no
+    /// scenario needs to cover them.
+    /// </summary>
+    public IReadOnlyList<(TPhase Phase, Role Role)> Unreachable { get; init; } = [];
+
+    /// <summary>
     /// Fails if a phase of <typeparamref name="TPhase"/> is not covered, for one of the roles, by any scenario.
     /// </summary>
     public void AssertEveryPhaseIsCovered()
@@ -42,7 +48,7 @@ internal sealed class LeakSuite<TState, TPhase> : ILeakSuite<TState>
             .ToHashSet();
         var failures = Enum.GetValues<TPhase>()
             .SelectMany(phase => Enum.GetValues<Role>().Select(role => (Phase: phase, Role: role)))
-            .Where(pair => !covered.Contains(pair))
+            .Where(pair => !covered.Contains(pair) && !Unreachable.Contains(pair))
             .Select(pair => $"Phase {pair.Phase}, {pair.Role}: no scenario covers it")
             .ToList();
 

@@ -53,16 +53,27 @@ type Request = { nickname: string } | { token: string };
  * A server that registers any nickname except those already taken, recognizes the tokens it
  * issued, and can become unreachable or restart.
  */
-function fakeServer(options: { startFails?: boolean; taken?: string[]; known?: string[] } = {}) {
+function fakeServer(
+    options: { startFails?: boolean; taken?: string[]; known?: string[]; pending?: boolean } = {},
+) {
     let reachable = true;
+    let pending = options.pending ?? false;
+    const welcome = () =>
+        handlers.get('ReceiveWelcome')?.({ buildId: null, gamePending: pending } as never);
     let version = 2;
     const known = new Set(options.known);
-    const handlers = new Map<string, (snapshot: PlayerSnapshot) => void>();
+    // Loose: each message has its own payload.
+    const handlers = new Map<string, (payload: never) => void>();
     const callbacks = { reconnecting: () => {}, reconnected: () => {} };
     const connection = {
-        start: vi.fn(() =>
-            options.startFails ? Promise.reject(new Error('offline')) : Promise.resolve(),
-        ),
+        // Like the hub: every connection is welcomed before any answer.
+        start: vi.fn(() => {
+            if (options.startFails) {
+                return Promise.reject(new Error('offline'));
+            }
+            welcome();
+            return Promise.resolve();
+        }),
         stop: vi.fn(() => Promise.resolve()),
         invoke: vi.fn(
             async (
@@ -75,12 +86,17 @@ function fakeServer(options: { startFails?: boolean; taken?: string[]; known?: s
                 if (method === 'SendRoundIntent') {
                     return null;
                 }
+                if (pending) {
+                    return 'token' in request
+                        ? { refusal: 'GamePending', playerId: null }
+                        : { refusal: 'GamePending', playerId: null, token: null };
+                }
                 if ('token' in request) {
                     if (!known.has(request.token)) {
                         return { refusal: 'SessionUnknown', playerId: null };
                     }
                     // Like the hub: the current snapshot reaches the phone before the answer.
-                    handlers.get('ReceivePlayerSnapshot')?.(snapshot(version));
+                    handlers.get('ReceivePlayerSnapshot')?.(snapshot(version) as never);
                     return { refusal: null, playerId };
                 }
                 if (options.taken?.includes(request.nickname)) {
@@ -88,11 +104,13 @@ function fakeServer(options: { startFails?: boolean; taken?: string[]; known?: s
                 }
                 known.add(token);
                 version++;
-                handlers.get('ReceivePlayerSnapshot')?.(snapshot(version, request.nickname));
+                handlers.get('ReceivePlayerSnapshot')?.(
+                    snapshot(version, request.nickname) as never,
+                );
                 return { refusal: null, playerId, token };
             },
         ),
-        on: vi.fn((message: string, handler: (snapshot: PlayerSnapshot) => void) => {
+        on: vi.fn((message: string, handler: (payload: never) => void) => {
             handlers.set(message, handler);
             return () => handlers.delete(message);
         }),
@@ -108,7 +126,16 @@ function fakeServer(options: { startFails?: boolean; taken?: string[]; known?: s
     return {
         connection,
         typed,
-        send: (snapshot: PlayerSnapshot) => handlers.get('ReceivePlayerSnapshot')?.(snapshot),
+        send: (snapshot: PlayerSnapshot) =>
+            handlers.get('ReceivePlayerSnapshot')?.(snapshot as never),
+        /** The game master resumed the game found (`keepTokens`) or started a new one. */
+        resolve: (keepTokens: boolean) => {
+            pending = false;
+            if (!keepTokens) {
+                known.clear();
+            }
+            welcome();
+        },
         drop: () => {
             reachable = false;
             callbacks.reconnecting();
@@ -509,6 +536,85 @@ describe('PlayerSession', () => {
 
             await vi.waitFor(() => expect(sent(server)).toHaveLength(2));
             expect(sent(server)[1]).toEqual({ clientSeq: 1, intent: second });
+        });
+    });
+
+    describe('while the restarted server waits for the game master', () => {
+        it('keeps a phone without token off the form until the game master decides', async () => {
+            const { session, server } = await startedSession(fakeServer({ pending: true }));
+
+            expect(session.gamePending).toBe(true);
+            expect(await session.join('Zoé')).toBe('unreachable');
+            expect(server.connection.invoke).not.toHaveBeenCalled();
+
+            server.resolve(false);
+
+            expect(session.gamePending).toBe(false);
+            expect(await session.join('Zoé')).toBe('joined');
+        });
+
+        it('keeps the token and presents it again once the game is resumed', async () => {
+            const server = fakeServer({ pending: true, known: [token] });
+            const { session, tokens } = await startedSession(
+                server,
+                memoryStorage('Zoé'),
+                memoryStorage(token),
+            );
+            await vi.waitFor(() =>
+                expect(server.connection.invoke).toHaveBeenCalledWith('ResumeSession', { token }),
+            );
+
+            expect(session.status).toBe('resuming');
+            expect(tokens.value).toBe(token);
+
+            server.resolve(true);
+
+            await vi.waitFor(() => expect(session.joined).toBe(true));
+        });
+
+        it('registers again, nickname kept, once a new game starts instead', async () => {
+            const server = fakeServer({ pending: true, known: [token] });
+            const { session, tokens } = await startedSession(
+                server,
+                memoryStorage('Zoé'),
+                memoryStorage(token),
+            );
+            await vi.waitFor(() =>
+                expect(server.connection.invoke).toHaveBeenCalledWith('ResumeSession', { token }),
+            );
+
+            server.resolve(false);
+
+            await vi.waitFor(() => expect(session.status).toBe('registering'));
+            expect(tokens.value).toBeNull();
+            expect(session.rememberedNickname).toBe('Zoé');
+        });
+
+        it('presents the token again at once when the decision came before the refusal', async () => {
+            const server = fakeServer({ known: [token] });
+            const { session } = await startedSession(
+                server,
+                memoryStorage('Zoé'),
+                memoryStorage(token),
+            );
+            await vi.waitFor(() => expect(session.joined).toBe(true));
+            server.drop();
+            // The refusal was read while pending, the welcome that ends it overtook it.
+            server.connection.invoke.mockResolvedValueOnce({
+                refusal: 'GamePending',
+                playerId: null,
+            });
+
+            server.restore();
+
+            await vi.waitFor(() =>
+                expect(
+                    server.connection.invoke.mock.calls.filter(
+                        ([method]) => method === 'ResumeSession',
+                    ),
+                ).toHaveLength(3),
+            );
+            expect(session.joined).toBe(true);
         });
     });
 });

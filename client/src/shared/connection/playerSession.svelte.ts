@@ -28,6 +28,9 @@ export type PlayerStatus = 'registering' | 'resuming' | 'joined';
 export class PlayerSession {
     #status = $state<PlayerStatus>('registering');
     #connected = $state(false);
+    #gamePending = $state(false);
+    // The token was refused while the game was pending: presented again once it no longer is.
+    #awaitingGame = false;
 
     readonly #store: SnapshotStore<PlayerSnapshot>;
     readonly #token: CodeStorage;
@@ -64,6 +67,14 @@ export class PlayerSession {
         return this.#status === 'joined';
     }
 
+    /**
+     * Whether the server, restarted, waits for the game master to resume the game or start a new
+     * one: the phone neither registers nor shows the game meanwhile.
+     */
+    get gamePending(): boolean {
+        return this.#gamePending;
+    }
+
     /** Whether the server can be reached: a nickname cannot be submitted until it can. */
     get connected(): boolean {
         return this.#connected;
@@ -92,6 +103,15 @@ export class PlayerSession {
 
     /** Connects to the server and presents the kept token, if any. Returns a function that disconnects. */
     start(): () => void {
+        // Before any answer of the server: it welcomes each connection first.
+        const unsubscribeWelcome = this.#connection.on('ReceiveWelcome', ({ gamePending }) => {
+            this.#gamePending = gamePending;
+            const token = this.#token.load();
+            if (!gamePending && this.#awaitingGame && token !== null) {
+                this.#awaitingGame = false;
+                void this.#resume(token);
+            }
+        });
         const unsubscribe = this.#connection.on('ReceivePlayerSnapshot', (snapshot) => {
             // The game master may rename the player: the form is filled with the current nickname.
             if (this.#store.accept(snapshot)) {
@@ -111,6 +131,7 @@ export class PlayerSession {
             .catch(() => {});
 
         return () => {
+            unsubscribeWelcome();
             unsubscribe();
             this.#intents.close();
             this.#connection.stop().catch(() => {});
@@ -119,7 +140,7 @@ export class PlayerSession {
 
     /** Sends the nickname the player typed. The server alone decides whether it is valid and free. */
     async join(nickname: string): Promise<JoinOutcome> {
-        if (!this.#connected || this.#status !== 'registering') {
+        if (!this.#connected || this.#status !== 'registering' || this.#gamePending) {
             return 'unreachable';
         }
 
@@ -161,6 +182,7 @@ export class PlayerSession {
 
     #onConnected(): void {
         this.#connected = true;
+        this.#awaitingGame = false;
         const token = this.#token.load();
         if (token !== null) {
             void this.#resume(token);
@@ -184,6 +206,14 @@ export class PlayerSession {
             this.#token.clear();
             this.#intents.clear();
             this.#status = 'registering';
+        } else if (refusal === 'GamePending') {
+            // Kept: the game master may resume the game it belongs to. Presented again once they
+            // decide, at once if the welcome that tells it came first.
+            this.#awaitingGame = true;
+            if (!this.#gamePending) {
+                this.#awaitingGame = false;
+                void this.#resume(token);
+            }
         }
         // Any other refusal is transient: the token is presented again at the next connection.
     }

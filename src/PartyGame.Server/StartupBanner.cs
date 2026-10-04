@@ -16,7 +16,7 @@ internal static class StartupBanner
 {
     private const string Rule = "==============================================================";
 
-    public static string Format(AddressSelection selection, int port, GameMasterCode gameMasterCode, PackLibrary packs)
+    public static string Format(AddressSelection selection, int port, GameMasterCode gameMasterCode, PackLibrary packs, bool gamePending = false)
     {
         ArgumentNullException.ThrowIfNull(packs);
 
@@ -63,6 +63,14 @@ internal static class StartupBanner
                 .AppendLine("  Pour en imposer une, relancez avec par exemple :")
                 .AppendLine(CultureInfo.InvariantCulture, $"    --{NetworkExtensions.AdvertisedAddressSetting}={example}")
                 .AppendLine(CultureInfo.InvariantCulture, $"    ou la variable d'environnement {NetworkExtensions.AdvertisedAddressSetting.Replace(":", "__", StringComparison.Ordinal)}={example}");
+        }
+
+        if (gamePending)
+        {
+            banner
+                .AppendLine()
+                .AppendLine("  Partie interrompue trouvée : elle attend votre décision dans la console")
+                .AppendLine("  du game master (reprendre la partie ou en commencer une nouvelle).");
         }
 
         AppendPacks(banner, packs);

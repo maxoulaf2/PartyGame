@@ -8,8 +8,8 @@
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E11-01](US-E11-01-persistance-de-l-etat.md) | Enregistrement de la partie après chaque transition | Terminée | — |
-| [US-E11-02](US-E11-02-proposition-de-reprise.md) | Proposition de reprise au GM | À faire | US-E11-01, US-E10-01 |
-| [US-E11-03](US-E11-03-reprise-transparente.md) | Reprise transparente pour les joueurs et la TV | À faire | US-E11-02 |
+| [US-E11-02](US-E11-02-proposition-de-reprise.md) | Proposition de reprise au GM | Terminée | US-E11-01, US-E10-01 |
+| [US-E11-03](US-E11-03-reprise-transparente.md) | Reprise transparente pour les joueurs et la TV | Prête | US-E11-02 |
 
 ## Décisions
 

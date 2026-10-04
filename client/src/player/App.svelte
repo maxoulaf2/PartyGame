@@ -103,6 +103,9 @@
     {:else if session.status !== 'registering'}
         <!-- A phone that joined before waits for the server to recognize it, never on the form. -->
         <WaitingScreen title={fr.app.name} message={fr.player.resuming} />
+    {:else if session.gamePending}
+        <!-- Nobody registers while the game master may yet resume the game. -->
+        <WaitingScreen title={fr.app.name} message={fr.player.gamePending} />
     {:else}
         <JoinForm {session} interactive={status.interactive} />
     {/if}

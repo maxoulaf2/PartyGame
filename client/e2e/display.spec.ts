@@ -929,3 +929,14 @@ test('/display/ fits 20 long nicknames under a single choice on a 1080p screen, 
     });
     expect(overflows).toBe(false);
 });
+
+test('/display/ waits for the game master once the server restarted with a game to resume', async ({
+    page,
+}) => {
+    await serveDisplaySnapshot(page, fakeSnapshot([], advertisedAddress, 'ResumePending'));
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fr.display.resumePending)).toBeVisible();
+    await expect(page.getByText(fr.display.scanToJoin)).toHaveCount(0);
+});

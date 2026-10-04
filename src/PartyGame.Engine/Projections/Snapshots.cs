@@ -55,7 +55,8 @@ public sealed class Snapshots(GameModes modes)
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State, state) : null,
             RankingOf(state),
             NextRoundTitleOf(state),
-            state.CurrentRound?.IsSkipped ?? false);
+            state.CurrentRound?.IsSkipped ?? false,
+            SavedGameOf(state));
     }
 
     /// <summary>
@@ -86,14 +87,35 @@ public sealed class Snapshots(GameModes modes)
         GamePhase.Round => Phase.Round,
         GamePhase.BetweenRounds => Phase.BetweenRounds,
         GamePhase.Finished => Phase.Finished,
+        GamePhase.ResumePending => Phase.ResumePending,
         _ => throw new InvalidOperationException($"Phase {state.Phase} has no projection."),
     };
 
     /// <summary>
-    /// The title of the pack the game plays, or of the pack chosen in the lobby.
+    /// The title of the pack the game plays, or of the pack chosen in the lobby. None while a saved game waits for the game
+    /// master, who may yet resume it with another pack.
     /// </summary>
     private static string? PackTitleOf(GameState state) =>
-        state.Pack?.Title ?? (state.SelectedPackId is { } id ? state.Catalog.Find(id)?.Title : null);
+        state.Phase == GamePhase.ResumePending
+            ? null
+            : state.Pack?.Title ?? (state.SelectedPackId is { } id ? state.Catalog.Find(id)?.Title : null);
+
+    /// <summary>
+    /// What the game master needs to decide about the game found saved: where it stopped and with how many players, never
+    /// its questions nor who the players are.
+    /// </summary>
+    private GameMasterSavedGame? SavedGameOf(GameState state) =>
+        state is { Phase: GamePhase.ResumePending, PendingGame: { } pending }
+            ? new GameMasterSavedGame(
+                pending.Game.GameId,
+                pending.SavedAt.ToUnixTimeMilliseconds(),
+                PhaseOf(pending.Game),
+                PackTitleOf(pending.Game),
+                RoundInfoOf(pending.Game),
+                RoundInProgress(pending.Game) is var (mode, round) ? mode.StepOf(round.State) : null,
+                pending.Game.Players.Length,
+                [.. pending.MissingMedia.Select(media => media.Value)])
+            : null;
 
     /// <summary>
     /// What the game master needs to choose a pack: the rounds of each one, never its questions nor its answers, and why

@@ -1,5 +1,6 @@
 import type {
     ChooseAdvertisedAddressRefusal,
+    GameId,
     GameMasterRoundIntent,
     GameMasterSnapshot,
     PlayerId,
@@ -66,7 +67,12 @@ type GameMasterMethod =
     'RenamePlayer' | 'StartGame' | 'ChooseAdvertisedAddress' | 'SelectPack' | 'ReloadPacks';
 
 /** The hub methods the game master alone may call, which answer nothing. */
-type GameMasterIntentMethod = 'NextRound' | 'SkipRound' | 'SendGameMasterRoundIntent';
+type GameMasterIntentMethod =
+    | 'ResolveSavedGame'
+    | 'CheckSavedGameMedia'
+    | 'NextRound'
+    | 'SkipRound'
+    | 'SendGameMasterRoundIntent';
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -213,6 +219,23 @@ export class GameMasterSession {
     async reloadPacks(): Promise<ReloadPacksOutcome> {
         const result = await this.#request('ReloadPacks');
         return result === null ? 'unreachable' : (result.refusal ?? 'reloaded');
+    }
+
+    /**
+     * Resumes `savedGameId`, the game the restarted server found saved, or starts a new game in its
+     * place. Naming it makes the request safe to repeat: a second one, from a double tap or another
+     * console, is ignored by the server. The game reaches every page through the next snapshots.
+     */
+    resolveSavedGame(savedGameId: GameId, resume: boolean): Promise<IntentOutcome> {
+        return this.#send('ResolveSavedGame', { savedGameId, resume });
+    }
+
+    /**
+     * Has the server check again the media files of the game it found saved, once the game master
+     * put them back. The result reaches every console through the next snapshot.
+     */
+    checkSavedGameMedia(): Promise<IntentOutcome> {
+        return this.#send('CheckSavedGameMedia');
     }
 
     /**

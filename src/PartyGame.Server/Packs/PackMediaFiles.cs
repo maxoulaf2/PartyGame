@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using Microsoft.AspNetCore.StaticFiles;
+using PartyGame.Contracts.Packs;
 using PartyGame.Engine;
 using PartyGame.Server.Games;
 
@@ -45,6 +47,16 @@ internal sealed class PackMediaFiles(GameLoop game, ILogger<PackMediaFiles> logg
         var contentType = _contentTypes.TryGetContentType(file, out var type) ? type : DefaultContentType;
         return Results.File(file, contentType, lastModified: File.GetLastWriteTimeUtc(file), enableRangeProcessing: true);
     }
+
+    /// <summary>
+    /// The media files of the pack of a game missing from the disk, as the server would fail to serve them, in the ordinal
+    /// order of their path: a game is resumed only once none is.
+    /// </summary>
+    internal static ImmutableArray<MediaPath> Missing(GameState state) =>
+        [.. state.Media.Files
+            .Where(media => Find(state, media.Key) is not { } file || !File.Exists(file))
+            .Select(media => media.Value)
+            .OrderBy(media => media.Value, StringComparer.Ordinal)];
 
     /// <summary>
     /// The full path of the media file an identifier designates in the pack of the game.

@@ -9,6 +9,7 @@
     import IncidentPanel from './IncidentPanel.svelte';
     import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
+    import ResumeOffer from './ResumeOffer.svelte';
     import RoundControl from './RoundControl.svelte';
     import SkipRoundBanner from './SkipRoundBanner.svelte';
     import StartControl from './StartControl.svelte';
@@ -35,6 +36,17 @@
         <h1>{fr.gm.consoleTitle}</h1>
         <IncidentPanel inbox={session.incidents} />
     </header>
+    {#if snapshot.savedGame}
+        <!-- Keyed: a confirmation open for one game found never discards another. -->
+        {#key snapshot.savedGame.gameId}
+            <ResumeOffer savedGame={snapshot.savedGame} {session} {interactive} />
+        {/key}
+    {:else}
+        {@render console()}
+    {/if}
+</main>
+
+{#snippet console()}
     <p class="counts">
         {countText(fr.gm.playersJoined, snapshot.players.length)}{#if snapshot.players.length > 0}
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
@@ -101,7 +113,7 @@
             {/each}
         </ul>
     {/if}
-</main>
+{/snippet}
 
 <style>
     main {

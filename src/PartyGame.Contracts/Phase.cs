@@ -16,4 +16,10 @@ public enum Phase
 
     /// <summary>The last round of the pack is over.</summary>
     Finished,
+
+    /// <summary>
+    /// The server restarted and found a saved game: it waits for the game master to resume it or start a new one. Nobody
+    /// can join meanwhile.
+    /// </summary>
+    ResumePending,
 }
