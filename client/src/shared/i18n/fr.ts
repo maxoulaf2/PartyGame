@@ -84,6 +84,8 @@ export const fr = {
         disconnected: 'déconnecté',
         // Shown during the game when the TV screen has nothing more precise to show.
         inProgress: 'Partie en cours',
+        // Shown instead of what the TV screen could not render, until the next update.
+        continuing: 'La partie continue…',
         // Shown next to the QR code between two rounds, for late arrivals.
         lateArrivals: 'Pas encore inscrit ? Scannez pour rejoindre',
     },
@@ -229,6 +231,11 @@ export const fr = {
         },
         // Shown during the game when the console has nothing more precise to show.
         inProgress: 'Partie en cours',
+        // Shown instead of the view of the round the console could not render: the rest of the
+        // console still works, and the view comes back with the next update.
+        roundViewUnavailable: 'Affichage de la manche indisponible',
+        // Shown instead of the whole console when it could not render, until the next update.
+        consoleUnavailable: 'Console momentanément indisponible : elle revient d’elle-même.',
         nextRound: {
             // The round the game master starts next, with its title from the pack.
             upcoming: 'Manche suivante ({number}/{count}) : {title}',
@@ -262,15 +269,17 @@ export const fr = {
                 other: '{count} incidents',
             },
             title: 'Incidents du serveur',
-            hint: 'Le serveur s’en est remis seul : la partie continue, et ni les joueurs ni l’écran TV n’ont rien vu.',
+            hint: 'La partie continue : aucun message d’erreur n’est apparu sur les téléphones ni sur l’écran TV.',
             listLabel: 'Incidents, du plus récent au plus ancien',
             markAllRead: 'Tout marquer comme lu',
             close: 'Fermer',
             // When it happened, written by formatTime; then, for a repeated one, how many times.
             at: 'À {time}',
             repeated: '{count} fois, la dernière à {time}',
-            // The round in progress when it happened.
+            // The round in progress when it happened, and the step of the round concerned, if any:
+            // a question of a quiz.
             round: 'Manche {number}/{count} : {title}',
+            roundStep: 'Manche {number}/{count} : {title}, question {step}',
             outsideRound: 'Hors manche',
             // One message per IncidentCode, {role} taken from `roles`.
             codes: {
@@ -278,6 +287,10 @@ export const fr = {
                 ProjectionFailed:
                     'L’affichage {role} n’a pas pu être mis à jour : il garde l’état précédent.',
                 EffectFailed: 'Une opération a échoué après une action : la partie continue.',
+                DisplayViewFailed:
+                    'L’écran TV n’a pas pu afficher la manche : il montre un écran d’attente jusqu’à la prochaine mise à jour.',
+                DisplayMediaFailed:
+                    'L’écran TV n’a pas pu charger une image : la question s’affiche sans elle.',
             },
             roles: {
                 Player: 'des téléphones',

@@ -16,12 +16,19 @@ internal sealed class IncidentReporter(
     ILogger<IncidentReporter> logger)
     : IIncidentReporter
 {
-    public async ValueTask ReportAsync(IncidentCode code, GameState state, Role? role, CancellationToken cancellationToken)
+    public ValueTask ReportAsync(IncidentCode code, GameState state, Role? role, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(state);
 
         // Between two rounds, the last round played is over: what fails then is not part of it.
-        var incidents = journal.Record(code, state.Phase == GamePhase.Round ? Snapshots.RoundInfoOf(state) : null, role);
+        return SendAsync(code, journal.Record(code, state.Phase == GamePhase.Round ? Snapshots.RoundInfoOf(state) : null, role), cancellationToken);
+    }
+
+    public ValueTask ReportClientIncidentAsync(IncidentCode code, RoundInfo? round, int? step, CancellationToken cancellationToken) =>
+        SendAsync(code, journal.Record(code, round, role: null, step), cancellationToken);
+
+    private async ValueTask SendAsync(IncidentCode code, IncidentList incidents, CancellationToken cancellationToken)
+    {
         try
         {
             await hub.Clients.Group(HubGroups.GameMaster).ReceiveIncidents(incidents).ConfigureAwait(false);

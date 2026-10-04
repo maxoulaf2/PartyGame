@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import ConnectionIndicator from '../shared/components/ConnectionIndicator.svelte';
+    import ViewBoundary from '../shared/components/ViewBoundary.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
     import type { PlayerRoundIntent, PlayerSnapshot } from '../shared/contracts';
     import {
@@ -62,39 +63,49 @@
     });
 </script>
 
-{#if session.joined && game.current && screen}
-    {#if screen.kind === 'lobby'}
-        <LobbyScreen snapshot={game.current} />
-    {:else if screen.kind === 'round'}
-        {@const ModeView = screen.component}
-        <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
-        {#key screen.round.roundId}
-            <ModeView
-                view={screen.view}
+<!-- What fails to render gives way to the waiting screen, with nothing to tap, until the next
+     snapshot: the view of a round as the rest of the page. -->
+{#snippet inProgress()}
+    <WaitingScreen title={fr.app.name} message={fr.player.inProgress} />
+{/snippet}
+
+<ViewBoundary shown={game.current} fallback={inProgress}>
+    {#if session.joined && game.current && screen}
+        {#if screen.kind === 'lobby'}
+            <LobbyScreen snapshot={game.current} />
+        {:else if screen.kind === 'round'}
+            {@const ModeView = screen.component}
+            <ViewBoundary shown={game.current} fallback={inProgress}>
+                <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
+                {#key screen.round.roundId}
+                    <ModeView
+                        view={screen.view}
+                        round={screen.round}
+                        score={game.current.score}
+                        {clock}
+                        interactive={status.interactive}
+                        {send}
+                        {pending}
+                    />
+                {/key}
+            </ViewBoundary>
+        {:else if screen.kind === 'betweenRounds' && game.current.standing}
+            <RankingScreen
                 round={screen.round}
+                standing={game.current.standing}
                 score={game.current.score}
-                {clock}
-                interactive={status.interactive}
-                {send}
-                {pending}
             />
-        {/key}
-    {:else if screen.kind === 'betweenRounds' && game.current.standing}
-        <RankingScreen
-            round={screen.round}
-            standing={game.current.standing}
-            score={game.current.score}
-        />
-    {:else if screen.kind === 'finished'}
-        <FinalScreen standing={game.current.standing} score={game.current.score} />
+        {:else if screen.kind === 'finished'}
+            <FinalScreen standing={game.current.standing} score={game.current.score} />
+        {:else}
+            {@render inProgress()}
+        {/if}
+    {:else if session.status !== 'registering'}
+        <!-- A phone that joined before waits for the server to recognize it, never on the form. -->
+        <WaitingScreen title={fr.app.name} message={fr.player.resuming} />
     {:else}
-        <WaitingScreen title={fr.app.name} message={fr.player.inProgress} />
+        <JoinForm {session} interactive={status.interactive} />
     {/if}
-{:else if session.status !== 'registering'}
-    <!-- A phone that joined before waits for the server to recognize it, never on the form. -->
-    <WaitingScreen title={fr.app.name} message={fr.player.resuming} />
-{:else}
-    <JoinForm {session} interactive={status.interactive} />
-{/if}
+</ViewBoundary>
 
 <ConnectionIndicator {status} />

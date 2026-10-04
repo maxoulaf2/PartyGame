@@ -84,4 +84,16 @@ internal static partial class HubLog
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Round intent from connection {ConnectionId} ignored: it identified no player")]
     public static partial void RoundIntentWithoutPlayer(this ILogger logger, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{HubMethod} from connection {ConnectionId} ignored: it did not announce itself as the TV screen")]
+    public static partial void DisplayReportFromOtherRole(this ILogger logger, string hubMethod, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "TV screen could not load media {MediaPath} ({MediaId}), round {RoundNumber}, step {Step}")]
+    public static partial void DisplayMediaFailed(this ILogger logger, string mediaPath, string mediaId, int? roundNumber, int? step);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Media failure from connection {ConnectionId} ignored: the game has no media {MediaId}")]
+    public static partial void DisplayMediaUnknown(this ILogger logger, string connectionId, string mediaId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Media {MediaId} could not be located in the round in progress")]
+    public static partial void MediaNotLocated(this ILogger logger, Exception exception, string mediaId);
 }

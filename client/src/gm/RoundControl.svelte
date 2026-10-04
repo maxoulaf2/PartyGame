@@ -2,6 +2,7 @@
     import type { GameMasterRoundIntent, GameMasterSnapshot, RoundId } from '../shared/contracts';
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
+    import ViewBoundary from '../shared/components/ViewBoundary.svelte';
     import { selectGameScreen } from '../shared/gameScreen';
     import { fill, roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
@@ -41,10 +42,18 @@
         {@const ModeView = screen.component}
         <p class="progress">{roundText(fr.game.round, screen.round)}</p>
         <h2>{screen.round.title}</h2>
-        <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
-        {#key screen.round.roundId}
-            <ModeView view={screen.view} round={screen.round} {clock} {interactive} {send} />
-        {/key}
+        <!-- The rest of the console keeps working while the view fails: the players, the incidents,
+             and skipping the round if it is offered. -->
+        <ViewBoundary shown={snapshot}>
+            <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
+            {#key screen.round.roundId}
+                <ModeView view={screen.view} round={screen.round} {clock} {interactive} {send} />
+            {/key}
+
+            {#snippet fallback()}
+                <p class="unavailable" role="status">{fr.gm.roundViewUnavailable}</p>
+            {/snippet}
+        </ViewBoundary>
     {:else if screen.kind === 'betweenRounds'}
         {@const round = screen.round}
         <p class="progress">{roundText(fr.game.roundEnded, round)}</p>
@@ -121,6 +130,12 @@
 
     .skipped {
         color: var(--color-text-muted);
+    }
+
+    .unavailable {
+        padding: var(--space-m) 0;
+        color: var(--color-text-muted);
+        font-weight: 700;
     }
 
     .upcoming {

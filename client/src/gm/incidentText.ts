@@ -16,12 +16,18 @@ export function describeIncident(incident: Incident): string {
     });
 }
 
-/** The round in progress when the incident happened, if any. */
+/** The round in progress when the incident happened, if any, and its step concerned, if any. */
 export function incidentRoundText(incident: Incident): string {
-    const round = incident.round;
-    return round === null
-        ? fr.gm.incidents.outsideRound
-        : fill(roundText(fr.gm.incidents.round, round), { title: round.title });
+    const { round, step } = incident;
+    if (round === null) {
+        return fr.gm.incidents.outsideRound;
+    }
+    return step === null
+        ? fill(roundText(fr.gm.incidents.round, round), { title: round.title })
+        : fill(roundText(fr.gm.incidents.roundStep, round), {
+              title: round.title,
+              step: formatNumber(step),
+          });
 }
 
 /** When the incident last happened, and how many times when it repeated. */

@@ -29,6 +29,8 @@ internal sealed class GameHub(
     PlayerConnections playerConnections,
     PackReloader packReloader,
     IncidentJournal incidents,
+    IIncidentReporter incidentReporter,
+    MediaLocator mediaLocator,
     FrontEndBuild frontEndBuild,
     TimeProvider timeProvider,
     ILogger<GameHub> logger) : Hub<IGameClient>
@@ -75,8 +77,11 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="LogStaleBuild"/>, as the clients call it.</summary>
     public const string ReportStaleBuild = nameof(ReportStaleBuild);
 
-    /// <summary>SignalR target of <see cref="LogClientError"/>, as the clients call it.</summary>
+    /// <summary>SignalR target of <see cref="LogClientErrorAsync"/>, as the clients call it.</summary>
     public const string ReportClientError = nameof(ReportClientError);
+
+    /// <summary>SignalR target of <see cref="ReportDisplayMediaFailureAsync"/>, as the clients call it.</summary>
+    public const string ReportDisplayMediaFailure = nameof(ReportDisplayMediaFailure);
 
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
@@ -86,6 +91,12 @@ internal sealed class GameHub(
     /// only flood the logs.
     /// </summary>
     private const int MaxBuildIdLength = 64;
+
+    /// <summary>
+    /// Longest media identifier the TV screen may report: those the server draws are far shorter, and a longer one would
+    /// only flood the logs.
+    /// </summary>
+    private const int MaxMediaIdLength = 64;
 
     private static readonly AnnouncementResult _accepted = new(Refusal: null);
 
@@ -534,7 +545,7 @@ internal sealed class GameHub(
     /// Logs for the operator that a page still runs another build than the one served, although it reloaded to get it: a
     /// stubborn cache or a proxy. The page goes on with its build. Any connection may report it, identified or not.
     /// </summary>
-    /// <remarks>Kept apart from <see cref="LogClientError"/>: an outdated build is no error of the page.</remarks>
+    /// <remarks>Kept apart from <see cref="LogClientErrorAsync"/>: an outdated build is no error of the page.</remarks>
     /// <param name="message">A <see cref="StaleBuildReport"/>.</param>
     [HubMethodName(ReportStaleBuild)]
     public void LogStaleBuild(JsonElement message)
@@ -557,11 +568,13 @@ internal sealed class GameHub(
     /// <summary>
     /// Logs for the operator a JavaScript error a page met without showing anything: the players, the TV screen and the
     /// game master never see it. Any connection may report one, identified or not, since an error may come before the
-    /// announcement. Long fields are cut, and a connection that reports too much is ignored for a while.
+    /// announcement. Long fields are cut, and a connection that reports too much is ignored for a while. A view the TV
+    /// screen could not render is also an incident for the game master, who may skip the round the public no longer sees;
+    /// what fails on a phone or on the console stays in the logs, since the game master can do nothing about it.
     /// </summary>
     /// <param name="message">A <see cref="ClientErrorReport"/>.</param>
     [HubMethodName(ReportClientError)]
-    public void LogClientError(JsonElement message)
+    public async Task LogClientErrorAsync(JsonElement message)
     {
         // Counted before reading, so that a flood of malformed reports is bounded as well.
         switch (ClientErrorAllowance.Of(Context).Admit(timeProvider.GetUtcNow()))
@@ -590,6 +603,81 @@ internal sealed class GameHub(
             report.SnapshotVersion,
             ClientErrorFields.Truncate(report.BuildId, ClientErrorFields.MaxBuildIdLength),
             ClientErrorFields.Truncate(report.Stack, ClientErrorFields.MaxStackLength));
+
+        // The role the connection announced, never the one the report claims: any page may claim to be the TV screen.
+        if (report.Kind == ClientErrorKind.RenderFailed && Context.GetRole() == Role.Display)
+        {
+            // Not cancelled with the connection: the game master hears of it whoever is left on the TV screen.
+            await incidentReporter
+                .ReportClientIncidentAsync(IncidentCode.DisplayViewFailed, RoundInProgress(game.State), step: null, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Tells the game master that the TV screen could not load a media file of the pack, with the round and the step of the
+    /// round that show it: the TV screen knows the identifier of the file only. The TV screen alone may report it, and its
+    /// reports count with its error reports, so that a connection that reports too much is ignored for a while.
+    /// </summary>
+    /// <param name="message">A <see cref="DisplayMediaFailureReport"/>.</param>
+    [HubMethodName(ReportDisplayMediaFailure)]
+    public async Task ReportDisplayMediaFailureAsync(JsonElement message)
+    {
+        switch (ClientErrorAllowance.Of(Context).Admit(timeProvider.GetUtcNow()))
+        {
+            case ClientErrorAdmission.Dropped:
+                return;
+            case ClientErrorAdmission.FirstDropped:
+                logger.ClientErrorsDropped(Context.ConnectionId, ClientErrorAllowance.ReportsPerWindow);
+                return;
+        }
+
+        if (!HubMessage.TryRead<DisplayMediaFailureReport>(message, out var report, out var invalidPath))
+        {
+            logger.MessageMalformed(ReportDisplayMediaFailure, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (report.MediaId.Length > MaxMediaIdLength)
+        {
+            logger.MessageMalformed(ReportDisplayMediaFailure, Context.ConnectionId, "$.mediaId");
+            return;
+        }
+
+        if (Context.GetRole() != Role.Display)
+        {
+            // Only the TV screen shows the media files: a failure reported by another page tells nothing of the room.
+            logger.DisplayReportFromOtherRole(ReportDisplayMediaFailure, Context.ConnectionId);
+            return;
+        }
+
+        var state = game.State;
+        var id = new MediaId(report.MediaId);
+        MediaLocation? location;
+        try
+        {
+            location = mediaLocator.Locate(state, id);
+        }
+        catch (Exception ex)
+        {
+            // A bug of the game mode: the game master still hears of the file, without its step.
+            logger.MediaNotLocated(ex, report.MediaId);
+            location = state.Media.Find(id) is { } media ? new MediaLocation(media, RoundInProgress(state), Step: null) : null;
+        }
+
+        if (location is null)
+        {
+            // An identifier of another game, such as one a TV screen kept from before a restart of the server.
+            logger.DisplayMediaUnknown(Context.ConnectionId, report.MediaId);
+            return;
+        }
+
+        logger.DisplayMediaFailed(location.Media.Value, report.MediaId, location.Round?.Number, location.Step);
+
+        // Not cancelled with the connection: the game master hears of it whoever is left on the TV screen.
+        await incidentReporter
+            .ReportClientIncidentAsync(IncidentCode.DisplayMediaFailed, location.Round, location.Step, CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -607,6 +695,12 @@ internal sealed class GameHub(
     }
 
     private static JoinResult Refused(JoinRefusal refusal) => new(refusal, PlayerId: null, Token: null);
+
+    /// <summary>
+    /// The round in progress, or <see langword="null"/> outside a round: between two rounds, the last round played is over.
+    /// </summary>
+    private static RoundInfo? RoundInProgress(GameState state) =>
+        state.Phase == GamePhase.Round ? Snapshots.RoundInfoOf(state) : null;
 
     private async Task ReportConnectionLostAsync(PlayerId playerId)
     {

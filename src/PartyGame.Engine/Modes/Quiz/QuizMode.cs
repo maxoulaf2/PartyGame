@@ -174,6 +174,31 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
+    /// The number of the question the image illustrates: the question in progress when it does, since the TV screen shows
+    /// only its image, or else the first one of the round.
+    /// </summary>
+    /// <inheritdoc />
+    public override int? LocateMedia(QuizRound round, MediaPath media)
+    {
+        ArgumentNullException.ThrowIfNull(round);
+        if (round.Question.Image == media)
+        {
+            return round.QuestionNumber;
+        }
+
+        var questions = round.Descriptor.Questions;
+        for (var index = 0; index < questions.Length; index++)
+        {
+            if (questions[index].Image == media)
+            {
+                return index + 1;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Presents a question of the round, its choices in the order of the descriptor, or shuffled when the round asks for
     /// it. The shuffle draws from the generator of the context, so that it is reproducible.
     /// </summary>

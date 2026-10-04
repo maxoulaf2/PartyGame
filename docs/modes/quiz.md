@@ -18,7 +18,7 @@ Le game master lit chaque question puis ses propositions à voix haute, en les a
 - **Révélation.** L'écran TV met en évidence la bonne proposition, et montre sous chaque proposition le nombre de joueurs qui l'ont choisie et leurs pseudos, puis les joueurs sans réponse. Chaque téléphone indique à son joueur s'il a eu juste.
 - **Joueurs arrivés en cours de partie.** Un joueur inscrit pendant une manche participe à toute question dont les réponses s'ouvrent après son inscription, c'est-à-dire dont la première proposition s'affiche après, et commence à 0 point. La règle définitive sera tranchée en phase 6.
 - **Propositions.** Chaque question a de 2 à 4 propositions, dont exactement une bonne. Chacune est distinguée par une lettre (A à D), une forme (A triangle, B losange, C cercle, D carré) et une couleur, jamais par la couleur seule. L'ordre est celui du descripteur, sauf si la manche demande un mélange (`shuffleChoices`) : l'ordre mélangé, tiré à la présentation de chaque question, est alors le même sur tous les écrans.
-- **Images.** Une question peut avoir une image, affichée sur l'écran TV seulement. Les téléphones n'affichent aucun média.
+- **Images.** Une question peut avoir une image, affichée sur l'écran TV seulement. Les téléphones n'affichent aucun média. Si la TV ne peut pas charger l'image, elle affiche la question sans elle, et la console GM signale l'incident avec la manche et le numéro de la question.
 - **Téléphone en pavé de réponse.** Le téléphone n'affiche ni la question ni le texte des propositions : seulement un bouton par proposition, avec sa lettre, sa forme et sa couleur. Les joueurs lisent tout sur l'écran TV, et gardent la tête levée.
 
 ## Phases d'une question

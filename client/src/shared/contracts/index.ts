@@ -12,6 +12,7 @@ export type * from './ChooseAdvertisedAddressResult';
 export type * from './ClientErrorKind';
 export type * from './ClientErrorReport';
 export type * from './ClockSyncResult';
+export type * from './DisplayMediaFailureReport';
 export type * from './DisplayPlayer';
 export type * from './DisplayRoundView';
 export type * from './DisplaySnapshot';

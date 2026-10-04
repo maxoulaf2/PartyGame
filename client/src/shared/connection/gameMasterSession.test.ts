@@ -382,6 +382,7 @@ describe('GameMasterSession', () => {
             code: 'RoundHandlerFailed',
             round: null,
             role: null,
+            step: null,
             count: 1,
             lastOccurredAt: 1_790_000_000_000,
         } as const;

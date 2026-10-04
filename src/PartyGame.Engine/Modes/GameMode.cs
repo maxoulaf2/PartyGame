@@ -36,6 +36,12 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     /// <inheritdoc cref="IGameMode.ProjectForGameMaster" />
     public abstract GameMasterRoundView ProjectForGameMaster(TState round, GameState game);
 
+    /// <summary>
+    /// Tells no step unless overridden: the incident then names the round alone.
+    /// </summary>
+    /// <inheritdoc cref="IGameMode.LocateMedia" />
+    public virtual int? LocateMedia(TState round, MediaPath media) => null;
+
     ImmutableArray<PackProblem> IGameMode.Validate(RoundDescriptor descriptor, string path) =>
         Validate((TDescriptor)descriptor, path);
 
@@ -52,4 +58,6 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
 
     GameMasterRoundView IGameMode.ProjectForGameMaster(RoundState round, GameState game) =>
         ProjectForGameMaster((TState)round, game);
+
+    int? IGameMode.LocateMedia(RoundState round, MediaPath media) => LocateMedia((TState)round, media);
 }

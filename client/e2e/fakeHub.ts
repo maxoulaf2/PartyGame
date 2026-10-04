@@ -164,6 +164,92 @@ async function serveSnapshot(
     });
 }
 
+/** An invocation the page made of the hub. */
+export interface Invocation {
+    readonly target: string;
+    readonly args: readonly unknown[];
+}
+
+/** What a page did with a scripted hub, and how to send it more. */
+export interface ScriptedHub {
+    /** Every invocation the page made, in order. */
+    readonly invocations: Invocation[];
+    /** Sends `snapshot` to the page, as the server broadcasts a change. */
+    push(snapshot: object): void;
+}
+
+/** The invocations a page makes to tell the server what went wrong: answered at once. */
+const reports = new Set(['ReportClientError', 'ReportDisplayMediaFailure']);
+
+/**
+ * Stands in for the game hub of any page, which receives `snapshot` as `target` once it announces
+ * itself or resumes the session of its player, both accepted whatever their message, then every
+ * snapshot `push` sends: lets a test send what the shared server never would, such as a snapshot a
+ * view cannot render. The reports of the page are recorded with every other invocation.
+ */
+export async function serveScriptedHub(
+    page: Page,
+    target: 'ReceiveDisplaySnapshot' | 'ReceiveGameMasterSnapshot' | 'ReceivePlayerSnapshot',
+    snapshot: object,
+    announced: ServerMessage[] = [],
+): Promise<ScriptedHub> {
+    const invocations: Invocation[] = [];
+    let connected: { send(message: string): void } | null = null;
+    await page.route(negotiateUrl, (route) =>
+        route.fulfill({
+            json: {
+                negotiateVersion: 1,
+                connectionId: 'fake',
+                connectionToken: 'fake',
+                availableTransports: [
+                    { transport: 'WebSockets', transferFormats: ['Text', 'Binary'] },
+                ],
+            },
+        }),
+    );
+    await page.routeWebSocket(hubUrl, (socket) => {
+        connected = socket;
+        socket.onMessage((data) => {
+            for (const frame of String(data).split(separator)) {
+                if (frame === '') {
+                    continue;
+                }
+                const message = JSON.parse(frame) as ClientMessage;
+                if (message.type === undefined) {
+                    send(socket, {}); // handshake accepted
+                    continue;
+                }
+                if (message.type !== 1 || message.target === undefined) {
+                    continue;
+                }
+                invocations.push({ target: message.target, args: message.arguments ?? [] });
+                if (message.target === 'Announce' || message.target === 'ResumeSession') {
+                    send(socket, { type: 1, target, arguments: [snapshot] });
+                    for (const extra of announced) {
+                        send(socket, { type: 1, ...extra });
+                    }
+                    const { playerId = null } = snapshot as { playerId?: string };
+                    send(socket, {
+                        type: 3,
+                        invocationId: message.invocationId,
+                        result: { refusal: null, playerId },
+                    });
+                } else if (reports.has(message.target)) {
+                    send(socket, { type: 3, invocationId: message.invocationId, result: null });
+                }
+            }
+        });
+    });
+    return {
+        invocations,
+        push: (next) => {
+            if (connected !== null) {
+                send(connected, { type: 1, target, arguments: [next] });
+            }
+        },
+    };
+}
+
 /** Makes the game hub unreachable for the page, as when the server is down. */
 export async function blockHub(page: Page): Promise<void> {
     await page.route(negotiateUrl, (route) => route.fulfill({ status: 502 }));

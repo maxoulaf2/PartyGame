@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import ConnectionIndicator from '../shared/components/ConnectionIndicator.svelte';
+    import ViewBoundary from '../shared/components/ViewBoundary.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
     import type { GameMasterSnapshot } from '../shared/contracts';
     import { gameMasterCodeKey, localCodeStorage } from '../shared/connection/codeStorage';
@@ -38,12 +39,20 @@
     });
 </script>
 
-{#if session.access === 'granted' && game.current}
-    <GameConsole snapshot={game.current} {session} {clock} interactive={status.interactive} />
-{:else if session.access === 'codeRequired'}
-    <CodeForm {session} interactive={status.interactive} />
-{:else}
-    <WaitingScreen title={fr.app.name} message={fr.gm.waiting} />
-{/if}
+<!-- What fails to render outside the view of a round, which has its own protection, gives way to
+     the waiting screen until the next snapshot. -->
+{#snippet unavailable()}
+    <WaitingScreen title={fr.app.name} message={fr.gm.consoleUnavailable} />
+{/snippet}
+
+<ViewBoundary shown={game.current} fallback={unavailable}>
+    {#if session.access === 'granted' && game.current}
+        <GameConsole snapshot={game.current} {session} {clock} interactive={status.interactive} />
+    {:else if session.access === 'codeRequired'}
+        <CodeForm {session} interactive={status.interactive} />
+    {:else}
+        <WaitingScreen title={fr.app.name} message={fr.gm.waiting} />
+    {/if}
+</ViewBoundary>
 
 <ConnectionIndicator {status} />

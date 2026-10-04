@@ -21,6 +21,7 @@ internal static class GameLoopExtensions
         builder.Services.AddGameModes();
         builder.Services.TryAddSingleton<IGameEngine, GameEngine>();
         builder.Services.TryAddSingleton<Snapshots>();
+        builder.Services.TryAddSingleton<MediaLocator>();
         builder.Services.AddSingleton<IGameStateListener, RoundProgressLog>();
         builder.Services.TryAddSingleton<GameInputQueue>();
         builder.Services.TryAddSingleton<IGameInputWriter>(services => services.GetRequiredService<GameInputQueue>());

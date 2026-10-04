@@ -10,6 +10,7 @@ function incident(overrides: Partial<Incident> = {}): Incident {
         code: 'RoundHandlerFailed',
         round: null,
         role: null,
+        step: null,
         count: 1,
         lastOccurredAt,
         ...overrides,
@@ -23,6 +24,9 @@ describe('describeIncident', () => {
         );
         expect(describeIncident(incident({ code: 'EffectFailed' }))).toBe(
             'Une opération a échoué après une action : la partie continue.',
+        );
+        expect(describeIncident(incident({ code: 'DisplayMediaFailed', step: 2 }))).toBe(
+            'L’écran TV n’a pas pu charger une image : la question s’affiche sans elle.',
         );
     });
 
@@ -47,6 +51,19 @@ describe('incidentRoundText', () => {
 
         expect(incidentRoundText(incident({ round }))).toBe('Manche 2/3 : Cinéma');
         expect(incidentRoundText(incident())).toBe('Hors manche');
+    });
+
+    it('names the question of the round concerned, when the server tells it', () => {
+        const round = {
+            roundId: '0f8fad5b-d9cb-469f-a165-70867728950e' as RoundId,
+            number: 1,
+            count: 2,
+            title: 'Drapeaux',
+        };
+
+        expect(incidentRoundText(incident({ code: 'DisplayMediaFailed', round, step: 4 }))).toBe(
+            'Manche 1/2 : Drapeaux, question 4',
+        );
     });
 });
 

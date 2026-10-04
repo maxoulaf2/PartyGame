@@ -642,6 +642,7 @@ function failures(count: number): IncidentList {
                 code: 'RoundHandlerFailed',
                 round: firstRound,
                 role: null,
+                step: null,
                 count,
                 lastOccurredAt: 1_790_000_000_000,
             },

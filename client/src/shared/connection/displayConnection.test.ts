@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DisplaySnapshot, GameId, IGameClient, PlayerId } from '../contracts';
-import { connectDisplay } from './displayConnection';
+import { connectDisplay, mediaIdOf, reportMediaFailure } from './displayConnection';
 import type { GameConnection } from './gameHub';
 import { SnapshotStore } from './snapshotStore.svelte';
 
@@ -129,5 +129,49 @@ describe('connectDisplay', () => {
 
         expect(unsubscribe).toHaveBeenCalledOnce();
         expect(connection.stop).toHaveBeenCalledOnce();
+    });
+});
+
+describe('mediaIdOf', () => {
+    it('reads the identifier of a media URL, relative or absolute', () => {
+        expect(mediaIdOf('/media/q2Xv_r-9AbCdEfGhIjKlMn')).toBe('q2Xv_r-9AbCdEfGhIjKlMn');
+        expect(mediaIdOf('http://192.168.1.42:5000/media/q2Xv_r-9AbCdEfGhIjKlMn')).toBe(
+            'q2Xv_r-9AbCdEfGhIjKlMn',
+        );
+    });
+
+    it('gives nothing for any other URL', () => {
+        expect(mediaIdOf('/media/')).toBeNull();
+        expect(mediaIdOf('/media/a/b')).toBeNull();
+        expect(mediaIdOf('/assets/logo.png')).toBeNull();
+        expect(mediaIdOf('http://[invalid')).toBeNull();
+    });
+});
+
+describe('reportMediaFailure', () => {
+    it('tells the server the identifier of the media, never its URL', () => {
+        const { connection, typed } = fakeConnection();
+
+        reportMediaFailure(typed, '/media/q2Xv_r-9AbCdEfGhIjKlMn');
+
+        expect(connection.invoke).toHaveBeenCalledWith('ReportDisplayMediaFailure', {
+            mediaId: 'q2Xv_r-9AbCdEfGhIjKlMn',
+        });
+    });
+
+    it('sends nothing for a URL that is no media of the pack', () => {
+        const { connection, typed } = fakeConnection();
+
+        reportMediaFailure(typed, '/assets/logo.png');
+
+        expect(connection.invoke).not.toHaveBeenCalled();
+    });
+
+    it('drops a report the connection cannot send, without any error', async () => {
+        const { connection, typed } = fakeConnection();
+        connection.invoke.mockReturnValueOnce(Promise.reject(new Error('offline')));
+
+        expect(() => reportMediaFailure(typed, '/media/q2Xv_r-9AbCdEfGhIjKlMn')).not.toThrow();
+        await Promise.resolve();
     });
 });

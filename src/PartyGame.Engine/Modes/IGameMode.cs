@@ -74,4 +74,14 @@ public interface IGameMode
     /// <param name="round">The state of the round, as this mode produced it.</param>
     /// <param name="game">The current game.</param>
     GameMasterRoundView ProjectForGameMaster(RoundState round, GameState game);
+
+    /// <summary>
+    /// The step of the round that shows a media file, such as the number of a quiz question, for the game master to know
+    /// what the TV screen could not show. Optional: <see cref="GameMode{TDescriptor, TState}"/> answers
+    /// <see langword="null"/> unless the mode tells.
+    /// </summary>
+    /// <param name="round">The state of the round, as this mode produced it.</param>
+    /// <param name="media">The path of a media file of the pack the game plays.</param>
+    /// <returns>The step, from 1, or <see langword="null"/> when no step of the round shows the file.</returns>
+    int? LocateMedia(RoundState round, MediaPath media);
 }
