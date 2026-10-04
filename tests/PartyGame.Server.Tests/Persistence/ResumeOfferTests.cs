@@ -92,6 +92,26 @@ public sealed class ResumeOfferTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Startup_KilledWhileWritingTheSave_OffersTheLastCompleteSave()
+    {
+        // Given: a game saved, then the server killed in the middle of the next write, which left its temporary file cut short
+        var saved = await SaveGameAsync(started: true, "Zoé", "Max");
+        var temporaryFile = Path.Combine(_data.Path, GamePersistence.TemporaryFileName);
+        var complete = await File.ReadAllTextAsync(SaveFile, Ct);
+        await File.WriteAllTextAsync(temporaryFile, complete.Replace($"\"version\":{saved.Version},", $"\"version\":{saved.Version + 1},", StringComparison.Ordinal)[..(complete.Length / 2)], Ct);
+
+        // When
+        Restart();
+
+        // Then
+        Assert.Equal(GamePhase.ResumePending, Game.State.Phase);
+        var pending = Game.State.PendingGame!.Game;
+        Assert.Equal((saved.GameId, saved.Version, 2), (pending.GameId, pending.Version, pending.Players.Length));
+        Assert.False(File.Exists(temporaryFile));
+        Assert.Equal(complete, await File.ReadAllTextAsync(SaveFile, Ct));
+    }
+
+    [Fact]
     public async Task Startup_GameSavedWithoutPlayer_StartsANewGame()
     {
         // Given: a game saved before anybody joined

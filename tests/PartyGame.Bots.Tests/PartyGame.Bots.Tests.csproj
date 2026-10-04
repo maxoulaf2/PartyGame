@@ -13,6 +13,8 @@
   <ItemGroup>
     <!-- Waits for the test server to close its log file before deleting it -->
     <Compile Include="..\PartyGame.Server.Tests\TempDirectory.cs" Link="TempDirectory.cs" />
+    <!-- Runs the real server, which a test kills as a crash would -->
+    <Compile Include="..\PartyGame.Server.Tests\ServerProcess.cs" Link="ServerProcess.cs" />
   </ItemGroup>
 
 </Project>

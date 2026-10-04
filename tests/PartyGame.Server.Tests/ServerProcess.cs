@@ -111,14 +111,19 @@ internal sealed class ServerProcess : IDisposable
         return Output;
     }
 
-    public void Dispose()
+    /// <summary>Kills the process, as a crash would: nothing is saved nor closed.</summary>
+    public void Kill()
     {
         if (!_process.HasExited)
         {
             _process.Kill(entireProcessTree: true);
             _process.WaitForExit();
         }
+    }
 
+    public void Dispose()
+    {
+        Kill();
         _process.Dispose();
     }
 

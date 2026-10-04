@@ -31,6 +31,7 @@ internal sealed class BotPlayer : IAsyncDisposable
     // A welcome, or null for anything else that may give the bot something to do: a snapshot, an answer due.
     private readonly Channel<Welcome?> _wakeUps = Channel.CreateUnbounded<Welcome?>();
     private readonly Lock _gate = new();
+    private readonly List<PlayerRoundIntent> _acknowledged = [];
     private PlayerSnapshot? _snapshot;
     private SentIntent? _unacknowledged;
 
@@ -80,6 +81,18 @@ internal sealed class BotPlayer : IAsyncDisposable
             lock (_gate)
             {
                 return _snapshot;
+            }
+        }
+    }
+
+    /// <summary>The intents the hub acknowledged, in order: the server must never lose them, even killed right after.</summary>
+    public IReadOnlyList<PlayerRoundIntent> Acknowledged
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _acknowledged];
             }
         }
     }
@@ -260,6 +273,7 @@ internal sealed class BotPlayer : IAsyncDisposable
 
         lock (_gate)
         {
+            _acknowledged.Add(sent.Intent);
             if (_unacknowledged == sent)
             {
                 _unacknowledged = null;

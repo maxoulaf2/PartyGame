@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.Extensions.Options;
 using PartyGame.Contracts.Serialization;
 using PartyGame.Server;
+using PartyGame.Server.Faults;
 using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
@@ -26,6 +27,7 @@ try
     builder.AddFrontEnd();
     builder.AddGameMasterCode();
     builder.AddPacks();
+    builder.AddFaultInjection();
     builder.AddGameLoop();
     builder.AddGameHub();
     builder.AddNetworkDiagnostic();
@@ -42,6 +44,7 @@ try
     app.MapNetworkDiagnostic();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
+    app.LogFaultInjection();
     var packs = app.LoadPacks();
     app.PrepareDataDirectory();
     var game = app.LoadGame();

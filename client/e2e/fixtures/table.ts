@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer, type AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,6 +15,7 @@ import {
 import { gameMasterCodeKey } from '../../src/shared/connection/codeStorage.ts';
 import { fr } from '../../src/shared/i18n/fr.ts';
 import { advertisedAddress, gameMasterCode, packDirectory } from '../gameServer.ts';
+import { relayWebSockets, type RelayedNetwork } from '../network.ts';
 import { joinOnNewPhone } from '../players.ts';
 
 const serverDirectory = fileURLToPath(new URL('../../../src/PartyGame.Server', import.meta.url));
@@ -26,15 +27,22 @@ const startTimeout = 30_000;
 export interface DedicatedServer {
     readonly url: string;
     readonly dataDirectory: string;
+    /** The copy of the packs of `serverPacks` the server reads, which the test may change. */
+    readonly packDirectory: string;
     /** Kills the process, as a crash would: nothing is saved nor closed. */
     kill(): Promise<void>;
-    /** Starts the server again, on the same port and data folder. */
-    start(): Promise<void>;
+    /**
+     * Starts the server again, on the same port and data folder, with `settings` added to those of
+     * `serverSettings`, such as another game master code.
+     */
+    start(settings?: readonly string[]): Promise<void>;
 }
 
 interface TablePlayer {
     readonly nickname: string;
     readonly page: Page;
+    /** The WebSockets of the phone, which the test can break. */
+    readonly network: RelayedNetwork;
 }
 
 /**
@@ -64,15 +72,26 @@ async function newPage(
 }
 
 export const test = base.extend<
-    { dedicatedServer: DedicatedServer; table: Table },
+    {
+        serverSettings: readonly string[];
+        serverPacks: string;
+        dedicatedServer: DedicatedServer;
+        table: Table;
+    },
     { webkitBrowser: Browser }
 >({
-    // Playwright reads the fixtures a fixture needs from its destructured first argument.
-    // eslint-disable-next-line no-empty-pattern
-    dedicatedServer: async ({}, use, testInfo) => {
+    /** Settings of the dedicated server, added to its command line, such as `--Key=value`. */
+    serverSettings: [[], { option: true }],
+
+    /** The folder of the packs the dedicated server copies, then loads. */
+    serverPacks: [packDirectory, { option: true }],
+
+    dedicatedServer: async ({ serverSettings, serverPacks }, use, testInfo) => {
         const port = await freePort();
         const root = mkdtempSync(join(tmpdir(), 'partygame-e2e-dedicated-'));
         const dataDirectory = join(root, 'data');
+        const packs = join(root, 'packs');
+        cpSync(serverPacks, packs, { recursive: true });
         let log = '';
         let child: ChildProcess | undefined;
 
@@ -85,7 +104,7 @@ export const test = base.extend<
                 await exited;
             }
         };
-        const start = async () => {
+        const start = async (settings: readonly string[] = []) => {
             const started = spawn(
                 'dotnet',
                 [
@@ -93,10 +112,13 @@ export const test = base.extend<
                     `--Network:Port=${port}`,
                     `--Network:AdvertisedAddress=${advertisedAddress}`,
                     `--GameMaster:Code=${gameMasterCode}`,
-                    `--Packs:Directory=${packDirectory}`,
+                    `--Packs:Directory=${packs}`,
                     `--Persistence:Directory=${dataDirectory}`,
                     // Out of the shared logs folder, whose file the shared server holds.
                     `--LogFiles:Directory=${join(root, 'logs')}`,
+                    // Last, so that they win over the settings above.
+                    ...serverSettings,
+                    ...settings,
                 ],
                 // The content root, holding the web root `npm run build` wrote.
                 { cwd: serverDirectory },
@@ -120,7 +142,13 @@ export const test = base.extend<
 
         try {
             await start();
-            await use({ url: `http://localhost:${port}`, dataDirectory, kill, start });
+            await use({
+                url: `http://localhost:${port}`,
+                dataDirectory,
+                packDirectory: packs,
+                kill,
+                start,
+            });
         } finally {
             await kill();
             if (testInfo.status !== testInfo.expectedStatus) {
@@ -160,19 +188,21 @@ export const test = base.extend<
         );
         await gm.goto('/gm/');
         await expect(gm.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
+        const joinRelayed = async (
+            phoneBrowser: Browser,
+            nickname: string,
+            device: BrowserContextOptions,
+        ): Promise<TablePlayer> => {
+            let network: RelayedNetwork | undefined;
+            const page = await joinOnNewPhone(phoneBrowser, url, nickname, device, async (p) => {
+                network = await relayWebSockets(p);
+            });
+            return { nickname, page, network: network! };
+        };
         const players: Table['players'] = [
-            {
-                nickname: 'Zoé',
-                page: await joinOnNewPhone(webkitBrowser, url, 'Zoé', devices['iPhone 15']),
-            },
-            {
-                nickname: 'Max',
-                page: await joinOnNewPhone(browser, url, 'Max', devices['Pixel 7']),
-            },
-            {
-                nickname: 'Léa',
-                page: await joinOnNewPhone(browser, url, 'Léa', devices['Pixel 7']),
-            },
+            await joinRelayed(webkitBrowser, 'Zoé', devices['iPhone 15']),
+            await joinRelayed(browser, 'Max', devices['Pixel 7']),
+            await joinRelayed(browser, 'Léa', devices['Pixel 7']),
         ];
         const pages = {
             display,

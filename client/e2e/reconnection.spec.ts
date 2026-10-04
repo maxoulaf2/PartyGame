@@ -1,11 +1,4 @@
-import {
-    expect,
-    test,
-    type Browser,
-    type Page,
-    type TestInfo,
-    type WebSocketRoute,
-} from '@playwright/test';
+import { expect, test, type Browser, type Page, type TestInfo } from '@playwright/test';
 import {
     gameMasterCodeKey,
     playerNicknameKey,
@@ -13,6 +6,7 @@ import {
 } from '../src/shared/connection/codeStorage.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { gameMasterCode } from './gameServer.ts';
+import { goOffline, relayWebSockets } from './network.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
 
 /** A phone of the model of the project, with storage of its own. */
@@ -43,27 +37,6 @@ function registeredAs(nickname: string): string {
 
 function tokenOf(phone: Page): Promise<string | null> {
     return phone.evaluate((key) => localStorage.getItem(key), playerTokenKey);
-}
-
-/**
- * Relays the WebSockets of the page to the server, so that the test can cut them: offline
- * emulation alone leaves an open WebSocket untouched on WebKit. Set up before the page opens.
- */
-async function relayWebSockets(page: Page): Promise<{ cut(): Promise<void> }> {
-    const open = new Set<[WebSocketRoute, WebSocketRoute]>();
-    await page.routeWebSocket(/\/hub\/game/, (socket) => {
-        open.add([socket, socket.connectToServer()]);
-    });
-    return {
-        cut: async () => {
-            const sockets = [...open];
-            open.clear();
-            for (const [toPage, toServer] of sockets) {
-                await toPage.close();
-                await toServer.close();
-            }
-        },
-    };
 }
 
 /** The entry of a player in the list of the TV screen. */
@@ -140,12 +113,6 @@ test('a phone with a token the server does not know registers again, nickname fi
     await expect(page.getByLabel(fr.player.join.label)).toHaveValue('Zoé');
     await expect.poll(() => tokenOf(page)).toBeNull();
 });
-
-/** Cuts the page from the server, as a phone going out of Wi-Fi range. */
-async function goOffline(page: Page, network: { cut(): Promise<void> }): Promise<void> {
-    await page.context().setOffline(true);
-    await network.cut();
-}
 
 /**
  * Checks the notice of an outage: absent for its first seconds, shown once it lasts longer than
