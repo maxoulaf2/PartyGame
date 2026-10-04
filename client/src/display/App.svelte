@@ -7,6 +7,7 @@
     import { watchBuild } from '../shared/connection/buildCheck';
     import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
+    import { reportRoundTrips } from '../shared/connection/roundTripReport.svelte';
     import { connectDisplay, reportMediaFailure } from '../shared/connection/displayConnection';
     import { createGameConnection } from '../shared/connection/gameHub';
     import { connectErrorReporting } from '../shared/errors/errorReporting';
@@ -34,12 +35,15 @@
         const stopStatus = status.start();
         // Before the connection starts, so as not to miss the first one, nor the welcome.
         const stopClock = clock.start();
+        // For the game master console, which shows how well each phone and the TV screen reach the server.
+        const stopRoundTrips = reportRoundTrips(connection, clock);
         const stopBuild = watchBuild(connection);
         const stopErrors = connectErrorReporting(connection, game);
         const disconnect = connectDisplay(game, connection);
         return () => {
             stopStatus();
             stopClock();
+            stopRoundTrips();
             stopBuild();
             stopErrors();
             disconnect();

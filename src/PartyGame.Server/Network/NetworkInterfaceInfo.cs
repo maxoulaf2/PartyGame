@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.NetworkInformation;
 
 namespace PartyGame.Server.Network;
@@ -9,5 +8,5 @@ internal sealed record NetworkInterfaceInfo(
     string Description,
     NetworkInterfaceType Type,
     bool IsUp,
-    IReadOnlyList<IPAddress> IPv4Addresses,
+    IReadOnlyList<InterfaceAddress> IPv4Addresses,
     bool HasGateway);

@@ -1,6 +1,8 @@
 using System.Buffers.Text;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.SignalR;
 using PartyGame.Contracts;
 using PartyGame.Engine;
@@ -9,6 +11,7 @@ using PartyGame.Server.FrontEnd;
 using PartyGame.Server.GameMaster;
 using PartyGame.Server.Games;
 using PartyGame.Server.Incidents;
+using PartyGame.Server.Network;
 using PartyGame.Server.Packs;
 
 namespace PartyGame.Server.Hubs;
@@ -32,6 +35,8 @@ internal sealed class GameHub(
     IIncidentReporter incidentReporter,
     MediaLocator mediaLocator,
     FrontEndBuild frontEndBuild,
+    NetworkHealthJournal networkHealth,
+    INetworkInterfaceSource networkInterfaces,
     TimeProvider timeProvider,
     ILogger<GameHub> logger) : Hub<IGameClient>
 {
@@ -89,6 +94,21 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="ReportDisplayMediaFailureAsync"/>, as the clients call it.</summary>
     public const string ReportDisplayMediaFailure = nameof(ReportDisplayMediaFailure);
 
+    /// <summary>SignalR target of <see cref="DescribeConnection"/>, as the clients call it.</summary>
+    public const string CheckNetwork = nameof(CheckNetwork);
+
+    /// <summary>SignalR target of <see cref="RecordNetworkDiagnostic"/>, as the clients call it.</summary>
+    public const string ReportNetworkDiagnostic = nameof(ReportNetworkDiagnostic);
+
+    /// <summary>SignalR target of <see cref="RecordConnectionQuality"/>, as the clients call it.</summary>
+    public const string ReportConnectionQuality = nameof(ReportConnectionQuality);
+
+    /// <summary>
+    /// Longest round trip a page may report, in milliseconds: a longer one is no measure, and would only mislead the game
+    /// master.
+    /// </summary>
+    private const int MaxRoundTrip = 60_000;
+
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
 
@@ -105,6 +125,9 @@ internal sealed class GameHub(
     private const int MaxMediaIdLength = 64;
 
     private static readonly AnnouncementResult _accepted = new(Refusal: null);
+
+    // The round trip a connection reported last, kept until it identifies as a player or the TV screen.
+    private static readonly object _roundTripKey = new();
 
     /// <summary>
     /// Tells the new connection, before anything else, which client build the server serves: a page built otherwise is
@@ -162,6 +185,7 @@ internal sealed class GameHub(
         var state = game.State;
         if (announcement.Role == Role.Display)
         {
+            networkHealth.DisplayConnected(Transport(), ReportedRoundTrip());
             await Clients.Caller.ReceiveDisplaySnapshot(snapshots.ForDisplay(state)).ConfigureAwait(false);
         }
         else
@@ -170,6 +194,7 @@ internal sealed class GameHub(
 
             // The same holds for the incidents: a newer list may come first, and the console keeps the newest.
             await Clients.Caller.ReceiveIncidents(incidents.Current).ConfigureAwait(false);
+            await Clients.Caller.ReceiveNetworkHealth(networkHealth.Current).ConfigureAwait(false);
         }
 
         return _accepted;
@@ -234,6 +259,7 @@ internal sealed class GameHub(
         var state = game.State;
         var player = state.Players.First(p => p.Id == playerId);
         logger.PlayerJoined(playerId.Value, player.Nickname);
+        networkHealth.PlayerConnected(playerId, Transport(), ReportedRoundTrip());
         await Clients.Caller.ReceivePlayerSnapshot(snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new JoinResult(Refusal: null, playerId, token.Value);
     }
@@ -293,6 +319,7 @@ internal sealed class GameHub(
         var state = game.State;
         var player = state.Players.First(p => p.Id == playerId);
         logger.SessionResumed(playerId.Value, Context.ConnectionId);
+        networkHealth.PlayerConnected(playerId, Transport(), ReportedRoundTrip());
         await Clients.Caller.ReceivePlayerSnapshot(snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new ResumeSessionResult(Refusal: null, playerId);
     }
@@ -762,6 +789,75 @@ internal sealed class GameHub(
     }
 
     /// <summary>
+    /// Tells the diagnostic page what the server sees of its connection, for any connection, identified or not: how it
+    /// reaches the hub, and whether the device belongs to the network of the address advertised to phones.
+    /// </summary>
+    [HubMethodName(CheckNetwork)]
+    public NetworkCheckResult DescribeConnection() => new(
+        Transport(),
+        SubnetCheck.IsOnAdvertisedNetwork(
+            networkInterfaces.GetInterfaces(),
+            game.State.JoinAddress,
+            Context.GetHttpContext()?.Connection.RemoteIpAddress));
+
+    /// <summary>
+    /// Records the outcome of a test of the diagnostic page, for the game master console to list it with the kind of the
+    /// device, deduced from its browser. Any connection may report one, identified or not: the page does not register.
+    /// </summary>
+    /// <param name="message">A <see cref="NetworkDiagnosticReport"/>.</param>
+    [HubMethodName(ReportNetworkDiagnostic)]
+    public void RecordNetworkDiagnostic(JsonElement message)
+    {
+        if (!HubMessage.TryRead<NetworkDiagnosticReport>(message, out var report, out var invalidPath))
+        {
+            logger.MessageMalformed(ReportNetworkDiagnostic, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (report.RoundTripMedian is < 0 or > MaxRoundTrip)
+        {
+            logger.MessageMalformed(ReportNetworkDiagnostic, Context.ConnectionId, "$.roundTripMedian");
+            return;
+        }
+
+        var device = DeviceKinds.FromUserAgent(Context.GetHttpContext()?.Request.Headers.UserAgent);
+        networkHealth.RecordDiagnostic(device, report.Verdict, report.RoundTripMedian);
+        logger.NetworkDiagnosticReported(device, report.Verdict, report.RoundTripMedian);
+    }
+
+    /// <summary>
+    /// Records the round trip a page measured with its last clock synchronization, for the game master to see how well each
+    /// phone and the TV screen reach the server. Kept with the connection until it identifies: a phone synchronizes its
+    /// clock as soon as it connects, before its player registers. Logs nothing: every page reports every minute.
+    /// </summary>
+    /// <param name="message">A <see cref="ConnectionQualityReport"/>.</param>
+    [HubMethodName(ReportConnectionQuality)]
+    public void RecordConnectionQuality(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ConnectionQualityReport>(message, out var report, out var invalidPath))
+        {
+            logger.MessageMalformed(ReportConnectionQuality, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (report.RoundTrip is < 0 or > MaxRoundTrip)
+        {
+            logger.MessageMalformed(ReportConnectionQuality, Context.ConnectionId, "$.roundTrip");
+            return;
+        }
+
+        Context.Items[_roundTripKey] = report.RoundTrip;
+        if (Context.GetPlayerId() is { } playerId)
+        {
+            networkHealth.RecordRoundTrip(playerId, report.RoundTrip);
+        }
+        else if (Context.GetRole() == Role.Display)
+        {
+            networkHealth.RecordRoundTrip(playerId: null, report.RoundTrip);
+        }
+    }
+
+    /// <summary>
     /// Reports to the loop that a player lost their last connection, so that the TV screen and the game master show them
     /// disconnected. The player stays registered.
     /// </summary>
@@ -784,6 +880,16 @@ internal sealed class GameHub(
     /// </summary>
     private static RoundInfo? RoundInProgress(GameState state) =>
         state.Phase == GamePhase.Round ? Snapshots.RoundInfoOf(state) : null;
+
+    private ConnectionTransport Transport() =>
+        Context.Features.Get<IHttpTransportFeature>()?.TransportType switch
+        {
+            HttpTransportType.ServerSentEvents => ConnectionTransport.ServerSentEvents,
+            HttpTransportType.LongPolling => ConnectionTransport.LongPolling,
+            _ => ConnectionTransport.WebSockets,
+        };
+
+    private int? ReportedRoundTrip() => Context.Items.TryGetValue(_roundTripKey, out var roundTrip) ? (int?)roundTrip : null;
 
     private async Task ReportConnectionLostAsync(PlayerId playerId)
     {

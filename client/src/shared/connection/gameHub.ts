@@ -24,6 +24,9 @@ import type {
     ResumeSessionRequest,
     ResumeSessionResult,
     ClockSyncResult,
+    ConnectionQualityReport,
+    NetworkCheckResult,
+    NetworkDiagnosticReport,
     SelectPackRequest,
     SelectPackResult,
     SkipRoundRequest,
@@ -62,6 +65,9 @@ export interface GameHubMethods {
     ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };
     ReportClientError: { args: [report: ClientErrorReport]; result: null };
     ReportDisplayMediaFailure: { args: [report: DisplayMediaFailureReport]; result: null };
+    CheckNetwork: { args: []; result: NetworkCheckResult };
+    ReportNetworkDiagnostic: { args: [report: NetworkDiagnosticReport]; result: null };
+    ReportConnectionQuality: { args: [report: ConnectionQualityReport]; result: null };
 }
 
 /**

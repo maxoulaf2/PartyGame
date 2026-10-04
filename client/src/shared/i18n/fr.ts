@@ -134,6 +134,50 @@ export const fr = {
             none: 'Aucune adresse de réseau local : connectez ce PC au Wi-Fi, puis relancez le serveur.',
             failed: 'Le changement d’adresse n’a pas abouti : réessayez.',
         },
+        network: {
+            title: 'Diagnostic réseau',
+            hint: 'Avant l’arrivée des invités, ouvrez cette page sur un ou deux téléphones : elle vérifie en une vingtaine de secondes qu’ils communiquent bien avec le serveur, sans les inscrire.',
+            // Read by screen readers: the QR code of the diagnostic page.
+            qrLabel: 'QR code de la page de diagnostic',
+            none: 'Aucune adresse de réseau local : la page de diagnostic n’a pas d’adresse à donner.',
+            diagnosticsLabel: 'Derniers diagnostics, du plus récent au plus ancien',
+            noDiagnostic: 'Aucun diagnostic pour l’instant.',
+            // A diagnostic: the device, when it ran, its verdict and its median round trip.
+            diagnostic: '{device} à {time} : {verdict}',
+            // The kind of device, deduced by the server from the browser.
+            devices: {
+                IPhone: 'iPhone',
+                IPad: 'iPad',
+                Android: 'Android',
+                Windows: 'PC Windows',
+                Mac: 'Mac',
+                Linux: 'Linux',
+                Other: 'Appareil',
+            },
+            verdicts: {
+                Good: 'tout est bon',
+                Reserved: 'utilisable, avec des réserves',
+                Problem: 'problème',
+            },
+            // The connection of a player or of the TV screen, in the list of the players.
+            display: 'Écran TV',
+            roundTrip: '{value} ms',
+            noRoundTrip: '— ms',
+            transports: {
+                WebSockets: 'WebSocket',
+                ServerSentEvents: 'connexion de repli (SSE)',
+                LongPolling: 'connexion de repli (polling)',
+            },
+            reconnections: {
+                zero: '0 reconnexion',
+                one: '{count} reconnexion',
+                other: '{count} reconnexions',
+            },
+            // Marks a poor measure, with the color: never the color alone.
+            warning: '⚠',
+            // Read by screen readers: what the mark means.
+            warningLabel: 'Valeur mauvaise',
+        },
         packs: {
             title: 'Pack de la partie',
             directory: 'Dossier des packs : {directory}',
@@ -363,6 +407,74 @@ export const fr = {
                 failed: 'Le renommage n’a pas abouti : réessayez.',
             },
         },
+    },
+    // The page /diagnostic/, opened on a phone by the game master on arrival at the venue.
+    diagnostic: {
+        title: 'Diagnostic réseau',
+        intro: 'Ce test vérifie en une vingtaine de secondes que ce téléphone communique bien avec le serveur. Gardez la page ouverte et l’écran allumé.',
+        steps: {
+            connecting: 'Connexion au serveur…',
+            roundTrips: 'Mesure du temps de réponse…',
+            stability: 'Vérification de la stabilité ({seconds} s)…',
+            download: 'Mesure du débit…',
+        },
+        // The verdict, with a symbol: never the color alone.
+        verdicts: {
+            Good: '✓ Tout est bon',
+            Reserved: '⚠ Utilisable, avec des réserves',
+            Problem: '✕ Problème',
+        },
+        // One advice per measure in default.
+        advice: {
+            unreachable:
+                'Le téléphone n’arrive pas à joindre le serveur : vérifiez qu’il est connecté au même Wi-Fi que le serveur, et que le serveur est bien lancé.',
+            roundTripHigh:
+                'Le serveur répond lentement : le buzzer pourrait être moins précis. Rapprochez-vous du point d’accès Wi-Fi.',
+            roundTripTooHigh:
+                'Le serveur répond bien trop lentement pour jouer : rapprochez-vous du point d’accès Wi-Fi, ou essayez un autre réseau.',
+            losses: 'Des messages se perdent : le Wi-Fi est instable à cet endroit. Rapprochez-vous du point d’accès.',
+            reconnections:
+                'La connexion a été coupée pendant le test : le Wi-Fi est instable, ou le téléphone a changé de réseau.',
+            fallbackTransport:
+                'La connexion passe par un mode de repli plus lent : un pare-feu ou un proxy bloque peut-être les WebSockets.',
+            otherNetwork:
+                'Ce téléphone passe par un autre réseau que le serveur : réseau invité ? Connectez-le au même Wi-Fi que le serveur.',
+            slowDownload: 'Le débit est faible : les images pourraient s’afficher lentement.',
+            downloadFailed:
+                'Le téléchargement de test a échoué : les images pourraient ne pas s’afficher.',
+        },
+        measuresLabel: 'Mesures',
+        transport: 'Connexion',
+        transports: {
+            WebSockets: 'WebSocket',
+            ServerSentEvents: 'Mode de repli (SSE)',
+            LongPolling: 'Mode de repli (polling)',
+        },
+        unreachable: 'Serveur injoignable',
+        roundTrip: 'Temps de réponse',
+        roundTripValue: 'médiane {median} ms · max {max} ms · gigue {jitter} ms',
+        stability: 'Stabilité',
+        lost: {
+            zero: 'aucune perte',
+            one: '{count} perte',
+            other: '{count} pertes',
+        },
+        stabilityValue: '{lost} sur {pings} · {reconnections}',
+        reconnections: {
+            zero: 'aucune coupure',
+            one: '{count} coupure',
+            other: '{count} coupures',
+        },
+        throughput: 'Débit',
+        throughputValue: '{value} Mbit/s',
+        network: 'Réseau',
+        networks: {
+            same: 'Même réseau que le serveur',
+            other: 'Autre réseau que le serveur',
+            unknown: 'Non déterminé',
+        },
+        notMeasured: 'Non mesuré',
+        retry: 'Relancer le test',
     },
     // The texts of each game mode, under the type of its rounds.
     modes: {

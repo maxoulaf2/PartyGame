@@ -10,7 +10,7 @@ const page = (path: string): string => fileURLToPath(new URL(path, import.meta.u
 const server = process.env.PARTYGAME_SERVER_URL ?? 'http://localhost:5000';
 
 export default defineConfig({
-    plugins: [svelte(), canonicalPages(['display', 'gm']), buildIdentifier()],
+    plugins: [svelte(), canonicalPages(['display', 'gm', 'diagnostic']), buildIdentifier()],
     // Tests load the client build of Svelte, as the pages do (see test.environment).
     resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
     build: {
@@ -18,11 +18,13 @@ export default defineConfig({
         outDir: page('../src/PartyGame.Server/wwwroot'),
         emptyOutDir: true,
         rollupOptions: {
-            // One HTML page per role. Their location gives the URLs /, /display/ and /gm/.
+            // One HTML page per role, and the network diagnostic. Their location gives the URLs /,
+            // /display/, /gm/ and /diagnostic/.
             input: {
                 player: page('./index.html'),
                 display: page('./display/index.html'),
                 gm: page('./gm/index.html'),
+                diagnostic: page('./diagnostic/index.html'),
             },
         },
     },

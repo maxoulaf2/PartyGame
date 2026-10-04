@@ -7,6 +7,8 @@ const addresses = [
     { typed: '/Display/', page: '/display/', text: fr.display.scanToJoin },
     { typed: '/gm', page: '/gm/', text: fr.gm.code.title },
     { typed: '/GM', page: '/gm/', text: fr.gm.code.title },
+    { typed: '/diagnostic', page: '/diagnostic/', text: fr.diagnostic.title },
+    { typed: '/Diagnostic/', page: '/diagnostic/', text: fr.diagnostic.title },
 ];
 
 for (const { typed, page: canonical, text } of addresses) {

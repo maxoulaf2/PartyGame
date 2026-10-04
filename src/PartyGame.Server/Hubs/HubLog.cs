@@ -102,4 +102,7 @@ internal static partial class HubLog
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Media {MediaId} could not be located in the round in progress")]
     public static partial void MediaNotLocated(this ILogger logger, Exception exception, string mediaId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Network diagnostic run on a device {Device}: {Verdict}, median round trip {RoundTripMedian} ms")]
+    public static partial void NetworkDiagnosticReported(this ILogger logger, DeviceKind device, DiagnosticVerdict verdict, int? roundTripMedian);
 }

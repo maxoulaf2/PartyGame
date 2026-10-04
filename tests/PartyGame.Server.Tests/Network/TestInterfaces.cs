@@ -20,5 +20,5 @@ internal static class TestInterfaces
         string address,
         bool hasGateway = false,
         bool isUp = true) =>
-        new(name, description, type, isUp, [IPAddress.Parse(address)], hasGateway);
+        new(name, description, type, isUp, [new InterfaceAddress(IPAddress.Parse(address), PrefixLength: 24)], hasGateway);
 }

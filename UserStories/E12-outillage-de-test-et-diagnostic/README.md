@@ -10,7 +10,7 @@
 | [US-E12-01](US-E12-01-simulateur-de-joueurs.md) | Simulateur de joueurs | Terminée | — |
 | [US-E12-02](US-E12-02-table-complete-e2e.md) | Table complète sur un serveur dédié en E2E | Terminée | — |
 | [US-E12-03](US-E12-03-tests-de-chaos.md) | Tests de chaos | À faire | US-E10-02, US-E10-04, US-E11-03, US-E12-01, US-E12-02 |
-| [US-E12-04](US-E12-04-diagnostic-reseau.md) | Diagnostic réseau sur place | Prête | — |
+| [US-E12-04](US-E12-04-diagnostic-reseau.md) | Diagnostic réseau sur place | Terminée | — |
 
 Comme l'outillage des phases 0 et 1, US-E12-02 et US-E12-03 sont des US techniques : elles omettent la ligne « En tant que ».
 
