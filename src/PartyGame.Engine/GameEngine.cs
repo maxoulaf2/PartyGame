@@ -28,6 +28,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
         return input switch
         {
             ResumeSavedGame resume => SavedGameChoice.Resume(state, resume),
+            GameResumed resumed => RoundFlow.Resume(state, resumed, modes, context),
             DiscardSavedGame discard => SavedGameChoice.Discard(state, discard),
             SavedGameMediaChecked check => SavedGameChoice.MediaChecked(state, check),
             JoinGame join => Registration.Join(state, join),

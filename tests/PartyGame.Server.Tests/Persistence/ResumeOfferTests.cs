@@ -151,9 +151,9 @@ public sealed class ResumeOfferTests : IAsyncDisposable
         // When
         await gameMaster.InvokeAsync(GameHub.ResolveSavedGame, new ResolveSavedGameRequest(saved.GameId, Resume: true), Ct);
 
-        // Then: the game goes on counting, and the phone finds its place back with its token
+        // Then: the game goes on counting, its round resumed right after it, and the phone finds its place back with its token
         Assert.Equal(ResumeSessionRefusal.GamePending, waiting.Refusal);
-        Assert.Equal((saved.GameId, saved.Version + 1, GamePhase.Round), (Game.State.GameId, Game.State.Version, Game.State.Phase));
+        Assert.Equal((saved.GameId, saved.Version + 2, GamePhase.Round), (Game.State.GameId, Game.State.Version, Game.State.Phase));
         await FlushAsync(zoe);
         Assert.Equal([true, false], welcomes.Select(w => w.GamePending));
         using var toZoe = new ReceivedSnapshots(zoe);

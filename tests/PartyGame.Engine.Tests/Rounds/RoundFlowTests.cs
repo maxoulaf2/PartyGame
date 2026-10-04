@@ -415,6 +415,40 @@ public sealed class RoundFlowTests
         Assert.Equal(["Zoé", "Max"], transition.State.Players.Select(p => p.Nickname));
     }
 
+    [Fact]
+    public void Handle_GameResumedDuringARound_HandsTheTimeSpentOfflineToTheModeAndMarksItsTimers()
+    {
+        // Given: the round was saved 3 minutes before now
+        var state = Games.InPhase(GamePhase.Round, "Zoé");
+        var round = state.CurrentRound!;
+
+        // When
+        var transition = Games.Engine.Handle(state, new GameResumed(Games.SavedAt), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        var resumed = Assert.IsType<FakeRoundState>(transition.State.CurrentRound!.State);
+        Assert.Equal("resume after 3 min", resumed.Inputs[^1]);
+        var dueAt = ((FakeRoundState)round.State).CountdownDueAt.AddMinutes(3);
+        Assert.Equal(new ScheduleTimer(FakeMode.Countdown, dueAt) { RoundId = round.Id }, Assert.Single(transition.Effects));
+    }
+
+    [Theory]
+    [MemberData(nameof(OutsideRound))]
+    public void Handle_GameResumedOutsideARound_ChangesNothing(GamePhase phase)
+    {
+        // Given
+        var state = Games.InPhase(phase, "Zoé");
+
+        // When
+        var transition = Games.Engine.Handle(state, new GameResumed(Games.SavedAt), Games.Context());
+
+        // Then: nothing waits for any time, the game goes on as it was saved
+        Assert.Null(transition.Rejection);
+        Assert.Same(state, transition.State);
+        Assert.Empty(transition.Effects);
+    }
+
     private static TimerElapsed Elapsed(RoundId roundId, DateTimeOffset dueAt) =>
         new(FakeMode.Countdown, dueAt) { RoundId = roundId };
 }

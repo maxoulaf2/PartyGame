@@ -35,6 +35,9 @@ internal sealed class TestQuizMode : GameMode<QuizRoundDescriptor, TestQuizRound
             _ => RoundTransition.Rejected(round, RejectionReason.UnexpectedTimer),
         };
 
+    public override RoundTransition ResumeRound(TestQuizRound round, GameState game, TimeSpan shift, GameContext context) =>
+        new(round, []);
+
     public override PlayerRoundView ProjectForPlayer(TestQuizRound round, GameState game, Player player) =>
         _quiz.ProjectForPlayer(round.Quiz, game, player);
 

@@ -30,6 +30,12 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     /// <inheritdoc cref="IGameMode.Handle" />
     public abstract RoundTransition Handle(TState round, GameInput input, GameState game, GameContext context);
 
+    /// <summary>
+    /// Abstract: each mode decides how its rounds resume, since only it knows their deadlines and timers.
+    /// </summary>
+    /// <inheritdoc cref="IGameMode.ResumeRound" />
+    public abstract RoundTransition ResumeRound(TState round, GameState game, TimeSpan shift, GameContext context);
+
     /// <inheritdoc cref="IGameMode.ProjectForPlayer" />
     public abstract PlayerRoundView ProjectForPlayer(TState round, GameState game, Player player);
 
@@ -59,6 +65,9 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
 
     RoundTransition IGameMode.Handle(RoundState round, GameInput input, GameState game, GameContext context) =>
         Handle((TState)round, input, game, context);
+
+    RoundTransition IGameMode.ResumeRound(RoundState round, GameState game, TimeSpan shift, GameContext context) =>
+        ResumeRound((TState)round, game, shift, context);
 
     PlayerRoundView IGameMode.ProjectForPlayer(RoundState round, GameState game, Player player) =>
         ProjectForPlayer((TState)round, game, player);

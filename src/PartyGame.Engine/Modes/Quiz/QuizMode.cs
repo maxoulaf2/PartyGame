@@ -98,6 +98,26 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
         };
     }
 
+    /// <summary>
+    /// Moves the deadline of the answers and the time of reception of each answer on by the time spent offline: the
+    /// countdown goes on with the time it had left, and the answers already received keep their speed bonus. A countdown
+    /// in progress is scheduled again.
+    /// </summary>
+    /// <inheritdoc />
+    public override RoundTransition ResumeRound(QuizRound round, GameState game, TimeSpan shift, GameContext context)
+    {
+        ArgumentNullException.ThrowIfNull(round);
+
+        var resumed = round with
+        {
+            AnswersCloseAt = round.AnswersCloseAt + shift,
+            Answers = round.Answers.ToImmutableDictionary(entry => entry.Key, entry => entry.Value with { ReceivedAt = entry.Value.ReceivedAt + shift }),
+        };
+        return round.Phase == QuizPhase.Answering
+            ? new(resumed, [new ScheduleTimer(AnswersTimer, resumed.AnswersCloseAt!.Value)])
+            : new(resumed, []);
+    }
+
     /// <inheritdoc />
     public override PlayerRoundView ProjectForPlayer(QuizRound round, GameState game, Player player)
     {

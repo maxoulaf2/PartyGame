@@ -34,6 +34,8 @@ Après la révélation, la console GM propose « Question suivante », ou « Ter
 
 Le GM peut passer la question dans les phases `Presentation`, `Answering` et `Locked`, après confirmation : la question est abandonnée, les réponses reçues sont ignorées et personne ne marque de point, le compte à rebours s'arrête, et la question suivante est présentée, ou la manche se termine si c'était la dernière. La numérotation tient compte de la question passée (« Question 4/5 » après la 3 passée), et ni la TV ni les téléphones ne la mentionnent. Seule la console GM connaît la bonne réponse et le choix de chaque joueur avant la phase `Revealed`, ainsi que le texte de la question, son image et ses propositions avant que la TV les affiche : un téléphone ne connaît que celui de son joueur, et la TV que le nombre de réponses. Après la révélation, la TV montre qui a choisi quoi, mais un téléphone ne connaît toujours que le choix, le verdict, les points et le total de son joueur.
 
+Après un redémarrage du serveur, une partie reprise par le GM retrouve la question là où elle en était, dans sa phase, avec les réponses déjà reçues. Un compte à rebours en cours repart avec le temps qui lui restait au dernier enregistrement : la coupure ne coûte rien, et les réponses déjà reçues gardent leur bonus de rapidité, celles reçues après la reprise étant mesurées par rapport à la nouvelle échéance. Un compte à rebours déjà écoulé au moment de l'enregistrement verrouille les réponses dès la reprise.
+
 ## Format du descripteur
 
 Une manche de quiz est une activité de `rounds` dont le `type` vaut `quiz`. Le schéma `schemas/pack.schema.json` décrit chaque propriété dans VS Code et vérifie les bornes pendant la saisie.
