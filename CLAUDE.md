@@ -106,7 +106,8 @@ npm run format     # reformatage Prettier
 npm run test       # Vitest
 npm run e2e        # Playwright sur le build : iPhone (WebKit), Pixel (Chromium), desktop
                    # démarre aussi le serveur .NET (port 5199, GameMaster:Code=246810, packs de e2e/packs) derrière le proxy
-                   # les projets « address » puis « launch » (changement d'adresse, lancement de la partie : tout le serveur partagé) passent après tous les autres
+                   # un test qui touche à tout le serveur (partie complète, adresse, redémarrage) a son serveur dédié : fixture e2e/fixtures/table.ts
+                   # (dedicatedServer : port libre, dossier de données neuf, kill/start ; table : TV, console GM, iPhone WebKit et deux Pixel)
 
 # Simulateur de joueurs (serveur déjà lancé) : N bots rejoignent la partie et jouent comme des téléphones
 dotnet run --project tools/PartyGame.Bots -- --url http://192.168.1.10:5000 --count 10

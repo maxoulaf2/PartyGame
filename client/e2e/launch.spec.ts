@@ -1,30 +1,16 @@
-import { expect, test, type Browser, type Page, type WebSocketRoute } from '@playwright/test';
-import { gameMasterCodeKey } from '../src/shared/connection/codeStorage.ts';
+import type { Browser, Page, WebSocketRoute } from '@playwright/test';
 import { countText } from '../src/shared/i18n/countText.ts';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { formatNumber } from '../src/shared/i18n/numberText.ts';
 import { rankText, standingText } from '../src/shared/i18n/rankText.ts';
-import { gameMasterCode, playedPack } from './gameServer.ts';
-import { joinOnNewPhone, uniqueNickname } from './players.ts';
+import { expect, test } from './fixtures/table.ts';
+import { playedPack } from './gameServer.ts';
+import { joinOnNewPhone } from './players.ts';
 
-// Starting the game cannot be undone, and every test shares the same server: playwright.config.ts
-// runs this file in a project of its own, once all the other tests are done.
-
-// The players of the other tests take part too, most of them gone: only the countdowns lock the
-// answers, kept short by the pack (20 s, 15 s and 10 s), and waited for.
+// A silent player takes part: only the countdowns lock the answers, kept short by the pack (20 s,
+// 15 s and 10 s), and waited for.
 const countdownTimeout = 25_000;
-
-async function openConsole(page: Page): Promise<void> {
-    await page.addInitScript(
-        ([key, code]) => {
-            localStorage.setItem(key, code);
-        },
-        [gameMasterCodeKey, gameMasterCode] as const,
-    );
-    await page.goto('/gm/');
-    await expect(page.getByRole('heading', { name: fr.gm.consoleTitle })).toBeVisible();
-}
 
 /** The points a player earned with a question, as the phones and the console show them. */
 function earnedText(points: number): string {
@@ -70,24 +56,23 @@ async function expectQuestionOnPhone(phone: Page, question: string, progress: st
 }
 
 test('the game master plays a whole game, from the choice of the pack to the final ranking', async ({
-    page,
+    table,
     browser,
     baseURL,
 }) => {
     // Three countdowns run out during the game.
     test.setTimeout(120_000);
-    const nickname = uniqueNickname('Zoé');
-    const lateNickname = uniqueNickname('Max');
-    const phone = await joinOnNewPhone(browser, baseURL, nickname);
-    const display = await (await browser.newContext({ baseURL })).newPage();
-    await display.goto('/display/');
-    await openConsole(page);
+    const { display, gm: page } = table;
+    const [
+        { nickname, page: phone },
+        { nickname: secondNickname, page: secondPhone },
+        { nickname: thirdNickname, page: thirdPhone },
+    ] = table.players;
     await expect(phone.getByText(fr.player.waiting)).toBeVisible();
 
     const start = page.getByRole('button', { name: fr.gm.start.action, exact: true });
     const dialog = page.getByRole('dialog', { name: fr.gm.start.confirmTitle });
 
-    // The pack may already be chosen by the tests of the packs: choosing it again changes nothing.
     await page.getByRole('radio', { name: playedPack.title }).check();
     await expect(display.getByText(playedPack.title)).toBeVisible();
 
@@ -138,23 +123,20 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(choicesOf(display)).toHaveCount(0);
 
     await expectQuestionOnPhone(phone, question, progress);
+    await expectQuestionOnPhone(secondPhone, question, progress);
 
-    // Registration stays open: late phones join during the presentation, and see the question.
-    // Two of them take part: one answers, the other lets the time run out.
-    const latePhone = await joinOnNewPhone(browser, baseURL, lateNickname);
-    await expectQuestionOnPhone(latePhone, question, progress);
+    // Registration stays open: a late phone joins during the presentation, and sees the question.
+    // It takes part, and lets the time run out.
+    const silentNickname = 'Noé';
+    const silentPhone = await joinOnNewPhone(browser, baseURL, silentNickname);
+    await expectQuestionOnPhone(silentPhone, question, progress);
     await expect(
         page
             .getByRole('list', { name: fr.gm.playerListLabel })
-            .getByText(lateNickname, { exact: true }),
+            .getByText(silentNickname, { exact: true }),
     ).toBeVisible();
-    const thirdNickname = uniqueNickname('Léa');
-    const silentNickname = uniqueNickname('Noé');
-    const thirdPhone = await joinOnNewPhone(browser, baseURL, thirdNickname);
-    const silentPhone = await joinOnNewPhone(browser, baseURL, silentNickname);
-    await expectQuestionOnPhone(silentPhone, question, progress);
 
-    for (const other of [display, phone, latePhone]) {
+    for (const other of [display, phone, secondPhone]) {
         await expect(other.getByText(fr.modes.quiz.correct)).toHaveCount(0);
     }
 
@@ -164,24 +146,24 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         .getByRole('button', { name: fill(fr.modes.quiz.gm.showChoice, { letter: 'A' }) })
         .click();
     await expect(choicesOf(display)).toHaveText(['A 6']);
-    await expect(choiceButton(latePhone, 'A')).toBeEnabled();
-    await expect(choiceButton(latePhone, 'B')).toBeDisabled();
+    await expect(choiceButton(secondPhone, 'A')).toBeEnabled();
+    await expect(choiceButton(secondPhone, 'B')).toBeDisabled();
     const answers = page.getByRole('list', { name: fr.modes.quiz.gm.answersLabel });
     await expect(answers).toBeVisible();
-    // Every registered player takes part, those of the other tests included, connected or not.
-    const participants = await answers.getByRole('listitem').count();
-    expect(participants).toBeGreaterThanOrEqual(4);
+    // Every registered player takes part.
+    const participants = 4;
+    await expect(answers.getByRole('listitem')).toHaveCount(participants);
     await expect(display.getByText(answeredText(0, participants))).toBeVisible();
 
     // A player answers without waiting for the other choices: no countdown runs yet.
-    await answer(latePhone, 'A');
+    await answer(secondPhone, 'A');
     await expect(display.getByText(answeredText(1, participants))).toBeVisible();
     for (const screen of [display, phone, page]) {
         await expect(screen.getByRole('timer')).toHaveCount(0);
     }
 
     // A phone that joins now plays from the next question.
-    const tooLateNickname = uniqueNickname('Tom');
+    const tooLateNickname = 'Tom';
     const tooLatePhone = await joinOnNewPhone(browser, baseURL, tooLateNickname);
     await expect(tooLatePhone.getByText(fr.modes.quiz.player.nextQuestion)).toBeVisible();
     await expect(choiceButton(tooLatePhone, 'A')).toBeDisabled();
@@ -205,8 +187,8 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(answers.getByRole('listitem').filter({ hasText: nickname })).toHaveText(
         `${nickname} B`,
     );
-    await expect(answers.getByRole('listitem').filter({ hasText: lateNickname })).toHaveText(
-        `${lateNickname} A`,
+    await expect(answers.getByRole('listitem').filter({ hasText: secondNickname })).toHaveText(
+        `${secondNickname} A`,
     );
     await expect(choicesOf(page)).toHaveText([
         `A 6 ${countText(fr.modes.quiz.choiceAnswers, 1)}`,
@@ -236,7 +218,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     // then the players taking part who did not answer.
     await page.getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true }).click();
     await expect(chosenOnDisplay(display, 'B')).toHaveText([nickname, thirdNickname]);
-    await expect(chosenOnDisplay(display, 'A')).toHaveText([lateNickname]);
+    await expect(chosenOnDisplay(display, 'A')).toHaveText([secondNickname]);
     await expect(display.getByText(fr.modes.quiz.correct, { exact: true })).toBeVisible();
     const unanswered = display.getByRole('list', { name: fr.modes.quiz.display.unanswered });
     await expect(unanswered.getByText(silentNickname, { exact: true })).toBeVisible();
@@ -247,9 +229,9 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     for (const right of [phone, thirdPhone]) {
         await expect(right.getByText(verdicts.Correct, { exact: true })).toBeVisible();
     }
-    await expect(latePhone.getByText(verdicts.Wrong, { exact: true })).toBeVisible();
+    await expect(secondPhone.getByText(verdicts.Wrong, { exact: true })).toBeVisible();
     await expect(silentPhone.getByText(verdicts.NoAnswer, { exact: true })).toBeVisible();
-    for (const missed of [latePhone, silentPhone]) {
+    for (const missed of [secondPhone, silentPhone]) {
         await expect(missed.getByText(fr.modes.quiz.player.correctChoice)).toBeVisible();
         await expect(correctChoiceOn(missed, 'B')).toBeVisible();
     }
@@ -259,7 +241,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         await expect(right.getByText(earnedText(1000), { exact: true })).toBeVisible();
         await expect(right.getByText(countText(fr.modes.quiz.player.score, 1000))).toBeVisible();
     }
-    for (const missed of [latePhone, silentPhone]) {
+    for (const missed of [secondPhone, silentPhone]) {
         await expect(missed.getByText(earnedText(0), { exact: true })).toBeVisible();
         await expect(missed.getByText(countText(fr.modes.quiz.player.score, 0))).toBeVisible();
     }
@@ -279,8 +261,8 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(answers.getByRole('listitem').filter({ hasText: nickname })).toHaveText(
         `${nickname} B ${earnedText(1000)}`,
     );
-    await expect(answers.getByRole('listitem').filter({ hasText: lateNickname })).toHaveText(
-        `${lateNickname} A ${earnedText(0)}`,
+    await expect(answers.getByRole('listitem').filter({ hasText: secondNickname })).toHaveText(
+        `${secondNickname} A ${earnedText(0)}`,
     );
     const players = page.getByRole('list', { name: fr.gm.playerListLabel }).getByRole('listitem');
     await expect(players.filter({ hasText: nickname })).toContainText(countText(fr.gm.score, 1000));
@@ -301,7 +283,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(display.getByText(second)).toHaveCount(0);
     await expect(display.getByText(secondProgress)).toBeVisible();
     await expect(display.getByText(fr.modes.quiz.correct)).toHaveCount(0);
-    for (const other of [phone, latePhone, thirdPhone, silentPhone, tooLatePhone]) {
+    for (const other of [phone, secondPhone, thirdPhone, silentPhone, tooLatePhone]) {
         await expectQuestionOnPhone(other, second, secondProgress);
         await expect(correctChoiceOn(other, 'B')).toHaveCount(0);
     }
@@ -344,7 +326,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
 
     // A phone loses its connection right after sending its answer, before the server acknowledges
     // it: once back, it sends the answer again, with the same number, and it counts once.
-    const flakyNickname = uniqueNickname('Eva');
+    const flakyNickname = 'Eva';
     const flaky = await joinWithRelayedNetwork(browser, baseURL, flakyNickname);
     await expectQuestionOnPhone(flaky.phone, third, thirdProgress);
     await showWholeQuestion(page);
@@ -374,20 +356,19 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     }
 
     // Between the two rounds, the TV screen ranks every player: the three who scored share the
-    // first rank, in alphabetical order, and all the others, those of the other tests included,
-    // share the fourth.
+    // first rank, in alphabetical order, and the three others share the fourth.
     const rankingAfter = fill(fr.game.rankingAfter, { number: 1 });
     await expect(display.getByRole('heading', { name: rankingAfter })).toBeVisible();
     const ranked = display.getByRole('list', { name: fr.game.rankingLabel }).getByRole('listitem');
-    const playerCount = await ranked.count();
-    expect(playerCount).toBeGreaterThanOrEqual(7);
+    const playerCount = 6;
+    await expect(ranked).toHaveCount(playerCount);
     const first = rankText(fr.game.rank, 1);
     const fourth = rankText(fr.game.rank, 4);
     await expect(ranked.nth(0)).toHaveText(`${first} ${flakyNickname} ${pointsText(1000)}`);
     await expect(ranked.nth(1)).toHaveText(`${first} ${thirdNickname} ${pointsText(1000)}`);
     await expect(ranked.nth(2)).toHaveText(`${first} ${nickname} ${pointsText(1000)}`);
-    await expect(ranked.filter({ hasText: lateNickname })).toHaveText(
-        `${fourth} ${lateNickname} ${pointsText(0)}`,
+    await expect(ranked.filter({ hasText: secondNickname })).toHaveText(
+        `${fourth} ${secondNickname} ${pointsText(0)}`,
     );
     // The TV screen still lets late arrivals join.
     await expect(display.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
@@ -395,7 +376,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     // Each phone shows its own rank out of every player, and its score.
     const standings = [
         [phone, 1, 1000],
-        [latePhone, 4, 0],
+        [secondPhone, 4, 0],
         [tooLatePhone, 4, 0],
     ] as const;
     for (const [other, rank, points] of standings) {
@@ -435,7 +416,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await showWholeQuestion(page);
     await expect(display.getByRole('heading', { name: last })).toBeVisible();
     await answer(phone, 'B');
-    await answer(latePhone, 'B');
+    await answer(secondPhone, 'B');
     await page
         .getByRole('button', { name: fr.modes.quiz.gm.revealAnswer, exact: true })
         .click({ timeout: countdownTimeout });
@@ -452,7 +433,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
             })
             .getByRole('listitem');
     await expect(step(1)).toHaveText([nickname]);
-    await expect(step(2)).toHaveText([flakyNickname, thirdNickname, lateNickname]);
+    await expect(step(2)).toHaveText([flakyNickname, thirdNickname, secondNickname]);
     await expect(step(3)).toHaveCount(0);
     await expect(podium.locator('[data-rank="1"]')).toContainText(pointsText(2000));
     await expect(podium.locator('[data-rank="2"]')).toContainText(pointsText(1000));
@@ -465,7 +446,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     // Each phone shows its final rank and score, with a word for those on the podium.
     const finalStandings = [
         [phone, { rank: 1, isTied: false }, 2000, fr.player.podium],
-        [latePhone, { rank: 2, isTied: true }, 1000, fr.player.podium],
+        [secondPhone, { rank: 2, isTied: true }, 1000, fr.player.podium],
         [silentPhone, { rank: 5, isTied: true }, 0, fr.player.finished],
     ] as const;
     for (const [other, standing, points, message] of finalStandings) {
@@ -493,7 +474,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
 
     // Registration stays open: a phone that joins now sees the end of the game, without a rank,
     // and the final ranking stays that of the game.
-    const afterEndNickname = uniqueNickname('Ugo');
+    const afterEndNickname = 'Ugo';
     const afterEndPhone = await joinOnNewPhone(browser, baseURL, afterEndNickname);
     await expect(afterEndPhone.getByRole('heading', { name: fr.game.finished })).toBeVisible();
     await expect(afterEndPhone.getByText(fr.player.joinedAfterEnd)).toBeVisible();
@@ -506,16 +487,9 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await expect(display.getByText(afterEndNickname)).toHaveCount(0);
 
     await Promise.all(
-        [
-            phone,
-            latePhone,
-            thirdPhone,
-            silentPhone,
-            tooLatePhone,
-            flaky.phone,
-            afterEndPhone,
-            display,
-        ].map((other) => other.context().close()),
+        [silentPhone, tooLatePhone, flaky.phone, afterEndPhone].map((other) =>
+            other.context().close(),
+        ),
     );
 });
 
