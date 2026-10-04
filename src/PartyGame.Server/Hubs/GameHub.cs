@@ -13,6 +13,7 @@ using PartyGame.Server.Games;
 using PartyGame.Server.Incidents;
 using PartyGame.Server.Network;
 using PartyGame.Server.Packs;
+using PartyGame.Server.Persistence;
 
 namespace PartyGame.Server.Hubs;
 
@@ -29,6 +30,7 @@ internal sealed class GameHub(
     GameLoop game,
     Snapshots snapshots,
     IGameInputWriter inputs,
+    GamePersistence persistence,
     PlayerConnections playerConnections,
     PackReloader packReloader,
     IncidentJournal incidents,
@@ -527,8 +529,9 @@ internal sealed class GameHub(
     /// <summary>
     /// Hands what a player does in the round in progress to its game mode, through the loop. Every game mode goes through
     /// this method: its intents are the types derived from <see cref="PlayerRoundIntent"/>. The call returns once the loop
-    /// has handled the intent, accepted or not: the phone takes the answer for an acknowledgment, and sends the intent
-    /// again, with the same number, when it never gets it. Whether the intent was accepted shows in the snapshots.
+    /// has handled the intent, accepted or not, and the state it led to is saved: the phone takes the answer for an
+    /// acknowledgment, and sends the intent again, with the same number, when it never gets it. A server killed right
+    /// after the acknowledgment thus never loses the intent. Whether the intent was accepted shows in the snapshots.
     /// </summary>
     /// <param name="message">A <see cref="PlayerIntentEnvelope"/>, its intent of the type its <c>type</c> names.</param>
     [HubMethodName(SendRoundIntent)]
@@ -558,6 +561,7 @@ internal sealed class GameHub(
 
         // Not cancelled with the connection: once enqueued, the intent may be accepted whoever is left to see it.
         await inputs.SubmitAsync(input, CancellationToken.None).ConfigureAwait(false);
+        await persistence.WaitUntilSavedAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>
