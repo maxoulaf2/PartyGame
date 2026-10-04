@@ -44,6 +44,11 @@ export interface DisplayViewProps<V extends DisplayRoundView = DisplayRoundView>
     readonly round: RoundInfo;
     /** The clock of the server, to count down to the times of the view. */
     readonly clock: ServerClock;
+    /**
+     * Tells the game master that the media file at `url`, as the view received it, could not be
+     * loaded. The view goes on without it, never showing a broken media.
+     */
+    readonly reportMediaFailure: (url: string) => void;
 }
 
 /**

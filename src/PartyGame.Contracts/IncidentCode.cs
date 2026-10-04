@@ -23,4 +23,17 @@ public enum IncidentCode
     /// broadcast.
     /// </summary>
     EffectFailed,
+
+    /// <summary>
+    /// The TV screen could not render what it had to show, a view of the round in most cases: it shows its waiting screen
+    /// instead, and tries again with the next snapshot. The game master may skip the round at once, since the public no
+    /// longer sees it.
+    /// </summary>
+    DisplayViewFailed,
+
+    /// <summary>
+    /// The TV screen could not load a media file of the pack, such as the image of a question: it shows the round without
+    /// it. The incident names the step of the round that shows it, when the game mode can tell.
+    /// </summary>
+    DisplayMediaFailed,
 }

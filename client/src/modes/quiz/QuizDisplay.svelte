@@ -9,15 +9,20 @@
     import { choiceColor } from './choiceTheme';
     import CorrectMark from './CorrectMark.svelte';
 
-    let { view, round, clock }: DisplayViewProps<QuizDisplayView> = $props();
+    let { view, round, clock, reportMediaFailure }: DisplayViewProps<QuizDisplayView> = $props();
 
     // An image that cannot be loaded leaves the question on screen without it: never a broken
-    // image on the TV.
+    // image on the TV, and the game master hears of it.
     let failedImage = $state<string | null>(null);
     // Once revealed, the room looks at who chose what: the image gives way to the nicknames.
     const image = $derived(
         view.reveal === null && view.imageUrl !== failedImage ? view.imageUrl : null,
     );
+
+    function imageFailed(url: string) {
+        failedImage = url;
+        reportMediaFailure(url);
+    }
 
     /** The players who chose `letter`, in order of arrival, once revealed. */
     function chosenBy(letter: QuizChoiceLetter) {
@@ -79,10 +84,11 @@
             </p>
         {:else}
             {#if image}
+                {@const src = image}
                 <img
-                    src={image}
+                    {src}
                     alt={fr.modes.quiz.display.imageLabel}
-                    onerror={() => (failedImage = image)}
+                    onerror={() => imageFailed(src)}
                 />
             {/if}
             <h1>{view.text}</h1>

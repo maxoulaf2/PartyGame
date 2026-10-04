@@ -10,6 +10,7 @@ import type {
     ChooseAdvertisedAddressRequest,
     ChooseAdvertisedAddressResult,
     ClientErrorReport,
+    DisplayMediaFailureReport,
     GameMasterRoundIntent,
     IGameClient,
     JoinRequest,
@@ -57,6 +58,7 @@ export interface GameHubMethods {
     SyncClock: { args: []; result: ClockSyncResult };
     ReportStaleBuild: { args: [report: StaleBuildReport]; result: null };
     ReportClientError: { args: [report: ClientErrorReport]; result: null };
+    ReportDisplayMediaFailure: { args: [report: DisplayMediaFailureReport]; result: null };
 }
 
 /**

@@ -8,6 +8,7 @@ function incident(id: number, count = 1): Incident {
         code: 'RoundHandlerFailed',
         round: null,
         role: null,
+        step: null,
         count,
         lastOccurredAt: 1_790_000_000_000,
     };

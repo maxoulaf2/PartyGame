@@ -6,9 +6,9 @@ namespace PartyGame.Server.Incidents;
 /// <summary>
 /// The incidents of the server since it started, for the game master. Kept apart from the game state: an incident changes
 /// nothing of the game, and is forgotten on restart, the logs keeping their trace. The occurrences of a same code in a same
-/// round, for a same role, make one incident; past <see cref="Capacity"/> incidents, the one that happened longest ago is
-/// dropped. A round whose inputs failed <see cref="SkipThreshold"/> times is listed as failing, so that the game master is
-/// offered to skip it.
+/// round, for a same role and a same step, make one incident; past <see cref="Capacity"/> incidents, the one that happened
+/// longest ago is dropped. A round whose inputs failed <see cref="SkipThreshold"/> times is listed as failing, so that the
+/// game master is offered to skip it, and so is at once a round the TV screen could not show.
 /// </summary>
 /// <remarks>
 /// Fed by the loop only, but read by the hub when a console is accepted: the lock guards the list against that read.
@@ -51,12 +51,13 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
     /// <param name="code">What went wrong.</param>
     /// <param name="round">The round in progress, if any.</param>
     /// <param name="role">The role whose snapshot could not be projected, if that is what went wrong.</param>
-    public IncidentList Record(IncidentCode code, RoundInfo? round, Role? role = null)
+    /// <param name="step">The step of the round concerned, if that is what the incident names.</param>
+    public IncidentList Record(IncidentCode code, RoundInfo? round, Role? role = null, int? step = null)
     {
         var now = timeProvider.GetUtcNow().ToUnixTimeMilliseconds();
         lock (_gate)
         {
-            var index = _incidents.FindIndex(i => i.Code == code && i.Round?.RoundId == round?.RoundId && i.Role == role);
+            var index = _incidents.FindIndex(i => i.Code == code && i.Round?.RoundId == round?.RoundId && i.Role == role && i.Step == step);
             Incident incident;
             if (index >= 0)
             {
@@ -65,7 +66,7 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
             }
             else
             {
-                incident = new Incident(++_lastId, code, round, role, Count: 1, now);
+                incident = new Incident(++_lastId, code, round, role, step, Count: 1, now);
             }
 
             _incidents.Insert(0, incident);
@@ -74,13 +75,9 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
                 _incidents.RemoveAt(_incidents.Count - 1);
             }
 
-            if (code == IncidentCode.RoundHandlerFailed && round is not null)
+            if (round is not null && IsFailing(code, round.RoundId) && !_failingRounds.Contains(round.RoundId))
             {
-                var failures = _roundFailures[round.RoundId] = _roundFailures.GetValueOrDefault(round.RoundId) + 1;
-                if (failures == SkipThreshold)
-                {
-                    _failingRounds.Add(round.RoundId);
-                }
+                _failingRounds.Add(round.RoundId);
             }
 
             _current = new IncidentList(_current.Version + 1, [.. _incidents], [.. _failingRounds]);
@@ -97,6 +94,23 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
         lock (_gate)
         {
             return _roundFailures.GetValueOrDefault(roundId);
+        }
+    }
+
+    /// <summary>
+    /// Counts an occurrence against its round, and tells whether the round must be offered to be skipped: a TV screen that
+    /// cannot show the round leaves the public without it, so the game master may skip it at once. Called under the lock.
+    /// </summary>
+    private bool IsFailing(IncidentCode code, RoundId roundId)
+    {
+        switch (code)
+        {
+            case IncidentCode.RoundHandlerFailed:
+                return (_roundFailures[roundId] = _roundFailures.GetValueOrDefault(roundId) + 1) >= SkipThreshold;
+            case IncidentCode.DisplayViewFailed:
+                return true;
+            default:
+                return false;
         }
     }
 }

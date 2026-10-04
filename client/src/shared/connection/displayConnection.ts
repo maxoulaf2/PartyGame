@@ -32,3 +32,33 @@ export function connectDisplay(
         connection.stop().catch(() => {});
     };
 }
+
+/** Where the server serves the media files of the pack, followed by their identifier. */
+const mediaPrefix = '/media/';
+
+/**
+ * The identifier of the media file `url` designates, as the server names it in the URLs of the
+ * snapshots, or null for any other URL.
+ */
+export function mediaIdOf(url: string): string | null {
+    let path: string;
+    try {
+        path = new URL(url, 'http://partygame.invalid').pathname;
+    } catch {
+        return null;
+    }
+    const id = path.startsWith(mediaPrefix) ? path.slice(mediaPrefix.length) : '';
+    return id === '' || id.includes('/') ? null : id;
+}
+
+/**
+ * Tells the server that the TV screen could not load the media file of `url`, so that the game
+ * master hears of it. The screen goes on without it: a report that cannot be sent is dropped.
+ */
+export function reportMediaFailure(connection: GameConnection, url: string): void {
+    const mediaId = mediaIdOf(url);
+    if (mediaId === null) {
+        return;
+    }
+    connection.invoke('ReportDisplayMediaFailure', { mediaId }).catch(() => {});
+}

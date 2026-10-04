@@ -3,4 +3,6 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type IncidentCode = 'RoundHandlerFailed' | 'ProjectionFailed' | 'EffectFailed' | 'DisplayViewFailed' | 'DisplayMediaFailed';
+export interface DisplayMediaFailureReport {
+    readonly mediaId: string;
+}

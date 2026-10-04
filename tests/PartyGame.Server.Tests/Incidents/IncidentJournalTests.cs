@@ -33,7 +33,7 @@ public sealed class IncidentJournalTests
 
         // Then
         Assert.Equal(1, list.Version);
-        Assert.Equal(new Incident(1, IncidentCode.RoundHandlerFailed, _warmUp, Role: null, Count: 1, _time.GetUtcNow().ToUnixTimeMilliseconds()), Assert.Single(list.Incidents));
+        Assert.Equal(new Incident(1, IncidentCode.RoundHandlerFailed, _warmUp, Role: null, Step: null, Count: 1, _time.GetUtcNow().ToUnixTimeMilliseconds()), Assert.Single(list.Incidents));
         Assert.Same(list, _journal.Current);
     }
 
@@ -157,5 +157,57 @@ public sealed class IncidentJournalTests
         Assert.Equal([_warmUp.RoundId], _journal.Current.FailingRounds);
         _journal.Record(IncidentCode.RoundHandlerFailed, _final);
         Assert.Equal([_warmUp.RoundId, _final.RoundId], _journal.Current.FailingRounds);
+    }
+
+    [Fact]
+    public void Record_SameCodeForAnotherStep_ListsItApart()
+    {
+        // When
+        _journal.Record(IncidentCode.DisplayMediaFailed, _warmUp, step: 2);
+        _journal.Record(IncidentCode.DisplayMediaFailed, _warmUp, step: 3);
+        var list = _journal.Record(IncidentCode.DisplayMediaFailed, _warmUp, step: 2);
+
+        // Then
+        Assert.Equal([(2, 2), (3, 1)], list.Incidents.Select(i => (i.Step!.Value, i.Count)));
+    }
+
+    [Fact]
+    public void Record_DisplayViewFailedInARound_ListsItAsFailingAtOnce()
+    {
+        // When
+        var list = _journal.Record(IncidentCode.DisplayViewFailed, _warmUp);
+
+        // Then: the public no longer sees the round, so the game master may skip it without waiting
+        Assert.Equal([_warmUp.RoundId], list.FailingRounds);
+        Assert.Equal(0, _journal.FailureCount(_warmUp.RoundId));
+    }
+
+    [Fact]
+    public void Record_RoundFailingOnBothSides_ListsItOnce()
+    {
+        // Given
+        _journal.Record(IncidentCode.DisplayViewFailed, _warmUp);
+
+        // When
+        for (var i = 0; i < IncidentJournal.SkipThreshold; i++)
+        {
+            _journal.Record(IncidentCode.RoundHandlerFailed, _warmUp);
+        }
+
+        _journal.Record(IncidentCode.DisplayViewFailed, _warmUp);
+
+        // Then
+        Assert.Equal([_warmUp.RoundId], _journal.Current.FailingRounds);
+    }
+
+    [Fact]
+    public void Record_DisplayFailuresOutsideARoundOrOfAMedia_DoNotMakeAnyRoundFailing()
+    {
+        // When
+        _journal.Record(IncidentCode.DisplayViewFailed, round: null);
+        _journal.Record(IncidentCode.DisplayMediaFailed, _warmUp, step: 1);
+
+        // Then
+        Assert.Empty(_journal.Current.FailingRounds);
     }
 }

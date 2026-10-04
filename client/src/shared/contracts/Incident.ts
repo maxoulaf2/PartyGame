@@ -12,6 +12,7 @@ export interface Incident {
     readonly code: IncidentCode;
     readonly round: RoundInfo | null;
     readonly role: Role | null;
+    readonly step: number | null;
     readonly count: number;
     readonly lastOccurredAt: number;
 }
