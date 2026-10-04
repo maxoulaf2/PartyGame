@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Time.Testing;
+using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
@@ -47,6 +48,21 @@ public sealed class EffectExecutorTests : IDisposable
 
         // When
         await _executor.ExecuteAsync(new CancelTimer(_countdown), Ct);
+        _time.Advance(TimeSpan.FromSeconds(10));
+
+        // Then
+        Assert.Empty(_inputs.Inputs);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CancelRoundTimers_CancelsTheTimersOfTheRound()
+    {
+        // Given
+        var round = new RoundId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff"));
+        await _executor.ExecuteAsync(new ScheduleTimer(_countdown, _time.GetUtcNow().AddSeconds(10)) { RoundId = round }, Ct);
+
+        // When
+        await _executor.ExecuteAsync(new CancelRoundTimers(round), Ct);
         _time.Advance(TimeSpan.FromSeconds(10));
 
         // Then

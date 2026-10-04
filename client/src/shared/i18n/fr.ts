@@ -235,6 +235,21 @@ export const fr = {
             action: 'Lancer la manche suivante',
             hint: 'La manche suivante démarre sur tous les écrans dès que vous la lancez.',
         },
+        // Offered while the round in progress keeps failing: the server could not handle several
+        // of its actions. Players and TV screen see the usual end of round, nothing about it.
+        skipRound: {
+            problem: 'Cette manche rencontre un problème. Passer la manche ?',
+            hint: 'Les points déjà gagnés sont conservés, ceux de la question en cours ne sont pas attribués.',
+            action: 'Passer la manche',
+            confirmTitle: 'Passer la manche ?',
+            confirmMessage:
+                'La manche se termine tout de suite, sur tous les écrans. Les points déjà gagnés sont conservés, ceux de la question en cours ne sont pas attribués.',
+            confirm: 'Passer la manche',
+            cancel: 'Annuler',
+            failed: 'La manche n’a pas pu être passée : réessayez.',
+            // Between two rounds or once the game is finished, on the console alone.
+            skipped: 'Manche passée : les points de la question en cours n’ont pas été attribués.',
+        },
         connected: 'Connecté',
         disconnected: 'Déconnecté',
         // Failures the server recovered from by itself: the game master alone hears of them.

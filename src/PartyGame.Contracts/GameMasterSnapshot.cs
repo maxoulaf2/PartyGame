@@ -43,6 +43,10 @@ namespace PartyGame.Contracts;
 /// The title of the round the game master starts next, between two rounds; <see langword="null"/> otherwise. Only this
 /// projection holds it: the others discover the rounds as they are played.
 /// </param>
+/// <param name="RoundSkipped">
+/// Whether the game master skipped <paramref name="Round"/>, once it is over: the points of its question in progress were
+/// not awarded. Only this projection tells it: for the others, the round is over like any other.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -57,4 +61,5 @@ public sealed record GameMasterSnapshot(
     RoundInfo? Round,
     GameMasterRoundView? RoundView,
     ImmutableArray<RankedPlayer> Ranking,
-    string? NextRoundTitle);
+    string? NextRoundTitle,
+    bool RoundSkipped);

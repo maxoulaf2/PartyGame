@@ -27,4 +27,5 @@ export interface GameMasterSnapshot {
     readonly roundView: GameMasterRoundView | null;
     readonly ranking: readonly RankedPlayer[];
     readonly nextRoundTitle: string | null;
+    readonly roundSkipped: boolean;
 }

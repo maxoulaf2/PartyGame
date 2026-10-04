@@ -4,6 +4,7 @@ import type {
     GameId,
     GameMasterRoundView,
     GameMasterSnapshot,
+    IncidentList,
     PlayerId,
     QuizGameMasterView,
     RoundId,
@@ -51,6 +52,7 @@ function fakeLobby(
         roundView: null,
         ranking: [],
         nextRoundTitle: null,
+        roundSkipped: false,
     };
 }
 
@@ -628,6 +630,58 @@ test('/gm/ skips the question in progress once the game master confirms', async 
     await expect
         .poll(() => hub.roundIntents)
         .toEqual([{ type: 'quiz.skipQuestion', roundId: firstRound.roundId, questionNumber: 2 }]);
+});
+
+/** The incidents of a round whose inputs failed `count` times, failing from the third one. */
+function failures(count: number): IncidentList {
+    return {
+        version: count,
+        incidents: [
+            {
+                id: 1,
+                code: 'RoundHandlerFailed',
+                round: firstRound,
+                role: null,
+                count,
+                lastOccurredAt: 1_790_000_000_000,
+            },
+        ],
+        failingRounds: count >= 3 ? [firstRound.roundId] : [],
+    };
+}
+
+test('/gm/ offers to skip a round that keeps failing, then tells it was skipped', async ({
+    page,
+}) => {
+    const hub = await serveGameMasterSnapshot(page, fakeRound(answeringView([])), failures(3));
+    const banner = page.getByRole('alert').filter({ hasText: fr.gm.skipRound.problem });
+    const dialog = page.getByRole('dialog', { name: fr.gm.skipRound.confirmTitle });
+
+    await openConsole(page);
+    await expect(banner).toBeVisible();
+
+    // Cancelling sends nothing.
+    await banner.getByRole('button', { name: fr.gm.skipRound.action }).click();
+    await expect(dialog.getByText(fr.gm.skipRound.confirmMessage)).toBeVisible();
+    await dialog.getByRole('button', { name: fr.gm.skipRound.cancel }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await banner.getByRole('button', { name: fr.gm.skipRound.action }).click();
+    await dialog.getByRole('button', { name: fr.gm.skipRound.confirm }).click();
+
+    await expect.poll(() => hub.skipped).toEqual([firstRound.roundId]);
+    await expect(page.getByText(roundText(fr.game.roundEnded, firstRound))).toBeVisible();
+    await expect(page.getByText(fr.gm.skipRound.skipped)).toBeVisible();
+    await expect(banner).toHaveCount(0);
+});
+
+test('/gm/ does not offer to skip a round that failed only twice', async ({ page }) => {
+    await serveGameMasterSnapshot(page, fakeRound(answeringView([])), failures(2));
+
+    await openConsole(page);
+
+    await expect(page.getByRole('button', { name: fr.modes.quiz.gm.skipQuestion })).toBeVisible();
+    await expect(page.getByText(fr.gm.skipRound.problem)).toHaveCount(0);
 });
 
 test('/gm/ warns that skipping the last question ends the round', async ({ page }) => {

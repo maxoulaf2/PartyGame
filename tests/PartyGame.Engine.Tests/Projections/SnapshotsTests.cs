@@ -353,4 +353,37 @@ public sealed class SnapshotsTests
         // Then
         Assert.Equal($"/media/{id.Value}", Assert.IsType<FakeDisplayView>(snapshot.RoundView).ImageUrl);
     }
+
+    [Theory]
+    [InlineData(GamePhase.BetweenRounds)]
+    [InlineData(GamePhase.Finished)]
+    public void ForGameMaster_RoundSkipped_TellsIt(GamePhase phase)
+    {
+        // Given: the first round skipped, or the last one
+        var state = phase == GamePhase.BetweenRounds
+            ? Games.InPhase(GamePhase.Round, "Zoé")
+            : Games.InLastRound("Zoé");
+        state = Games.Accepted(state, Games.SkipRound(state));
+        Assert.Equal(phase, state.Phase);
+
+        // When
+        var snapshot = Games.Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.True(snapshot.RoundSkipped);
+    }
+
+    [Theory]
+    [MemberData(nameof(Phases))]
+    public void ForGameMaster_NoRoundSkipped_DoesNotTellOne(GamePhase phase, Phase _)
+    {
+        // Given: every round ended by its mode
+        var state = Games.InPhase(phase, "Zoé");
+
+        // When
+        var snapshot = Games.Snapshots.ForGameMaster(state);
+
+        // Then
+        Assert.False(snapshot.RoundSkipped);
+    }
 }

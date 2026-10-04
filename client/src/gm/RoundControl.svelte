@@ -49,6 +49,9 @@
         {@const round = screen.round}
         <p class="progress">{roundText(fr.game.roundEnded, round)}</p>
         <h2>{round.title}</h2>
+        {#if snapshot.roundSkipped}
+            <p class="skipped">{fr.gm.skipRound.skipped}</p>
+        {/if}
         {#if snapshot.nextRoundTitle !== null}
             <p class="upcoming">
                 {fill(fr.gm.nextRound.upcoming, {
@@ -73,6 +76,9 @@
     {:else if screen.kind === 'finished'}
         <!-- Nothing left to start: a new game needs the server to restart. -->
         <h2>{fr.game.finished}</h2>
+        {#if snapshot.roundSkipped}
+            <p class="skipped">{fr.gm.skipRound.skipped}</p>
+        {/if}
         <h3>{fr.game.finalRanking}</h3>
         <RankingList ranking={snapshot.ranking} />
     {:else}
@@ -110,6 +116,10 @@
     }
 
     .hint {
+        color: var(--color-text-muted);
+    }
+
+    .skipped {
         color: var(--color-text-muted);
     }
 

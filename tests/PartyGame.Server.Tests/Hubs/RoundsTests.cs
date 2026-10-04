@@ -295,9 +295,88 @@ public sealed class RoundsTests : IAsyncDisposable
         Assert.DoesNotContain(LoggedEvent.ReadAll(_logs), e => e.Level == "Error");
     }
 
+    [Fact]
+    public async Task SkipRound_InProgress_EndsTheRoundOnEveryInterfaceAndKeepsThePoints()
+    {
+        // Given: Zoé scored in the first round
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var first = Game.State.CurrentRound!.Id;
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+        using var toZoe = new ReceivedSnapshots(zoe);
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.SkipRound, Message(new SkipRoundRequest(first)), Ct);
+
+        // Then: the usual end of round, and only the console knows it was skipped
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
+        Assert.Equal((GamePhase.BetweenRounds, true), (Game.State.Phase, Game.State.CurrentRound!.IsSkipped));
+        Assert.Equal((Phase.BetweenRounds, first), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round!.RoundId));
+        Assert.Equal(TestQuizMode.PointsPerIntent, Assert.Single(toDisplay.Display[^1].Ranking).Score);
+        Assert.Equal((Phase.BetweenRounds, TestQuizMode.PointsPerIntent), (toZoe.Player[^1].Phase, toZoe.Player[^1].Score));
+        Assert.True(toGameMaster.GameMaster[^1].RoundSkipped);
+        var skipped = new Secret(nameof(GameMasterSnapshot.RoundSkipped), Audience.AllButGameMaster);
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, skipped);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, skipped);
+        Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Level == "Information" && e.Template.Contains("skipped by the game master", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SkipRound_TwiceAtOnce_SkipsASingleRound()
+    {
+        // Given: two game master consoles during the first round
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var secondGameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var first = Game.State.CurrentRound!.Id;
+        var version = Game.State.Version;
+
+        // When
+        await Task.WhenAll(
+            gameMaster.InvokeAsync(GameHub.SkipRound, Message(new SkipRoundRequest(first)), Ct),
+            secondGameMaster.InvokeAsync(GameHub.SkipRound, Message(new SkipRoundRequest(first)), Ct));
+
+        // Then
+        Assert.Equal((GamePhase.BetweenRounds, 0), (Game.State.Phase, Game.State.CurrentRound!.Index));
+        Assert.Equal(version + 1, Game.State.Version);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"roundId":"pas-un-guid"}""")]
+    [InlineData("null")]
+    public async Task SkipRound_Malformed_IsIgnoredWithAWarning(string json)
+    {
+        // Given
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var state = Game.State;
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.SkipRound, JsonDocument.Parse(json).RootElement, Ct);
+
+        // Then
+        Assert.Same(state, Game.State);
+        Assert.Contains(
+            LoggedEvent.ReadAll(_logs),
+            e => e.Level == "Warning" && e.Template.StartsWith("Malformed", StringComparison.Ordinal)
+                && e.Line.Contains(GameHub.SkipRound, StringComparison.Ordinal));
+    }
+
     [Theory]
     [InlineData(GameHub.SendGameMasterRoundIntent)]
     [InlineData(GameHub.NextRound)]
+    [InlineData(GameHub.SkipRound)]
     public async Task GameMasterRoundIntent_NotAuthenticatedAsGameMaster_IsIgnored(string method)
     {
         // Given: the round finished, so that the next round could start
@@ -312,9 +391,12 @@ public sealed class RoundsTests : IAsyncDisposable
         }
 
         var state = Game.State;
-        var message = method == GameHub.NextRound
-            ? Message(new NextRoundRequest(roundId))
-            : Message<GameMasterRoundIntent>(new QuizSkipQuestion(roundId, 1));
+        var message = method switch
+        {
+            GameHub.NextRound => Message(new NextRoundRequest(roundId)),
+            GameHub.SkipRound => Message(new SkipRoundRequest(roundId)),
+            _ => Message<GameMasterRoundIntent>(new QuizSkipQuestion(roundId, 1)),
+        };
 
         // When: a player sends what only the game master may send
         await zoe.InvokeAsync(method, message, Ct);

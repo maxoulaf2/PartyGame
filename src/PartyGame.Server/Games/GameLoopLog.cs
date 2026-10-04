@@ -28,6 +28,9 @@ internal static partial class GameLoopLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Round {RoundNumber} of {RoundCount} finished")]
     public static partial void RoundFinished(this ILogger logger, int roundNumber, int roundCount);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Round {RoundNumber} of {RoundCount} skipped by the game master")]
+    public static partial void RoundSkipped(this ILogger logger, int roundNumber, int roundCount);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Game finished")]
     public static partial void GameFinished(this ILogger logger);
 

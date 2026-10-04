@@ -1,3 +1,4 @@
+using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
@@ -58,6 +59,21 @@ internal sealed class TimerScheduler(IGameInputWriter inputs, TimeProvider timeP
         lock (_gate)
         {
             Remove(timerId);
+        }
+    }
+
+    /// <summary>
+    /// Cancels every pending timer of a round, such as one that ended without its game mode. Without effect on the timers
+    /// of other rounds and of the engine itself.
+    /// </summary>
+    public void CancelRound(RoundId roundId)
+    {
+        lock (_gate)
+        {
+            foreach (var timerId in _pending.Values.Where(p => p.Request.RoundId == roundId).Select(p => p.Request.TimerId).ToList())
+            {
+                Remove(timerId);
+            }
         }
     }
 

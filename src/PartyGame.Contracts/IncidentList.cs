@@ -11,4 +11,8 @@ namespace PartyGame.Contracts;
 /// the occurrences since it last marked them as read.
 /// </param>
 /// <param name="Incidents">The incidents, the one that happened last first.</param>
-public sealed record IncidentList(long Version, ImmutableArray<Incident> Incidents);
+/// <param name="FailingRounds">
+/// The rounds whose inputs failed often enough for the game master to be offered to skip them, in the order they reached
+/// that point. Over or not: the console offers to skip the one in progress only.
+/// </param>
+public sealed record IncidentList(long Version, ImmutableArray<Incident> Incidents, ImmutableArray<RoundId> FailingRounds);

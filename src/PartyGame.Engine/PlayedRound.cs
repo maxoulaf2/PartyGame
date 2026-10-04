@@ -9,4 +9,11 @@ namespace PartyGame.Engine;
 /// <param name="Id">Identifier of the round, generated when it starts.</param>
 /// <param name="Index">Position of its activity in <see cref="GameState.Rounds"/>, from 0.</param>
 /// <param name="State">State of the round, proper to its game mode.</param>
-public sealed record PlayedRound(RoundId Id, int Index, RoundState State);
+public sealed record PlayedRound(RoundId Id, int Index, RoundState State)
+{
+    /// <summary>
+    /// Whether the game master skipped the round, which then ended without its game mode: <see cref="State"/> stays as
+    /// the mode last left it, in the middle of the round.
+    /// </summary>
+    public bool IsSkipped { get; init; }
+}

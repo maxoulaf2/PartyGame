@@ -24,6 +24,7 @@ import type {
     ClockSyncResult,
     SelectPackRequest,
     SelectPackResult,
+    SkipRoundRequest,
     StaleBuildReport,
     StartGameResult,
 } from '../contracts';
@@ -48,8 +49,9 @@ export interface GameHubMethods {
     };
     SelectPack: { args: [request: SelectPackRequest]; result: SelectPackResult | null };
     ReloadPacks: { args: []; result: ReloadPacksResult | null };
-    // The next three answer nothing: the snapshots show whether the intent was accepted.
+    // The next four answer nothing: the snapshots show whether the intent was accepted.
     NextRound: { args: [request: NextRoundRequest]; result: null };
+    SkipRound: { args: [request: SkipRoundRequest]; result: null };
     SendRoundIntent: { args: [envelope: PlayerIntentEnvelope]; result: null };
     SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
     SyncClock: { args: []; result: ClockSyncResult };

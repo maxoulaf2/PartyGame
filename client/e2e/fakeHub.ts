@@ -3,6 +3,8 @@ import type {
     DisplaySnapshot,
     GameMasterRoundIntent,
     GameMasterSnapshot,
+    IncidentList,
+    RoundId,
 } from '../src/shared/contracts';
 
 // The JSON protocol of SignalR ends each message with the 0x1e record separator.
@@ -27,6 +29,12 @@ interface Answer {
 
 type Invocations = Partial<Record<string, (args: unknown[]) => Answer>>;
 
+/** A message the fake hub sends on its own, such as one sent on announcement. */
+interface ServerMessage {
+    target: string;
+    arguments: unknown[];
+}
+
 function send(socket: { send(message: string): void }, message: object): void {
     socket.send(JSON.stringify(message) + separator);
 }
@@ -46,17 +54,23 @@ export function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Pro
  * demand, such as a lobby without any player, or a host on several networks.
  *
  * An address choice is handled as the server does: a candidate is advertised in a new snapshot,
- * anything else is refused. `chosen` records every address the console sent, and `roundIntents`
- * every intent it sent to the round in progress, which changes nothing.
+ * anything else is refused. So is a skip of the round in progress, which ends it. `chosen` records
+ * every address the console sent, `roundIntents` every intent it sent to the round in progress,
+ * which changes nothing, and `skipped` every round it asked to skip. `incidents`, if any, are sent
+ * after the snapshot.
  */
 export async function serveGameMasterSnapshot(
     page: Page,
     snapshot: GameMasterSnapshot,
-): Promise<{ chosen: string[]; roundIntents: GameMasterRoundIntent[] }> {
+    incidents?: IncidentList,
+): Promise<{ chosen: string[]; roundIntents: GameMasterRoundIntent[]; skipped: RoundId[] }> {
     const chosen: string[] = [];
     const roundIntents: GameMasterRoundIntent[] = [];
+    const skipped: RoundId[] = [];
     let current = snapshot;
-    await serveSnapshot(page, 'ReceiveGameMasterSnapshot', snapshot, {
+    const announced =
+        incidents === undefined ? [] : [{ target: 'ReceiveIncidents', arguments: [incidents] }];
+    await serveSnapshot(page, 'ReceiveGameMasterSnapshot', snapshot, announced, {
         ChooseAdvertisedAddress: ([request]) => {
             const { address } = request as { address: string };
             chosen.push(address);
@@ -70,14 +84,30 @@ export async function serveGameMasterSnapshot(
             roundIntents.push(intent as GameMasterRoundIntent);
             return { result: null };
         },
+        SkipRound: ([request]) => {
+            const { roundId } = request as { roundId: RoundId };
+            skipped.push(roundId);
+            if (current.phase !== 'Round' || current.round?.roundId !== roundId) {
+                return { result: null };
+            }
+            current = {
+                ...current,
+                version: current.version + 1,
+                phase: 'BetweenRounds',
+                roundView: null,
+                roundSkipped: true,
+            };
+            return { result: null, snapshots: [current] };
+        },
     });
-    return { chosen, roundIntents };
+    return { chosen, roundIntents, skipped };
 }
 
 async function serveSnapshot(
     page: Page,
     target: string,
     snapshot: object,
+    announced: ServerMessage[] = [],
     invocations: Invocations = {},
 ): Promise<void> {
     await page.route(negotiateUrl, (route) =>
@@ -107,6 +137,9 @@ async function serveSnapshot(
                         target,
                         arguments: [snapshot],
                     });
+                    for (const extra of announced) {
+                        send(socket, { type: 1, ...extra });
+                    }
                     send(socket, {
                         type: 3,
                         invocationId: message.invocationId,

@@ -73,6 +73,7 @@ export type * from './RoundInfo';
 export type * from './SelectPackRefusal';
 export type * from './SelectPackRequest';
 export type * from './SelectPackResult';
+export type * from './SkipRoundRequest';
 export type * from './StaleBuildReport';
 export type * from './StartGameRefusal';
 export type * from './StartGameResult';
