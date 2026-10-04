@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E12-01](US-E12-01-simulateur-de-joueurs.md) | Simulateur de joueurs | Terminée | — |
 | [US-E12-02](US-E12-02-table-complete-e2e.md) | Table complète sur un serveur dédié en E2E | Terminée | — |
-| [US-E12-03](US-E12-03-tests-de-chaos.md) | Tests de chaos | À faire | US-E10-02, US-E10-04, US-E11-03, US-E12-01, US-E12-02 |
+| [US-E12-03](US-E12-03-tests-de-chaos.md) | Tests de chaos | Terminée | US-E10-02, US-E10-04, US-E11-03, US-E12-01, US-E12-02 |
 | [US-E12-04](US-E12-04-diagnostic-reseau.md) | Diagnostic réseau sur place | Terminée | — |
 
 Comme l'outillage des phases 0 et 1, US-E12-02 et US-E12-03 sont des US techniques : elles omettent la ligne « En tant que ».
@@ -20,6 +20,8 @@ Toutes les décisions qui bloquaient l'épopée sont prises. Les valeurs numéri
 
 1. **Bots en .NET :** le simulateur est un outil `tools/PartyGame.Bots`, à la fois bibliothèque et application console, qui ne dépend que de `PartyGame.Contracts`. Il utilise `Microsoft.AspNetCore.SignalR.Client`, déjà employé par les tests d'intégration du hub : dépendance Microsoft, sans appel réseau hors du serveur visé. Les tests d'intégration, les tests de chaos et le test de charge sur le Pi (E21) s'en servent. Option écartée : un script TypeScript sous Node, qui aurait réutilisé `shared/connection` mais se prête mal à xUnit et impose Node sur le Pi.
 2. **Diagnostic réseau en deux volets :** une page `/diagnostic/`, que n'importe quel téléphone ouvre sans s'inscrire, et un résumé par appareil dans la console GM. Options écartées : la console GM seule, qui ne permet aucun test avant l'arrivée des joueurs, et la page seule, qui oblige le GM à passer de téléphone en téléphone.
+3. **Injection de pannes par configuration (US-E12-03) :** une section `FaultInjection` fait lever une exception au moteur sur un type d'entrée, un nombre de fois donné, hors environnement `Production` seulement. Elle sert aux tests E2E et à la vérification du critère de sortie sur de vrais appareils. Option écartée : un mode défaillant enregistré dans les seuls tests d'intégration, invérifiable en E2E.
+4. **Réponse acquittée une fois enregistrée (US-E12-03) :** `SendRoundIntent` attend l'écriture de l'état qui contient l'intention avant de répondre au téléphone, la boucle n'attendant toujours pas le disque. Option écartée : garder l'acquittement au traitement par la boucle, qui laissait perdre une réponse acquittée lors d'un arrêt brutal. Amendement de l'[ADR 0005](../../docs/adr/0005-enregistrement-de-la-partie.md).
 
 ## Ordre de réalisation suggéré
 

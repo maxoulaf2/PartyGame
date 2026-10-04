@@ -13,7 +13,8 @@ namespace PartyGame.Server.Persistence;
 /// Saves the game to <see cref="FileName"/> after each change, so that a crash of the server loses nothing. The loop never
 /// waits for the disk: it hands each new state over, and a single writer saves the last one handed, so that a burst of
 /// changes makes a few writes, and an older state never overwrites a newer one. Each write goes to a temporary file first,
-/// then replaces the previous save: a crash in the middle leaves the previous save intact.
+/// then replaces the previous save: a crash in the middle leaves the previous save intact. Whoever must not acknowledge
+/// a change before it is on the disk, such as the answer of a player, waits for it with <see cref="WaitUntilSavedAsync"/>.
 /// </summary>
 /// <remarks>
 /// A failed write never stops the game: the game master is told once per series of failures, until a write succeeds.
@@ -39,6 +40,12 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
     private readonly TimeProvider _timeProvider;
     private readonly IIncidentReporter _incidents;
     private readonly ILogger<GamePersistence> _logger;
+
+    // Versions of the last state handed over and of the last one whose save ended, and those waiting for a version saved.
+    private readonly Lock _gate = new();
+    private readonly List<(long Version, TaskCompletionSource Saved)> _waiting = [];
+    private long _handed;
+    private long _saved;
     private bool _failing;
 
     public GamePersistence(
@@ -95,11 +102,36 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
         // While the game master decides, the file keeps the game found: nothing is played meanwhile.
         if (state.Phase != GamePhase.ResumePending)
         {
+            lock (_gate)
+            {
+                _handed = state.Version;
+            }
+
             // Never full: the oldest state waiting is dropped instead.
             _pending.Writer.TryWrite(state);
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Completes once every state handed over so far is saved, or its save failed: called once the loop handled an input,
+    /// the state it led to is saved then. A failed save is waited for no longer than a successful one, since the game goes
+    /// on without it, and the game master is told already.
+    /// </summary>
+    public Task WaitUntilSavedAsync(CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            if (_saved >= _handed)
+            {
+                return Task.CompletedTask;
+            }
+
+            var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _waiting.Add((_handed, saved));
+            return saved.Task.WaitAsync(cancellationToken);
+        }
     }
 
     /// <summary>
@@ -137,10 +169,19 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
         {
             await SaveAsync(last).ConfigureAwait(false);
         }
+
+        // Nothing is saved anymore: nobody may wait for it.
+        Release(long.MaxValue);
     }
 
     // Not cancellable: an interrupted write would only leave the previous save, and the shutdown waits for the last one.
     private async ValueTask SaveAsync(GameState state)
+    {
+        await WriteAsync(state).ConfigureAwait(false);
+        Release(state.Version);
+    }
+
+    private async ValueTask WriteAsync(GameState state)
     {
         try
         {
@@ -174,6 +215,20 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
             _failing = false;
             _logger.GameSavedAgain(_file);
             await _incidents.ResolveAsync(IncidentCode.PersistenceFailed, CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
+    private void Release(long version)
+    {
+        lock (_gate)
+        {
+            _saved = Math.Max(_saved, version);
+            foreach (var (_, saved) in _waiting.Where(waiting => waiting.Version <= _saved))
+            {
+                saved.TrySetResult();
+            }
+
+            _waiting.RemoveAll(waiting => waiting.Version <= _saved);
         }
     }
 }

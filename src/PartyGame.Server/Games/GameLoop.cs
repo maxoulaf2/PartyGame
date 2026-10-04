@@ -152,16 +152,23 @@ internal sealed class GameLoop : BackgroundService
             }
         }
 
-        if (changed)
+        // The game found saved holds the deadlines of before the stop: neither shown nor saved until its round resumed.
+        var resuming = input is ResumeSavedGame && state.PendingGame is not null;
+        if (changed && !resuming)
         {
             await NotifyAsync(newState, stoppingToken).ConfigureAwait(false);
         }
 
-        if (input is ResumeSavedGame && state.PendingGame is { } pending)
+        if (resuming)
         {
             // Before any other input, so that none is judged against the deadlines of before the stop. Handled on its own,
             // so that a round failing to resume leaves the game resumed, with an incident naming the round.
-            await ApplyAsync(new GameResumed(pending.SavedAt), stoppingToken).ConfigureAwait(false);
+            await ApplyAsync(new GameResumed(state.PendingGame!.SavedAt), stoppingToken).ConfigureAwait(false);
+            if (changed && ReferenceEquals(State, newState))
+            {
+                // The round did not resume: the game is, all the same.
+                await NotifyAsync(newState, stoppingToken).ConfigureAwait(false);
+            }
         }
 
         return InputOutcome.Accepted;

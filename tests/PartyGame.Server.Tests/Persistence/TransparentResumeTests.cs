@@ -91,6 +91,11 @@ public sealed class TransparentResumeTests : IAsyncDisposable
         var zoeView = Assert.IsType<QuizPlayerView>(onPhone.RoundView);
         Assert.Equal(("Zoé", 1, closeAt, QuizChoiceLetter.A), (onPhone.Nickname, zoeView.QuestionNumber, zoeView.AnswersCloseAt, zoeView.Answer));
 
+        // Never, even for an instant, the deadline of before the stop, which the time offline would have eaten.
+        Assert.All(toDisplay.Display.Select(s => s.RoundView).OfType<QuizDisplayView>(), view => Assert.Equal(closeAt, view.AnswersCloseAt));
+        Assert.All(toGameMaster.GameMaster.Select(s => s.RoundView).OfType<QuizGameMasterView>(), view => Assert.Equal(closeAt, view.AnswersCloseAt));
+        Assert.All(toZoe.Player.Select(s => s.RoundView).OfType<QuizPlayerView>(), view => Assert.Equal(closeAt, view.AnswersCloseAt));
+
         // The image of the question, at the URL the saved game drew for it.
         using var http = _factory!.CreateClient();
         var image = await http.GetAsync(new Uri(onDisplay.ImageUrl!, UriKind.Relative), Ct);

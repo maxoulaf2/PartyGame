@@ -1,0 +1,29 @@
+{
+  "formatVersion": 1,
+  "title": "Soirée mouvementée",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Sous tension",
+      "answerSeconds": 120,
+      "questions": [
+        {
+          "text": "Quelle est la capitale de l’Australie ?",
+          "image": "images/carte.png",
+          "choices": [{ "text": "Sydney" }, { "text": "Canberra", "correct": true }]
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "Après l’orage",
+      "answerSeconds": 120,
+      "questions": [
+        {
+          "text": "Combien de pattes a une araignée ?",
+          "choices": [{ "text": "6" }, { "text": "8", "correct": true }]
+        }
+      ]
+    }
+  ]
+}

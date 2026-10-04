@@ -124,6 +124,47 @@ public sealed class GamePersistenceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task WaitUntilSaved_NothingHanded_CompletesAtOnce()
+    {
+        await _persistence.StartAsync(Ct);
+
+        Assert.True(_persistence.WaitUntilSavedAsync(Ct).IsCompletedSuccessfully);
+    }
+
+    [Fact]
+    public async Task WaitUntilSaved_StateHanded_CompletesOnceItIsOnTheDisk()
+    {
+        // Given: a state handed while the writer is not running yet
+        await _persistence.OnStateChangedAsync(State(version: 2), Ct);
+
+        // When
+        var saved = _persistence.WaitUntilSavedAsync(Ct);
+
+        // Then
+        Assert.False(saved.IsCompleted);
+        await _persistence.StartAsync(Ct);
+        await saved.WaitAsync(_timeout, Ct);
+        Assert.Equal(2, SavedVersion());
+        Assert.True(_persistence.WaitUntilSavedAsync(Ct).IsCompletedSuccessfully);
+    }
+
+    [Fact]
+    public async Task WaitUntilSaved_SaveFails_CompletesAnyway()
+    {
+        // Given: the folder disappears during the game
+        Directory.Delete(_data.Path, recursive: true);
+        await _persistence.OnStateChangedAsync(State(version: 2), Ct);
+        var saved = _persistence.WaitUntilSavedAsync(Ct);
+
+        // When
+        await _persistence.StartAsync(Ct);
+
+        // Then: the game goes on without its save, the game master told
+        await saved.WaitAsync(_timeout, Ct);
+        Assert.Equal([IncidentCode.PersistenceFailed], _incidents.Detached);
+    }
+
+    [Fact]
     public async Task OnStateChanged_WriteFailsThenSucceeds_ReportsOnceForTheSeriesThenForgetsTheIncident()
     {
         // Given: the folder disappears during the game
