@@ -87,6 +87,28 @@ public sealed class TimerSchedulerTests : IDisposable
     }
 
     [Fact]
+    public async Task CancelRound_TimersOfSeveralRounds_CancelsThoseOfThatRoundOnly()
+    {
+        // Given: two timers of the skipped round, one of another round, one of the engine itself
+        var skipped = new RoundId(Guid.Parse("6f9619ff-8b86-d011-b42d-00cf4fc964ff"));
+        var other = new RoundId(Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e"));
+        var dueAt = _time.GetUtcNow().AddSeconds(10);
+        await _timers.ScheduleAsync(new ScheduleTimer(_countdown, dueAt) { RoundId = skipped }, Ct);
+        await _timers.ScheduleAsync(new ScheduleTimer(new TimerId("reveal"), dueAt) { RoundId = skipped }, Ct);
+        await _timers.ScheduleAsync(new ScheduleTimer(new TimerId("other-round"), dueAt) { RoundId = other }, Ct);
+        await _timers.ScheduleAsync(new ScheduleTimer(new TimerId("engine"), dueAt), Ct);
+
+        // When
+        _timers.CancelRound(skipped);
+        _time.Advance(TimeSpan.FromMinutes(1));
+
+        // Then
+        Assert.Equal(
+            ["engine", "other-round"],
+            _inputs.Inputs.OfType<TimerElapsed>().Select(i => i.TimerId.Value).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task ScheduleAsync_IdentifierAlreadyPending_ReplacesPreviousTimer()
     {
         // Given

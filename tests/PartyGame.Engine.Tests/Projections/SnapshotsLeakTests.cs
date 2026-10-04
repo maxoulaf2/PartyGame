@@ -60,6 +60,13 @@ public sealed class SnapshotsLeakTests
         };
         yield return new SecretPair<GameState>("secrets of the game master", state, withoutSecrets, Audience.AllButGameMaster);
 
+        // A round skipped by the game master is over like any other for the TV screen and the phones, whatever its mode
+        // left in the middle of it.
+        if (phase is GamePhase.BetweenRounds or GamePhase.Finished)
+        {
+            yield return new SecretPair<GameState>("skipped round", Skipped(phase), Games.InPhase(phase, "Zoé", "Max"), Audience.AllButGameMaster);
+        }
+
         // A phone learns its own rank, never by how much the others lead.
         yield return new SecretPair<GameState>(
             "score of another player",
@@ -145,5 +152,18 @@ public sealed class SnapshotsLeakTests
             yield return new Secret(player.Nickname, Audience.OtherPlayersThan(player.Nickname));
             yield return new Secret(player.Id.Value.ToString(), Audience.OtherPlayersThan(player.Nickname));
         }
+    }
+
+    /// <summary>
+    /// The game of <see cref="Games.InPhase"/> whose last round played was skipped in the middle of it rather than ended by
+    /// its mode.
+    /// </summary>
+    private static GameState Skipped(GamePhase phase)
+    {
+        var state = phase == GamePhase.BetweenRounds
+            ? Games.InPhase(GamePhase.Round, "Zoé", "Max")
+            : Games.InLastRound("Zoé", "Max");
+        state = Games.Accepted(state, Games.GameMasterActs(state, "reveals"));
+        return Games.Accepted(state, Games.SkipRound(state));
     }
 }

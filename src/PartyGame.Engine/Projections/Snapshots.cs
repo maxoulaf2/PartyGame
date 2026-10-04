@@ -54,7 +54,8 @@ public sealed class Snapshots(GameModes modes)
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State, state) : null,
             RankingOf(state),
-            NextRoundTitleOf(state));
+            NextRoundTitleOf(state),
+            state.CurrentRound?.IsSkipped ?? false);
     }
 
     /// <summary>

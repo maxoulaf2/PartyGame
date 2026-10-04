@@ -1,6 +1,6 @@
 ### US-E10-02 — Passer une manche qui échoue à répétition
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** pouvoir passer une manche dont le mode plante à répétition
@@ -23,6 +23,11 @@ Défaut. Si passer la manche échouait elle-même, ce serait un bug du moteur : 
 - Le seuil de 3 échecs et le compteur par manche vivent dans le journal des incidents (US-E10-01), hors de l'état. Le journal indique la manche à proposer dans la liste envoyée au GM.
 - La fin de manche réutilise le chemin de fin normal de US-E07-01, sans appeler le mode, puisque c'est lui qui échoue.
 - Projections : la manche passée est mémorisée comme terminée. Seule la projection `GameMaster` peut indiquer qu'elle a été passée ; la `LeakSuite` du moteur le vérifie pour `Player` et `Display`.
+- Réalisation : contrats. `SkipRoundRequest(roundId)` ; `IncidentList.FailingRounds`, les manches dont au moins 3 entrées ont échoué, dans l'ordre où elles ont atteint ce seuil ; `GameMasterSnapshot.RoundSkipped`, vrai entre deux manches ou en fin de partie quand la dernière manche jouée a été passée.
+- Réalisation : moteur. Entrée `SkipRound` traitée par `RoundFlow.Skip`, sans appeler le mode : la manche passe à l'état terminé (`PlayedRound.IsSkipped`, son état de mode laissé tel quel), la partie va entre deux manches ou se termine comme après une fin normale, et le nouvel effet `CancelRoundTimers(roundId)` annule les timers de la manche, dont seul le mode connaît les identifiants. Rejets : `NotInRound` hors manche (y compris le second envoi), `RoundMismatch` pour une autre manche. La `LeakSuite` des snapshots compare, entre deux manches et en fin de partie, une manche passée en plein milieu et une manche terminée par son mode : identiques pour la TV et les téléphones.
+- Réalisation : serveur. Méthode `[GameMasterOnly]` `GameHub.SkipRound`. `TimerScheduler.CancelRound` exécute `CancelRoundTimers` ; un timer déjà échu est de toute façon rejeté par le moteur. `IncidentJournal.SkipThreshold` (3) fixe le seuil, compté par identifiant de manche, donc de zéro pour chaque manche. `RoundProgressLog` journalise « Round … skipped by the game master » en `Information`.
+- Réalisation : client. `IncidentInbox.isFailing(roundId)` ; `GameMasterSession.skipRound(roundId)` ; `gm/SkipRoundBanner.svelte`, affiché par `GameConsole` hors de la vue de manche tant que la manche en cours est défaillante, avec confirmation par `ConfirmDialog`. Entre deux manches et en fin de partie, `RoundControl` indique « Manche passée » au GM. Textes dans `fr.ts` (`gm.skipRound`).
+- Réalisation : tests. `SkipRoundTests` (moteur), `SnapshotsTests` et `SnapshotsLeakTests`, `TimerSchedulerTests`, `EffectExecutorTests`, `IncidentJournalTests`, `RoundsTests` (fin de manche sur toutes les interfaces avec les points conservés, double envoi, message malformé, refus sans code GM), `IncidentsTests` (manche proposée après 3 échecs puis passée sans rien laisser voir à la TV ni aux téléphones, compteur repartant de zéro). Vitest : `incidentInbox.test.ts`, `gameMasterSession.test.ts`. E2E : `gm.spec.ts` (bandeau, annulation, confirmation, mention « Manche passée » ; aucun bandeau après 2 échecs).
 
 **Hors périmètre**
 - Le saut de manche permanent et le réordonnancement (E19).

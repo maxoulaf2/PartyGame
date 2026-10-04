@@ -88,7 +88,11 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                 if (method === 'ReloadPacks') {
                     return reloadAnswer;
                 }
-                if (method === 'NextRound' || method === 'SendGameMasterRoundIntent') {
+                if (
+                    method === 'NextRound' ||
+                    method === 'SkipRound' ||
+                    method === 'SendGameMasterRoundIntent'
+                ) {
                     return null;
                 }
                 return {
@@ -165,6 +169,7 @@ function snapshot(version: number): GameMasterSnapshot {
         roundView: null,
         ranking: [],
         nextRoundTitle: null,
+        roundSkipped: false,
     };
 }
 
@@ -381,11 +386,15 @@ describe('GameMasterSession', () => {
             lastOccurredAt: 1_790_000_000_000,
         } as const;
 
-        server.sendIncidents({ version: 3, incidents: [{ ...incident, count: 3 }] });
+        server.sendIncidents({
+            version: 3,
+            incidents: [{ ...incident, count: 3 }],
+            failingRounds: [],
+        });
         server.drop();
         server.restore();
         // The server restarted meanwhile: it counts its incidents from 0 again.
-        server.sendIncidents({ version: 1, incidents: [incident] });
+        server.sendIncidents({ version: 1, incidents: [incident], failingRounds: [] });
 
         expect(session.incidents.incidents).toEqual([incident]);
         expect(session.incidents.unread).toBe(1);
@@ -672,6 +681,38 @@ describe('GameMasterSession', () => {
 
             expect(server.connection.invoke).not.toHaveBeenCalledWith(
                 'NextRound',
+                expect.anything(),
+            );
+        });
+    });
+
+    describe('skipRound', () => {
+        it('names the round in progress', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.skipRound(roundId);
+
+            expect(outcome).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('SkipRound', { roundId });
+        });
+
+        it('reports a request lost with the connection as unreachable', async () => {
+            const { session, server } = await grantedSession();
+            server.becomeUnreachable();
+
+            expect(await session.skipRound(roundId)).toBe('unreachable');
+        });
+
+        it('sends nothing while disconnected or without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.skipRound(roundId)).toBe('unreachable');
+            await session.submit(goodCode);
+            server.drop();
+            expect(await session.skipRound(roundId)).toBe('unreachable');
+
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'SkipRound',
                 expect.anything(),
             );
         });

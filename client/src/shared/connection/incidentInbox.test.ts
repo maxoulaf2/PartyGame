@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Incident, IncidentList } from '../contracts';
+import type { Incident, IncidentList, RoundId } from '../contracts';
 import { IncidentInbox } from './incidentInbox.svelte';
 
 function incident(id: number, count = 1): Incident {
@@ -14,7 +14,7 @@ function incident(id: number, count = 1): Incident {
 }
 
 function list(version: number, ...incidents: Incident[]): IncidentList {
-    return { version, incidents };
+    return { version, incidents, failingRounds: [] };
 }
 
 describe('IncidentInbox', () => {
@@ -79,5 +79,17 @@ describe('IncidentInbox', () => {
         inbox.accept(list(2, incident(1, 2)));
 
         expect(inbox.unread).toBe(0);
+    });
+
+    it('tells the rounds the server finds failing, and no other', () => {
+        const inbox = new IncidentInbox();
+        const failing = 'b1a6c3e0-0000-4000-8000-000000000001' as RoundId;
+        const other = 'b1a6c3e0-0000-4000-8000-000000000002' as RoundId;
+
+        expect(inbox.isFailing(failing)).toBe(false);
+        inbox.accept({ ...list(3, incident(1, 3)), failingRounds: [failing] });
+
+        expect(inbox.isFailing(failing)).toBe(true);
+        expect(inbox.isFailing(other)).toBe(false);
     });
 });

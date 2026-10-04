@@ -20,6 +20,10 @@ internal sealed class EffectExecutor(TimerScheduler timers) : IEffectExecutor
                 timers.Cancel(cancel.TimerId);
                 return ValueTask.CompletedTask;
 
+            case CancelRoundTimers cancelRound:
+                timers.CancelRound(cancelRound.RoundId);
+                return ValueTask.CompletedTask;
+
             default:
                 // A bug of the server, not of the game: the loop logs it, tells the game master, and the game goes on.
                 throw new NotSupportedException($"Effect {effect.GetType().Name} has no executor.");

@@ -60,6 +60,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="NextRoundAsync"/>, as the clients call it.</summary>
     public const string NextRound = nameof(NextRound);
 
+    /// <summary>SignalR target of <see cref="SkipRoundAsync"/>, as the clients call it.</summary>
+    public const string SkipRound = nameof(SkipRound);
+
     /// <summary>SignalR target of <see cref="SendRoundIntentAsync"/>, as the clients call it.</summary>
     public const string SendRoundIntent = nameof(SendRoundIntent);
 
@@ -436,6 +439,28 @@ internal sealed class GameHub(
         // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
         await inputs
             .SubmitAsync(new Engine.Inputs.NextRound(request.AfterRound, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Skips the round in progress at the request of the game master, without its game mode: the console offers it when the
+    /// round keeps failing. The loop alone decides whether the request still names the round in progress, so that a double
+    /// tap or two consoles skip a single round. Nothing is answered: the snapshots show the end of the round either way.
+    /// </summary>
+    /// <param name="message">A <see cref="SkipRoundRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(SkipRound)]
+    public async Task SkipRoundAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<SkipRoundRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(SkipRound, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.SkipRound(request.RoundId, timeProvider.GetUtcNow()), CancellationToken.None)
             .ConfigureAwait(false);
     }
 

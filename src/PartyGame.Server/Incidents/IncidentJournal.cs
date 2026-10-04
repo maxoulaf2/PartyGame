@@ -7,7 +7,8 @@ namespace PartyGame.Server.Incidents;
 /// The incidents of the server since it started, for the game master. Kept apart from the game state: an incident changes
 /// nothing of the game, and is forgotten on restart, the logs keeping their trace. The occurrences of a same code in a same
 /// round, for a same role, make one incident; past <see cref="Capacity"/> incidents, the one that happened longest ago is
-/// dropped.
+/// dropped. A round whose inputs failed <see cref="SkipThreshold"/> times is listed as failing, so that the game master is
+/// offered to skip it.
 /// </summary>
 /// <remarks>
 /// Fed by the loop only, but read by the hub when a console is accepted: the lock guards the list against that read.
@@ -17,13 +18,20 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
     /// <summary>The most incidents kept: enough for a whole evening, small enough to send whole each time.</summary>
     public const int Capacity = 100;
 
+    /// <summary>
+    /// How many inputs of a round must fail for the game master to be offered to skip it: a single failure the server
+    /// recovered from is no reason to disturb them.
+    /// </summary>
+    public const int SkipThreshold = 3;
+
     private readonly Lock _gate = new();
 
     // The one that happened last first, as the console lists them.
     private readonly List<Incident> _incidents = [];
     private readonly Dictionary<RoundId, int> _roundFailures = [];
+    private readonly List<RoundId> _failingRounds = [];
     private int _lastId;
-    private IncidentList _current = new(Version: 0, []);
+    private IncidentList _current = new(Version: 0, [], []);
 
     /// <summary>Every incident kept, the one that happened last first.</summary>
     public IncidentList Current
@@ -68,17 +76,21 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
 
             if (code == IncidentCode.RoundHandlerFailed && round is not null)
             {
-                _roundFailures[round.RoundId] = _roundFailures.GetValueOrDefault(round.RoundId) + 1;
+                var failures = _roundFailures[round.RoundId] = _roundFailures.GetValueOrDefault(round.RoundId) + 1;
+                if (failures == SkipThreshold)
+                {
+                    _failingRounds.Add(round.RoundId);
+                }
             }
 
-            _current = new IncidentList(_current.Version + 1, [.. _incidents]);
+            _current = new IncidentList(_current.Version + 1, [.. _incidents], [.. _failingRounds]);
             return _current;
         }
     }
 
     /// <summary>
     /// How many inputs failed in a round, whether or not its incident is still kept: a round that keeps failing may have to
-    /// be skipped.
+    /// be skipped. Each round counts from zero, since each one has an identifier of its own.
     /// </summary>
     public int FailureCount(RoundId roundId)
     {

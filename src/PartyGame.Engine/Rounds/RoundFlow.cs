@@ -49,6 +49,30 @@ internal static class RoundFlow
     }
 
     /// <summary>
+    /// Ends the round in progress that the game master names, without its game mode, since it may be what keeps failing.
+    /// The points already added to the scores stay, those its question in progress would award are never awarded, and its
+    /// timers are cancelled. The game then goes between two rounds, or is finished after the last one, as when the mode
+    /// ends the round itself. A request sent twice, or by two consoles at once, skips the round only once.
+    /// </summary>
+    public static Transition Skip(GameState state, SkipRound skip)
+    {
+        if (state.Phase != GamePhase.Round)
+        {
+            return Transition.Rejected(state, RejectionReason.NotInRound);
+        }
+
+        var round = state.CurrentRound!;
+        if (round.Id != skip.RoundId)
+        {
+            return Transition.Rejected(state, RejectionReason.RoundMismatch);
+        }
+
+        return new Transition(
+            state with { Phase = PhaseAfter(state, round), CurrentRound = round with { IsSkipped = true } },
+            [new CancelRoundTimers(round.Id)]);
+    }
+
+    /// <summary>
     /// Hands an intent of a player to the round it names, once: an intent numbered up to the last one accepted from the
     /// player was already handled, and never reaches the game mode again. Only an accepted intent counts as handled: a
     /// rejected one leaves the state as it is, and is judged again if sent again.
@@ -138,9 +162,7 @@ internal static class RoundFlow
             return new Transition(state, effects);
         }
 
-        var phase = !handled.IsFinished ? GamePhase.Round
-            : round.Index == state.Rounds.Length - 1 ? GamePhase.Finished
-            : GamePhase.BetweenRounds;
+        var phase = handled.IsFinished ? PhaseAfter(state, round) : GamePhase.Round;
         return new Transition(
             state with
             {
@@ -150,6 +172,12 @@ internal static class RoundFlow
             },
             effects);
     }
+
+    /// <summary>
+    /// The phase of the game once a round is over: between two rounds, or finished after the last one.
+    /// </summary>
+    private static GamePhase PhaseAfter(GameState state, PlayedRound round) =>
+        round.Index == state.Rounds.Length - 1 ? GamePhase.Finished : GamePhase.BetweenRounds;
 
     /// <summary>
     /// Adds the points a round awards to the scores of the players. Players are never removed, so every player a round

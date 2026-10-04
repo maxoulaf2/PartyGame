@@ -3,11 +3,8 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-import type { Incident } from './Incident';
 import type { RoundId } from './RoundId';
 
-export interface IncidentList {
-    readonly version: number;
-    readonly incidents: readonly Incident[];
-    readonly failingRounds: readonly RoundId[];
+export interface SkipRoundRequest {
+    readonly roundId: RoundId;
 }

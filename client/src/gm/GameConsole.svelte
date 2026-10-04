@@ -10,6 +10,7 @@
     import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import RoundControl from './RoundControl.svelte';
+    import SkipRoundBanner from './SkipRoundBanner.svelte';
     import StartControl from './StartControl.svelte';
 
     interface Props {
@@ -38,6 +39,13 @@
         {countText(fr.gm.playersJoined, snapshot.players.length)}{#if snapshot.players.length > 0}
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
+
+    {#if snapshot.phase === 'Round' && snapshot.round !== null && session.incidents.isFailing(snapshot.round.roundId)}
+        <!-- Keyed: a confirmation open for one round never skips another. -->
+        {#key snapshot.round.roundId}
+            <SkipRoundBanner roundId={snapshot.round.roundId} {session} {interactive} />
+        {/key}
+    {/if}
 
     {#if snapshot.phase !== 'Lobby'}
         <RoundControl {snapshot} {session} {clock} {interactive} />

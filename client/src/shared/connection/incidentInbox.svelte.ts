@@ -1,4 +1,4 @@
-import type { Incident, IncidentList } from '../contracts';
+import type { Incident, IncidentList, RoundId } from '../contracts';
 
 /**
  * The incidents of the server, as the GM console shows them: every incident it keeps, and how many
@@ -15,6 +15,14 @@ export class IncidentInbox {
     /** Every incident the server keeps, the one that happened last first. */
     get incidents(): readonly Incident[] {
         return this.#list?.incidents ?? [];
+    }
+
+    /**
+     * Whether `roundId` failed often enough for the game master to be offered to skip it. Read
+     * from the server, which alone counts the failures of each round.
+     */
+    isFailing(roundId: RoundId): boolean {
+        return this.#list?.failingRounds.includes(roundId) ?? false;
     }
 
     /**

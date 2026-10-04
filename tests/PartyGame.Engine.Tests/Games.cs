@@ -132,6 +132,8 @@ internal static class Games
 
     public static NextRound NextRound(GameState state) => new(state.CurrentRound!.Id, Now);
 
+    public static SkipRound SkipRound(GameState state) => new(state.CurrentRound!.Id, Now);
+
     public static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));
 
     /// <summary>
@@ -153,6 +155,15 @@ internal static class Games
     /// the two rounds, or finished.
     /// </summary>
     public static GameState InPhase(GamePhase phase, params string[] nicknames) => PlayedUpTo(phase, LobbyWith(nicknames));
+
+    /// <summary>
+    /// A game of <see cref="Pack"/> with the given players, its second and last round in progress.
+    /// </summary>
+    public static GameState InLastRound(params string[] nicknames)
+    {
+        var state = InPhase(GamePhase.BetweenRounds, nicknames);
+        return Accepted(state, NextRound(state), seed: 43);
+    }
 
     /// <summary>
     /// Plays a lobby whose selected pack has two rounds up to the given phase: the first round in progress, between the two

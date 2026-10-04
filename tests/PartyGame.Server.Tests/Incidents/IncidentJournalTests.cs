@@ -108,4 +108,54 @@ public sealed class IncidentJournalTests
         Assert.Equal((2, 1), (_journal.FailureCount(_warmUp.RoundId), _journal.FailureCount(_final.RoundId)));
         Assert.Equal(0, _journal.FailureCount(new RoundId(Guid.NewGuid())));
     }
+
+    [Fact]
+    public void Record_RoundFailingUpToTheThreshold_ListsItAsFailingOnce()
+    {
+        // When
+        var lists = Enumerable.Range(0, IncidentJournal.SkipThreshold + 1)
+            .Select(_ => _journal.Record(IncidentCode.RoundHandlerFailed, _warmUp))
+            .ToList();
+
+        // Then: not before the threshold, and once past it
+        Assert.All(lists.Take(IncidentJournal.SkipThreshold - 1), list => Assert.Empty(list.FailingRounds));
+        Assert.Equal([_warmUp.RoundId], lists[IncidentJournal.SkipThreshold - 1].FailingRounds);
+        Assert.Equal([_warmUp.RoundId], lists[^1].FailingRounds);
+    }
+
+    [Fact]
+    public void Record_OtherIncidentsOfARound_DoNotMakeItFailing()
+    {
+        // When: only the inputs that fail count, not what follows them
+        for (var i = 0; i < IncidentJournal.SkipThreshold; i++)
+        {
+            _journal.Record(IncidentCode.EffectFailed, _warmUp);
+            _journal.Record(IncidentCode.ProjectionFailed, _warmUp, Role.Display);
+            _journal.Record(IncidentCode.RoundHandlerFailed, round: null);
+        }
+
+        // Then
+        Assert.Empty(_journal.Current.FailingRounds);
+    }
+
+    [Fact]
+    public void Record_FailuresOfSeveralRounds_CountsEachRoundFromZero()
+    {
+        // Given: the warm-up failed until the game master skipped it
+        for (var i = 0; i < IncidentJournal.SkipThreshold; i++)
+        {
+            _journal.Record(IncidentCode.RoundHandlerFailed, _warmUp);
+        }
+
+        // When: the final fails once less
+        for (var i = 0; i < IncidentJournal.SkipThreshold - 1; i++)
+        {
+            _journal.Record(IncidentCode.RoundHandlerFailed, _final);
+        }
+
+        // Then
+        Assert.Equal([_warmUp.RoundId], _journal.Current.FailingRounds);
+        _journal.Record(IncidentCode.RoundHandlerFailed, _final);
+        Assert.Equal([_warmUp.RoundId, _final.RoundId], _journal.Current.FailingRounds);
+    }
 }

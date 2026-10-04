@@ -66,7 +66,7 @@ type GameMasterMethod =
     'RenamePlayer' | 'StartGame' | 'ChooseAdvertisedAddress' | 'SelectPack' | 'ReloadPacks';
 
 /** The hub methods the game master alone may call, which answer nothing. */
-type GameMasterIntentMethod = 'NextRound' | 'SendGameMasterRoundIntent';
+type GameMasterIntentMethod = 'NextRound' | 'SkipRound' | 'SendGameMasterRoundIntent';
 
 // Six ASCII digits, like `GameMasterCode` on the server.
 const completeCode = /^[0-9]{6}$/;
@@ -222,6 +222,16 @@ export class GameMasterSession {
      */
     nextRound(afterRound: RoundId): Promise<IntentOutcome> {
         return this.#send('NextRound', { afterRound });
+    }
+
+    /**
+     * Skips `roundId`, the round in progress, without its game mode: offered when it keeps failing.
+     * Naming it makes the request safe to repeat: a second one, from a double tap or another
+     * console, is ignored by the server. The end of the round reaches every page through the next
+     * snapshots.
+     */
+    skipRound(roundId: RoundId): Promise<IntentOutcome> {
+        return this.#send('SkipRound', { roundId });
     }
 
     /**

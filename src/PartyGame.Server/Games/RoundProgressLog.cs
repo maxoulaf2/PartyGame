@@ -4,7 +4,7 @@ using PartyGame.Engine;
 namespace PartyGame.Server.Games;
 
 /// <summary>
-/// Logs for the operator when a round starts, when it finishes and when the game is finished, whatever made it happen: an
+/// Logs for the operator when a round starts, when it finishes or is skipped, and when the game is finished, whatever made it happen: an
 /// intent, a timer, or the end decided by a game mode.
 /// </summary>
 /// <remarks>Called by the loop only, one change at a time: the last state seen needs no lock.</remarks>
@@ -28,7 +28,14 @@ internal sealed class RoundProgressLog(ILogger<RoundProgressLog> logger) : IGame
 
             if (state.Phase != GamePhase.Round && (round.Id != _roundId || _phase == GamePhase.Round))
             {
-                logger.RoundFinished(number, state.Rounds.Length);
+                if (round.IsSkipped)
+                {
+                    logger.RoundSkipped(number, state.Rounds.Length);
+                }
+                else
+                {
+                    logger.RoundFinished(number, state.Rounds.Length);
+                }
             }
 
             _roundId = round.Id;
