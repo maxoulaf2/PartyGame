@@ -26,7 +26,7 @@ public sealed class PackChoiceTests : IAsyncDisposable
         TestPacks.Write(_packs.Path, "casse", TestPacks.Broken("Pack cassé"));
         TestPacks.Write(_packs.Path, "soiree", TestPacks.Quiz("Grande soirée", "Échauffement", "Finale"));
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code)
             .UseSetting(PacksOptions.DirectorySetting, _packs.Path));
     }

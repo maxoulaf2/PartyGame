@@ -210,4 +210,35 @@ public sealed class IncidentJournalTests
         // Then
         Assert.Empty(_journal.Current.FailingRounds);
     }
+
+    [Fact]
+    public void Resolve_IncidentOfTheCode_ForgetsItAndTellsTheChange()
+    {
+        // Given
+        _journal.Record(IncidentCode.PersistenceFailed, round: null);
+        _journal.Record(IncidentCode.RoundHandlerFailed, _warmUp);
+
+        // When
+        var list = _journal.Resolve(IncidentCode.PersistenceFailed);
+
+        // Then: the console takes the list, newer than the last
+        Assert.NotNull(list);
+        Assert.Equal(3, list.Version);
+        Assert.Equal(IncidentCode.RoundHandlerFailed, Assert.Single(list.Incidents).Code);
+        Assert.Same(list, _journal.Current);
+    }
+
+    [Fact]
+    public void Resolve_NoIncidentOfTheCode_LeavesTheListUnchanged()
+    {
+        // Given
+        var before = _journal.Record(IncidentCode.RoundHandlerFailed, _warmUp);
+
+        // When
+        var list = _journal.Resolve(IncidentCode.PersistenceFailed);
+
+        // Then
+        Assert.Null(list);
+        Assert.Same(before, _journal.Current);
+    }
 }

@@ -23,6 +23,12 @@ public interface IGameMode
     Type DescriptorType { get; }
 
     /// <summary>
+    /// The type of the state of the rounds this mode plays, derived from <see cref="RoundState"/>: the game state is
+    /// persisted with it (<see cref="GameStateJson"/>).
+    /// </summary>
+    Type StateType { get; }
+
+    /// <summary>
     /// Checks the consistency of an activity of a pack when the pack is loaded: what the simple constraints of the
     /// descriptor (bounds, lengths), checked beforehand, cannot express, such as the rules that tie several of its values
     /// together. A round whose activity passes both never fails because of its content.

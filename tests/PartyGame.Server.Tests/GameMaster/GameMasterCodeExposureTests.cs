@@ -51,7 +51,7 @@ public sealed class GameMasterCodeExposureTests : IDisposable
     private WebApplicationFactory<Program> CreateFactory() =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting(Microsoft.AspNetCore.Hosting.WebHostDefaults.WebRootKey, _webRoot.Path)
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code));
 
     // A page that loads the client like the real build does, without the code anywhere in it.

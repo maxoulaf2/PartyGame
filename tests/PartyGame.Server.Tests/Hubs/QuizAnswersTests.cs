@@ -36,7 +36,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         // The only pack of the directory, chosen at once: a single question, "Oui" (A) being its correct answer.
         TestPacks.Write(_packs.Path, "soiree", TestPacks.Quiz("Soirée test", "Manche"));
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code)
             .UseSetting(PacksOptions.DirectorySetting, _packs.Path)
             .ConfigureTestServices(services => services.AddSingleton<TimeProvider>(_time)));

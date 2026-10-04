@@ -91,6 +91,7 @@ dotnet test
 dotnet run --project src/PartyGame.Server   # port 5000 sur 0.0.0.0 ; sert le front construit dans wwwroot
                                             # Network:Port change le port (Network__Port=5001 ou -- --Network:Port=5001)
                                             # Packs:Directory désigne le dossier des packs (défaut : packs à côté de l'exécutable)
+                                            # Persistence:Directory désigne le dossier où la partie est enregistrée (défaut : data à côté de l'exécutable)
 
 # Front (depuis client/)
 npm install
@@ -137,6 +138,7 @@ dotnet publish src/PartyGame.Server -c Release -r linux-arm64 --self-contained
 | Front en TypeScript + Svelte 5 | Retenu ([ADR 0002](docs/adr/0002-front-svelte-5.md)) |
 | Génération des types TypeScript par un outil maison | Retenu ([ADR 0003](docs/adr/0003-generation-types-typescript.md)) |
 | Packs : descripteurs en JSON, types dans `Contracts.Packs`, schéma généré | Retenu ([ADR 0004](docs/adr/0004-format-et-modele-des-packs.md)) |
+| Enregistrement de la partie : `current-game.json` versionné, écriture asynchrone et atomique, états de manche déclarés par les modes | Retenu ([ADR 0005](docs/adr/0005-enregistrement-de-la-partie.md)) |
 | HTTPS en local | Reporté (piste : domaine réel pointant vers l'IP locale + certificat Let's Encrypt via validation DNS) |
 | Hébergement en ligne | Hors périmètre pour l'instant |
 

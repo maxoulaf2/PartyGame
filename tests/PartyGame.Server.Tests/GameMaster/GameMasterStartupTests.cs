@@ -70,6 +70,7 @@ public sealed partial class GameMasterStartupTests : IDisposable
     {
         ["Network__Port"] = port.ToString(CultureInfo.InvariantCulture),
         ["LogFiles__Directory"] = _logs.Path,
+        ["Persistence__Directory"] = _logs.Path,
     };
 
     [GeneratedRegex(@"Code game master\s*: (?<code>[0-9]{6})(?<origin>[^\r\n]*)")]

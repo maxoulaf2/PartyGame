@@ -12,7 +12,7 @@ public sealed class StartupLoggingTests : IDisposable
     public async Task Startup_ServerStarted_WritesLifecycleMessageToLogFile()
     {
         await using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseSetting("LogFiles:Directory", _logs.Path));
+            .WithWebHostBuilder(builder => builder.UseScratchDirectory(_logs.Path));
 
         using var client = factory.CreateClient();
         using var response = await client.GetAsync(new Uri("/health", UriKind.Relative), TestContext.Current.CancellationToken);

@@ -46,8 +46,8 @@ namespace PartyGame.Engine;
 /// <see langword="null"/> before the first round.
 /// </param>
 /// <remarks>
-/// The state of a round is proper to its game mode: persisting it (E11) requires the derived types of the registered
-/// modes.
+/// The state of a round is proper to its game mode: <see cref="GameStateJson"/> declares the derived types of the
+/// registered modes.
 /// </remarks>
 public sealed record GameState(
     GameId GameId,

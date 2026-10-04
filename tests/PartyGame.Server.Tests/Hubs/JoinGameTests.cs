@@ -19,7 +19,7 @@ public sealed class JoinGameTests : IAsyncDisposable
     public JoinGameTests()
     {
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code));
     }
 

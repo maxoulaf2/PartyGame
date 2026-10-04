@@ -609,7 +609,7 @@ internal sealed class GameHub(
         {
             // Not cancelled with the connection: the game master hears of it whoever is left on the TV screen.
             await incidentReporter
-                .ReportClientIncidentAsync(IncidentCode.DisplayViewFailed, RoundInProgress(game.State), step: null, CancellationToken.None)
+                .ReportIncidentAsync(IncidentCode.DisplayViewFailed, RoundInProgress(game.State), step: null, CancellationToken.None)
                 .ConfigureAwait(false);
         }
     }
@@ -676,7 +676,7 @@ internal sealed class GameHub(
 
         // Not cancelled with the connection: the game master hears of it whoever is left on the TV screen.
         await incidentReporter
-            .ReportClientIncidentAsync(IncidentCode.DisplayMediaFailed, location.Round, location.Step, CancellationToken.None)
+            .ReportIncidentAsync(IncidentCode.DisplayMediaFailed, location.Round, location.Step, CancellationToken.None)
             .ConfigureAwait(false);
     }
 

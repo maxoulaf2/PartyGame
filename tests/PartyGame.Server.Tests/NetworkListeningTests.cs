@@ -19,7 +19,7 @@ public sealed class NetworkListeningTests : IDisposable
     public async Task Configuration_Default_ListensOnPort5000()
     {
         await using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseSetting("LogFiles:Directory", _logs.Path));
+            .WithWebHostBuilder(builder => builder.UseScratchDirectory(_logs.Path));
 
         var options = factory.Services.GetRequiredService<IOptions<NetworkOptions>>().Value;
 
@@ -95,5 +95,6 @@ public sealed class NetworkListeningTests : IDisposable
     {
         ["Network__Port"] = port.ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["LogFiles__Directory"] = _logs.Path,
+        ["Persistence__Directory"] = _logs.Path,
     };
 }

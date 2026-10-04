@@ -1,6 +1,6 @@
 ### US-E11-01 — Enregistrement de la partie après chaque transition
 
-**Statut :** Prête
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** que chaque changement de la partie soit enregistré sur le disque au fil de l'eau
@@ -26,6 +26,10 @@ Joueurs et public : rien. GM : un incident `PersistenceFailed` tant que l'enregi
 - Le temps d'enregistrement sert au calcul du temps restant à la reprise (décision 2 du README, US-E11-03).
 - ADR 0005 à rédiger pendant l'US : format du fichier, numéro de version et règle de compatibilité (un format inconnu n'est pas repris), sérialisation polymorphe des états de manche. Mettre à jour le tableau « Décisions » de CLAUDE.md, et CLAUDE.md pour l'option `Persistence:Directory`.
 - Tests : `FakeTimeProvider`, système de fichiers dans un dossier temporaire ; écriture atomique, dernier état gagnant sous rafale, arrêt normal, échec d'écriture puis rétablissement, dossier inutilisable au démarrage, aller-retour de tous les états des `LeakSuite`.
+- Réalisation : moteur. `IGameMode.StateType` (fourni par `GameMode<,>`) et `GameModes.StateTypes` ; `GameStateJson.CreateOptions(GameModes)` part de `ContractJsonOptions` et déclare l'état de manche de chaque mode, discriminé par le nom de son type ([ADR 0005](../../docs/adr/0005-enregistrement-de-la-partie.md)).
+- Réalisation : serveur. Dossier `PartyGame.Server/Persistence` : `PersistenceOptions` (`Persistence:Directory`), `SavedGame` (`formatVersion`, `savedAt`, `game`), `GamePersistence`, à la fois listener de `GameLoop` et service hébergé enregistré juste avant la boucle par `AddGameLoop()` (canal borné à un élément, `DropOldest` ; écriture dans `current-game.json.tmp`, vidage sur le disque, puis `File.Move` avec remplacement ; dernier état écrit à l'arrêt). `PrepareDataDirectory()`, appelé par `Program` avant l'écoute, crée le dossier, supprime un fichier temporaire abandonné (log `Warning`) et y fait une écriture d'essai ; un échec lève `DataDirectoryException`, que `Program` journalise en `Fatal` sans pile d'appels, en nommant le dossier et le paramètre.
+- Réalisation : incidents. Nouveau code `PersistenceFailed`, signalé hors manche par `IIncidentReporter.ReportIncidentAsync` (ex-`ReportClientIncidentAsync`, renommé puisqu'il ne sert plus qu'aux clients). `IIncidentReporter.ResolveAsync` et `IncidentJournal.Resolve` oublient les incidents d'un code dont la cause a cessé ; la `Version` de `IncidentList` compte désormais tous les changements de la liste. Côté console, `IncidentInbox.unread` compte les occurrences non lues incident par incident, si bien qu'un incident oublié quitte le compteur.
+- Réalisation : tests. `GameStateJsonTests` (aller-retour de chaque état des `LeakSuite` de `PartyGame.Engine.Tests`, trouvées par réflexion via `ILeakSuite<TState>` : JSON identique et projections identiques), `GamePersistenceTests` (format et heure, rafale de 500 états sans attente, arrêt, échec puis rétablissement puis nouvelle série, fichier temporaire abandonné, dossier impossible à créer), `PersistenceHostingTests` (enregistrement à l'arrêt d'un vrai hôte, jetons présents et code GM absent ; processus arrêté avec un dossier inutilisable), `IncidentJournalTests` (`Resolve`), Vitest de `incidentInbox`. Les serveurs de test écrivent leurs logs et leur partie dans un dossier temporaire propre (`UseScratchDirectory`), puisqu'ils tournent en parallèle.
 
 **Hors périmètre**
 - La relecture au démarrage et la reprise (US-E11-02, US-E11-03).

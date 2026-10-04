@@ -9,6 +9,7 @@ using PartyGame.Server.Hubs;
 using PartyGame.Server.Logging;
 using PartyGame.Server.Network;
 using PartyGame.Server.Packs;
+using PartyGame.Server.Persistence;
 using Serilog;
 
 // Catches failures that happen before the configuration is available (e.g. unreadable appsettings).
@@ -40,6 +41,7 @@ try
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
     var packs = app.LoadPacks();
+    app.PrepareDataDirectory();
     app.Lifetime.ApplicationStarted.Register(() => Console.Out.Write(StartupBanner.Format(
         app.Services.GetRequiredService<AddressSelection>(),
         app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port,
@@ -67,6 +69,15 @@ catch (Exception ex)
             "Port {Port} is already in use by another program. Stop that program, or choose another port with the {Setting} setting (e.g. environment variable Network__Port=5001 or argument --Network:Port=5001)",
             NetworkOptions.Read(configuration).Port,
             $"{NetworkOptions.SectionName}:Port");
+    }
+    else if (ex is DataDirectoryException dataDirectory)
+    {
+        // As for the port: what to do, and the cause in a single line rather than a stack trace.
+        logger.Fatal(
+            "Data directory {Directory} cannot be used to save the game: {Reason} Make it writable, or choose another folder with the {Setting} setting (e.g. environment variable Persistence__Directory)",
+            dataDirectory.Directory,
+            dataDirectory.InnerException?.Message,
+            PersistenceOptions.DirectorySetting);
     }
     else
     {

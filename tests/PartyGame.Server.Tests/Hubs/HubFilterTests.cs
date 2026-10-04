@@ -24,7 +24,7 @@ public sealed class HubFilterTests : IAsyncDisposable
     public HubFilterTests()
     {
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .ConfigureTestServices(services => services.AddTransient<IStartupFilter, ProbeHubStartup>()));
     }
 

@@ -14,7 +14,7 @@ namespace PartyGame.Tests.Shared.Leaks;
 /// </remarks>
 /// <typeparam name="TState">The state the projections are made from.</typeparam>
 /// <typeparam name="TPhase">The phases the mode declares, each of which needs a scenario.</typeparam>
-internal sealed class LeakSuite<TState, TPhase>
+internal sealed class LeakSuite<TState, TPhase> : ILeakSuite<TState>
     where TPhase : struct, Enum
 {
     /// <summary>The phase of a state, as the mode sees it.</summary>
@@ -107,6 +107,7 @@ internal sealed class LeakSuite<TState, TPhase>
         LeakAssert.Fail("Secrets told apart", failures);
     }
 
-    private IEnumerable<(string Name, TState State)> States() =>
+    /// <inheritdoc />
+    public IEnumerable<(string Name, TState State)> States() =>
         Scenarios.Concat(Pairs.SelectMany(p => new[] { ($"{p.Secret}, one", p.One), ($"{p.Secret}, other", p.Other) }));
 }

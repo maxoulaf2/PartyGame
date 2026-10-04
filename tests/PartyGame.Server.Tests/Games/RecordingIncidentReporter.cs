@@ -22,7 +22,19 @@ internal sealed class RecordingIncidentReporter(bool fails = false) : IIncidentR
         return ValueTask.CompletedTask;
     }
 
-    // Only the hub reports the incidents of the clients, through the actual reporter.
-    public ValueTask ReportClientIncidentAsync(IncidentCode code, RoundInfo? round, int? step, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+    public List<IncidentCode> Detached { get; } = [];
+
+    public List<IncidentCode> Resolved { get; } = [];
+
+    public ValueTask ReportIncidentAsync(IncidentCode code, RoundInfo? round, int? step, CancellationToken cancellationToken)
+    {
+        Detached.Add(code);
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask ResolveAsync(IncidentCode code, CancellationToken cancellationToken)
+    {
+        Resolved.Add(code);
+        return ValueTask.CompletedTask;
+    }
 }
