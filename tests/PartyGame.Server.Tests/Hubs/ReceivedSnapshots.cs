@@ -8,6 +8,7 @@ namespace PartyGame.Server.Tests.Hubs;
 /// <summary>
 /// Records the snapshots a test connection receives, as raw JSON, so that tests can check both their content and what
 /// went over the wire. The lists of incidents are recorded as well: they are the other state the server sends to a role.
+/// So is the network health, apart: sent every few seconds, it would make any count of messages depend on time.
 /// </summary>
 internal sealed class ReceivedSnapshots : IDisposable
 {
@@ -23,6 +24,7 @@ internal sealed class ReceivedSnapshots : IDisposable
             Subscribe(connection, nameof(IGameClient.ReceiveGameMasterSnapshot)),
             Subscribe(connection, nameof(IGameClient.ReceivePlayerSnapshot)),
             Subscribe(connection, nameof(IGameClient.ReceiveIncidents)),
+            Subscribe(connection, nameof(IGameClient.ReceiveNetworkHealth)),
         ];
     }
 
@@ -33,7 +35,7 @@ internal sealed class ReceivedSnapshots : IDisposable
         {
             lock (_gate)
             {
-                return [.. _received.Where(r => r.Message != nameof(IGameClient.ReceiveIncidents)).Select(r => r.Json)];
+                return [.. _received.Where(r => r.Message.EndsWith("Snapshot", StringComparison.Ordinal)).Select(r => r.Json)];
             }
         }
     }
@@ -45,7 +47,7 @@ internal sealed class ReceivedSnapshots : IDisposable
         {
             lock (_gate)
             {
-                return [.. _received.Select(r => r.Json)];
+                return [.. _received.Where(r => r.Message != nameof(IGameClient.ReceiveNetworkHealth)).Select(r => r.Json)];
             }
         }
     }
@@ -57,6 +59,8 @@ internal sealed class ReceivedSnapshots : IDisposable
     public IReadOnlyList<PlayerSnapshot> Player => Of<PlayerSnapshot>(nameof(IGameClient.ReceivePlayerSnapshot));
 
     public IReadOnlyList<IncidentList> Incidents => Of<IncidentList>(nameof(IGameClient.ReceiveIncidents));
+
+    public IReadOnlyList<NetworkHealth> NetworkHealth => Of<NetworkHealth>(nameof(IGameClient.ReceiveNetworkHealth));
 
     public void Dispose()
     {

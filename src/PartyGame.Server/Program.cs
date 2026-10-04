@@ -28,6 +28,7 @@ try
     builder.AddPacks();
     builder.AddGameLoop();
     builder.AddGameHub();
+    builder.AddNetworkDiagnostic();
 
     builder.Services.ConfigureHttpJsonOptions(options => ContractJsonOptions.Apply(options.SerializerOptions));
     builder.Services.AddHealthChecks();
@@ -38,6 +39,7 @@ try
     app.MapHealthChecks(ServerPaths.Health);
     app.MapGameHub();
     app.MapPackMedia();
+    app.MapNetworkDiagnostic();
 
     app.Logger.ServerStarting(app.Environment.EnvironmentName);
     var packs = app.LoadPacks();

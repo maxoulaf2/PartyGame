@@ -150,6 +150,8 @@ public sealed class SnapshotBroadcasterTests
 
             public Task ReceiveIncidents(IncidentList incidents) => throw new NotSupportedException();
 
+            public Task ReceiveNetworkHealth(NetworkHealth health) => throw new NotSupportedException();
+
             private Task Send()
             {
                 if (group == hub.FailingGroup)

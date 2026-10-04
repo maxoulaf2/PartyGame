@@ -7,7 +7,7 @@ internal static class FrontEndExtensions
     private const string PlayerPage = "/";
 
     // The other pages live in a folder of the web root, so their canonical URL ends with a slash.
-    private static readonly string[] _folderPages = ["/display/", "/gm/"];
+    private static readonly string[] _folderPages = ["/display/", "/gm/", "/diagnostic/"];
 
     /// <summary>
     /// Registers the <see cref="FrontEndBuild"/> the web root holds, read once at startup by <see cref="UseFrontEnd"/>.

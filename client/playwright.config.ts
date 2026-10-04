@@ -9,7 +9,7 @@ import {
 
 const port = 4173;
 const mobilePages =
-    /(player|gm|packs|reconnection|buildReload|errorReports|protectedViews)\.spec\.ts/;
+    /(player|gm|packs|reconnection|buildReload|errorReports|protectedViews|diagnostic)\.spec\.ts/;
 
 export default defineConfig({
     testDir: './e2e',
@@ -28,7 +28,7 @@ export default defineConfig({
         {
             name: 'desktop-chrome',
             use: { ...devices['Desktop Chrome'] },
-            testIgnore: /(player|reconnection|buildReload)\.spec\.ts/,
+            testIgnore: /(player|reconnection|buildReload|diagnostic)\.spec\.ts/,
         },
     ],
     webServer: [

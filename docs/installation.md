@@ -168,3 +168,23 @@ Si le PC répond mais pas le téléphone :
 - vérifier que le téléphone n'utilise pas ses données mobiles ou un autre Wi-Fi (réseau invité, répéteur isolé) ;
 - vérifier le profil réseau et la règle de pare-feu ci-dessus ;
 - certains Wi-Fi publics ou d'hôtel isolent les appareils entre eux : aucune configuration du PC n'y remédie. Utiliser alors un partage de connexion ou un routeur de voyage (voir E22).
+
+## Diagnostic sur place
+
+En arrivant dans un lieu inconnu, avant l'arrivée des invités, le GM vérifie en une minute que le Wi-Fi convient.
+
+1. Ouvrir la console du game master : la section « Diagnostic réseau » donne l'adresse de la page de diagnostic (`http://192.168.1.42:5000/diagnostic/` par exemple) et son QR code. L'écran TV ne l'affiche pas.
+2. Scanner ce QR code avec un ou deux téléphones, si possible un iPhone et un Android. Le test dure une vingtaine de secondes et n'inscrit pas le téléphone : il n'apparaît ni dans le lobby ni dans la liste des joueurs.
+3. La page donne un verdict (« Tout est bon », « Utilisable, avec des réserves » ou « Problème »), un conseil pour chaque mesure en défaut, et un bouton « Relancer le test ». La console du game master liste les derniers diagnostics : type d'appareil, heure, verdict et temps de réponse médian.
+
+Le test mesure la connexion au serveur et son mode (WebSocket, ou un repli plus lent), le temps de réponse sur une salve (médiane, maximum, gigue), la stabilité sur 15 secondes (un aller-retour par seconde, pertes et coupures), le débit d'un téléchargement d'environ 1 Mo, et si le téléphone est sur le même réseau que l'adresse annoncée. Seuils : un temps de réponse médian sous 50 ms est bon, jusqu'à 150 ms il est utilisable avec des réserves, au-delà c'est un problème. Une perte de plus de 2 %, une coupure, un mode de repli, un autre réseau ou un débit sous 2 Mbit/s donnent des réserves. La page ne teste pas l'accès à Internet, dont le jeu n'a pas besoin.
+
+Pendant la partie, la liste des joueurs de la console montre aussi, pour chaque téléphone et pour l'écran TV, le temps de réponse récent, le mode de connexion et le nombre de reconnexions, avec un repère ⚠ sur une valeur mauvaise.
+
+Si un téléphone n'arrive même pas à ouvrir la page de diagnostic :
+
+- vérifier qu'il est connecté **au même Wi-Fi** que le serveur, et pas à ses données mobiles ;
+- se méfier d'un **réseau invité** : il est souvent séparé du réseau principal, où se trouve le PC ;
+- certains points d'accès pratiquent l'**isolation des clients** (« AP isolation », « client isolation ») : les appareils du Wi-Fi ne se voient pas entre eux. Elle se désactive dans l'administration de la box ou du point d'accès, quand on y a accès ;
+- tester depuis le PC hôte lui-même, avec l'adresse locale (`http://localhost:5000/diagnostic/`) : si la page fonctionne sur le PC mais pas sur les téléphones, le problème vient du réseau ou du pare-feu (voir plus haut), pas du serveur ;
+- en dernier recours, se replier sur un partage de connexion ou un routeur de voyage (voir E22).

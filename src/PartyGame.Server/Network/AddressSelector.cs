@@ -32,7 +32,7 @@ internal static class AddressSelector
     {
         var candidates = interfaces
             .Where(nic => nic.IsUp && !_excludedTypes.Contains(nic.Type) && !IsVirtual(nic))
-            .SelectMany(nic => nic.IPv4Addresses.Where(IsPrivate).Select(address => new AddressCandidate(address, nic.Name, nic.HasGateway)))
+            .SelectMany(nic => nic.IPv4Addresses.Select(a => a.Address).Where(IsPrivate).Select(address => new AddressCandidate(address, nic.Name, nic.HasGateway)))
             // An interface with a default gateway is the one connected to the router the phones use. The rest
             // of the order only makes the choice stable from one startup to the next.
             .OrderByDescending(candidate => candidate.HasGateway)
@@ -42,7 +42,7 @@ internal static class AddressSelector
 
         if (configured is not null)
         {
-            var isOnActiveInterface = interfaces.Any(nic => nic.IsUp && nic.IPv4Addresses.Contains(configured));
+            var isOnActiveInterface = interfaces.Any(nic => nic.IsUp && nic.IPv4Addresses.Any(a => a.Address.Equals(configured)));
             return new AddressSelection(configured, IsConfigured: true, candidates, isOnActiveInterface);
         }
 
@@ -67,5 +67,5 @@ internal static class AddressSelector
             || nic.Description.Contains(marker, StringComparison.OrdinalIgnoreCase))
         || _virtualNamePrefixes.Any(prefix => nic.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
-    private static uint ToNumber(IPAddress address) => BinaryPrimitives.ReadUInt32BigEndian(address.GetAddressBytes());
+    public static uint ToNumber(IPAddress address) => BinaryPrimitives.ReadUInt32BigEndian(address.GetAddressBytes());
 }

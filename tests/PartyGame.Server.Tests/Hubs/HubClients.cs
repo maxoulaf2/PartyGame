@@ -19,10 +19,12 @@ internal static class HubClients
     /// <param name="beforeStart">
     /// Registers handlers before the connection starts, for the messages the hub sends as soon as it is established.
     /// </param>
+    /// <param name="userAgent">The user agent of the browser the connection stands for, if any.</param>
     public static async Task<HubConnection> ConnectAsync(
         WebApplicationFactory<Program> factory,
         string path = "/hub/game",
-        Action<HubConnection>? beforeStart = null)
+        Action<HubConnection>? beforeStart = null,
+        string? userAgent = null)
     {
         var server = factory.Server;
         var connection = new HubConnectionBuilder()
@@ -31,7 +33,15 @@ internal static class HubClients
                 options.Transports = HttpTransportType.WebSockets;
                 options.HttpMessageHandlerFactory = _ => server.CreateHandler();
                 options.WebSocketFactory = async (context, cancellationToken) =>
-                    await server.CreateWebSocketClient().ConnectAsync(context.Uri, cancellationToken).ConfigureAwait(false);
+                {
+                    var client = server.CreateWebSocketClient();
+                    if (userAgent is not null)
+                    {
+                        client.ConfigureRequest = request => request.Headers.UserAgent = userAgent;
+                    }
+
+                    return await client.ConnectAsync(context.Uri, cancellationToken).ConfigureAwait(false);
+                };
             })
             .AddJsonProtocol(options => ContractJsonOptions.Apply(options.PayloadSerializerOptions))
             .Build();

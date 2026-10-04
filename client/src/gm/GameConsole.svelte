@@ -6,7 +6,9 @@
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
     import AddressControl from './AddressControl.svelte';
+    import ConnectionQualityLine from './ConnectionQualityLine.svelte';
     import IncidentPanel from './IncidentPanel.svelte';
+    import NetworkPanel from './NetworkPanel.svelte';
     import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import ResumeOffer from './ResumeOffer.svelte';
@@ -29,6 +31,11 @@
     let renaming = $state<PlayerId | null>(null);
 
     const connectedCount = $derived(snapshot.players.filter((p) => p.isConnected).length);
+
+    // How each phone and the TV screen reach the server, sent apart from the snapshots.
+    const connections = $derived(session.network?.connections ?? []);
+    const displayQuality = $derived(connections.find((c) => c.playerId === null) ?? null);
+    const playerQualities = $derived(new Map(connections.map((c) => [c.playerId, c])));
 </script>
 
 <main>
@@ -66,15 +73,29 @@
     <!-- Registration stays open once started: the address of the QR code may still change. -->
     <AddressControl {snapshot} {session} {interactive} />
 
+    <NetworkPanel
+        joinAddress={snapshot.joinAddress}
+        network={session.network}
+        open={snapshot.phase === 'Lobby'}
+    />
+
     <PackControl {snapshot} {session} {interactive} />
 
     {#if snapshot.phase === 'Lobby'}
         <StartControl {snapshot} {session} {interactive} />
     {/if}
 
+    {#if displayQuality !== null}
+        <p class="display-quality">
+            <span class="label">{fr.gm.network.display}</span>
+            <ConnectionQualityLine quality={displayQuality} />
+        </p>
+    {/if}
+
     {#if snapshot.players.length > 0}
         <ul aria-label={fr.gm.playerListLabel}>
             {#each snapshot.players as player (player.id)}
+                {@const quality = playerQualities.get(player.id)}
                 <li class:disconnected={!player.isConnected}>
                     <div class="player">
                         <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
@@ -87,6 +108,9 @@
                             <ConnectionIcon connected={player.isConnected} />
                             {player.isConnected ? fr.gm.connected : fr.gm.disconnected}
                         </span>
+                        {#if quality !== undefined}
+                            <ConnectionQualityLine {quality} />
+                        {/if}
                         {#if renaming !== player.id}
                             <button
                                 type="button"
@@ -145,6 +169,17 @@
 
     .counts {
         color: var(--color-text-muted);
+    }
+
+    .display-quality {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        padding: 0 var(--space-m);
+    }
+
+    .display-quality .label {
+        font-weight: 700;
     }
 
     ul {

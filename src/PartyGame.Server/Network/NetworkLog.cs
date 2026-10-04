@@ -12,4 +12,7 @@ internal static partial class NetworkLog
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Configured address {Address} ({Setting}) belongs to no active network interface: phones may not reach the server")]
     public static partial void ConfiguredAddressNotOnInterface(this ILogger logger, IPAddress address, string setting);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Network health not sent to the game master")]
+    public static partial void NetworkHealthNotSent(this ILogger logger, Exception exception);
 }

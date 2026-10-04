@@ -30,4 +30,9 @@ public interface IGameClient
     /// Every incident of the server, sent to the game master alone, on each new one and right after the announcement.
     /// </summary>
     Task ReceiveIncidents(IncidentList incidents);
+
+    /// <summary>
+    /// How the devices reach the server, sent to the game master alone, every few seconds and right after the announcement.
+    /// </summary>
+    Task ReceiveNetworkHealth(NetworkHealth health);
 }

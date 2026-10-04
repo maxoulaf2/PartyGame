@@ -3,6 +3,7 @@ import type {
     GameId,
     GameMasterRoundIntent,
     GameMasterSnapshot,
+    NetworkHealth,
     PlayerId,
     ReloadPacksRefusal,
     RenamePlayerRefusal,
@@ -92,6 +93,8 @@ export class GameMasterSession {
     #access = $state<GameMasterAccess>('codeRequired');
     #problem = $state<CodeProblem | null>(null);
     #connected = $state(false);
+    // Raw: replaced as a whole every few seconds, never modified.
+    #network = $state.raw<NetworkHealth | null>(null);
 
     readonly #store: SnapshotStore<GameMasterSnapshot>;
     readonly #storage: CodeStorage;
@@ -123,6 +126,14 @@ export class GameMasterSession {
         return this.#incidents;
     }
 
+    /**
+     * How the devices reach the server: the last network diagnostics, and the connection of each
+     * player and of the TV screen. Null until the server sends it, after the code is accepted.
+     */
+    get network(): NetworkHealth | null {
+        return this.#network;
+    }
+
     /** Whether the server can be reached: a code cannot be submitted until it can. */
     get connected(): boolean {
         return this.#connected;
@@ -147,6 +158,9 @@ export class GameMasterSession {
         const unsubscribeIncidents = this.#connection.on('ReceiveIncidents', (incidents) => {
             this.#incidents.accept(incidents);
         });
+        const unsubscribeNetwork = this.#connection.on('ReceiveNetworkHealth', (health) => {
+            this.#network = health;
+        });
         this.#connection.onReconnecting(() => {
             this.#connected = false;
             this.#store.markStale();
@@ -162,6 +176,7 @@ export class GameMasterSession {
         return () => {
             unsubscribeSnapshots();
             unsubscribeIncidents();
+            unsubscribeNetwork();
             this.#connection.stop().catch(() => {});
         };
     }

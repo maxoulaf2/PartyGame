@@ -17,7 +17,7 @@ internal sealed class SystemNetworkInterfaceSource : INetworkInterfaceSource
             nic.Description,
             nic.NetworkInterfaceType,
             nic.OperationalStatus == OperationalStatus.Up,
-            [.. properties.UnicastAddresses.Select(unicast => unicast.Address).Where(IsIPv4)],
+            [.. properties.UnicastAddresses.Where(unicast => IsIPv4(unicast.Address)).Select(unicast => new InterfaceAddress(unicast.Address, unicast.PrefixLength))],
             properties.GatewayAddresses.Any(gateway => IsIPv4(gateway.Address) && !gateway.Address.Equals(IPAddress.Any)));
     }
 

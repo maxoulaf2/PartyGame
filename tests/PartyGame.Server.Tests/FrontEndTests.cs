@@ -19,6 +19,7 @@ public sealed class FrontEndTests : IDisposable
     [InlineData("/", "player page")]
     [InlineData("/display/", "display page")]
     [InlineData("/gm/", "gm page")]
+    [InlineData("/diagnostic/", "diagnostic page")]
     public async Task Get_PageOfClientBuild_ServesHtmlThatMustBeRevalidated(string path, string content)
     {
         WriteClientBuild();
@@ -67,6 +68,8 @@ public sealed class FrontEndTests : IDisposable
     [InlineData("/GM/", "/gm/")]
     [InlineData("/Gm", "/gm/")]
     [InlineData("/display?code=123456", "/display/?code=123456")]
+    [InlineData("/diagnostic", "/diagnostic/")]
+    [InlineData("/Diagnostic/", "/diagnostic/")]
     public async Task Get_PageWithoutTrailingSlashOrInAnotherCase_RedirectsTemporarilyToCanonicalPage(string path, string location)
     {
         WriteClientBuild();
@@ -221,6 +224,7 @@ public sealed class FrontEndTests : IDisposable
         Write("index.html", "player page");
         Write("display/index.html", "display page");
         Write("gm/index.html", "gm page");
+        Write("diagnostic/index.html", "diagnostic page");
         Write("assets/player-Bz1c35Cc.js", "console.log('player');");
         Write("build.json", """{ "buildId": "abc" }""");
     }
