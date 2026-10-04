@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import type {
     DisplaySnapshot,
+    GameId,
     GameMasterRoundIntent,
     GameMasterSnapshot,
     IncidentList,
@@ -57,13 +58,20 @@ export function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Pro
  * anything else is refused. So is a skip of the round in progress, which ends it. `chosen` records
  * every address the console sent, `roundIntents` every intent it sent to the round in progress,
  * which changes nothing, and `skipped` every round it asked to skip. `incidents`, if any, are sent
- * after the snapshot.
+ * after the snapshot. `resolved` records every decision about a game found saved, which changes
+ * nothing, while a check of its media files finds them all back.
  */
 export async function serveGameMasterSnapshot(
     page: Page,
     snapshot: GameMasterSnapshot,
     incidents?: IncidentList,
-): Promise<{ chosen: string[]; roundIntents: GameMasterRoundIntent[]; skipped: RoundId[] }> {
+): Promise<{
+    chosen: string[];
+    roundIntents: GameMasterRoundIntent[];
+    skipped: RoundId[];
+    resolved: { savedGameId: GameId; resume: boolean }[];
+}> {
+    const resolved: { savedGameId: GameId; resume: boolean }[] = [];
     const chosen: string[] = [];
     const roundIntents: GameMasterRoundIntent[] = [];
     const skipped: RoundId[] = [];
@@ -84,6 +92,21 @@ export async function serveGameMasterSnapshot(
             roundIntents.push(intent as GameMasterRoundIntent);
             return { result: null };
         },
+        ResolveSavedGame: ([request]) => {
+            resolved.push(request as { savedGameId: GameId; resume: boolean });
+            return { result: null };
+        },
+        CheckSavedGameMedia: () => {
+            if (current.savedGame === null) {
+                return { result: null };
+            }
+            current = {
+                ...current,
+                version: current.version + 1,
+                savedGame: { ...current.savedGame, missingMedia: [] },
+            };
+            return { result: null, snapshots: [current] };
+        },
         SkipRound: ([request]) => {
             const { roundId } = request as { roundId: RoundId };
             skipped.push(roundId);
@@ -100,7 +123,7 @@ export async function serveGameMasterSnapshot(
             return { result: null, snapshots: [current] };
         },
     });
-    return { chosen, roundIntents, skipped };
+    return { chosen, roundIntents, skipped, resolved };
 }
 
 async function serveSnapshot(

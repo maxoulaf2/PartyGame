@@ -16,6 +16,7 @@ internal static class PersistenceExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.Directory), $"{PersistenceOptions.DirectorySetting} must not be empty")
             .ValidateOnStart();
 
+        builder.Services.AddSingleton<SavedGameLoader>();
         builder.Services.AddSingleton<GamePersistence>();
         builder.Services.AddSingleton<IGameStateListener>(services => services.GetRequiredService<GamePersistence>());
         builder.Services.AddHostedService(services => services.GetRequiredService<GamePersistence>());

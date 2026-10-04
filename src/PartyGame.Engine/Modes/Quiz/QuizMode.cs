@@ -174,6 +174,16 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
+    /// The question in progress among those of the round.
+    /// </summary>
+    /// <inheritdoc />
+    public override RoundStep? StepOf(QuizRound round)
+    {
+        ArgumentNullException.ThrowIfNull(round);
+        return new RoundStep(round.QuestionNumber, round.Descriptor.Questions.Length);
+    }
+
+    /// <summary>
     /// The number of the question the image illustrates: the question in progress when it does, since the TV screen shows
     /// only its image, or else the first one of the round.
     /// </summary>

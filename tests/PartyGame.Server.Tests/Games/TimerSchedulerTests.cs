@@ -5,6 +5,7 @@ using PartyGame.Engine;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 using PartyGame.Server.Games;
+using PartyGame.Server.Tests.Persistence;
 
 namespace PartyGame.Server.Tests.Games;
 
@@ -222,7 +223,7 @@ public sealed class TimerSchedulerTests : IDisposable
         });
         await using var harness = await LoopHarness.StartAsync(
             engine,
-            effects: h => new EffectExecutor(new TimerScheduler(h.Inputs, h.Time, _logger)));
+            effects: h => new EffectExecutor(new TimerScheduler(h.Inputs, h.Time, _logger), TestPersistence.In(Path.GetTempPath())));
         await harness.Inputs.SubmitAsync(new TestInput(1), Ct);
 
         // When

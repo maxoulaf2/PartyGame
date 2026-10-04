@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type JoinRefusal = 'NicknameInvalid' | 'NicknameTaken' | 'AlreadyJoined' | 'JoinFailed' | 'MessageInvalid';
+export type JoinRefusal = 'NicknameInvalid' | 'NicknameTaken' | 'AlreadyJoined' | 'JoinFailed' | 'MessageInvalid' | 'GamePending';

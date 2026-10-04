@@ -52,6 +52,9 @@ export const fr = {
         registeredAs: 'Tu es inscrit sous le nom {nickname}',
         // Shown while a phone that joined before waits to be recognized by the server.
         resuming: 'Retour dans la partie…',
+        // Shown instead of the form while the server, restarted, waits for the game master to
+        // resume the game or start a new one.
+        gamePending: 'La partie va reprendre dans un instant…',
         join: {
             title: 'Choisis ton pseudo',
             label: 'Pseudo',
@@ -84,6 +87,8 @@ export const fr = {
         disconnected: 'déconnecté',
         // Shown during the game when the TV screen has nothing more precise to show.
         inProgress: 'Partie en cours',
+        // Shown while the server, restarted, waits for the game master to resume the game.
+        resumePending: 'Reprise de la partie…',
         // Shown instead of what the TV screen could not render, until the next update.
         continuing: 'La partie continue…',
         // Shown next to the QR code between two rounds, for late arrivals.
@@ -99,7 +104,8 @@ export const fr = {
             submit: 'Valider',
             // Neutral on purpose: says nothing about which digits are wrong.
             invalid: 'Code incorrect',
-            expired: 'Le code a changé : relisez-le dans la console du serveur.',
+            expired:
+                'Le serveur a redémarré avec un nouveau code : relisez-le dans sa console, puis saisissez-le.',
         },
         playersJoined: {
             zero: 'Aucun joueur inscrit pour l’instant',
@@ -231,6 +237,45 @@ export const fr = {
         },
         // Shown during the game when the console has nothing more precise to show.
         inProgress: 'Partie en cours',
+        // Offered once the server restarted and found the game it saved before.
+        resume: {
+            title: 'Partie interrompue',
+            intro: 'Le serveur a redémarré et a retrouvé la partie enregistrée. Que voulez-vous faire ?',
+            packLabel: 'Pack',
+            // The game found was still in its lobby, no pack chosen.
+            noPack: 'Aucun pack choisi',
+            progressLabel: 'Avancement',
+            playersLabel: 'Joueurs',
+            savedAtLabel: 'Enregistrée à',
+            // Where the game found stopped, the parts joined by « · ».
+            progress: {
+                lobby: 'Lobby',
+                round: 'Manche {number}/{count} · {title}',
+                roundEnded: 'Fin de la manche {number}/{count} · {title}',
+                step: 'Question {number}/{count}',
+                finished: 'Partie terminée',
+            },
+            players: {
+                zero: 'Aucun joueur',
+                one: '{count} joueur inscrit',
+                other: '{count} joueurs inscrits',
+            },
+            missingMedia: {
+                zero: 'Tous les médias du pack sont présents.',
+                one: 'Un média du pack est introuvable : remettez-le à sa place pour pouvoir reprendre la partie.',
+                other: '{count} médias du pack sont introuvables : remettez-les à leur place pour pouvoir reprendre la partie.',
+            },
+            missingMediaLabel: 'Médias introuvables',
+            checkAgain: 'Vérifier de nouveau',
+            resume: 'Reprendre la partie',
+            newGame: 'Nouvelle partie',
+            confirmTitle: 'Commencer une nouvelle partie ?',
+            confirmMessage:
+                'La partie interrompue ne sera pas reprise : les joueurs devront se réinscrire. Elle reste enregistrée dans le fichier previous-game.json du dossier des données.',
+            confirm: 'Nouvelle partie',
+            cancel: 'Annuler',
+            failed: 'La demande n’a pas abouti : réessayez.',
+        },
         // Shown instead of the view of the round the console could not render: the rest of the
         // console still works, and the view comes back with the next update.
         roundViewUnavailable: 'Affichage de la manche indisponible',
@@ -291,6 +336,8 @@ export const fr = {
                     'L’écran TV n’a pas pu afficher la manche : il montre un écran d’attente jusqu’à la prochaine mise à jour.',
                 DisplayMediaFailed:
                     'L’écran TV n’a pas pu charger une image : la question s’affiche sans elle.',
+                SavedGameUnreadable:
+                    'La partie enregistrée avant le redémarrage du serveur n’a pas pu être relue : une nouvelle partie a commencé et les joueurs doivent se réinscrire. Le fichier a été mis de côté dans le dossier des données.',
                 PersistenceFailed:
                     'La partie n’a pas pu être enregistrée sur le disque : elle continue, mais ne pourrait pas reprendre après un arrêt du serveur. Ce message disparaît dès que l’enregistrement fonctionne de nouveau.',
             },

@@ -43,6 +43,10 @@ namespace PartyGame.Contracts;
 /// The title of the round the game master starts next, between two rounds; <see langword="null"/> otherwise. Only this
 /// projection holds it: the others discover the rounds as they are played.
 /// </param>
+/// <param name="SavedGame">
+/// The game the server found saved when it restarted, for the game master to resume it or start a new one, while the
+/// phase is <see cref="Phase.ResumePending"/>; <see langword="null"/> otherwise. Only this projection describes it.
+/// </param>
 /// <param name="RoundSkipped">
 /// Whether the game master skipped <paramref name="Round"/>, once it is over: the points of its question in progress were
 /// not awarded. Only this projection tells it: for the others, the round is over like any other.
@@ -62,4 +66,5 @@ public sealed record GameMasterSnapshot(
     GameMasterRoundView? RoundView,
     ImmutableArray<RankedPlayer> Ranking,
     string? NextRoundTitle,
-    bool RoundSkipped);
+    bool RoundSkipped,
+    GameMasterSavedGame? SavedGame);

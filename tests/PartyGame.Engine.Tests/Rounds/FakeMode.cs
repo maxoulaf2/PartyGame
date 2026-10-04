@@ -67,6 +67,9 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
     public override GameMasterRoundView ProjectForGameMaster(FakeRoundState round, GameState game) =>
         new FakeGameMasterView(round.Title, [.. round.Inputs]);
 
+    /// <summary>The number of inputs the round recorded, the start included, out of 10.</summary>
+    public override RoundStep? StepOf(FakeRoundState round) => new(round.Inputs.Count, 10);
+
     private static RoundTransition Record(FakeRoundState round, string input) =>
         new(round with { Inputs = round.Inputs.Add(input) }, []);
 }

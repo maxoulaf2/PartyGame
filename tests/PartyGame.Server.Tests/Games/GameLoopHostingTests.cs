@@ -8,13 +8,26 @@ using PartyGame.Server.Games;
 
 namespace PartyGame.Server.Tests.Games;
 
-public sealed class GameLoopHostingTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class GameLoopHostingTests : IAsyncDisposable
 {
+    private readonly TempDirectory _scratch = new();
+    private readonly WebApplicationFactory<Program> _factory;
+
+    // A folder of its own: the game it saves must not be offered to another test server.
+    public GameLoopHostingTests() =>
+        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseScratchDirectory(_scratch.Path));
+
+    public async ValueTask DisposeAsync()
+    {
+        await _factory.DisposeAsync();
+        _scratch.Dispose();
+    }
+
     [Fact]
     public async Task StartAsync_ServerStarted_RunsSingleLoopWithLobbyAndRealEngine()
     {
         // Given
-        var services = factory.Services;
+        var services = _factory.Services;
         var loop = services.GetRequiredService<GameLoop>();
 
         // When

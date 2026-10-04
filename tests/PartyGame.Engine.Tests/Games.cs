@@ -136,6 +136,25 @@ internal static class Games
 
     public static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));
 
+    /// <summary>When the game of <see cref="Pending"/> was saved, a few minutes before <see cref="Now"/>.</summary>
+    public static readonly DateTimeOffset SavedAt = Now.AddMinutes(-3);
+
+    /// <summary>
+    /// The state of a restarted server that found <paramref name="saved"/>, waiting for the game master, with the given
+    /// media files of its pack missing from the disk.
+    /// </summary>
+    public static GameState Pending(GameState saved, params MediaPath[] missing) =>
+        GameState.CreateResumePending(
+            new GameId(Guid.Parse("0b7c4a5e-5d3e-4b8a-9c3f-2a1d6e8f9b70")),
+            JoinAddress,
+            JoinAddressCandidates,
+            Catalog,
+            new PendingGame(saved, SavedAt, [.. missing]));
+
+    public static ResumeSavedGame Resume(GameState pending) => new(pending.PendingGame!.Game.GameId, Now);
+
+    public static DiscardSavedGame Discard(GameState pending) => new(pending.PendingGame!.Game.GameId, Now);
+
     /// <summary>
     /// A lobby with the given players, registered in order.
     /// </summary>
@@ -167,13 +186,18 @@ internal static class Games
 
     /// <summary>
     /// Plays a lobby whose selected pack has two rounds up to the given phase: the first round in progress, between the two
-    /// rounds, or finished.
+    /// rounds, or finished. Waiting for a decision of the game master, the game found is in its first round.
     /// </summary>
     public static GameState PlayedUpTo(GamePhase phase, GameState lobby)
     {
         if (phase == GamePhase.Lobby)
         {
             return lobby;
+        }
+
+        if (phase == GamePhase.ResumePending)
+        {
+            return Pending(PlayedUpTo(GamePhase.Round, lobby));
         }
 
         var state = Accepted(lobby, Start());

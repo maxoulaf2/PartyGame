@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type ResumeSessionRefusal = 'SessionUnknown' | 'AlreadyIdentified' | 'ResumeFailed' | 'MessageInvalid';
+export type ResumeSessionRefusal = 'SessionUnknown' | 'AlreadyIdentified' | 'ResumeFailed' | 'MessageInvalid' | 'GamePending';

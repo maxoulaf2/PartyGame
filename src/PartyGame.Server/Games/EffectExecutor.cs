@@ -1,11 +1,12 @@
 using PartyGame.Engine.Effects;
+using PartyGame.Server.Persistence;
 
 namespace PartyGame.Server.Games;
 
 /// <summary>
 /// Hands each effect of a transition to the service that executes it.
 /// </summary>
-internal sealed class EffectExecutor(TimerScheduler timers) : IEffectExecutor
+internal sealed class EffectExecutor(TimerScheduler timers, GamePersistence persistence) : IEffectExecutor
 {
     public ValueTask ExecuteAsync(Effect effect, CancellationToken cancellationToken)
     {
@@ -22,6 +23,10 @@ internal sealed class EffectExecutor(TimerScheduler timers) : IEffectExecutor
 
             case CancelRoundTimers cancelRound:
                 timers.CancelRound(cancelRound.RoundId);
+                return ValueTask.CompletedTask;
+
+            case ArchiveSavedGame:
+                persistence.ArchiveSavedGame();
                 return ValueTask.CompletedTask;
 
             default:

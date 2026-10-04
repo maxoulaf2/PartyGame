@@ -1,3 +1,6 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -27,3 +30,13 @@ export const playedPack = {
     title: 'Grande soirée',
     rounds: ['Échauffement', 'Finale'],
 } as const;
+
+/**
+ * The folder the E2E server saves its game to, through `Persistence:Directory`: empty on each run,
+ * so that the game of a previous run is never offered to resume. Drawn by the main process only,
+ * which starts the server: the workers load the configuration too.
+ */
+export const dataDirectory =
+    process.env.TEST_WORKER_INDEX === undefined
+        ? mkdtempSync(join(tmpdir(), 'partygame-e2e-'))
+        : '';

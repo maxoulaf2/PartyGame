@@ -25,12 +25,16 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
 
     public const string TemporaryFileName = FileName + ".tmp";
 
+    /// <summary>The game found saved at startup, set aside once the game master starts a new game instead.</summary>
+    public const string PreviousFileName = "previous-game.json";
+
     // The last state not saved yet, the one before dropped: only the latest matters.
     private readonly Channel<GameState> _pending = Channel.CreateBounded<GameState>(
         new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true, SingleWriter = true });
 
     private readonly string _file;
     private readonly string _temporaryFile;
+    private readonly string _previousFile;
     private readonly JsonSerializerOptions _json;
     private readonly TimeProvider _timeProvider;
     private readonly IIncidentReporter _incidents;
@@ -49,6 +53,7 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
         var directory = options.Value.FullDirectory;
         _file = Path.Combine(directory, FileName);
         _temporaryFile = Path.Combine(directory, TemporaryFileName);
+        _previousFile = Path.Combine(directory, PreviousFileName);
         _json = GameStateJson.CreateOptions(modes);
         _timeProvider = timeProvider;
         _incidents = incidents;
@@ -85,9 +90,30 @@ internal sealed class GamePersistence : BackgroundService, IGameStateListener
 
     public ValueTask OnStateChangedAsync(GameState state, CancellationToken cancellationToken)
     {
-        // Never full: the oldest state waiting is dropped instead.
-        _pending.Writer.TryWrite(state);
+        ArgumentNullException.ThrowIfNull(state);
+
+        // While the game master decides, the file keeps the game found: nothing is played meanwhile.
+        if (state.Phase != GamePhase.ResumePending)
+        {
+            // Never full: the oldest state waiting is dropped instead.
+            _pending.Writer.TryWrite(state);
+        }
+
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Sets aside the game found saved at startup as <see cref="PreviousFileName"/>, replacing the one set aside before,
+    /// once the game master starts a new game instead. Called by the loop before the new game is handed over: nothing is
+    /// written meanwhile, since no state is saved while the game master decides.
+    /// </summary>
+    public void ArchiveSavedGame()
+    {
+        if (File.Exists(_file))
+        {
+            File.Move(_file, _previousFile, overwrite: true);
+            _logger.SavedGameArchived(_previousFile);
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

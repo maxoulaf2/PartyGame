@@ -70,6 +70,12 @@ public sealed record GameState(
     public ImmutableArray<RoundDescriptor> Rounds => Pack?.Rounds ?? [];
 
     /// <summary>
+    /// The game found saved when the server restarted, while <see cref="Phase"/> is <see cref="GamePhase.ResumePending"/>;
+    /// <see langword="null"/> otherwise. Secret: only the game master gets a description of it.
+    /// </summary>
+    public PendingGame? PendingGame { get; init; }
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>
@@ -97,4 +103,30 @@ public sealed record GameState(
                 PackMedia.Empty,
                 CurrentRound: null),
             catalog);
+
+    /// <summary>
+    /// Creates the state of a server that found a saved game: it waits for the game master to resume it or to start a new
+    /// game, which is the lobby of <see cref="Create"/>. Its version is that of the game found, so that the snapshots of
+    /// the resumed game go on counting from it.
+    /// </summary>
+    /// <param name="gameId">Identifier of the new game, should the game master start one.</param>
+    /// <param name="joinAddress">The address phones join at, chosen by the server at startup, if any.</param>
+    /// <param name="joinAddressCandidates">The addresses the game master may choose from instead, best first.</param>
+    /// <param name="catalog">The packs loaded by the server at startup.</param>
+    /// <param name="pending">The game found.</param>
+    public static GameState CreateResumePending(
+        GameId gameId,
+        string? joinAddress,
+        ImmutableArray<JoinAddressCandidate> joinAddressCandidates,
+        PackCatalog catalog,
+        PendingGame pending)
+    {
+        ArgumentNullException.ThrowIfNull(pending);
+        return Create(gameId, joinAddress, joinAddressCandidates, catalog) with
+        {
+            Version = pending.Game.Version,
+            Phase = GamePhase.ResumePending,
+            PendingGame = pending,
+        };
+    }
 }

@@ -5,4 +5,5 @@
 
 export interface Welcome {
     readonly buildId: string | null;
+    readonly gamePending: boolean;
 }

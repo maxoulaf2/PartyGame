@@ -64,6 +64,28 @@ public sealed class GamePersistenceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task OnStateChanged_GameFoundWaitingForTheGameMaster_KeepsItsSave()
+    {
+        // Given: the save of the game found, which the game master may yet resume
+        await _persistence.StartAsync(Ct);
+        await _persistence.OnStateChangedAsync(State(version: 2), Ct);
+        await EventuallyAsync(() => SavedVersion() == 2);
+        var pending = GameState.CreateResumePending(
+            new GameId(Guid.NewGuid()),
+            "192.168.1.42",
+            [],
+            new PackCatalog("packs", []),
+            new PendingGame(State(version: 2), _time.GetUtcNow(), []));
+
+        // When: the media files of the game found are checked again
+        await _persistence.OnStateChangedAsync(pending with { Version = 3 }, Ct);
+        await _persistence.StopAsync(Ct);
+
+        // Then
+        Assert.Equal(2, SavedVersion());
+    }
+
+    [Fact]
     public async Task OnStateChanged_Burst_NeverWaitsForTheDiskAndSavesTheLatestState()
     {
         // Given

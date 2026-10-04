@@ -1,3 +1,5 @@
+using PartyGame.Contracts;
+using PartyGame.Engine.Projections;
 using PartyGame.Engine.Tests.Rounds;
 using PartyGame.Tests.Shared.Leaks;
 
@@ -17,6 +19,9 @@ public sealed class SnapshotsLeakTests
         Scenarios = [.. Enum.GetValues<GamePhase>().SelectMany(Scenarios)],
         SecretsOf = SecretsOf,
         Pairs = [.. Enum.GetValues<GamePhase>().SelectMany(Pairs)],
+
+        // Nobody can register while the game master decides about the game found.
+        Unreachable = [(GamePhase.ResumePending, Role.Player)],
     };
 
     [Fact]
@@ -28,7 +33,27 @@ public sealed class SnapshotsLeakTests
     [Fact]
     public void Snapshots_WithoutTheSecrets_LookTheSameToWhomTheyAreHiddenFrom() => _suite.AssertPairsLookTheSame();
 
-    private static IEnumerable<(string, GameState)> Scenarios(GamePhase phase)
+    private static IEnumerable<(string, GameState)> Scenarios(GamePhase phase) =>
+        phase == GamePhase.ResumePending ? PendingScenarios() : PlayedScenarios(phase);
+
+    /// <summary>
+    /// The games of every other scenario found saved in the middle of a round, and games found at other moments.
+    /// </summary>
+    private static IEnumerable<(string, GameState)> PendingScenarios()
+    {
+        foreach (var (name, state) in PlayedScenarios(GamePhase.Round))
+        {
+            yield return (name, Games.Pending(state));
+        }
+
+        // The files the game master must put back are named to them alone.
+        yield return ("media missing", Games.Pending(Games.InPhase(GamePhase.Round, "Zoé"), Games.Flag));
+        yield return ("illustrated game found", Games.Pending(Games.PlayedUpTo(GamePhase.Round, Games.IllustratedLobbyWith("Zoé", "Max")), Games.Monument));
+        yield return ("lobby found", Games.Pending(Games.LobbyWith("Zoé", "Max")));
+        yield return ("finished game found", Games.Pending(Games.InPhase(GamePhase.Finished, "Zoé", "Max")));
+    }
+
+    private static IEnumerable<(string, GameState)> PlayedScenarios(GamePhase phase)
     {
         yield return ("three players", Games.InPhase(phase, "Zoé", "Max", "Léa"));
 
@@ -48,6 +73,15 @@ public sealed class SnapshotsLeakTests
 
     private static IEnumerable<SecretPair<GameState>> Pairs(GamePhase phase)
     {
+        if (phase == GamePhase.ResumePending)
+        {
+            // The TV screen learns nothing of the game found: neither where it stopped, nor who played it.
+            var found = Games.InPhase(GamePhase.Round, "Zoé", "Max");
+            var another = Games.WithScores(Games.InPhase(GamePhase.BetweenRounds, "Léa"), 3000) with { Version = found.Version };
+            yield return new SecretPair<GameState>("game found", Games.Pending(found), Games.Pending(another), Audience.AllButGameMaster);
+            yield break;
+        }
+
         var state = Games.InPhase(phase, "Zoé", "Max");
         yield return new SecretPair<GameState>("tokens", state, state with { PlayerTokens = state.PlayerTokens.Clear() }, Audience.Everyone);
 
@@ -151,6 +185,28 @@ public sealed class SnapshotsLeakTests
         {
             yield return new Secret(player.Nickname, Audience.OtherPlayersThan(player.Nickname));
             yield return new Secret(player.Id.Value.ToString(), Audience.OtherPlayersThan(player.Nickname));
+        }
+
+        // The game found: the game master learns where it stopped, the files missing and how many played it, never who.
+        if (state.PendingGame is { } pending)
+        {
+            var missing = pending.MissingMedia.Select(m => m.Value).ToList();
+            // Its addresses are those of the previous run: the TV screen shows the one of this startup, whatever they were.
+            foreach (var secret in SecretsOf(pending.Game).Where(secret => secret.Value != state.JoinAddress))
+            {
+                var toGameMaster = secret.HiddenFrom == Audience.AllButGameMaster || missing.Any(m => m.Contains(secret.Value, StringComparison.Ordinal));
+                yield return new Secret(secret.Value, toGameMaster ? Audience.AllButGameMaster : Audience.Everyone);
+            }
+
+            if (pending.Game.Pack?.Title is { } title)
+            {
+                yield return new Secret(title, Audience.AllButGameMaster);
+            }
+
+            if (Snapshots.RoundInfoOf(pending.Game) is { } round)
+            {
+                yield return new Secret(round.Title, Audience.AllButGameMaster);
+            }
         }
     }
 

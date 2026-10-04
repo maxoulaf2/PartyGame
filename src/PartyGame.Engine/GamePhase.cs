@@ -16,4 +16,10 @@ public enum GamePhase
 
     /// <summary>The last round is over.</summary>
     Finished,
+
+    /// <summary>
+    /// The server restarted and found a saved game, kept in <see cref="GameState.PendingGame"/>: it waits for the game
+    /// master to resume it or start a new one. The engine accepts nothing else meanwhile.
+    /// </summary>
+    ResumePending,
 }

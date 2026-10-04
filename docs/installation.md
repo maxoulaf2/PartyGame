@@ -108,6 +108,24 @@ Après chaque changement, le serveur enregistre la partie dans le fichier `curre
 
 Le dossier se règle par le paramètre `Persistence:Directory` (variable d'environnement `Persistence__Directory`), comme celui des packs. Par défaut, c'est le dossier `data` à côté de l'exécutable du serveur ; un chemin relatif est lui aussi relatif au dossier de l'exécutable. Le serveur le crée au besoin. S'il ne peut ni le créer ni y écrire, il s'arrête au démarrage avec un message `FTL` qui nomme le dossier. Si l'écriture échoue en cours de partie (disque plein, par exemple), la partie continue et la console GM affiche un incident jusqu'à ce que l'enregistrement fonctionne de nouveau.
 
+### Reprise après un crash ou un redémarrage
+
+Au démarrage, si `current-game.json` contient une partie avec au moins un joueur, le serveur ne la reprend pas d'office : la bannière de la console l'annonce, et la console GM, une fois le **nouveau** code saisi, décrit la partie trouvée (pack, avancement, nombre de joueurs, heure de l'enregistrement) avec deux choix :
+
+- **Reprendre la partie** : les téléphones, l'écran TV et la console la retrouvent là où elle en était. Si des médias du pack ont disparu du disque depuis, le bouton reste désactivé et la console les liste : remettez-les à leur place, puis « Vérifier de nouveau ».
+- **Nouvelle partie** : après confirmation, la partie trouvée est mise de côté dans `previous-game.json` (qui remplace le précédent), les packs sont relus et une partie neuve démarre dans le lobby. Les joueurs se réinscrivent, leur pseudo prérempli.
+
+En attendant la décision, les téléphones affichent « Retour dans la partie… » (ou un écran d'attente s'ils ne s'étaient jamais inscrits) et l'écran TV « Reprise de la partie… ». Une partie sans joueur n'est pas proposée.
+
+Un fichier illisible, tronqué ou enregistré par une version du serveur au format différent est renommé `current-game.unreadable-<date>-<heure>.json`, une nouvelle partie démarre, et la console GM affiche un incident : les joueurs doivent se réinscrire. Pour repartir de zéro sans passer par la console, il suffit de supprimer `current-game.json` serveur arrêté.
+
+| Fichier du dossier de données | Rôle |
+|---|---|
+| `current-game.json` | La partie en cours, réécrite après chaque changement |
+| `current-game.json.tmp` | Écriture en cours ; un fichier abandonné par un crash est supprimé au démarrage suivant |
+| `previous-game.json` | La dernière partie trouvée au démarrage que le GM a choisi de ne pas reprendre |
+| `current-game.unreadable-*.json` | Un enregistrement que le serveur n'a pas pu relire |
+
 ## Changer de port
 
 Le port se règle par le paramètre `Network:Port` (5000 par défaut), sans recompiler. Par ordre de priorité croissante :

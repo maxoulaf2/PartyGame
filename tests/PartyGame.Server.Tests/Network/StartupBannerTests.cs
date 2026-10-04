@@ -53,6 +53,22 @@ public sealed class StartupBannerTests
     }
 
     [Fact]
+    public void Format_GamePending_TellsThatTheGameMasterDecidesFromTheConsole()
+    {
+        var banner = StartupBanner.Format(AddressSelector.Select([Wifi("192.168.1.42")], configured: null), port: 5000, _generatedCode, _packs, gamePending: true);
+
+        Assert.Contains("Partie interrompue trouvée", banner, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Format_NoGamePending_SaysNothingOfIt()
+    {
+        var banner = StartupBanner.Format(AddressSelector.Select([Wifi("192.168.1.42")], configured: null), port: 5000, _generatedCode, _packs);
+
+        Assert.DoesNotContain("Partie interrompue", banner, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Format_NoAddress_AsksToConnectAndGivesLocalUrls()
     {
         var banner = StartupBanner.Format(AddressSelector.Select([], configured: null), port: 5000, _generatedCode, _packs);

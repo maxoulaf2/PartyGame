@@ -36,15 +36,24 @@ internal static class GameLoopExtensions
         // know the network: the address phones join at, and those the game master may choose instead, come from the
         // selection made at startup. A choice of the game master lives in the state only, and is forgotten on restart. The
         // packs, loaded before the server listens, are in the state from the start: no console ever sees an empty catalog.
+        // A game saved by the previous run waits for the game master to resume it, its media files checked beforehand.
         builder.Services.AddSingleton(services =>
         {
             var selection = services.GetRequiredService<AddressSelection>();
+            var gameId = new GameId(Guid.NewGuid());
+            var address = selection.Address?.ToString();
+            var candidates = selection.ToJoinAddressCandidates();
+            var catalog = services.GetRequiredService<PackLibrary>().ToCatalog();
+            var saved = services.GetRequiredService<SavedGameLoader>().Load();
             return new GameLoop(
-                GameState.Create(
-                    new GameId(Guid.NewGuid()),
-                    selection.Address?.ToString(),
-                    selection.ToJoinAddressCandidates(),
-                    services.GetRequiredService<PackLibrary>().ToCatalog()),
+                saved is null
+                    ? GameState.Create(gameId, address, candidates, catalog)
+                    : GameState.CreateResumePending(
+                        gameId,
+                        address,
+                        candidates,
+                        catalog,
+                        new PendingGame(saved.Game, saved.SavedAt, PackMediaFiles.Missing(saved.Game))),
                 Random.Shared.Next(),
                 services.GetRequiredService<GameInputQueue>(),
                 services.GetRequiredService<IGameEngine>(),
@@ -58,4 +67,10 @@ internal static class GameLoopExtensions
 
         return builder;
     }
+
+    /// <summary>
+    /// Creates the game now, before the server listens and once the data directory is ready: the game saved by the previous
+    /// run is read then, and the banner tells whether it waits for the game master.
+    /// </summary>
+    public static GameLoop LoadGame(this WebApplication app) => app.Services.GetRequiredService<GameLoop>();
 }

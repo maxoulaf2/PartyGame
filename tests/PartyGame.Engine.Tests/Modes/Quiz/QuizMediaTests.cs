@@ -1,3 +1,4 @@
+using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using static PartyGame.Engine.Tests.Modes.Quiz.QuizGames;
 
@@ -6,6 +7,19 @@ namespace PartyGame.Engine.Tests.Modes.Quiz;
 public sealed class QuizMediaTests
 {
     private static readonly MediaPath _monument = new("images/tour-eiffel.jpg");
+
+    [Fact]
+    public void StepOf_QuestionInProgress_GivesItsNumberAmongTheQuestionsOfTheRound()
+    {
+        // Given
+        var state = AtQuestion(Started([Round(IllustratedQuestion, CapitalQuestion, LastQuestion)], ["Zoé"]), 1);
+
+        // When
+        var step = Mode.StepOf(RoundOf(state));
+
+        // Then
+        Assert.Equal(new RoundStep(2, 3), step);
+    }
 
     [Fact]
     public void LocateMedia_ImageOfTheQuestionInProgress_GivesItsNumber()

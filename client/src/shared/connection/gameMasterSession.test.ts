@@ -89,6 +89,8 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                     return reloadAnswer;
                 }
                 if (
+                    method === 'ResolveSavedGame' ||
+                    method === 'CheckSavedGameMedia' ||
                     method === 'NextRound' ||
                     method === 'SkipRound' ||
                     method === 'SendGameMasterRoundIntent'
@@ -170,6 +172,7 @@ function snapshot(version: number): GameMasterSnapshot {
         ranking: [],
         nextRoundTitle: null,
         roundSkipped: false,
+        savedGame: null,
     };
 }
 
@@ -684,6 +687,40 @@ describe('GameMasterSession', () => {
                 'NextRound',
                 expect.anything(),
             );
+        });
+    });
+
+    describe('resolveSavedGame', () => {
+        it('names the game found, resumed or not', async () => {
+            const { session, server } = await grantedSession();
+
+            expect(await session.resolveSavedGame(gameId, true)).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ResolveSavedGame', {
+                savedGameId: gameId,
+                resume: true,
+            });
+            expect(await session.resolveSavedGame(gameId, false)).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ResolveSavedGame', {
+                savedGameId: gameId,
+                resume: false,
+            });
+        });
+
+        it('sends nothing without access', async () => {
+            const { session, server } = await startedSession(memoryStorage());
+
+            expect(await session.resolveSavedGame(gameId, true)).toBe('unreachable');
+            expect(await session.checkSavedGameMedia()).toBe('unreachable');
+            expect(server.connection.invoke).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('checkSavedGameMedia', () => {
+        it('asks the server to check the media files again', async () => {
+            const { session, server } = await grantedSession();
+
+            expect(await session.checkSavedGameMedia()).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('CheckSavedGameMedia');
         });
     });
 

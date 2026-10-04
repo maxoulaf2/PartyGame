@@ -40,6 +40,12 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} refused: unknown token")]
     public static partial void SessionUnknown(this ILogger logger, string connectionId);
 
+    [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} refused: the game master has yet to resume the saved game or start a new one")]
+    public static partial void ResumeWhileGamePending(this ILogger logger, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Saved game {GameId} resolved by the game master, resumed: {Resumed}")]
+    public static partial void SavedGameResolved(this ILogger logger, Guid gameId, bool resumed);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} ignored: it already identified a player")]
     public static partial void ResumeRepeated(this ILogger logger, string connectionId);
 

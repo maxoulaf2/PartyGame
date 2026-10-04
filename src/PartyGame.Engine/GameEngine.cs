@@ -19,8 +19,17 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(context);
 
+        if (state.Phase == GamePhase.ResumePending && input is not (ResumeSavedGame or DiscardSavedGame or SavedGameMediaChecked))
+        {
+            // Nothing happens to a game that may be replaced as a whole: neither registration, nor any choice.
+            return Transition.Rejected(state, RejectionReason.GamePending);
+        }
+
         return input switch
         {
+            ResumeSavedGame resume => SavedGameChoice.Resume(state, resume),
+            DiscardSavedGame discard => SavedGameChoice.Discard(state, discard),
+            SavedGameMediaChecked check => SavedGameChoice.MediaChecked(state, check),
             JoinGame join => Registration.Join(state, join),
             PlayerConnectionLost lost => Presence.ConnectionLost(state, lost),
             PlayerConnectionRestored restored => Presence.ConnectionRestored(state, restored),

@@ -50,7 +50,7 @@ function fakeConnection(invokeFails = false) {
         connection,
         typed,
         unsubscribe,
-        welcome: (buildId: string | null) => welcome?.({ buildId }),
+        welcome: (buildId: string | null) => welcome?.({ buildId, gamePending: false }),
         subscribed: () => welcome !== null,
     };
 }
