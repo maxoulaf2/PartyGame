@@ -42,7 +42,7 @@ public sealed class PackMediaTests : IAsyncDisposable
         TestPacks.Write(_packs.Path, "voisin", TestPacks.IllustratedQuiz("Pack voisin", NeighbourImage));
         TestPacks.WriteMedia(_packs.Path, "voisin", NeighbourImage, [7, 8, 9]);
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code)
             .UseSetting(PacksOptions.DirectorySetting, _packs.Path));
     }

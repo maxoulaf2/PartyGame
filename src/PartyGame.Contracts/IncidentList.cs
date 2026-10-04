@@ -7,8 +7,8 @@ namespace PartyGame.Contracts;
 /// accepted, never as a difference. Incidents are not part of the game: they change no snapshot.
 /// </summary>
 /// <param name="Version">
-/// The number of occurrences since the server started, one more with each: the console ignores an older list, and counts
-/// the occurrences since it last marked them as read.
+/// The number of changes of the list since the server started, one more with each occurrence and each incident forgotten
+/// once its cause is over: the console ignores an older list.
 /// </param>
 /// <param name="Incidents">The incidents, the one that happened last first.</param>
 /// <param name="FailingRounds">

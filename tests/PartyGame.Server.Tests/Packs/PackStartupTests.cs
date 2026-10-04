@@ -48,7 +48,7 @@ public sealed class PackStartupTests : IDisposable
     public async Task Startup_RepositoryPacks_AreLoadedValidWithTheRegisteredModes()
     {
         await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting(PacksOptions.DirectorySetting, Path.Combine(RepositoryRoot.Find(), "packs")));
 
         var library = factory.Services.GetRequiredService<PackLibrary>();
@@ -147,6 +147,7 @@ public sealed class PackStartupTests : IDisposable
     {
         ["Network__Port"] = port.ToString(CultureInfo.InvariantCulture),
         ["LogFiles__Directory"] = _logs.Path,
+        ["Persistence__Directory"] = _logs.Path,
         ["Packs__Directory"] = packDirectory,
     };
 }

@@ -36,4 +36,10 @@ public enum IncidentCode
     /// it. The incident names the step of the round that shows it, when the game mode can tell.
     /// </summary>
     DisplayMediaFailed,
+
+    /// <summary>
+    /// The game could not be saved to the disk, such as when it is full: the game goes on, but a crash of the server would
+    /// lose it. Reported once per series of failures, and forgotten as soon as the game is saved again.
+    /// </summary>
+    PersistenceFailed,
 }

@@ -78,7 +78,7 @@ public sealed class JoinAddressTests : IDisposable
     public async Task Startup_RealHost_RegistersSystemInterfaceSource()
     {
         await using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseSetting("LogFiles:Directory", _logs.Path));
+            .WithWebHostBuilder(builder => builder.UseScratchDirectory(_logs.Path));
 
         Assert.IsType<SystemNetworkInterfaceSource>(factory.Services.GetRequiredService<INetworkInterfaceSource>());
     }
@@ -86,7 +86,7 @@ public sealed class JoinAddressTests : IDisposable
     private WebApplicationFactory<Program> CreateFactory(INetworkInterfaceSource source, string? advertisedAddress = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseSetting("LogFiles:Directory", _logs.Path);
+            builder.UseScratchDirectory(_logs.Path);
             if (advertisedAddress is not null)
             {
                 builder.UseSetting("Network:AdvertisedAddress", advertisedAddress);

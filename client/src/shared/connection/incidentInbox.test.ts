@@ -49,6 +49,16 @@ describe('IncidentInbox', () => {
         expect(inbox.unread).toBe(1);
     });
 
+    it('stops counting an incident the server forgot, its cause being over', () => {
+        const inbox = new IncidentInbox();
+        inbox.accept(list(2, incident(2), incident(1)));
+
+        inbox.accept(list(3, incident(1)));
+
+        expect(inbox.incidents.map((i) => i.id)).toEqual([1]);
+        expect(inbox.unread).toBe(1);
+    });
+
     it('ignores an older list, or the same one again', () => {
         const inbox = new IncidentInbox();
         inbox.accept(list(2, incident(2), incident(1)));

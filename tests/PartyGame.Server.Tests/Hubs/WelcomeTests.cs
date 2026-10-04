@@ -167,7 +167,7 @@ public sealed class WelcomeTests : IAsyncDisposable
     {
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting(WebHostDefaults.WebRootKey, _webRoot.Path)
-            .UseSetting("LogFiles:Directory", _logs.Path));
+            .UseScratchDirectory(_logs.Path));
         return _factory;
     }
 

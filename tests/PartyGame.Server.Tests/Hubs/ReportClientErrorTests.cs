@@ -27,7 +27,7 @@ public sealed class ReportClientErrorTests : IAsyncDisposable
     public ReportClientErrorTests()
     {
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .ConfigureTestServices(services => services.AddSingleton<TimeProvider>(_time)));
     }
 

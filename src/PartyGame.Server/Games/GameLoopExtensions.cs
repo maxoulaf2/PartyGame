@@ -6,6 +6,7 @@ using PartyGame.Engine.Projections;
 using PartyGame.Server.Incidents;
 using PartyGame.Server.Network;
 using PartyGame.Server.Packs;
+using PartyGame.Server.Persistence;
 
 namespace PartyGame.Server.Games;
 
@@ -23,6 +24,7 @@ internal static class GameLoopExtensions
         builder.Services.TryAddSingleton<Snapshots>();
         builder.Services.TryAddSingleton<MediaLocator>();
         builder.Services.AddSingleton<IGameStateListener, RoundProgressLog>();
+        builder.AddGamePersistence();
         builder.Services.TryAddSingleton<GameInputQueue>();
         builder.Services.TryAddSingleton<IGameInputWriter>(services => services.GetRequiredService<GameInputQueue>());
         builder.Services.TryAddSingleton<TimerScheduler>();

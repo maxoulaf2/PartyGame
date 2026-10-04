@@ -25,7 +25,7 @@ public sealed class ReportStaleBuildTests : IAsyncDisposable
         File.WriteAllText(Path.Combine(_webRoot.Path, "build.json"), """{ "buildId": "new" }""");
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseSetting(WebHostDefaults.WebRootKey, _webRoot.Path)
-            .UseSetting("LogFiles:Directory", _logs.Path));
+            .UseScratchDirectory(_logs.Path));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

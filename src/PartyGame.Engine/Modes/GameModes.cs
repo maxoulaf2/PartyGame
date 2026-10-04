@@ -15,6 +15,11 @@ public sealed class GameModes
 {
     private readonly FrozenDictionary<Type, IGameMode> _byDescriptorType;
 
+    /// <summary>
+    /// The types of the round states of the registered modes, which the persisted game state may hold.
+    /// </summary>
+    public IEnumerable<Type> StateTypes => _byDescriptorType.Values.Select(mode => mode.StateType);
+
     /// <param name="modes">The registered modes, at most one per descriptor type.</param>
     /// <exception cref="ArgumentException">Two modes play the same descriptor type.</exception>
     public GameModes(IEnumerable<IGameMode> modes)

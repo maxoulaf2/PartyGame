@@ -7,7 +7,7 @@ namespace PartyGame.Server.Incidents;
 /// The incidents of the server since it started, for the game master. Kept apart from the game state: an incident changes
 /// nothing of the game, and is forgotten on restart, the logs keeping their trace. The occurrences of a same code in a same
 /// round, for a same role and a same step, make one incident; past <see cref="Capacity"/> incidents, the one that happened
-/// longest ago is dropped. A round whose inputs failed <see cref="SkipThreshold"/> times is listed as failing, so that the
+/// longest ago is dropped. An incident whose cause is over, such as a persistence that works again, is forgotten. A round whose inputs failed <see cref="SkipThreshold"/> times is listed as failing, so that the
 /// game master is offered to skip it, and so is at once a round the TV screen could not show.
 /// </summary>
 /// <remarks>
@@ -78,6 +78,25 @@ internal sealed class IncidentJournal(TimeProvider timeProvider)
             if (round is not null && IsFailing(code, round.RoundId) && !_failingRounds.Contains(round.RoundId))
             {
                 _failingRounds.Add(round.RoundId);
+            }
+
+            _current = new IncidentList(_current.Version + 1, [.. _incidents], [.. _failingRounds]);
+            return _current;
+        }
+    }
+
+    /// <summary>
+    /// Forgets every incident of a code, once what went wrong is over, and returns the list without them.
+    /// </summary>
+    /// <param name="code">What no longer goes wrong.</param>
+    /// <returns>The list without them, or <see langword="null"/> when no incident had this code: the list is unchanged.</returns>
+    public IncidentList? Resolve(IncidentCode code)
+    {
+        lock (_gate)
+        {
+            if (_incidents.RemoveAll(i => i.Code == code) == 0)
+            {
+                return null;
             }
 
             _current = new IncidentList(_current.Version + 1, [.. _incidents], [.. _failingRounds]);

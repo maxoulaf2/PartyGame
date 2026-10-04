@@ -8,7 +8,8 @@ import type { Incident, IncidentList, RoundId } from '../contracts';
 export class IncidentInbox {
     // Raw: a list is replaced as a whole, never modified, so it needs no deep reactivity.
     #list = $state.raw<IncidentList | null>(null);
-    #readVersion = $state(0);
+    // The occurrences of each incident already read, by its id.
+    #read = $state.raw<Readonly<Record<number, number>>>({});
     // Whether the connection was lost since the last list: the next one is taken whatever its version.
     #stale = false;
 
@@ -26,11 +27,14 @@ export class IncidentInbox {
     }
 
     /**
-     * How many incidents occurred since the game master last marked them as read, repetitions
-     * included: the version of a list counts every occurrence.
+     * How many occurrences of the incidents listed the game master has not marked as read,
+     * repetitions included. An incident the server forgot, its cause being over, no longer counts.
      */
     get unread(): number {
-        return Math.max(0, (this.#list?.version ?? 0) - this.#readVersion);
+        return this.incidents.reduce(
+            (sum, incident) => sum + Math.max(0, incident.count - (this.#read[incident.id] ?? 0)),
+            0,
+        );
     }
 
     /**
@@ -44,7 +48,7 @@ export class IncidentInbox {
         }
         if (current !== null && list.version < current.version) {
             // Only a server that restarted counts from lower: none of its incidents was read.
-            this.#readVersion = 0;
+            this.#read = {};
         }
         this.#stale = false;
         this.#list = list;
@@ -61,6 +65,8 @@ export class IncidentInbox {
 
     /** Clears the counter until the next incident. The incidents stay listed. */
     markAllRead(): void {
-        this.#readVersion = this.#list?.version ?? 0;
+        this.#read = Object.fromEntries(
+            this.incidents.map((incident) => [incident.id, incident.count]),
+        );
     }
 }

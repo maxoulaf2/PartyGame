@@ -291,6 +291,8 @@ export const fr = {
                     'L’écran TV n’a pas pu afficher la manche : il montre un écran d’attente jusqu’à la prochaine mise à jour.',
                 DisplayMediaFailed:
                     'L’écran TV n’a pas pu charger une image : la question s’affiche sans elle.',
+                PersistenceFailed:
+                    'La partie n’a pas pu être enregistrée sur le disque : elle continue, mais ne pourrait pas reprendre après un arrêt du serveur. Ce message disparaît dès que l’enregistrement fonctionne de nouveau.',
             },
             roles: {
                 Player: 'des téléphones',

@@ -24,8 +24,11 @@ internal sealed class IncidentReporter(
         return SendAsync(code, journal.Record(code, state.Phase == GamePhase.Round ? Snapshots.RoundInfoOf(state) : null, role), cancellationToken);
     }
 
-    public ValueTask ReportClientIncidentAsync(IncidentCode code, RoundInfo? round, int? step, CancellationToken cancellationToken) =>
+    public ValueTask ReportIncidentAsync(IncidentCode code, RoundInfo? round, int? step, CancellationToken cancellationToken) =>
         SendAsync(code, journal.Record(code, round, role: null, step), cancellationToken);
+
+    public ValueTask ResolveAsync(IncidentCode code, CancellationToken cancellationToken) =>
+        journal.Resolve(code) is { } incidents ? SendAsync(code, incidents, cancellationToken) : ValueTask.CompletedTask;
 
     private async ValueTask SendAsync(IncidentCode code, IncidentList incidents, CancellationToken cancellationToken)
     {

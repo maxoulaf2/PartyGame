@@ -18,6 +18,9 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     /// <inheritdoc />
     public Type DescriptorType => typeof(TDescriptor);
 
+    /// <inheritdoc />
+    public Type StateType => typeof(TState);
+
     /// <inheritdoc cref="IGameMode.Validate" />
     public abstract ImmutableArray<PackProblem> Validate(TDescriptor descriptor, string path);
 

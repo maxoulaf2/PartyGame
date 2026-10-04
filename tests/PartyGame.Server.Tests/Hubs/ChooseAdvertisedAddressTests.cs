@@ -208,7 +208,7 @@ public sealed class ChooseAdvertisedAddressTests : IAsyncDisposable
         var source = new FakeNetworkInterfaceSource(Wifi(WifiAddress), Ethernet(EthernetAddress, hasGateway: false));
         var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseSetting("LogFiles:Directory", _logs.Path).UseSetting("GameMaster:Code", Code);
+            builder.UseScratchDirectory(_logs.Path).UseSetting("GameMaster:Code", Code);
             if (advertisedAddress is not null)
             {
                 builder.UseSetting("Network:AdvertisedAddress", advertisedAddress);

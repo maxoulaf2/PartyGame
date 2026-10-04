@@ -34,7 +34,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         TestPacks.WriteMedia(_packs.Path, "soiree", Flag, [1, 2, 3]);
         TestPacks.WriteMedia(_packs.Path, "soiree", Monument, [4, 5, 6]);
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
-            .UseSetting("LogFiles:Directory", _logs.Path)
+            .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code)
             .UseSetting(PacksOptions.DirectorySetting, _packs.Path));
     }
