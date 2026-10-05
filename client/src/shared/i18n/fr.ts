@@ -408,7 +408,7 @@ export const fr = {
                 DisplayViewFailed:
                     'L’écran TV n’a pas pu afficher la manche : il montre un écran d’attente jusqu’à la prochaine mise à jour.',
                 DisplayMediaFailed:
-                    'L’écran TV n’a pas pu charger une image : la question s’affiche sans elle.',
+                    'L’écran TV n’a pas pu charger une image ou un son : le public n’en voit rien.',
                 SavedGameUnreadable:
                     'La partie enregistrée avant le redémarrage du serveur n’a pas pu être relue : une nouvelle partie a commencé et les joueurs doivent se réinscrire. Le fichier a été mis de côté dans le dossier des données.',
                 PersistenceFailed:

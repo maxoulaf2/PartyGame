@@ -170,3 +170,21 @@ test('a TV screen reloaded while the music plays goes on where it is', async ({ 
     await expect.poll(async () => (await audioOf(display)).currentTime).toBeGreaterThan(11.5);
     expect((await audioOf(display)).paused).toBe(false);
 });
+
+test('an excerpt the TV screen cannot load leaves it as it is, and the console alone hears of it', async ({
+    table,
+}) => {
+    const { display, gm } = table;
+    await display.route('**/media/**', (route) => route.fulfill({ status: 500 }));
+    await unlockAudio(display);
+    await startGame(gm);
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.play }).click();
+
+    await expect(display.getByRole('heading', { name: track(1) })).toBeVisible();
+    await expect(display.getByText(fr.modes.blindtest.display.listen)).toBeVisible();
+    for (const page of [display, ...table.players.map((player) => player.page)]) {
+        await expect(page.getByText(/incident|erreur|problème/i)).toHaveCount(0);
+    }
+    await gm.getByRole('button', { name: /incident/i }).click();
+    await expect(gm.getByText(fr.gm.incidents.codes.DisplayMediaFailed)).toHaveCount(1);
+});

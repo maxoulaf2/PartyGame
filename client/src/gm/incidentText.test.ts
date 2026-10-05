@@ -26,7 +26,7 @@ describe('describeIncident', () => {
             'Une opération a échoué après une action : la partie continue.',
         );
         expect(describeIncident(incident({ code: 'DisplayMediaFailed', step: 2 }))).toBe(
-            'L’écran TV n’a pas pu charger une image : la question s’affiche sans elle.',
+            'L’écran TV n’a pas pu charger une image ou un son : le public n’en voit rien.',
         );
     });
 
