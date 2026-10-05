@@ -15,4 +15,5 @@ export interface BlindTestPlayerView {
     readonly winner: string | null;
     readonly foundTitle: boolean;
     readonly foundArtist: boolean;
+    readonly points: number | null;
 }

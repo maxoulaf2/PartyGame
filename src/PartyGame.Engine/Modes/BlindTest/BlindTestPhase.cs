@@ -20,7 +20,8 @@ public enum BlindTestPhase
     Answering,
 
     /// <summary>
-    /// Nothing is left to find, or nobody is left to buzz: the buzzer is closed and the music stays paused.
+    /// The title and the artist are revealed, once nothing is left to find, nobody is left to buzz, or the game master
+    /// chose to: the buzzer is closed and the music stopped.
     /// </summary>
-    Closed,
+    Revealed,
 }

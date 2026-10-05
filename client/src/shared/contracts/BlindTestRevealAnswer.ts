@@ -3,4 +3,10 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type BlindTestTrackPhase = 'Ready' | 'Listening' | 'Answering' | 'Revealed';
+import type { RoundId } from './RoundId';
+
+export interface BlindTestRevealAnswer {
+    readonly type: 'blindtest.revealAnswer';
+    readonly roundId: RoundId;
+    readonly trackNumber: number;
+}

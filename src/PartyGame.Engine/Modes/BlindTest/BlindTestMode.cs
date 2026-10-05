@@ -13,11 +13,9 @@ namespace PartyGame.Engine.Modes.BlindTest;
 /// <summary>
 /// Plays the blind test rounds of the packs: the game master plays the excerpt of each track on the TV screen, which opens
 /// the buzzer, and the music pauses once the first player who pressed has the hand. The game master judges the title and
-/// the artist they give apart, and the music resumes for the others while something is left to find.
+/// the artist they give apart, and the music resumes for the others while something is left to find. The reveal shows the
+/// track on the TV screen and awards the points of the elements found.
 /// </summary>
-/// <remarks>
-/// The reveal (US-E15-04) is to come: for now, the game master moves on by skipping the track.
-/// </remarks>
 public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTestRound>
 {
     /// <summary>
@@ -55,6 +53,8 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         {
             GameMasterRoundInput { RoundIntent: BlindTestPlay play } => Play(round, play, context),
             GameMasterRoundInput { RoundIntent: BlindTestJudge judge } => Judge(round, judge, game, context),
+            GameMasterRoundInput { RoundIntent: BlindTestRevealAnswer reveal } => RevealAnswer(round, reveal, context),
+            GameMasterRoundInput { RoundIntent: BlindTestNextTrack next } => NextTrack(round, next),
             GameMasterRoundInput { RoundIntent: BlindTestSkipTrack skip } => SkipTrack(round, skip),
             PlayerRoundInput { RoundIntent: BlindTestBuzz buzz } buzzed => Buzz(round, buzzed.PlayerId, buzz, buzzed.ReceivedAt, context),
             TimerElapsed timer => Arbitrate(round, timer, context),
@@ -75,8 +75,8 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
     }
 
     /// <summary>
-    /// The buzzer of the player, closed until the music starts, and what they found: never the excerpt, which plays on the
-    /// TV screen alone.
+    /// The buzzer of the player, closed until the music starts, what they found, and the points they earned once revealed:
+    /// never the excerpt, which plays on the TV screen alone.
     /// </summary>
     /// <inheritdoc />
     public override PlayerRoundView ProjectForPlayer(BlindTestRound round, GameState game, Player player)
@@ -86,9 +86,8 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
 
         var buzzer = round.Buzzer;
         var state =
-            round.Phase == BlindTestPhase.Ready ? BuzzerButtonState.Closed
+            round.Phase is BlindTestPhase.Ready or BlindTestPhase.Revealed ? BuzzerButtonState.Closed
             : buzzer.Blocked.Contains(player.Id) ? BuzzerButtonState.Blocked
-            : round.Phase == BlindTestPhase.Closed ? BuzzerButtonState.Closed
             : buzzer.Winner == player.Id ? BuzzerButtonState.Won
             : buzzer.Winner is not null ? BuzzerButtonState.Lost
 
@@ -103,12 +102,13 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
             state,
             WinnerOf(round, game),
             round.TitleFoundBy == player.Id,
-            round.ArtistFoundBy == player.Id);
+            round.ArtistFoundBy == player.Id,
+            round.Phase == BlindTestPhase.Revealed ? PointsOf(round, player.Id) : null);
     }
 
     /// <summary>
-    /// The excerpt to play under its opaque URL, then who has the hand and who found what: nothing of the title nor of the
-    /// artist.
+    /// The excerpt to play under its opaque URL, then who has the hand and who found what: nothing of the title, of the
+    /// artist nor of the image before the reveal.
     /// </summary>
     /// <inheritdoc />
     public override DisplayRoundView ProjectForDisplay(BlindTestRound round, GameState game)
@@ -117,6 +117,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         ArgumentNullException.ThrowIfNull(game);
 
         var excerpt = round.Track.Excerpt;
+        var revealed = round.Phase == BlindTestPhase.Revealed;
         return new BlindTestDisplayView(
             round.TrackNumber,
             round.Descriptor.Tracks.Length,
@@ -124,7 +125,10 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
             round.Playback.Project(game.Media.UrlOf(excerpt.File), ExcerptPlayback.EndOf(excerpt)),
             WinnerOf(round, game),
             NicknameOf(game, round.TitleFoundBy),
-            NicknameOf(game, round.ArtistFoundBy));
+            NicknameOf(game, round.ArtistFoundBy),
+            revealed ? round.Track.Title : null,
+            revealed ? round.Track.Artist : null,
+            revealed && round.Track.Image is { } image ? game.Media.UrlOf(image) : null);
     }
 
     /// <inheritdoc />
@@ -203,7 +207,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
     /// Judges the answer of the player who has the hand: each element they found is theirs, and they may not buzz again on
     /// the track, whatever they found. While something is left to find and a connected player may buzz, the music resumes
     /// where it paused, <see cref="ExcerptPlayback.Lead"/> from now, and the buzzer opens anew at the same instant;
-    /// otherwise the buzzer closes and the music stays paused.
+    /// otherwise the track is revealed.
     /// </summary>
     private static RoundTransition Judge(BlindTestRound round, BlindTestJudge judge, GameState game, GameContext context)
     {
@@ -232,11 +236,60 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         var anybodyLeft = game.Players.Any(player => player.IsConnected && !judged.Buzzer.Blocked.Contains(player.Id));
         if (!judged.IsSomethingLeft || !anybodyLeft)
         {
-            return new(judged with { Buzzer = judged.Buzzer.Close() }, []);
+            return Reveal(judged, context);
         }
 
         var playback = round.Playback.Play(context.Now);
         return new(judged with { Playback = playback, Buzzer = judged.Buzzer.Reopen(playback.StartsAt!.Value) }, []);
+    }
+
+    /// <summary>
+    /// Reveals the track played, whoever has the hand: an arbitration window in progress is abandoned.
+    /// </summary>
+    private static RoundTransition RevealAnswer(BlindTestRound round, BlindTestRevealAnswer reveal, GameContext context)
+    {
+        RejectionReason? rejection =
+            reveal.TrackNumber != round.TrackNumber ? RejectionReason.QuestionMismatch
+            : round.Phase is BlindTestPhase.Ready or BlindTestPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        if (rejection is { } reason)
+        {
+            return RoundTransition.Rejected(round, reason);
+        }
+
+        var transition = Reveal(round, context);
+        return round.Phase == BlindTestPhase.Arbitrating
+            ? transition with { Effects = [new CancelTimer(Buzzers.Buzzer.ArbitrationTimer)] }
+            : transition;
+    }
+
+    /// <summary>
+    /// Closes the buzzer, stops the music where it is, and awards the points of the elements found.
+    /// </summary>
+    private static RoundTransition Reveal(BlindTestRound round, GameContext context)
+    {
+        var revealed = round with
+        {
+            Buzzer = round.Buzzer.Close(),
+            Playback = round.Playback.Pause(context.Now, ExcerptPlayback.EndOf(round.Track.Excerpt)),
+        };
+        var points = new[] { round.TitleFoundBy, round.ArtistFoundBy }
+            .OfType<PlayerId>()
+            .Distinct()
+            .ToImmutableDictionary(player => player, player => PointsOf(round, player));
+        return new(revealed, []) { Points = points };
+    }
+
+    /// <summary>
+    /// Moves on from the revealed track: announces the next one, its buzzer closed, or ends the round after the last one.
+    /// </summary>
+    private static RoundTransition NextTrack(BlindTestRound round, BlindTestNextTrack next)
+    {
+        RejectionReason? rejection =
+            next.TrackNumber != round.TrackNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != BlindTestPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        return rejection is { } reason ? RoundTransition.Rejected(round, reason) : MoveOn(round, []);
     }
 
     /// <summary>
@@ -251,10 +304,16 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         }
 
         ImmutableArray<Effect> effects = round.Phase == BlindTestPhase.Arbitrating ? [new CancelTimer(Buzzers.Buzzer.ArbitrationTimer)] : [];
-        return round.TrackIndex == round.Descriptor.Tracks.Length - 1
+        return MoveOn(round, effects);
+    }
+
+    /// <summary>
+    /// Announces the next track, or ends the round after the last one, the round then staying on it.
+    /// </summary>
+    private static RoundTransition MoveOn(BlindTestRound round, ImmutableArray<Effect> effects) =>
+        round.TrackIndex == round.Descriptor.Tracks.Length - 1
             ? new(round, effects) { IsFinished = true }
             : new(new BlindTestRound(round.Descriptor, round.TrackIndex + 1), effects);
-    }
 
     /// <summary>
     /// Hands a buzz on the track in progress to its buzzer, which judges it.
@@ -300,6 +359,13 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
     private static string? NicknameOf(GameState game, PlayerId? id) =>
         id is { } player ? game.Players.First(p => p.Id == player).Nickname : null;
 
+    /// <summary>
+    /// What a player earned with the track: the points of each element they found.
+    /// </summary>
+    private static int PointsOf(BlindTestRound round, PlayerId player) =>
+        (round.TitleFoundBy == player ? round.Descriptor.TitlePoints : 0)
+        + (round.ArtistFoundBy == player ? round.Descriptor.ArtistPoints : 0);
+
     private static BlindTestTrackPhase PhaseOf(BlindTestRound round) => round.Phase switch
     {
         BlindTestPhase.Ready => BlindTestTrackPhase.Ready,
@@ -307,7 +373,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         // The arbitration window stays invisible: nobody learns that somebody buzzed before the winner is designated.
         BlindTestPhase.Listening or BlindTestPhase.Arbitrating => BlindTestTrackPhase.Listening,
         BlindTestPhase.Answering => BlindTestTrackPhase.Answering,
-        BlindTestPhase.Closed => BlindTestTrackPhase.Closed,
+        BlindTestPhase.Revealed => BlindTestTrackPhase.Revealed,
         _ => throw new InvalidOperationException($"Phase {round.Phase} has no projection."),
     };
 }

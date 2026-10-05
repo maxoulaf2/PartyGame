@@ -15,4 +15,7 @@ export interface BlindTestDisplayView {
     readonly winner: string | null;
     readonly titleFoundBy: string | null;
     readonly artistFoundBy: string | null;
+    readonly title: string | null;
+    readonly artist: string | null;
+    readonly imageUrl: string | null;
 }

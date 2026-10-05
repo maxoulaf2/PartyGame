@@ -5,8 +5,6 @@
 
 L'écran TV joue un extrait de chaque morceau. Le premier joueur qui buzze donne le titre et l'artiste à voix haute, et le game master juge chacun des deux depuis sa console. Le mode assemble le buzzer (E13) et l'audio de l'écran TV (E14).
 
-> Pour l'instant, l'écoute, le buzz, le jugement et la reprise de la musique sont pris en charge (US-E15-02, US-E15-03). La révélation et les points (US-E15-04) arrivent ensuite : en attendant, le GM avance en passant l'extrait, et les éléments trouvés ne rapportent pas encore de points.
-
 ## Règles
 
 - **Le son ne sort que de la TV.** Les téléphones ne servent qu'à buzzer et ne reçoivent aucun média.
@@ -25,21 +23,23 @@ Chaque morceau de la manche passe par les phases suivantes.
 | `Ready` | « Extrait n / N », l'extrait préchargé et positionné sur son point de départ | Buzzer fermé | Titre, artiste, « Lancer l'extrait » |
 | `Listening` | La musique joue, « Buzzers ouverts : écoutez bien ! » | Buzzer ouvert | « En attente d'un buzz » |
 | `Answering` | Musique en pause, « Pseudo a la main » | « À toi de répondre ! », ou le pseudo du gagnant | Le gagnant, « Titre trouvé », « Artiste trouvé », « Rien de bon », « Valider » |
-| `Closed` | Musique en pause, qui a trouvé quoi | Buzzer fermé, ou « Bloqué pour cet extrait » | « Plus rien à jouer sur cet extrait » |
+| `Revealed` | Musique arrêtée, titre, « par Artiste », visuel s'il existe, qui a trouvé quoi ou « Personne n'a trouvé » | Buzzer fermé, points gagnés sur l'extrait (« +500 ») et total | « Extrait suivant », ou « Terminer la manche » après le dernier |
 
-Dès qu'un élément est trouvé, la TV et la console affichent « Titre trouvé par Pseudo » ou « Artiste trouvé par Pseudo », sans jamais dévoiler le titre ni l'artiste. Le téléphone du joueur affiche ce qu'il a trouvé, sans les points tant que l'extrait n'est pas révélé.
+Dès qu'un élément est trouvé, la TV et la console affichent « Titre trouvé par Pseudo » ou « Artiste trouvé par Pseudo », sans jamais dévoiler le titre ni l'artiste. Le téléphone du joueur affiche ce qu'il a trouvé, sans les points tant que l'extrait n'est pas révélé. Le titre, l'artiste et le visuel n'apparaissent sur la TV qu'à la révélation, et jamais sur les téléphones.
 
 - **Lancer l'extrait** (`blindtest.play`, qui nomme le morceau) : le serveur fixe le départ de la musique 500 ms plus tard, en heure serveur, le temps que la TV reçoive le snapshot. Le buzzer s'ouvre sur les téléphones au même instant. Un second envoi est rejeté comme obsolète.
 - **Buzz** (`blindtest.buzz`) : départagé comme pour les [questions buzzer](buzzer.md). La fenêtre d'arbitrage reste invisible (phase `Listening` pour les écrans) ; une fois le gagnant désigné, la musique s'arrête là où elle en est.
-- **Juger** (`blindtest.judge`, qui nomme le morceau, l'ouverture du buzzer et les éléments trouvés) : le GM coche ce que le joueur a trouvé (« Titre trouvé », « Artiste trouvé » si le morceau a un artiste encore à trouver, ou « Rien de bon ») puis valide. Chaque élément trouvé est attribué au joueur, qui est bloqué pour l'extrait. S'il reste quelque chose à trouver et qu'un joueur connecté peut encore buzzer, la musique reprend où elle s'était arrêtée, 500 ms plus tard, et le buzzer se rouvre au même instant ; sinon le buzzer se ferme (`Closed`) et la musique reste en pause. Sont rejetés : un jugement sans gagnant, un jugement obsolète (envoyé deux fois ou par deux consoles : l'ouverture ne correspond plus), un élément déjà trouvé et l'artiste d'un morceau qui n'en a pas.
+- **Juger** (`blindtest.judge`, qui nomme le morceau, l'ouverture du buzzer et les éléments trouvés) : le GM coche ce que le joueur a trouvé (« Titre trouvé », « Artiste trouvé » si le morceau a un artiste encore à trouver, ou « Rien de bon ») puis valide. Chaque élément trouvé est attribué au joueur, qui est bloqué pour l'extrait. S'il reste quelque chose à trouver et qu'un joueur connecté peut encore buzzer, la musique reprend où elle s'était arrêtée, 500 ms plus tard, et le buzzer se rouvre au même instant ; sinon le morceau est révélé. Sont rejetés : un jugement sans gagnant, un jugement obsolète (envoyé deux fois ou par deux consoles : l'ouverture ne correspond plus), un élément déjà trouvé et l'artiste d'un morceau qui n'en a pas.
 - **Fin de l'extrait** : la TV s'arrête d'elle-même à la fin de l'extrait, le buzzer reste ouvert.
-- **Passer l'extrait** (`blindtest.skipTrack`, avec confirmation) : à tout moment, le morceau suivant s'annonce sans points ; après le dernier, la manche se termine.
+- **Révélation** : quand plus rien n'est à trouver, quand plus aucun joueur connecté ne peut buzzer, ou quand le GM choisit « Révéler la réponse » (`blindtest.revealAnswer`, qui nomme le morceau) pendant l'écoute ou pendant qu'un joueur a la main. La musique s'arrête, le buzzer se ferme (une fenêtre d'arbitrage en cours est abandonnée), et chaque élément trouvé rapporte ses points à qui l'a trouvé. Sont rejetées : une révélation avant le lancement de l'extrait, et une seconde révélation du même morceau.
+- **Extrait suivant** (`blindtest.nextTrack`, qui nomme le morceau révélé) : le morceau suivant s'annonce ; après le dernier, la manche se termine et le classement s'affiche. Rejeté avant la révélation, et comme obsolète une fois la manche passée au morceau suivant.
+- **Passer l'extrait** (`blindtest.skipTrack`, avec confirmation) : avant la révélation, le morceau suivant s'annonce sans points, même pour les éléments déjà trouvés ; après le dernier, la manche se termine.
 
 ### Lecture sur l'écran TV
 
 La projection `Display` décrit la lecture en cours (`AudioPlayback`) : l'URL opaque du MP3, la position dans le fichier, la fin de l'extrait et l'instant de départ en heure serveur, absent tant que la musique est arrêtée. La TV en déduit à tout moment la position à jouer avec son horloge synchronisée : rechargée en pleine écoute, elle reprend là où en est la musique, et après une reprise sur crash, là où elle en était au dernier enregistrement. Un seul élément `<audio>` lit le fichier en streaming, avec des requêtes partielles. Les téléphones ne reçoivent jamais l'URL de l'extrait.
 
-Un extrait que la TV ne peut pas charger, ou qui n'a pas démarré 3 s après l'instant prévu, ne change rien à l'écran : la TV le signale et la console GM affiche l’incident sur le morceau concerné. Le GM peut alors passer l'extrait.
+Un extrait que la TV ne peut pas charger, ou qui n'a pas démarré 3 s après l'instant prévu, ne change rien à l'écran : la TV le signale et la console GM affiche l’incident sur le morceau concerné. Le GM peut alors passer l'extrait. De même, un visuel introuvable laisse la révélation sans visuel, avec l'incident côté GM.
 
 ## Format du descripteur
 

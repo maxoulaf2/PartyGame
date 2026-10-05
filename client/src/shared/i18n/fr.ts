@@ -676,11 +676,27 @@ export const fr = {
                 artist: 'Tu as trouvé l’artiste !',
                 both: 'Tu as trouvé le titre et l’artiste !',
             },
+            // Once revealed, when nobody found anything.
+            nobodyFound: 'Personne n’a trouvé',
             display: {
                 // Under the number of the track, until the game master plays it.
                 ready: 'Prêts ?',
                 // Under it, while the music plays.
                 listen: 'Buzzers ouverts : écoutez bien !',
+                // Under the title revealed.
+                artist: 'par {artist}',
+                // Read by screen readers: the packs describe no image.
+                imageLabel: 'Visuel du morceau',
+            },
+            player: {
+                // The points the player earned with the track revealed, 0 included, written by formatNumber.
+                pointsEarned: '+{points}',
+                // The points of the player since the start of the game, under those of the track.
+                score: {
+                    zero: 'Total : 0 point',
+                    one: 'Total : {count} point',
+                    other: 'Total : {count} points',
+                },
             },
             gm: {
                 // Before the title and the artist, which only the console shows.
@@ -697,8 +713,11 @@ export const fr = {
                 artistFound: 'Artiste trouvé',
                 nothingFound: 'Rien de bon',
                 validate: 'Valider',
-                // Nothing left to find, or nobody left to buzz.
-                closed: 'Plus rien à jouer sur cet extrait',
+                // Stops the music and shows the track on the TV screen, whoever has the hand.
+                revealAnswer: 'Révéler la réponse',
+                nextTrack: 'Extrait suivant',
+                // Replaces « Extrait suivant » once the last track of the round is revealed.
+                endRound: 'Terminer la manche',
                 skipTrack: 'Passer l’extrait',
                 // Asked before skipping: the track earns nobody any point.
                 skipConfirm: {

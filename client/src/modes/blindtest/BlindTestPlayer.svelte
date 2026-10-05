@@ -6,14 +6,17 @@
         BlindTestPlayerView,
         BuzzerButtonState,
     } from '../../shared/contracts';
+    import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatNumber } from '../../shared/i18n/numberText';
     import type { PlayerViewProps } from '../../shared/modeViews';
 
     // A buzzer only: the music plays on the TV screen, and the answer is given out loud.
     let {
         view,
         round,
+        score,
         clock,
         interactive,
         send,
@@ -91,6 +94,12 @@
             ? fill(fr.modes.blindtest.hasHand, { nickname: view.winner })
             : (found ?? '')}
     </p>
+    {#if view.points !== null}
+        <p class="points">
+            {fill(fr.modes.blindtest.player.pointsEarned, { points: formatNumber(view.points) })}
+        </p>
+        <p class="score">{countText(fr.modes.blindtest.player.score, score)}</p>
+    {/if}
 </main>
 
 <style>
@@ -111,6 +120,16 @@
     .progress {
         color: var(--color-text-muted);
         font-weight: 700;
+    }
+
+    .points {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--color-accent);
+    }
+
+    .score {
+        color: var(--color-text-muted);
     }
 
     .status {

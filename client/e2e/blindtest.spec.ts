@@ -107,7 +107,9 @@ async function judge(gm: Page, ...verdicts: string[]): Promise<void> {
     await gm.getByRole('button', { name: fr.modes.blindtest.gm.validate, exact: true }).click();
 }
 
-test('a buzz that finds the title, then one that finds the artist', async ({ table }) => {
+test('a round of two tracks: found by two players, then revealed by the game master', async ({
+    table,
+}) => {
     const { display, gm } = table;
     const [zoe, max, lea] = table.players;
     await unlockAudio(display);
@@ -129,22 +131,47 @@ test('a buzz that finds the title, then one that finds the artist', async ({ tab
     await expect.poll(async () => (await audioOf(display)).paused).toBe(false);
     expect((await audioOf(display)).currentTime).toBeGreaterThanOrEqual(paused - 0.1);
 
-    // Léa gives the artist: the title is not to judge anymore, and nothing is left to find.
+    // Léa has the hand: the title is not to judge anymore, and the TV still hides the artist.
     await buzzer(lea.page, 'open').tap();
     await expect(buzzer(lea.page, 'won')).toBeVisible();
     await expect(
         gm.getByRole('button', { name: fr.modes.blindtest.gm.titleFound, exact: true }),
     ).toHaveCount(0);
+    await expect(display.getByText('Beethoven')).toHaveCount(0);
+
+    // She gives the artist: nothing is left to find, and the track is revealed with the points.
     await judge(gm, fr.modes.blindtest.gm.artistFound);
+    await expect(display.getByRole('heading', { name: "L'Hymne à la joie" })).toBeVisible();
+    await expect(
+        display.getByText(
+            fill(fr.modes.blindtest.display.artist, { artist: 'Ludwig van Beethoven' }),
+        ),
+    ).toBeVisible();
     await expect(
         display.getByText(fill(fr.modes.blindtest.artistFoundBy, { nickname: lea.nickname })),
     ).toBeVisible();
     await expect(display.getByText(titleFound)).toBeVisible();
-    await expect(display.getByText('Beethoven')).toHaveCount(0);
-    await expect(gm.getByText(fr.modes.blindtest.gm.closed)).toBeVisible();
-    await expect(lea.page.getByText(fr.modes.blindtest.found.artist)).toBeVisible();
+    const earned = (points: string) => fill(fr.modes.blindtest.player.pointsEarned, { points });
+    await expect(max.page.getByText(earned('500'))).toBeVisible();
+    await expect(lea.page.getByText(earned('500'))).toBeVisible();
+    await expect(zoe.page.getByText(earned('0'))).toBeVisible();
     await expect(buzzer(zoe.page, 'closed')).toBeDisabled();
     await expect.poll(async () => (await audioOf(display)).paused).toBe(true);
+
+    // The second track, revealed by the game master while the music plays: nobody scores.
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.nextTrack }).click();
+    await expect(display.getByRole('heading', { name: track(2) })).toBeVisible();
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.play }).click();
+    await expect(buzzer(zoe.page, 'open')).toBeEnabled();
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.revealAnswer }).click();
+    await expect(display.getByRole('heading', { name: 'Au clair de la lune' })).toBeVisible();
+    await expect(display.getByText(fr.modes.blindtest.nobodyFound)).toBeVisible();
+    await expect.poll(async () => (await audioOf(display)).paused).toBe(true);
+    await expect(zoe.page.getByText(earned('0'))).toBeVisible();
+
+    // The last track revealed, the game master ends the round, and with it the game.
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.endRound }).click();
+    await expect(display.getByText(fr.game.finished)).toBeVisible();
 });
 
 test('a TV screen reloaded while the music plays goes on where it is', async ({ table }) => {
