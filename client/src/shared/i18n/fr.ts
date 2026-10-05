@@ -172,6 +172,9 @@ export const fr = {
             display: 'Écran TV',
             roundTrip: '{value} ms',
             noRoundTrip: '— ms',
+            // How far the clock of the device may be from the server: half its round trip.
+            clockUncertainty: 'horloge ±{value} ms',
+            noClockUncertainty: 'horloge ± — ms',
             transports: {
                 WebSockets: 'WebSocket',
                 ServerSentEvents: 'connexion de repli (SSE)',
@@ -489,6 +492,18 @@ export const fr = {
         },
         notMeasured: 'Non mesuré',
         retry: 'Relancer le test',
+        // The clock of the phone, estimated from the server: what the buzzer relies on.
+        clock: {
+            title: 'Horloge',
+            syncing: 'Synchronisation de l’horloge avec le serveur…',
+            failed: 'L’horloge n’a pas pu être synchronisée avec le serveur : le flash synchronisé n’est pas disponible. Relancez le test.',
+            value: 'aller-retour {roundTrip} ms · incertitude ±{uncertainty} ms',
+        },
+        flash: {
+            start: 'Flash synchronisé',
+            hint: 'Posez plusieurs téléphones côte à côte et lancez le flash sur chacun : ils clignotent ensemble à chaque seconde si leurs horloges sont bien alignées.',
+            stop: 'Touchez l’écran pour arrêter',
+        },
     },
     // The texts of each game mode, under the type of its rounds.
     modes: {

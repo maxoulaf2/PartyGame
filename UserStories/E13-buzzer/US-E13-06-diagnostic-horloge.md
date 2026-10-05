@@ -1,6 +1,6 @@
 ### US-E13-06 — Diagnostic d'horloge et flash synchronisé
 
-**Statut :** À faire
+**Statut :** En cours (mesure sur le terrain à faire)
 
 **En tant que** game master
 **je veux** vérifier que les horloges des téléphones sont bien alignées sur celle du serveur

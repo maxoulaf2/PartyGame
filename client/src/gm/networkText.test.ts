@@ -20,7 +20,7 @@ describe('diagnosticText', () => {
 });
 
 describe('qualityParts', () => {
-    it('lists the round trip, the transport and the reconnections, marking the poor ones', () => {
+    it('lists the round trip, the clock uncertainty, the transport and the reconnections, marking the poor ones', () => {
         expect(
             qualityParts({
                 playerId: null,
@@ -30,12 +30,13 @@ describe('qualityParts', () => {
             }),
         ).toEqual([
             { text: '240 ms', poor: true },
+            { text: 'horloge ±120 ms', poor: true },
             { text: 'connexion de repli (polling)', poor: true },
             { text: '1 reconnexion', poor: false },
         ]);
     });
 
-    it('shows a round trip not measured yet without marking it', () => {
+    it('shows a round trip not measured yet without marking it, nor the clock', () => {
         expect(
             qualityParts({
                 playerId: null,
@@ -44,6 +45,14 @@ describe('qualityParts', () => {
                 reconnections: 0,
             })[0],
         ).toEqual({ text: '— ms', poor: false });
+        expect(
+            qualityParts({
+                playerId: null,
+                transport: 'WebSockets',
+                roundTrip: null,
+                reconnections: 0,
+            })[1],
+        ).toEqual({ text: 'horloge ± — ms', poor: false });
     });
 });
 

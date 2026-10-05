@@ -32,6 +32,22 @@ test('a phone checks the network on site, and the GM console lists its result', 
     await expect(page.getByRole('heading', { name: fr.diagnostic.title })).toBeVisible();
     await expect(page.getByText(fr.diagnostic.verdicts.Good)).toBeVisible({ timeout: 60_000 });
     await expect(page.getByRole('button', { name: fr.diagnostic.retry })).toBeVisible();
+    await expect(page.getByText(/^aller-retour \d+ ms · incertitude ±\d+ ms$/)).toBeVisible();
+
+    await page.getByRole('button', { name: fr.diagnostic.flash.start }).click();
+    const flash = page.getByRole('button', { name: fr.diagnostic.flash.stop });
+    // White at each whole second of the server, black in between: checked at every frame, since
+    // a white of 100 ms slips between the polls of an assertion.
+    for (const color of ['rgb(255, 255, 255)', 'rgb(0, 0, 0)']) {
+        await page.waitForFunction(
+            (expected) =>
+                getComputedStyle(document.querySelector('.flash')!).backgroundColor === expected,
+            color,
+            { polling: 'raf', timeout: 5_000 },
+        );
+    }
+    await flash.click();
+    await expect(flash).toBeHidden();
     expect(external).toEqual([]);
 
     const console = await openConsole(browser, baseURL);

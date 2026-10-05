@@ -12,7 +12,7 @@
 | [US-E13-03](US-E13-03-descripteur-questions-buzzer.md) | Descripteur d'une manche de questions buzzer | Terminée | — |
 | [US-E13-04](US-E13-04-question-et-gagnant.md) | Question posée et annonce du gagnant | Terminée | US-E13-01, US-E13-02, US-E13-03 |
 | [US-E13-05](US-E13-05-jugement-et-revelation.md) | Jugement, réouverture du buzzer et révélation | Terminée | US-E13-04 |
-| [US-E13-06](US-E13-06-diagnostic-horloge.md) | Diagnostic d'horloge et flash synchronisé | À faire | — |
+| [US-E13-06](US-E13-06-diagnostic-horloge.md) | Diagnostic d'horloge et flash synchronisé | En cours (mesure sur le terrain à faire) | — |
 
 US-E13-02 est une US technique : elle omet la ligne « En tant que ».
 
