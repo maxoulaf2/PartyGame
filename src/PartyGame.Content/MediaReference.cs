@@ -7,4 +7,5 @@ namespace PartyGame.Content;
 /// </summary>
 /// <param name="Path">The JSON path of the reference in the descriptor.</param>
 /// <param name="Media">The path of the media file, as written.</param>
-internal sealed record MediaReference(string Path, MediaPath Media);
+/// <param name="IsAudio">Whether the property expects an audio file (<see cref="AudioFileAttribute"/>) rather than an image.</param>
+internal sealed record MediaReference(string Path, MediaPath Media, bool IsAudio);

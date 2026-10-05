@@ -16,6 +16,17 @@ describe('describeProblem', () => {
         );
     });
 
+    it('says in words which kind of media file is expected', () => {
+        expect(
+            describeProblem(
+                problem('PackMediaTypeUnsupported', {
+                    media: 'sons/morceau.ogg',
+                    expected: 'audio',
+                }),
+            ),
+        ).toBe('Format de média non pris en charge : sons/morceau.ogg (il faut un fichier .mp3)');
+    });
+
     it('shows a parameter as written, even with replacement patterns', () => {
         expect(describeProblem(problem('QuizChoiceDuplicated', { choice: '$& et $1' }))).toBe(
             'Proposition en double : « $& et $1 »',

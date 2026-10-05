@@ -21,6 +21,7 @@ internal sealed class DescriptorReader
     private readonly JsonSerializerOptions _options = PackJsonOptions.Default;
     private readonly ImmutableArray<PackProblem>.Builder _problems = ImmutableArray.CreateBuilder<PackProblem>();
     private readonly ImmutableArray<MediaReference>.Builder _media = ImmutableArray.CreateBuilder<MediaReference>();
+    private readonly ImmutableArray<ExcerptReference>.Builder _excerpts = ImmutableArray.CreateBuilder<ExcerptReference>();
     private readonly ImmutableArray<RoundReference>.Builder _rounds = ImmutableArray.CreateBuilder<RoundReference>();
 
     private DescriptorReader()
@@ -31,15 +32,27 @@ internal sealed class DescriptorReader
     /// Reads a descriptor that is valid JSON.
     /// </summary>
     /// <param name="root">The root element of <c>pack.json</c>.</param>
-    public static DescriptorReading Read(JsonElement root)
+    public static DescriptorReading Read(JsonElement root) => Read(root, typeof(PackDescriptor));
+
+    /// <summary>
+    /// Reads a part of a descriptor, as if it were the whole of it.
+    /// </summary>
+    /// <param name="root">The part, valid JSON.</param>
+    /// <param name="type">The descriptor type of the part.</param>
+    internal static DescriptorReading Read(JsonElement root, Type type)
     {
         var reader = new DescriptorReader();
-        reader.Read(root, typeof(PackDescriptor), JsonPath.Root, nullable: false);
-        return new DescriptorReading(reader._problems.ToImmutable(), reader._media.ToImmutable(), reader._rounds.ToImmutable());
+        reader.Read(root, type, JsonPath.Root, nullable: false, isAudio: false);
+        return new DescriptorReading(
+            reader._problems.ToImmutable(),
+            reader._media.ToImmutable(),
+            reader._excerpts.ToImmutable(),
+            reader._rounds.ToImmutable());
     }
 
+    // isAudio: whether a media path here references an audio file rather than an image.
     /// <returns>Whether <paramref name="element"/> can be deserialized as <paramref name="type"/>.</returns>
-    private bool Read(JsonElement element, Type type, string path, bool nullable)
+    private bool Read(JsonElement element, Type type, string path, bool nullable, bool isAudio)
     {
         if (element.ValueKind == JsonValueKind.Null)
         {
@@ -50,14 +63,19 @@ internal sealed class DescriptorReader
         var readable = info.Kind switch
         {
             JsonTypeInfoKind.Object => ReadObject(element, info, path),
-            JsonTypeInfoKind.Enumerable => ReadArray(element, info.ElementType!, path),
-            JsonTypeInfoKind.None => ReadValue(element, type, path),
+            JsonTypeInfoKind.Enumerable => ReadArray(element, info.ElementType!, path, isAudio),
+            JsonTypeInfoKind.None => ReadValue(element, type, path, isAudio),
             _ => throw new InvalidOperationException($"Descriptor type {type.Name} is a {info.Kind}, which packs do not use."),
         };
 
         if (readable && type == typeof(RoundDescriptor))
         {
             _rounds.Add(new RoundReference(path, (RoundDescriptor)Deserialize(element, type)!));
+        }
+
+        if (readable && type == typeof(AudioExcerpt))
+        {
+            _excerpts.Add(new ExcerptReference(path, (AudioExcerpt)Deserialize(element, type)!));
         }
 
         return readable;
@@ -135,7 +153,7 @@ internal sealed class DescriptorReader
         return null;
     }
 
-    private bool ReadArray(JsonElement element, Type itemType, string path)
+    private bool ReadArray(JsonElement element, Type itemType, string path, bool isAudio)
     {
         if (element.ValueKind != JsonValueKind.Array)
         {
@@ -147,7 +165,7 @@ internal sealed class DescriptorReader
         foreach (var item in element.EnumerateArray())
         {
             // Unlike properties, collections accept null items whatever the annotations: only a nullable value type does here.
-            readable &= Read(item, itemType, JsonPath.Index(path, index++), nullable: Nullable.GetUnderlyingType(itemType) is not null);
+            readable &= Read(item, itemType, JsonPath.Index(path, index++), nullable: Nullable.GetUnderlyingType(itemType) is not null, isAudio);
         }
 
         return readable;
@@ -155,7 +173,8 @@ internal sealed class DescriptorReader
 
     private bool ReadProperty(JsonElement value, JsonPropertyInfo property, string path)
     {
-        if (!Read(value, property.PropertyType, path, property.IsSetNullable))
+        var isAudio = property.AttributeProvider?.IsDefined(typeof(AudioFileAttribute), inherit: true) ?? false;
+        if (!Read(value, property.PropertyType, path, property.IsSetNullable, isAudio))
         {
             return false;
         }
@@ -177,7 +196,7 @@ internal sealed class DescriptorReader
         return true;
     }
 
-    private bool ReadValue(JsonElement element, Type type, string path)
+    private bool ReadValue(JsonElement element, Type type, string path, bool isAudio)
     {
         var readable = Expected(type) switch
         {
@@ -204,7 +223,7 @@ internal sealed class DescriptorReader
 
         if (value is MediaPath media)
         {
-            _media.Add(new MediaReference(path, media));
+            _media.Add(new MediaReference(path, media, isAudio));
         }
 
         return true;

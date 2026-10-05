@@ -103,7 +103,7 @@ public sealed class PackLoader(RoundValidator validateRound)
                 problems.AddRange(validateRound(round.Round, round.Path));
             }
 
-            problems.AddRange(MediaCheck.Check(fullPath, reading.Media));
+            problems.AddRange(MediaCheck.Check(fullPath, reading));
 
             // Every check passed, so the deserialization cannot fail but because of a bug.
             var descriptor = problems.Count == 0 ? root.Deserialize<PackDescriptor>(PackJsonOptions.Default) : null;

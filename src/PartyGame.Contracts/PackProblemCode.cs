@@ -70,8 +70,9 @@ public enum PackProblemCode
     PackMediaOutsidePack,
 
     /// <summary>
-    /// The extension of a media file is not supported. The <c>media</c> parameter is the path, and the <c>extension</c>
-    /// parameter its extension, empty when it has none.
+    /// The extension of a media file is not one its property accepts. The <c>media</c> parameter is the path, the
+    /// <c>extension</c> parameter its extension, empty when it has none, and the <c>expected</c> parameter the kind of file
+    /// the property accepts: <c>image</c> or <c>audio</c>.
     /// </summary>
     PackMediaTypeUnsupported,
 
@@ -86,6 +87,17 @@ public enum PackProblemCode
     /// <c>actual</c> parameter the path of the file.
     /// </summary>
     PackMediaCaseMismatch,
+
+    /// <summary>
+    /// An audio file has the right extension, but holds no readable MP3 audio. The <c>media</c> parameter is the path.
+    /// </summary>
+    PackMediaUnreadable,
+
+    /// <summary>
+    /// An audio excerpt starts at or past the end of its track. The path is the one of its <c>start</c> property, the
+    /// <c>start</c> parameter its value and the <c>duration</c> parameter the duration of the track, both in seconds.
+    /// </summary>
+    PackAudioExcerptStartBeyondEnd,
 
     /// <summary>
     /// The pack could not be loaded because of an unexpected error, logged by the server. The path is <c>$</c>.

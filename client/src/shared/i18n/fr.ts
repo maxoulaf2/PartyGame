@@ -238,6 +238,8 @@ export const fr = {
                 boolean: 'true ou false',
                 array: 'une liste entre crochets [ ]',
                 object: 'un objet entre accolades { }',
+                image: 'une image .jpg, .jpeg, .png ou .webp',
+                audio: 'un fichier .mp3',
             },
             // One message per PackProblemCode, with its parameters between braces. The bounds
             // of a length or a count come as one or both of min and max.
@@ -262,10 +264,14 @@ export const fr = {
                 PackMediaPathInvalid:
                     'Chemin de média mal écrit : {media} (séparez les dossiers par /, sans caractère spécial)',
                 PackMediaOutsidePack: 'Média hors du dossier du pack : {media}',
-                PackMediaTypeUnsupported: 'Format de média non pris en charge : {media}',
+                PackMediaTypeUnsupported:
+                    'Format de média non pris en charge : {media} (il faut {expected})',
                 PackMediaMissing: 'Média introuvable : {media}',
                 PackMediaCaseMismatch:
                     'Majuscules et minuscules différentes du fichier : {media} au lieu de {actual}',
+                PackMediaUnreadable: 'Fichier MP3 illisible : {media}',
+                PackAudioExcerptStartBeyondEnd:
+                    'L’extrait commence à {start} s, après la fin du morceau ({duration} s)',
                 PackLoadFailed:
                     'Le pack n’a pas pu être chargé à cause d’une erreur inattendue, détaillée dans le journal du serveur.',
                 QuizCorrectChoiceMissing:

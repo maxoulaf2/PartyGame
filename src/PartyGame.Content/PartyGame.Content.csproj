@@ -4,4 +4,9 @@
     <ProjectReference Include="..\PartyGame.Contracts\PartyGame.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The checks of parts of a descriptor, such as an audio excerpt that no game mode uses yet. -->
+    <InternalsVisibleTo Include="PartyGame.Content.Tests" />
+  </ItemGroup>
+
 </Project>

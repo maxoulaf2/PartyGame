@@ -84,7 +84,7 @@ public sealed class MediaProblemsTests : IDisposable
         var pack = _packs.Load(Pack(Quiz(QuestionWithImage(image))), image);
 
         // Then
-        Assert.Equal([$"PackMediaTypeUnsupported pack.json {ImagePath} extension={extension} media={image}"], Describe(pack));
+        Assert.Equal([$"PackMediaTypeUnsupported pack.json {ImagePath} expected=image extension={extension} media={image}"], Describe(pack));
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class MediaProblemsTests : IDisposable
         // Then
         Assert.Equal(
             [
-                $"PackMediaTypeUnsupported pack.json {ImagePath} extension=.gif media=anim.gif",
+                $"PackMediaTypeUnsupported pack.json {ImagePath} expected=image extension=.gif media=anim.gif",
                 $"PackMediaMissing pack.json {ImagePath} media=anim.gif",
             ],
             Describe(pack));
