@@ -413,13 +413,13 @@ test('/gm/ shows the next choice on the TV screen once read out', async ({ page 
 test('/gm/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
     await serveGameMasterSnapshot(
         page,
-        fakeRound({ type: 'blindtest' } as unknown as GameMasterRoundView),
+        fakeRound({ type: 'karaoke' } as unknown as GameMasterRoundView),
     );
 
     await openConsole(page);
 
     await expect(page.getByText(fr.gm.inProgress, { exact: true })).toBeVisible();
-    await expect(page.getByText('blindtest')).toHaveCount(0);
+    await expect(page.getByText('karaoke')).toHaveCount(0);
     // The rest of the console stays usable: the players, and the address of the QR code.
     await expect(page.getByText(fr.gm.address.label)).toBeVisible();
 });

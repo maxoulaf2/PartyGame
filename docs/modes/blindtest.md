@@ -5,7 +5,7 @@
 
 L'écran TV joue un extrait de chaque morceau. Le premier joueur qui buzze donne le titre et l'artiste à voix haute, et le game master juge chacun des deux depuis sa console. Le mode assemble le buzzer (E13) et l'audio de l'écran TV (E14).
 
-> Pour l'instant, seul le descripteur est pris en charge (US-E15-01) : un pack de blind test se charge et se vérifie, mais une manche se termine dès son démarrage. Le déroulé ci-dessous arrive avec US-E15-02 à US-E15-04.
+> Pour l'instant, l'écoute et le buzz sont pris en charge (US-E15-02) : le GM lance chaque extrait, la musique s'arrête au buzz et le joueur qui a la main est annoncé. Le jugement, la reprise de la musique (US-E15-03) et la révélation (US-E15-04) arrivent ensuite : en attendant, le GM avance en passant l'extrait.
 
 ## Règles
 
@@ -15,6 +15,25 @@ L'écran TV joue un extrait de chaque morceau. Le premier joueur qui buzze donne
 - **Titre et artiste jugés séparément.** Chacun rapporte ses points (`titlePoints` et `artistPoints`, 500 par défaut). Un élément trouvé n'est plus à prendre : celui qui reste se joue entre les autres joueurs. Un morceau sans artiste ne se joue que sur le titre.
 - **Un buzz par joueur et par extrait.** Un joueur qui a buzzé ne rebuzze pas sur le même extrait, qu'il ait trouvé un élément ou rien, et ne perd jamais de points.
 - **Fin de l'extrait.** La musique s'arrête, mais le buzzer reste ouvert jusqu'à ce que le GM révèle la réponse : titre, artiste et visuel s'il y en a un.
+
+## Phases
+
+Chaque morceau de la manche passe par les phases suivantes.
+
+| Phase | TV | Téléphones | Console GM |
+|---|---|---|---|
+| `Ready` | « Extrait n / N », l'extrait préchargé et positionné sur son point de départ | Buzzer fermé | Titre, artiste, « Lancer l'extrait » |
+| `Listening` | La musique joue, « Buzzers ouverts : écoutez bien ! » | Buzzer ouvert | « En attente d'un buzz » |
+| `Answering` | Musique en pause, « Pseudo a la main » | « À toi de répondre ! », ou le pseudo du gagnant | Le gagnant |
+
+- **Lancer l'extrait** (`blindtest.play`, qui nomme le morceau) : le serveur fixe le départ de la musique 500 ms plus tard, en heure serveur, le temps que la TV reçoive le snapshot. Le buzzer s'ouvre sur les téléphones au même instant. Un second envoi est rejeté comme obsolète.
+- **Buzz** (`blindtest.buzz`) : départagé comme pour les [questions buzzer](buzzer.md). La fenêtre d'arbitrage reste invisible (phase `Listening` pour les écrans) ; une fois le gagnant désigné, la musique s'arrête là où elle en est.
+- **Fin de l'extrait** : la TV s'arrête d'elle-même à la fin de l'extrait, le buzzer reste ouvert.
+- **Passer l'extrait** (`blindtest.skipTrack`, avec confirmation) : à tout moment, le morceau suivant s'annonce sans points ; après le dernier, la manche se termine.
+
+### Lecture sur l'écran TV
+
+La projection `Display` décrit la lecture en cours (`AudioPlayback`) : l'URL opaque du MP3, la position dans le fichier, la fin de l'extrait et l'instant de départ en heure serveur, absent tant que la musique est arrêtée. La TV en déduit à tout moment la position à jouer avec son horloge synchronisée : rechargée en pleine écoute, elle reprend là où en est la musique, et après une reprise sur crash, là où elle en était au dernier enregistrement. Un seul élément `<audio>` lit le fichier en streaming, avec des requêtes partielles. Les téléphones ne reçoivent jamais l'URL de l'extrait.
 
 ## Format du descripteur
 

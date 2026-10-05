@@ -1,6 +1,6 @@
 ### US-E15-02 — Écoute de l'extrait et buzz
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** buzzer pendant que l'extrait joue sur la TV, et que la musique s'arrête dès qu'un joueur a la main
@@ -23,6 +23,9 @@ Joueurs et public : aucun message. GM : un extrait illisible produit l'incident 
 - L'état de la manche garde la position atteinte dans l'extrait, pour la pause et la reprise (décision 4 du README) ; la vue `Display` porte l'`AudioPlayback` de US-E14-03.
 - Vues dans `client/src/modes/blindtest/`, avec `BuzzerButton` (US-E13-01) et `shared/audio` (US-E14-03).
 - `ResumeRound`, `LocateMedia` (extrait et visuel) et `StepOf` renvoient le numéro du morceau.
+
+- Réalisation : intentions `blindtest.play`, `blindtest.skipTrack` (GM, qui nomment le morceau) et `blindtest.buzz` (joueur, qui nomme le morceau et l'ouverture). `BlindTestRound` garde le morceau, son `ExcerptPlayback` et son `Buzzer` ; le buzzer s'ouvre à l'instant de départ de la musique, que la vue `Player` porte (`opensAt`) pour n'activer le bouton qu'à cet instant. La musique se met en pause à la désignation du gagnant (décision 4 du README). Phases exposées : `Ready`, `Listening` (arbitrage compris, invisible), `Answering`. `BuzzerButton` accepte des libellés propres au mode (« Attends la musique »). Tests : `BlindTestModeTests`, `BlindTestLeakTests` (qui couvre aussi la persistance), `e2e/blindtest.spec.ts`.
+- Écarts : la phase `Revealed` et le bouton « Révéler la réponse » en fin d'extrait arrivent avec US-E15-04, où la révélation existe ; d'ici là, le GM avance avec « Passer l'extrait » (avec confirmation). La console GM ne montre pas encore l'avancement de l'extrait.
 
 **Hors périmètre**
 - Le jugement et la reprise de la musique (US-E15-03).

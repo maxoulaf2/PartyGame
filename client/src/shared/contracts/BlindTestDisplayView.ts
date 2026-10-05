@@ -3,6 +3,14 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { AudioPlayback } from './AudioPlayback';
+import type { BlindTestTrackPhase } from './BlindTestTrackPhase';
+
 export interface BlindTestDisplayView {
     readonly type: 'blindtest';
+    readonly trackNumber: number;
+    readonly trackCount: number;
+    readonly phase: BlindTestTrackPhase;
+    readonly playback: AudioPlayback;
+    readonly winner: string | null;
 }

@@ -3,6 +3,14 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { BlindTestTrackPhase } from './BlindTestTrackPhase';
+
 export interface BlindTestGameMasterView {
     readonly type: 'blindtest';
+    readonly trackNumber: number;
+    readonly trackCount: number;
+    readonly phase: BlindTestTrackPhase;
+    readonly title: string;
+    readonly artist: string | null;
+    readonly winner: string | null;
 }

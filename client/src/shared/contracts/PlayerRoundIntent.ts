@@ -3,7 +3,8 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { BlindTestBuzz } from './BlindTestBuzz';
 import type { BuzzerBuzz } from './BuzzerBuzz';
 import type { QuizSubmitAnswer } from './QuizSubmitAnswer';
 
-export type PlayerRoundIntent = BuzzerBuzz | QuizSubmitAnswer;
+export type PlayerRoundIntent = BlindTestBuzz | BuzzerBuzz | QuizSubmitAnswer;

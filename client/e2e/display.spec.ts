@@ -681,7 +681,7 @@ test('/display/ keeps the question on screen without its image when the image fa
 });
 
 test('/display/ waits neutrally on a round of a mode it does not know', async ({ page }) => {
-    const unknownView = { type: 'blindtest' } as unknown as DisplayRoundView;
+    const unknownView = { type: 'karaoke' } as unknown as DisplayRoundView;
     await serveDisplaySnapshot(
         page,
         fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', unknownView),
@@ -693,7 +693,7 @@ test('/display/ waits neutrally on a round of a mode it does not know', async ({
     // Never an empty screen: the lobby stays, with its QR code and its players.
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
     await expect(playerList(page).getByText('Zoé', { exact: true })).toBeVisible();
-    await expect(page.getByText('blindtest')).toHaveCount(0);
+    await expect(page.getByText('karaoke')).toHaveCount(0);
 });
 
 /** The seconds a countdown of the page shows. */

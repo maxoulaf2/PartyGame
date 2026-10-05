@@ -38,7 +38,7 @@ public sealed record Transition(GameState State, ImmutableArray<Effect> Effects)
 
 - L'état est immuable : des `record` avec `ImmutableArray` et `ImmutableDictionary`, mis à jour avec `with`. Cela rend le retour arrière gratuit en cas d'erreur, la persistance triviale et les tests lisibles.
 - Le temps (`context.Now`) et le hasard (`context.Random`, initialisé avec une graine contrôlée) sont fournis par le contexte. Le mélange des propositions d'un quiz est donc reproductible en test.
-- Les effets décrivent ce qui doit se passer hors du moteur (`ScheduleTimer`, `PlayAudio`, `ReportIncident`). C'est `GameLoop`, dans `PartyGame.Server`, qui les exécute.
+- Les effets décrivent ce qui doit se passer hors du moteur (`ScheduleTimer`, `CancelTimer`). C'est `GameLoop`, dans `PartyGame.Server`, qui les exécute. L'audio de l'écran TV n'en est pas un : il est décrit dans la projection `Display` (`AudioPlayback`).
 
 ### Les rejets métier ne sont pas des exceptions
 

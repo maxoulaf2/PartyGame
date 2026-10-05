@@ -22,6 +22,9 @@ internal sealed class Audience
     /// <summary>The TV screen and every phone: the answers before their reveal, what only the game master manages.</summary>
     public static Audience AllButGameMaster { get; } = new(v => v.Role != Role.GameMaster, "all but the game master");
 
+    /// <summary>Every phone: what the TV screen alone plays.</summary>
+    public static Audience Players { get; } = new(v => v.Role == Role.Player, "the players");
+
     /// <summary>The phones of the other players: what a player sees of themselves only.</summary>
     public static Audience OtherPlayersThan(string player) =>
         new(v => v.Role == Role.Player && v.Player != player, $"the players other than {player}");

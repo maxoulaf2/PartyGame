@@ -9,7 +9,7 @@
 |---|---|---|---|
 | [US-E14-01](US-E14-01-deverrouillage-audio.md) | Déverrouillage de l'audio sur l'écran TV | Terminée | — |
 | [US-E14-02](US-E14-02-extraits-et-fichiers-audio.md) | Fichiers audio et extraits dans les packs | Terminée | — |
-| [US-E14-03](US-E14-03-lecture-synchronisee.md) | Lecture d'un extrait à l'instant décidé par le serveur | À faire | US-E14-01, US-E14-02 |
+| [US-E14-03](US-E14-03-lecture-synchronisee.md) | Lecture d'un extrait à l'instant décidé par le serveur | Terminée | US-E14-01, US-E14-02 |
 | [US-E14-04](US-E14-04-echec-de-lecture.md) | Échec de lecture d'un média audio | À faire | US-E14-03 |
 
 US-E14-03 n'est vérifiable de bout en bout qu'avec un mode qui joue de l'audio : elle se réalise avec US-E15-02.
