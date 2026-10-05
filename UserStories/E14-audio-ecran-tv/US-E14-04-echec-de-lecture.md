@@ -1,6 +1,6 @@
 ### US-E14-04 — Échec de lecture d'un média audio
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** être prévenu quand la TV ne peut pas lire un extrait, sans que le public voie quoi que ce soit
@@ -19,6 +19,8 @@ Joueurs et public : rien. GM : l'incident, et la possibilité de passer l'étape
 **Notes techniques**
 - Réutilise le signalement des médias de US-E10-04 : pas de nouveau contrat.
 - Un échec de lecture ne change pas l'état de jeu : le moteur n'en sait rien.
+
+- Réalisation : `ExcerptPlayer` signale le fichier sur l'événement `error` de l'élément `<audio>`, ou quand l'élément n'a pas émis `playing` 3 s (`startTimeout`) après lui avoir demandé de jouer ; un écran dont l'audio est verrouillé n'est pas signalé, la console prévient déjà. Un fichier n'est signalé qu'une fois tant qu'il reste le même ; le serveur regroupe déjà les incidents par étape (US-E10-04). Tests : `excerptPlayer.test.ts`, `e2e/blindtest.spec.ts`.
 
 **Hors périmètre**
 - Une nouvelle tentative automatique de lecture.

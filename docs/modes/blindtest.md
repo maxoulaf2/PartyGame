@@ -39,6 +39,8 @@ Dès qu'un élément est trouvé, la TV et la console affichent « Titre trouvé
 
 La projection `Display` décrit la lecture en cours (`AudioPlayback`) : l'URL opaque du MP3, la position dans le fichier, la fin de l'extrait et l'instant de départ en heure serveur, absent tant que la musique est arrêtée. La TV en déduit à tout moment la position à jouer avec son horloge synchronisée : rechargée en pleine écoute, elle reprend là où en est la musique, et après une reprise sur crash, là où elle en était au dernier enregistrement. Un seul élément `<audio>` lit le fichier en streaming, avec des requêtes partielles. Les téléphones ne reçoivent jamais l'URL de l'extrait.
 
+Un extrait que la TV ne peut pas charger, ou qui n'a pas démarré 3 s après l'instant prévu, ne change rien à l'écran : la TV le signale et la console GM affiche l’incident sur le morceau concerné. Le GM peut alors passer l'extrait.
+
 ## Format du descripteur
 
 Une manche de blind test est une activité de `rounds` dont le `type` vaut `blindtest`. Le schéma `schemas/pack.schema.json` décrit chaque propriété dans VS Code et vérifie les bornes pendant la saisie.

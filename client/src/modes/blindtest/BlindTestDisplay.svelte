@@ -6,13 +6,14 @@
     import { fr } from '../../shared/i18n/fr';
     import type { DisplayViewProps } from '../../shared/modeViews';
 
-    let { view, round, clock }: DisplayViewProps<BlindTestDisplayView> = $props();
+    let { view, round, clock, reportMediaFailure }: DisplayViewProps<BlindTestDisplayView> =
+        $props();
 
     // At every snapshot, and at every clock synchronization, which the player reads: preloaded
     // while announced, played on time, paused while a player answers.
     const player = excerptPlayer();
     $effect(() => {
-        player.play(view.playback, clock);
+        player.play(view.playback, clock, reportMediaFailure);
     });
     onDestroy(() => player.stop());
 </script>
