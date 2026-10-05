@@ -3,7 +3,7 @@ using PartyGame.Contracts.Buzzer;
 namespace PartyGame.Contracts.BlindTest;
 
 /// <summary>
-/// What a blind test round shows on the phone of one player: their buzzer, then who has the hand. The music plays on the
+/// What a blind test round shows on the phone of one player: their buzzer, then who has the hand and what they found. The music plays on the
 /// TV screen alone: the view holds no audio.
 /// </summary>
 /// <param name="TrackNumber">The track in progress, from 1.</param>
@@ -15,10 +15,14 @@ namespace PartyGame.Contracts.BlindTest;
 /// </param>
 /// <param name="Buzzer">What the buzzer of this player shows.</param>
 /// <param name="Winner">The nickname of the player who has the hand, or <see langword="null"/>.</param>
+/// <param name="FoundTitle">Whether this player found the title of the track.</param>
+/// <param name="FoundArtist">Whether this player found the artist of the track.</param>
 public sealed record BlindTestPlayerView(
     int TrackNumber,
     int TrackCount,
     int Opening,
     long? OpensAt,
     BuzzerButtonState Buzzer,
-    string? Winner) : PlayerRoundView;
+    string? Winner,
+    bool FoundTitle,
+    bool FoundArtist) : PlayerRoundView;

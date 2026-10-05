@@ -37,7 +37,7 @@ function audioOf(display: Page) {
     }));
 }
 
-function buzzer(phone: Page, state: 'closed' | 'open' | 'won' | 'lost') {
+function buzzer(phone: Page, state: 'closed' | 'open' | 'won' | 'lost' | 'blocked') {
     const labels: Record<string, string> = { ...fr.buzzer, ...fr.modes.blindtest.buzzer };
     return phone.getByRole('button', { name: labels[state], exact: true });
 }
@@ -97,6 +97,54 @@ test('the music plays on the TV screen alone, and pauses as a player gets the ha
     for (const player of table.players) {
         await expect(player.page.locator('audio')).toHaveCount(0);
     }
+});
+
+/** The game master ticks what the player who has the hand found, then validates. */
+async function judge(gm: Page, ...verdicts: string[]): Promise<void> {
+    for (const verdict of verdicts) {
+        await gm.getByRole('button', { name: verdict, exact: true }).click();
+    }
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.validate, exact: true }).click();
+}
+
+test('a buzz that finds the title, then one that finds the artist', async ({ table }) => {
+    const { display, gm } = table;
+    const [zoe, max, lea] = table.players;
+    await unlockAudio(display);
+    await startGame(gm);
+    await gm.getByRole('button', { name: fr.modes.blindtest.gm.play }).click();
+
+    // Max gives the title: the music resumes for the others, and he may not buzz again.
+    await buzzer(max.page, 'open').tap();
+    await expect(buzzer(max.page, 'won')).toBeVisible();
+    await expect.poll(async () => (await audioOf(display)).paused).toBe(true);
+    const paused = (await audioOf(display)).currentTime;
+    await judge(gm, fr.modes.blindtest.gm.titleFound);
+    const titleFound = fill(fr.modes.blindtest.titleFoundBy, { nickname: max.nickname });
+    await expect(display.getByText(titleFound)).toBeVisible();
+    await expect(display.getByText('Hymne')).toHaveCount(0);
+    await expect(buzzer(max.page, 'blocked')).toBeDisabled();
+    await expect(max.page.getByText(fr.modes.blindtest.found.title)).toBeVisible();
+    await expect(buzzer(lea.page, 'open')).toBeEnabled();
+    await expect.poll(async () => (await audioOf(display)).paused).toBe(false);
+    expect((await audioOf(display)).currentTime).toBeGreaterThanOrEqual(paused - 0.1);
+
+    // Léa gives the artist: the title is not to judge anymore, and nothing is left to find.
+    await buzzer(lea.page, 'open').tap();
+    await expect(buzzer(lea.page, 'won')).toBeVisible();
+    await expect(
+        gm.getByRole('button', { name: fr.modes.blindtest.gm.titleFound, exact: true }),
+    ).toHaveCount(0);
+    await judge(gm, fr.modes.blindtest.gm.artistFound);
+    await expect(
+        display.getByText(fill(fr.modes.blindtest.artistFoundBy, { nickname: lea.nickname })),
+    ).toBeVisible();
+    await expect(display.getByText(titleFound)).toBeVisible();
+    await expect(display.getByText('Beethoven')).toHaveCount(0);
+    await expect(gm.getByText(fr.modes.blindtest.gm.closed)).toBeVisible();
+    await expect(lea.page.getByText(fr.modes.blindtest.found.artist)).toBeVisible();
+    await expect(buzzer(zoe.page, 'closed')).toBeDisabled();
+    await expect.poll(async () => (await audioOf(display)).paused).toBe(true);
 });
 
 test('a TV screen reloaded while the music plays goes on where it is', async ({ table }) => {

@@ -33,6 +33,11 @@ public sealed class BlindTestLeakTests
             ("two buzzes, arbitrating", BlindTestGames.Buzzed(Started(), (2, 1000), (1, 1100))),
             ("winner designated, music paused", BlindTestGames.Answering(Started(), (2, 1000), (1, 1100))),
             ("winner designated once the excerpt ended", BlindTestGames.Answering(BlindTestGames.AtTrack(Started(), 1), (3, 25_000))),
+            ("nothing found, music resumed", BlindTestGames.Judged(Started(), 2)),
+            ("title found, music resumed", BlindTestGames.Judged(Started(), 2, title: true)),
+            ("title found, another player has the hand", BlindTestGames.AnsweringAgain(BlindTestGames.Judged(Started(), 2, title: true), 3)),
+            ("title and artist found", BlindTestGames.Judged(Started(), 2, title: true, artist: true)),
+            ("title of a track without artist found", BlindTestGames.Judged(BlindTestGames.AtTrack(Started(), 1), 3, title: true)),
         ],
         SecretsOf = SecretsOf,
         Pairs =
@@ -42,6 +47,9 @@ public sealed class BlindTestLeakTests
             TrackPair("title, winner designated", track => track with { Title = "Ode an die Freude" }, state => BlindTestGames.Answering(state, (1, 1000))),
             TrackPair("artist, announced", track => track with { Artist = "Friedrich von Schiller" }, state => state),
             TrackPair("artist, winner designated", track => track with { Artist = "Friedrich von Schiller" }, state => BlindTestGames.Answering(state, (1, 1000))),
+            TrackPair("title, title found", track => track with { Title = "Ode an die Freude" }, state => BlindTestGames.Judged(state, 1, title: true)),
+            TrackPair("artist, title found", track => track with { Artist = "Friedrich von Schiller" }, state => BlindTestGames.Judged(state, 1, title: true)),
+            TrackPair("title and artist, both found", track => track with { Title = "Ode an die Freude", Artist = "Friedrich von Schiller" }, state => BlindTestGames.Judged(state, 1, title: true, artist: true)),
             TrackPair("whether the track has an artist, played", track => track with { Artist = null }, BlindTestGames.Played),
 
             // Nobody learns who buzzed before the winner is designated, but the player who did.

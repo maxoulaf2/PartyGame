@@ -3,6 +3,7 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { BlindTestJudge } from './BlindTestJudge';
 import type { BlindTestPlay } from './BlindTestPlay';
 import type { BlindTestSkipTrack } from './BlindTestSkipTrack';
 import type { BuzzerAskQuestion } from './BuzzerAskQuestion';
@@ -16,4 +17,4 @@ import type { QuizShowChoice } from './QuizShowChoice';
 import type { QuizShowQuestion } from './QuizShowQuestion';
 import type { QuizSkipQuestion } from './QuizSkipQuestion';
 
-export type GameMasterRoundIntent = BlindTestPlay | BlindTestSkipTrack | BuzzerAskQuestion | BuzzerJudge | BuzzerNextQuestion | BuzzerRevealAnswer | BuzzerShowQuestion | QuizNextQuestion | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;
+export type GameMasterRoundIntent = BlindTestJudge | BlindTestPlay | BlindTestSkipTrack | BuzzerAskQuestion | BuzzerJudge | BuzzerNextQuestion | BuzzerRevealAnswer | BuzzerShowQuestion | QuizNextQuestion | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;

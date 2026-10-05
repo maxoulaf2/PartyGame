@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type BlindTestTrackPhase = 'Ready' | 'Listening' | 'Answering';
+export type BlindTestTrackPhase = 'Ready' | 'Listening' | 'Answering' | 'Closed';

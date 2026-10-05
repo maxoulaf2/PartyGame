@@ -18,4 +18,9 @@ public enum BlindTestPhase
 
     /// <summary>The arbitration designated a winner, who has the hand: the music is paused.</summary>
     Answering,
+
+    /// <summary>
+    /// Nothing is left to find, or nobody is left to buzz: the buzzer is closed and the music stays paused.
+    /// </summary>
+    Closed,
 }

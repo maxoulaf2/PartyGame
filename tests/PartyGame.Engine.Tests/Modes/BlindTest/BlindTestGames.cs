@@ -90,6 +90,38 @@ internal static class BlindTestGames
     public static GameMasterRoundInput Play(GameState state, int? trackNumber = null) =>
         new(new BlindTestPlay(state.CurrentRound!.Id, trackNumber ?? RoundOf(state).TrackNumber), Games.Now);
 
+    /// <summary>The game master judges the answer of the player who has the hand, on the current opening.</summary>
+    public static GameMasterRoundInput Judge(GameState state, bool title = false, bool artist = false, int? trackNumber = null, int? opening = null) =>
+        new(
+            new BlindTestJudge(
+                state.CurrentRound!.Id,
+                trackNumber ?? RoundOf(state).TrackNumber,
+                opening ?? RoundOf(state).Buzzer.Opening,
+                title,
+                artist),
+            Games.Now);
+
+    /// <summary>
+    /// The same game, the given player having the hand, as <see cref="Answering"/> does, then judged: the music resumes
+    /// while something is left to find.
+    /// </summary>
+    public static GameState Judged(GameState state, int player, bool title = false, bool artist = false)
+    {
+        state = Answering(state, (player, 1000));
+        return Accepted(state, Judge(state, title, artist), Games.Now.AddSeconds(5));
+    }
+
+    /// <summary>
+    /// The same game, buzzed by the given player on the reopened buzzer, 1 s after the music resumed, then arbitrated.
+    /// </summary>
+    public static GameState AnsweringAgain(GameState state, int player)
+    {
+        var pressedAt = StartsAt(state).AddSeconds(1);
+        state = Accepted(state, Buzz(state, player, pressedAt), pressedAt);
+        var elapsed = ArbitrationElapsed(state);
+        return Accepted(state, elapsed, elapsed.DueAt);
+    }
+
     /// <summary>The game master skips the track in progress.</summary>
     public static GameMasterRoundInput SkipTrack(GameState state, int? trackNumber = null) =>
         new(new BlindTestSkipTrack(state.CurrentRound!.Id, trackNumber ?? RoundOf(state).TrackNumber), Games.Now);

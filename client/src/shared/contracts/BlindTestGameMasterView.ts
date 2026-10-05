@@ -10,7 +10,10 @@ export interface BlindTestGameMasterView {
     readonly trackNumber: number;
     readonly trackCount: number;
     readonly phase: BlindTestTrackPhase;
+    readonly opening: number;
     readonly title: string;
     readonly artist: string | null;
     readonly winner: string | null;
+    readonly titleFoundBy: string | null;
+    readonly artistFoundBy: string | null;
 }
