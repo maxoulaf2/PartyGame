@@ -1,6 +1,6 @@
 ### US-E14-02 — Fichiers audio et extraits dans les packs
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack
 **je veux** référencer des MP3 et y définir des extraits par un point de départ et une durée
@@ -23,6 +23,8 @@ Contenu invalide : détecté au chargement, partie non lançable, problème pré
 - Le type attendu d'un média devient une propriété de sa référence (image ou audio) plutôt qu'une liste unique d'extensions (`MediaCheck`).
 - Régénérer `schemas/pack.schema.json`.
 - Des MP3 courts de test, générés ou libres de droits, sont ajoutés aux packs de test.
+- Réalisation : `AudioExcerpt` (`file`, `start` de 0 à 3 600, `duration` de 5 à 120) et l'attribut `[AudioFile]`, qui marque un `MediaPath` audio, dans `PartyGame.Contracts.Packs`. `Mp3File` lit la durée (Xing/Info, VBRI, sinon parcours des trames ; MPEG couche III seulement) et `Mp3Audio` les bornes des données audio. Codes ajoutés : `PackMediaUnreadable` et `PackAudioExcerptStartBeyondEnd` (`start`, `duration`) ; `PackMediaTypeUnsupported` gagne le paramètre `expected` (`image` ou `audio`).
+- Écarts : les bornes ne sont pas gardées dans l'état mais relues à chaque requête (`Mp3Audio.Find`, quelques octets à chaque bout du fichier), ce qui évite de changer l'état persisté. Aucun mode n'utilise encore `AudioExcerpt` : il n'apparaît pas dans `schemas/pack.schema.json`, les contrôles sont testés sur un extrait lu seul et le service sur un fichier hors partie, et les MP3 de test (générés par `tests/Shared/Audio/Mp3Samples`) rejoindront les packs avec US-E15-01. Les étiquettes APE ne sont pas retirées.
 
 **Hors périmètre**
 - D'autres formats audio (AAC, OGG).

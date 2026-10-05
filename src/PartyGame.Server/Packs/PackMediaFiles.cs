@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.StaticFiles;
+using PartyGame.Content;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine;
 using PartyGame.Server.Games;
@@ -45,7 +46,36 @@ internal sealed class PackMediaFiles(GameLoop game, ILogger<PackMediaFiles> logg
 
         response.Headers.CacheControl = CacheControl;
         var contentType = _contentTypes.TryGetContentType(file, out var type) ? type : DefaultContentType;
-        return Results.File(file, contentType, lastModified: File.GetLastWriteTimeUtc(file), enableRangeProcessing: true);
+        var lastModified = File.GetLastWriteTimeUtc(file);
+        if (contentType == "audio/mpeg")
+        {
+            return ServeAudio(file, contentType, lastModified);
+        }
+
+        return Results.File(file, contentType, lastModified: lastModified, enableRangeProcessing: true);
+    }
+
+    /// <summary>
+    /// An MP3 file without its ID3 tags, as if they had never been there: its title, artist and cover would give away the
+    /// answer of a blind test to whoever downloads it from the TV screen.
+    /// </summary>
+    internal static IResult ServeAudio(string file, string contentType, DateTimeOffset lastModified)
+    {
+        var stream = File.OpenRead(file);
+        try
+        {
+            var audio = Mp3Audio.Find(stream);
+            return Results.File(
+                new FileSegmentStream(stream, audio.Start, audio.Length),
+                contentType,
+                lastModified: lastModified,
+                enableRangeProcessing: true);
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
