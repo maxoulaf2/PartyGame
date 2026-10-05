@@ -1,30 +1,47 @@
 <script lang="ts">
-    import type { BuzzerAskQuestion, BuzzerGameMasterView } from '../../shared/contracts';
+    import type {
+        BuzzerAskQuestion,
+        BuzzerGameMasterView,
+        BuzzerJudge,
+        BuzzerNextQuestion,
+        BuzzerRevealAnswer,
+    } from '../../shared/contracts';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
     import type { GameMasterViewProps } from '../../shared/modeViews';
 
-    let {
-        view,
-        round,
-        interactive,
-        send,
-    }: GameMasterViewProps<BuzzerGameMasterView, BuzzerAskQuestion> = $props();
+    type Intent = BuzzerAskQuestion | BuzzerJudge | BuzzerRevealAnswer | BuzzerNextQuestion;
+
+    let { view, round, interactive, send }: GameMasterViewProps<BuzzerGameMasterView, Intent> =
+        $props();
 
     let sending = $state(false);
 
-    async function askQuestion() {
+    const lastQuestion = $derived(view.questionNumber === view.questionCount);
+
+    async function act(intent: Intent) {
         if (!interactive || sending) {
             return;
         }
         sending = true;
-        // The intent names its question: sent again, or by a second console, it changes nothing.
-        await send({
-            type: 'buzzer.askQuestion',
+        // Each intent names its question, and a judgment the opening it judges: sent again, or by
+        // a second console, it changes nothing.
+        await send(intent);
+        sending = false;
+    }
+
+    function step(type: Exclude<Intent['type'], 'buzzer.judge'>) {
+        void act({ type, roundId: round.roundId, questionNumber: view.questionNumber });
+    }
+
+    function judge(correct: boolean) {
+        void act({
+            type: 'buzzer.judge',
             roundId: round.roundId,
             questionNumber: view.questionNumber,
+            opening: view.opening,
+            correct,
         });
-        sending = false;
     }
 </script>
 
@@ -40,19 +57,66 @@
         {/if}
     </div>
     <p class="answer">{fill(fr.modes.buzzer.gm.answer, { answer: view.answer })}</p>
-    {#if view.phase === 'Ready'}
-        <div class="actions">
-            <button type="button" disabled={!interactive || sending} onclick={askQuestion}>
-                {fr.modes.buzzer.gm.askQuestion}
-            </button>
-        </div>
-    {:else if view.winner !== null}
+    {#if view.phase === 'Answering' && view.winner !== null}
         <p class="winner" role="status">
             {fill(fr.modes.buzzer.hasHand, { nickname: view.winner })}
         </p>
-    {:else}
+    {:else if view.phase === 'Open'}
         <p class="waiting" role="status">{fr.modes.buzzer.gm.waitingBuzz}</p>
+    {:else if view.phase === 'Closed'}
+        <p class="waiting" role="status">{fr.modes.buzzer.gm.allBlocked}</p>
+    {:else if view.phase === 'Revealed'}
+        <p class="winner" role="status">
+            {view.foundBy !== null
+                ? fill(fr.modes.buzzer.foundBy, { nickname: view.foundBy })
+                : fr.modes.buzzer.nobodyFound}
+        </p>
     {/if}
+    <div class="actions">
+        {#if view.phase === 'Ready'}
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => step('buzzer.askQuestion')}
+            >
+                {fr.modes.buzzer.gm.askQuestion}
+            </button>
+        {:else if view.phase === 'Revealed'}
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => step('buzzer.nextQuestion')}
+            >
+                {lastQuestion ? fr.modes.buzzer.gm.endRound : fr.modes.buzzer.gm.nextQuestion}
+            </button>
+        {:else}
+            {#if view.phase === 'Answering'}
+                <button
+                    type="button"
+                    disabled={!interactive || sending}
+                    onclick={() => judge(true)}
+                >
+                    {fr.modes.buzzer.gm.correct}
+                </button>
+                <button
+                    type="button"
+                    class="wrong"
+                    disabled={!interactive || sending}
+                    onclick={() => judge(false)}
+                >
+                    {fr.modes.buzzer.gm.wrong}
+                </button>
+            {/if}
+            <button
+                type="button"
+                class="secondary"
+                disabled={!interactive || sending}
+                onclick={() => step('buzzer.revealAnswer')}
+            >
+                {fr.modes.buzzer.gm.revealAnswer}
+            </button>
+        {/if}
+    </div>
 </div>
 
 <style>
@@ -131,6 +195,18 @@
         font-weight: 700;
         cursor: pointer;
         touch-action: manipulation;
+    }
+
+    /* Told apart by their text, and by their look rather than by a color alone. */
+    button.wrong {
+        border-style: dashed;
+        background: transparent;
+        color: var(--color-text);
+    }
+
+    button.secondary {
+        background: transparent;
+        color: var(--color-accent);
     }
 
     button:disabled {

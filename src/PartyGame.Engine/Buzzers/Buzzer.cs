@@ -55,15 +55,20 @@ public sealed record Buzzer
     public ImmutableArray<PlayerId> Blocked { get; init; } = [];
 
     /// <summary>
-    /// The winner of the current opening, or <see langword="null"/> while it is open or before the first one.
+    /// The winner of the current opening, or <see langword="null"/> while it is open, before the first one, and once closed.
     /// </summary>
     public PlayerId? Winner { get; init; }
 
     /// <summary>
-    /// Whether the buzzer accepts buzzes: opened, and no winner designated yet.
+    /// Whether the buzzer was closed with <see cref="Close"/> since its last opening.
     /// </summary>
-    [JsonIgnore] // derived from the opening and the winner, which are persisted
-    public bool IsOpen => Opening > 0 && Winner is null;
+    public bool IsClosed { get; init; }
+
+    /// <summary>
+    /// Whether the buzzer accepts buzzes: opened, not closed, and no winner designated yet.
+    /// </summary>
+    [JsonIgnore] // derived from the opening, the closing and the winner, which are persisted
+    public bool IsOpen => Opening > 0 && !IsClosed && Winner is null;
 
     /// <summary>
     /// Opens the buzzer to every player, for instance for a new question: nobody stays blocked.
@@ -76,7 +81,13 @@ public sealed record Buzzer
     /// </summary>
     /// <param name="now">Current server time.</param>
     public Buzzer Reopen(DateTimeOffset now) =>
-        this with { Opening = Opening + 1, OpenedAt = now, ArbitrateAt = null, Presses = [], Winner = null };
+        this with { Opening = Opening + 1, OpenedAt = now, ArbitrateAt = null, Presses = [], Winner = null, IsClosed = false };
+
+    /// <summary>
+    /// Closes the buzzer until it opens anew, for instance once the answer is revealed: an arbitration window in progress
+    /// is abandoned, and nobody has the hand. The players stay blocked.
+    /// </summary>
+    public Buzzer Close() => this with { IsClosed = true, ArbitrateAt = null, Presses = [], Winner = null };
 
     /// <summary>
     /// Blocks a player until the buzzer opens anew with <see cref="Open"/>, for instance after their wrong answer.

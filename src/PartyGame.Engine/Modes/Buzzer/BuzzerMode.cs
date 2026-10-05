@@ -3,13 +3,15 @@ using PartyGame.Contracts;
 using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Buzzers;
+using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 
 namespace PartyGame.Engine.Modes.Buzzer;
 
 /// <summary>
-/// Plays the rounds of buzzer questions of the packs: the game master asks each question, which opens the buzzer, and
-/// the first player who pressed has the hand.
+/// Plays the rounds of buzzer questions of the packs: the game master asks each question, which opens the buzzer, the
+/// first player who pressed has the hand, and the game master judges their answer, until somebody finds it or the game
+/// master reveals it.
 /// </summary>
 public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
 {
@@ -38,6 +40,9 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
         return input switch
         {
             GameMasterRoundInput { RoundIntent: BuzzerAskQuestion ask } => AskQuestion(round, ask, context),
+            GameMasterRoundInput { RoundIntent: BuzzerJudge judge } => Judge(round, judge, game, context),
+            GameMasterRoundInput { RoundIntent: BuzzerRevealAnswer reveal } => RevealAnswer(round, reveal),
+            GameMasterRoundInput { RoundIntent: BuzzerNextQuestion next } => NextQuestion(round, next),
             PlayerRoundInput { RoundIntent: BuzzerBuzz buzz } buzzed => Buzz(round, buzzed.PlayerId, buzz, buzzed.ReceivedAt, context),
             TimerElapsed timer => Apply(round, round.Buzzer.Arbitrate(timer)),
             _ => RoundTransition.Rejected(round, RejectionReason.IntentUnsupported),
@@ -63,15 +68,22 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
 
         var buzzer = round.Buzzer;
         var state =
-            buzzer.Blocked.Contains(player.Id) ? BuzzerButtonState.Blocked
-            : round.Phase == BuzzerPhase.Ready ? BuzzerButtonState.Closed
+            round.Phase == BuzzerPhase.Revealed ? BuzzerButtonState.Closed
+            : buzzer.Blocked.Contains(player.Id) ? BuzzerButtonState.Blocked
+            : round.Phase is BuzzerPhase.Ready or BuzzerPhase.Closed ? BuzzerButtonState.Closed
             : buzzer.Winner == player.Id ? BuzzerButtonState.Won
             : buzzer.Winner is not null ? BuzzerButtonState.Lost
 
             // Whether this player buzzed, never whether the others did: the arbitration is not over.
             : buzzer.Presses.Any(press => press.PlayerId == player.Id) ? BuzzerButtonState.Buzzed
             : BuzzerButtonState.Open;
-        return new BuzzerPlayerView(round.QuestionNumber, round.Descriptor.Questions.Length, buzzer.Opening, state, WinnerOf(round, game));
+        return new BuzzerPlayerView(
+            round.QuestionNumber,
+            round.Descriptor.Questions.Length,
+            buzzer.Opening,
+            state,
+            WinnerOf(round, game),
+            round.Revealed ? PointsOf(round, player.Id) : null);
     }
 
     /// <inheritdoc />
@@ -88,7 +100,9 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
             PhaseOf(round),
             asked ? round.Question.Text : null,
             asked && round.Question.Image is { } image ? game.Media.UrlOf(image) : null,
-            WinnerOf(round, game));
+            WinnerOf(round, game),
+            round.Revealed ? round.Question.Answer : null,
+            FoundByOf(round, game));
     }
 
     /// <inheritdoc />
@@ -99,9 +113,11 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
             round.QuestionNumber,
             round.Descriptor.Questions.Length,
             PhaseOf(round),
+            round.Buzzer.Opening,
             round.Question.Text,
             round.Question.Answer,
-            WinnerOf(round, game));
+            WinnerOf(round, game),
+            FoundByOf(round, game));
     }
 
     /// <summary>
@@ -154,6 +170,76 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
     }
 
     /// <summary>
+    /// Judges the answer of the player who has the hand. A correct one wins the points of the round, awarded now, and
+    /// reveals the answer. A wrong one blocks the player for the question and opens the buzzer anew to the others, or
+    /// leaves it closed once every connected player is blocked: nobody is left to buzz.
+    /// </summary>
+    private static RoundTransition Judge(BuzzerRound round, BuzzerJudge judge, GameState game, GameContext context)
+    {
+        RejectionReason? rejection =
+            judge.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != BuzzerPhase.Answering ? RejectionReason.PhaseMismatch
+
+            // Judged already, the buzzer reopened and somebody else has the hand: this judgment is not about them.
+            : judge.Opening != round.Buzzer.Opening ? RejectionReason.BuzzerOpeningMismatch
+            : null;
+        if (rejection is { } reason)
+        {
+            return RoundTransition.Rejected(round, reason);
+        }
+
+        var winner = round.Buzzer.Winner!.Value;
+        if (judge.Correct)
+        {
+            var revealed = round with { Buzzer = round.Buzzer.Close(), Revealed = true, FoundBy = winner };
+            return new(revealed, []) { Points = ImmutableDictionary<PlayerId, int>.Empty.Add(winner, round.Descriptor.Points) };
+        }
+
+        var blocked = round.Buzzer.Block(winner);
+        var anybodyLeft = game.Players.Any(player => player.IsConnected && !blocked.Blocked.Contains(player.Id));
+        return new(round with { Buzzer = anybodyLeft ? blocked.Reopen(context.Now) : blocked.Close() }, []);
+    }
+
+    /// <summary>
+    /// Reveals the expected answer of the question asked, without points, whoever has the hand: the buzzer closes, and an
+    /// arbitration window in progress is abandoned.
+    /// </summary>
+    private static RoundTransition RevealAnswer(BuzzerRound round, BuzzerRevealAnswer reveal)
+    {
+        RejectionReason? rejection =
+            reveal.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase is BuzzerPhase.Ready or BuzzerPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        if (rejection is { } reason)
+        {
+            return RoundTransition.Rejected(round, reason);
+        }
+
+        var revealed = round with { Buzzer = round.Buzzer.Close(), Revealed = true };
+        return new(revealed, round.Phase == BuzzerPhase.Arbitrating ? [new CancelTimer(Buzzers.Buzzer.ArbitrationTimer)] : []);
+    }
+
+    /// <summary>
+    /// Moves on from the revealed question: announces the next one, its buzzer closed, or ends the round after the last
+    /// one, the round then staying on it.
+    /// </summary>
+    private static RoundTransition NextQuestion(BuzzerRound round, BuzzerNextQuestion next)
+    {
+        RejectionReason? rejection =
+            next.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != BuzzerPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        if (rejection is { } reason)
+        {
+            return RoundTransition.Rejected(round, reason);
+        }
+
+        return round.QuestionIndex == round.Descriptor.Questions.Length - 1
+            ? new(round, []) { IsFinished = true }
+            : new(new BuzzerRound(round.Descriptor, round.QuestionIndex + 1), []);
+    }
+
+    /// <summary>
     /// Hands a buzz on the question in progress to its buzzer, which judges it.
     /// </summary>
     private static RoundTransition Buzz(BuzzerRound round, PlayerId player, BuzzerBuzz buzz, DateTimeOffset receivedAt, GameContext context) =>
@@ -170,11 +256,26 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
             : new(round with { Buzzer = transition.Buzzer }, transition.Effects);
 
     /// <summary>
-    /// The nickname of the player who has the hand, public once designated. Players are never removed: the winner is still
-    /// registered, under their current nickname.
+    /// The nickname of the player who has the hand, public once designated.
     /// </summary>
     private static string? WinnerOf(BuzzerRound round, GameState game) =>
-        round.Buzzer.Winner is { } winner ? game.Players.First(player => player.Id == winner).Nickname : null;
+        round.Buzzer.Winner is { } winner ? NicknameOf(game, winner) : null;
+
+    /// <summary>
+    /// The nickname of the player who found the answer, public once revealed.
+    /// </summary>
+    private static string? FoundByOf(BuzzerRound round, GameState game) =>
+        round.FoundBy is { } player ? NicknameOf(game, player) : null;
+
+    /// <summary>
+    /// Players are never removed: whoever buzzed is still registered, under their current nickname.
+    /// </summary>
+    private static string NicknameOf(GameState game, PlayerId id) => game.Players.First(player => player.Id == id).Nickname;
+
+    /// <summary>
+    /// What a player earned with the revealed question: the points of the round if they found it, 0 otherwise.
+    /// </summary>
+    private static int PointsOf(BuzzerRound round, PlayerId player) => round.FoundBy == player ? round.Descriptor.Points : 0;
 
     private static BuzzerQuestionPhase PhaseOf(BuzzerRound round) => round.Phase switch
     {
@@ -183,6 +284,8 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
         // The arbitration window stays invisible: nobody learns that somebody buzzed before the winner is designated.
         BuzzerPhase.Open or BuzzerPhase.Arbitrating => BuzzerQuestionPhase.Open,
         BuzzerPhase.Answering => BuzzerQuestionPhase.Answering,
+        BuzzerPhase.Closed => BuzzerQuestionPhase.Closed,
+        BuzzerPhase.Revealed => BuzzerQuestionPhase.Revealed,
         _ => throw new InvalidOperationException($"Phase {round.Phase} has no projection."),
     };
 }

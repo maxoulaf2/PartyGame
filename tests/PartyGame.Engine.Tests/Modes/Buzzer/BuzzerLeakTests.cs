@@ -7,7 +7,8 @@ namespace PartyGame.Engine.Tests.Modes.Buzzer;
 /// <summary>
 /// What the views of a round of buzzer questions may show to each viewer: the expected answer to the game master only, a
 /// question once asked, the questions to come to nobody else, who buzzed during the arbitration to nobody but the player
-/// themselves, the time stamps of the buzzes to nobody, the paths of the images to nobody.
+/// themselves, who was refused to nobody but the player themselves, the time stamps of the buzzes to nobody, the paths of
+/// the images to nobody.
 /// </summary>
 public sealed class BuzzerLeakTests
 {
@@ -34,6 +35,12 @@ public sealed class BuzzerLeakTests
             ("winner designated", BuzzerGames.Answering(Started(), (2, 40), (1, 10))),
             ("illustrated question, winner designated", BuzzerGames.Answering(BuzzerGames.AtQuestion(Started(), 1), (3, 0))),
             ("blocked player, winner designated", BuzzerGames.WithBlocked(BuzzerGames.Answering(Started(), (2, 40)), 1)),
+            ("wrong answer, buzzer reopened", BuzzerGames.Judged(Started(), correct: false, 1)),
+            ("every player blocked", BuzzerGames.Judged(Started(), correct: false, 1, 2, 3)),
+            ("found after a wrong answer", BuzzerGames.Judged(Started(), correct: true, 1, 2)),
+            ("revealed during the arbitration", Revealed(BuzzerGames.Buzzed(Started(), (2, 40)))),
+            ("illustrated question revealed", Revealed(BuzzerGames.Asked(BuzzerGames.AtQuestion(Started(), 1)))),
+            ("last question found", BuzzerGames.Judged(BuzzerGames.AtQuestion(Started(), 2), correct: true, 3)),
         ],
         SecretsOf = SecretsOf,
         Pairs =
@@ -42,6 +49,7 @@ public sealed class BuzzerLeakTests
             AnswerPair("expected answer, asked", BuzzerGames.Asked),
             AnswerPair("expected answer, arbitrating", state => BuzzerGames.Buzzed(state, (1, 10))),
             AnswerPair("expected answer, winner designated", state => BuzzerGames.Answering(state, (1, 10))),
+            AnswerPair("expected answer, every player blocked", state => BuzzerGames.Judged(state, correct: false, 1, 2, 3)),
 
             // The TV screen shows a question once the game master asks it, and nothing of it before.
             new SecretPair<GameState>(
@@ -82,6 +90,8 @@ public sealed class BuzzerLeakTests
 
     private static GameState Started() => BuzzerGames.Started(_round, _players);
 
+    private static GameState Revealed(GameState state) => BuzzerGames.Accepted(state, BuzzerGames.RevealAnswer(state));
+
     private static BuzzerRoundDescriptor WithFirstQuestion(BuzzerQuestion question) =>
         _round with { Questions = _round.Questions.SetItem(0, question) };
 
@@ -100,7 +110,10 @@ public sealed class BuzzerLeakTests
         var round = BuzzerGames.RoundOf(state);
 
         // The expected answer shows to everybody at the reveal only.
-        yield return new Secret(round.Question.Answer, Audience.AllButGameMaster);
+        if (round.Phase != BuzzerPhase.Revealed)
+        {
+            yield return new Secret(round.Question.Answer, Audience.AllButGameMaster);
+        }
 
         // The question shows on the TV screen once the game master asks it.
         if (round.Phase == BuzzerPhase.Ready)
@@ -133,10 +146,11 @@ public sealed class BuzzerLeakTests
             }
         }
 
-        // The winner is named on every screen, the other players on their phone alone.
+        // The winner, then who found, is named on every screen, the other players on their phone alone: never who was
+        // refused.
         foreach (var player in state.Players)
         {
-            if (player.Id != round.Buzzer.Winner)
+            if (player.Id != round.Buzzer.Winner && player.Id != round.FoundBy)
             {
                 yield return new Secret(player.Nickname, Audience.OtherPlayersThan(player.Nickname));
             }

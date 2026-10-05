@@ -1,7 +1,7 @@
 namespace PartyGame.Contracts.Buzzer;
 
 /// <summary>
-/// What a round of buzzer questions shows on the TV screen: the question once asked, then who has the hand. Never the
+/// What a round of buzzer questions shows on the TV screen: the question once asked, then who has the hand, and the answer at the reveal. Never the
 /// expected answer before the reveal, nor the time stamps of the buzzes.
 /// </summary>
 /// <param name="QuestionNumber">The question in progress, from 1.</param>
@@ -10,10 +10,16 @@ namespace PartyGame.Contracts.Buzzer;
 /// <param name="Text">The text of the question, once asked, or <see langword="null"/> before.</param>
 /// <param name="ImageUrl">The URL of the image of the question, once asked, or <see langword="null"/>.</param>
 /// <param name="Winner">The nickname of the player who has the hand, or <see langword="null"/>.</param>
+/// <param name="Answer">The expected answer, once revealed, or <see langword="null"/> before.</param>
+/// <param name="FoundBy">
+/// The nickname of the player whose answer was judged correct, once revealed, or <see langword="null"/>.
+/// </param>
 public sealed record BuzzerDisplayView(
     int QuestionNumber,
     int QuestionCount,
     BuzzerQuestionPhase Phase,
     string? Text,
     string? ImageUrl,
-    string? Winner) : DisplayRoundView;
+    string? Winner,
+    string? Answer,
+    string? FoundBy) : DisplayRoundView;

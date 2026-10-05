@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { formatNumber } from '../src/shared/i18n/numberText.ts';
 import { expect, test } from './fixtures/table.ts';
 
 // A round of buzzer questions on a table of its own: the buzzer reacts on pointerdown, on the
@@ -77,4 +78,43 @@ test('the first player to press has the hand, on every screen', async ({ table }
     await display.reload();
     await expect(display.getByText(hasHand)).toBeVisible();
     await expect(display.getByRole('heading', { name: question })).toBeVisible();
+});
+
+test('a wrong answer blocks its player and reopens the buzzer to the others', async ({ table }) => {
+    const { display, gm } = table;
+    const [zoe, max, lea] = table.players;
+    await startGame(gm);
+    await gm.getByRole('button', { name: fr.modes.buzzer.gm.askQuestion }).click();
+
+    // Zoé has the hand, and answers wrong: she is blocked, the others may buzz again.
+    await buzzer(zoe.page, 'open').tap();
+    await expect(
+        gm.getByText(fill(fr.modes.buzzer.hasHand, { nickname: zoe.nickname })),
+    ).toBeVisible();
+    await gm.getByRole('button', { name: fr.modes.buzzer.gm.wrong, exact: true }).click();
+    await expect(buzzer(zoe.page, 'blocked')).toBeDisabled();
+    await expect(buzzer(max.page, 'open')).toBeEnabled();
+    await expect(buzzer(lea.page, 'open')).toBeEnabled();
+
+    // Léa has the hand, and answers right: the answer shows on the TV screen, with who found it.
+    await buzzer(lea.page, 'open').tap();
+    await expect(buzzer(lea.page, 'won')).toBeVisible();
+    await gm.getByRole('button', { name: fr.modes.buzzer.gm.correct, exact: true }).click();
+    await expect(
+        display.getByText(fill(fr.modes.buzzer.display.answer, { answer: 'Léonard de Vinci' })),
+    ).toBeVisible();
+    await expect(
+        display.getByText(fill(fr.modes.buzzer.foundBy, { nickname: lea.nickname })),
+    ).toBeVisible();
+    const earned = (points: number) =>
+        fill(fr.modes.buzzer.player.pointsEarned, { points: formatNumber(points) });
+    await expect(lea.page.getByText(earned(1000))).toBeVisible();
+    await expect(zoe.page.getByText(earned(0))).toBeVisible();
+
+    // The next question is announced, every buzzer closed, Zoé no longer blocked.
+    await gm.getByRole('button', { name: fr.modes.buzzer.gm.nextQuestion, exact: true }).click();
+    await expect(
+        display.getByText(fill(fr.modes.buzzer.display.upcoming, { number: 2 }), { exact: true }),
+    ).toBeVisible();
+    await expect(buzzer(zoe.page, 'closed')).toBeDisabled();
 });

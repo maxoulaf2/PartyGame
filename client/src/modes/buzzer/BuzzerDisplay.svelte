@@ -45,7 +45,16 @@
             <h1>{view.text}</h1>
         {/if}
     </div>
-    {#if view.winner !== null}
+    {#if view.answer !== null}
+        <div class="reveal" role="status">
+            <p class="answer">{fill(fr.modes.buzzer.display.answer, { answer: view.answer })}</p>
+            <p class="found-by">
+                {view.foundBy !== null
+                    ? fill(fr.modes.buzzer.foundBy, { nickname: view.foundBy })
+                    : fr.modes.buzzer.nobodyFound}
+            </p>
+        </div>
+    {:else if view.winner !== null}
         <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
         <p class="winner" role="status">
             {fill(fr.modes.buzzer.hasHand, { nickname: view.winner })}
@@ -115,6 +124,26 @@
         flex: 1 1 0;
         font-size: 3.25rem;
         line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .reveal {
+        display: flex;
+        flex-direction: column;
+        gap: 1vh;
+        text-align: center;
+    }
+
+    .answer {
+        color: var(--color-accent);
+        font-size: 4.5rem;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .found-by {
+        font-size: 3rem;
+        font-weight: 700;
         overflow-wrap: anywhere;
     }
 

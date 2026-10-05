@@ -16,4 +16,13 @@ public enum BuzzerQuestionPhase
 
     /// <summary>A winner has the hand: they answer out loud, the buzzer is closed.</summary>
     Answering,
+
+    /// <summary>
+    /// Every connected player is blocked after a wrong answer: the buzzer stays closed, and the game master may only reveal
+    /// the answer.
+    /// </summary>
+    Closed,
+
+    /// <summary>The expected answer is revealed, with who found it, if anybody.</summary>
+    Revealed,
 }

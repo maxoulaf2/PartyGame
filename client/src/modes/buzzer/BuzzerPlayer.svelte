@@ -2,14 +2,17 @@
     import BuzzerButton from '../../shared/components/BuzzerButton.svelte';
     import type { BuzzerState } from '../../shared/buzzer.svelte';
     import type { BuzzerButtonState, BuzzerBuzz, BuzzerPlayerView } from '../../shared/contracts';
+    import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatNumber } from '../../shared/i18n/numberText';
     import type { PlayerViewProps } from '../../shared/modeViews';
 
     // A buzzer only: the question is read on the TV screen, and the answer given out loud.
     let {
         view,
         round,
+        score,
         clock,
         interactive,
         send,
@@ -58,10 +61,15 @@
         onbuzz={buzz}
     />
     <p class="status" role="status">
-        {view.buzzer === 'Lost' && view.winner !== null
-            ? fill(fr.modes.buzzer.hasHand, { nickname: view.winner })
-            : ''}
+        {view.points !== null
+            ? fill(fr.modes.buzzer.player.pointsEarned, { points: formatNumber(view.points) })
+            : view.buzzer === 'Lost' && view.winner !== null
+              ? fill(fr.modes.buzzer.hasHand, { nickname: view.winner })
+              : ''}
     </p>
+    {#if view.points !== null}
+        <p class="score">{countText(fr.modes.buzzer.player.score, score)}</p>
+    {/if}
 </main>
 
 <style>
@@ -82,6 +90,10 @@
     .progress {
         color: var(--color-text-muted);
         font-weight: 700;
+    }
+
+    .score {
+        color: var(--color-text-muted);
     }
 
     .status {
