@@ -1,6 +1,7 @@
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.Buzzer;
 using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Tests.Shared;
 
@@ -13,7 +14,7 @@ namespace PartyGame.Content.Tests;
 public sealed class RepositoryPacksTests
 {
     private static readonly PackLibrary _library =
-        new PackLoader(new GameModes([new QuizMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
+        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
 
     [Fact]
     public void LoadAll_RepositoryPacks_AreAllValid()
@@ -35,6 +36,17 @@ public sealed class RepositoryPacksTests
         Assert.Contains(questions, question => question.AnswerSeconds is not null);
         Assert.Contains(rounds, round => round.SpeedBonus > 0);
         Assert.Contains(rounds, round => round.ShuffleChoices);
+    }
+
+    [Fact]
+    public void SampleBuzzerPack_Content_CoversWhatTheDemonstrationShows()
+    {
+        var pack = Assert.Single(_library.Packs, pack => pack.Id == "buzzer-exemple");
+        Assert.True(pack.IsValid);
+        var round = Assert.IsType<BuzzerRoundDescriptor>(Assert.Single(pack.Descriptor.Rounds));
+
+        Assert.Equal(10, round.Questions.Length);
+        Assert.Contains(round.Questions, question => question.Image is not null);
     }
 
     [Fact]

@@ -145,6 +145,68 @@
               "questions"
             ],
             "additionalProperties": false
+          },
+          {
+            "description": "Manche de questions buzzer : le game master pose chaque question, le premier joueur qui buzze répond à voix haute, et le game master juge sa réponse.",
+            "properties": {
+              "type": {
+                "description": "Manche de questions buzzer : le game master pose chaque question, le premier joueur qui buzze répond à voix haute, et le game master juge sa réponse.",
+                "const": "buzzer"
+              },
+              "title": {
+                "description": "Titre de la manche, affiché à tous.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "points": {
+                "description": "Points d'une bonne réponse, de 0 à 10 000. 1 000 si absent.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "questions": {
+                "description": "Questions de la manche, de 1 à 50, posées dans cet ordre.",
+                "type": "array",
+                "items": {
+                  "description": "Question d'une manche de questions buzzer, avec la réponse attendue.",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "description": "Texte de la question, affiché sur l'écran TV à l'ouverture du buzzer.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "answer": {
+                      "description": "Réponse attendue, affichée au game master qui juge les réponses données à voix haute, puis à tous à la révélation.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "image": {
+                      "description": "Image facultative, affichée sur l'écran TV avec la question : chemin d'un fichier .jpg, .jpeg, .png ou .webp du pack.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "answer"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "title",
+              "questions"
+            ],
+            "additionalProperties": false
           }
         ]
       },

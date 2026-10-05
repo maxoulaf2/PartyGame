@@ -1,0 +1,24 @@
+{
+  "$schema": "../../schemas/pack.schema.json",
+  "formatVersion": 1,
+  "title": "Questions buzzer d'exemple",
+  "description": "Dix questions à départager au buzzer, pour découvrir le mode questions buzzer.",
+  "rounds": [
+    {
+      "type": "buzzer",
+      "title": "Le plus rapide",
+      "questions": [
+        { "text": "Quelle est la plus haute montagne d'Europe occidentale ?", "answer": "Le mont Blanc" },
+        { "text": "De quel pays est ce drapeau ?", "answer": "L'Italie", "image": "images/drapeau.png" },
+        { "text": "Combien de pattes a une araignée ?", "answer": "Huit" },
+        { "text": "Qui a peint La Joconde ?", "answer": "Léonard de Vinci" },
+        { "text": "Quel est le symbole chimique de l'or ?", "answer": "Au" },
+        { "text": "Dans quelle ville se trouve le Colisée ?", "answer": "Rome" },
+        { "text": "Quel est le plus grand océan du monde ?", "answer": "L'océan Pacifique" },
+        { "text": "En quelle année l'homme a-t-il marché sur la Lune pour la première fois ?", "answer": "1969" },
+        { "text": "Quelle planète est surnommée la planète rouge ?", "answer": "Mars" },
+        { "text": "Combien de minutes compte une heure et demie ?", "answer": "90" }
+      ]
+    }
+  ]
+}

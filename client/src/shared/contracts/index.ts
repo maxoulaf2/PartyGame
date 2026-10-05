@@ -6,6 +6,9 @@
 export type * from './Announcement';
 export type * from './AnnouncementRefusal';
 export type * from './AnnouncementResult';
+export type * from './BuzzerDisplayView';
+export type * from './BuzzerGameMasterView';
+export type * from './BuzzerPlayerView';
 export type * from './ChooseAdvertisedAddressRefusal';
 export type * from './ChooseAdvertisedAddressRequest';
 export type * from './ChooseAdvertisedAddressResult';

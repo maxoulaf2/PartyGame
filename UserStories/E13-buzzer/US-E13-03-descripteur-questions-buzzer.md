@@ -1,6 +1,6 @@
 ### US-E13-03 — Descripteur d'une manche de questions buzzer
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack
 **je veux** décrire une manche de questions buzzer dans `pack.json`, avec l'autocomplétion et une validation précise
