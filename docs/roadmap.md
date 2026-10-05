@@ -140,6 +140,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 - Composant buzzer réutilisable : capture sur `pointerdown`, horodatage converti en heure serveur.
 - Arbitrage avec fenêtre configurable, et annonce du gagnant sur la TV et sur les téléphones.
 - Le GM valide ou refuse la réponse, puis rouvre le buzzer aux autres joueurs.
+- Un mode « questions buzzer », pour jouer le buzzer avant que l'audio existe.
 - Page de diagnostic d'horloge : écart et RTT estimés pour chaque téléphone, et flash synchronisé sur tous les téléphones pour une vérification à l'œil.
 
 ### E14 — Audio sur l'écran TV
@@ -154,7 +155,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 **Critère de sortie :** un blind test de 10 extraits joué dans une vraie pièce, dont le départage est jugé juste par les joueurs. La dispersion d'horloge mesurée est documentée.
 
-**À trancher :** réponse orale ou saisie sur le téléphone, points séparés pour le titre et l'artiste, pénalité ou blocage temporaire après un mauvais buzz.
+**À trancher :** réponse orale ou saisie sur le téléphone, points séparés pour le titre et l'artiste, pénalité ou blocage temporaire après un mauvais buzz. Tranché : réponse orale jugée par le GM, points séparés pour le titre et l'artiste, joueur bloqué pour l'extrait après un buzz, lecture par un élément `<audio>` décrite dans le snapshot. Voir les README des épopées E13 à E15.
 
 ---
 
