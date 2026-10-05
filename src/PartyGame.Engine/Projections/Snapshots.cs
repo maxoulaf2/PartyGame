@@ -30,7 +30,8 @@ public sealed class Snapshots(GameModes modes)
             PackTitleOf(state),
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State, state) : null,
-            RankingOf(state));
+            RankingOf(state),
+            state.JoinCodeShown);
     }
 
     /// <summary>
@@ -56,7 +57,8 @@ public sealed class Snapshots(GameModes modes)
             RankingOf(state),
             NextRoundTitleOf(state),
             state.CurrentRound?.IsSkipped ?? false,
-            SavedGameOf(state));
+            SavedGameOf(state),
+            state.JoinCodeShown);
     }
 
     /// <summary>

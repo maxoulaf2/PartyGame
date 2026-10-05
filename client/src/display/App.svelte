@@ -16,6 +16,7 @@
     import { selectGameScreen } from '../shared/gameScreen';
     import { findDisplayView } from '../modes/registry';
     import FinalRankingScreen from './FinalRankingScreen.svelte';
+    import JoinCodeCorner from './JoinCodeCorner.svelte';
     import LobbyScreen from './LobbyScreen.svelte';
     import RankingScreen from './RankingScreen.svelte';
 
@@ -29,6 +30,15 @@
     // Outside a round and the rankings, the lobby stays on screen with what is going on: its QR code
     // still lets late arrivals join, since registration stays open.
     const notice = $derived(screen?.kind === 'waiting' ? fr.display.inProgress : null);
+    // The lobby shows the QR code already, as does the screen it shows while waiting.
+    const joinCodeAddress = $derived(
+        game.current?.joinCodeShown &&
+            (screen?.kind === 'round' ||
+                screen?.kind === 'betweenRounds' ||
+                screen?.kind === 'finished')
+            ? game.current.joinAddress
+            : null,
+    );
     const mediaFailed = (url: string) => reportMediaFailure(connection, url);
 
     onMount(() => {
@@ -85,5 +95,9 @@
         <WaitingScreen title={fr.app.name} message={fr.display.waiting} />
     {/if}
 </ViewBoundary>
+
+{#if joinCodeAddress}
+    <JoinCodeCorner joinAddress={joinCodeAddress} />
+{/if}
 
 <ConnectionIndicator {status} tv />

@@ -79,6 +79,7 @@ function displaySnapshot(version: number, view: Partial<DisplaySnapshot> = {}): 
         round,
         roundView: displayView(),
         ranking: [],
+        joinCodeShown: false,
         ...view,
     };
 }
@@ -147,6 +148,7 @@ function gameMasterSnapshot(
         nextRoundTitle: null,
         roundSkipped: false,
         savedGame: null,
+        joinCodeShown: false,
     };
 }
 

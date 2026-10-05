@@ -29,6 +29,9 @@ namespace PartyGame.Contracts;
 /// The players by rank, then in alphabetical order of nickname within a rank, between two rounds and once the game is
 /// finished; empty otherwise. Every registered player is ranked, but those who joined once the game was finished.
 /// </param>
+/// <param name="JoinCodeShown">
+/// Whether the game master asked to show the QR code over the game, outside the lobby, which always shows it.
+/// </param>
 public sealed record DisplaySnapshot(
     GameId GameId,
     long Version,
@@ -38,4 +41,5 @@ public sealed record DisplaySnapshot(
     string? PackTitle,
     RoundInfo? Round,
     DisplayRoundView? RoundView,
-    ImmutableArray<RankedPlayer> Ranking);
+    ImmutableArray<RankedPlayer> Ranking,
+    bool JoinCodeShown);

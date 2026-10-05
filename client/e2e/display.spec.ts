@@ -53,6 +53,7 @@ function fakeSnapshot(
         round: phase === 'Lobby' ? null : fakeRound,
         roundView,
         ranking: [],
+        joinCodeShown: false,
     };
 }
 
@@ -492,6 +493,31 @@ test('/display/ presents the question of the round in progress, with its choices
     expect(new Set(shapes).size).toBe(4);
     await expect(page.getByRole('img', { name: fr.modes.quiz.display.imageLabel })).toHaveCount(0);
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
+});
+
+test('/display/ shows the QR code in the top left corner over the round when the game master asks', async ({
+    page,
+}) => {
+    await serveDisplaySnapshot(page, {
+        ...fakeSnapshot([fakePlayer(1, 'Zoé')], advertisedAddress, 'Round', quizView()),
+        joinCodeShown: true,
+    });
+
+    await page.goto('/display/');
+
+    const qrCode = page.getByRole('img', { name: fr.display.qrCodeLabel });
+    await expect(qrCode).toHaveAttribute('data-qr-text', expectedUrl);
+    // Clear of the 5% a TV may crop, in the top left quarter.
+    const box = await qrCode.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(1920 * 0.05);
+    expect(box!.y).toBeGreaterThanOrEqual(1080 * 0.05);
+    expect(box!.x + box!.width).toBeLessThan(1920 / 2);
+    expect(box!.y + box!.height).toBeLessThan(1080 / 2);
+    // The round goes on underneath.
+    await expect(
+        page.getByRole('heading', { name: 'Quelle est la capitale de l’Australie ?' }),
+    ).toBeVisible();
 });
 
 test('/display/ shows the number of the question alone until the game master shows it', async ({

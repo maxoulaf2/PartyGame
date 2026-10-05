@@ -333,6 +333,11 @@ export const fr = {
         },
         // Offered while the round in progress keeps failing: the server could not handle several
         // of its actions. Players and TV screen see the usual end of round, nothing about it.
+        // Outside the lobby, which always shows it: in a corner of the TV screen, over the game.
+        joinCode: {
+            show: 'Afficher le QR code sur la TV',
+            hide: 'Masquer le QR code de la TV',
+        },
         skipRound: {
             problem: 'Cette manche rencontre un problème. Passer la manche ?',
             hint: 'Les points déjà gagnés sont conservés, ceux de la question en cours ne sont pas attribués.',

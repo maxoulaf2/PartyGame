@@ -29,6 +29,7 @@ import type {
     NetworkDiagnosticReport,
     SelectPackRequest,
     SelectPackResult,
+    ShowJoinCodeRequest,
     SkipRoundRequest,
     StaleBuildReport,
     StartGameResult,
@@ -54,11 +55,12 @@ export interface GameHubMethods {
     };
     SelectPack: { args: [request: SelectPackRequest]; result: SelectPackResult | null };
     ReloadPacks: { args: []; result: ReloadPacksResult | null };
-    // The next six answer nothing: the snapshots show whether the intent was accepted.
+    // The next seven answer nothing: the snapshots show whether the intent was accepted.
     ResolveSavedGame: { args: [request: ResolveSavedGameRequest]; result: null };
     CheckSavedGameMedia: { args: []; result: null };
     NextRound: { args: [request: NextRoundRequest]; result: null };
     SkipRound: { args: [request: SkipRoundRequest]; result: null };
+    ShowJoinCode: { args: [request: ShowJoinCodeRequest]; result: null };
     SendRoundIntent: { args: [envelope: PlayerIntentEnvelope]; result: null };
     SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
     SyncClock: { args: []; result: ClockSyncResult };

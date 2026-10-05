@@ -51,6 +51,9 @@ namespace PartyGame.Contracts;
 /// Whether the game master skipped <paramref name="Round"/>, once it is over: the points of its question in progress were
 /// not awarded. Only this projection tells it: for the others, the round is over like any other.
 /// </param>
+/// <param name="JoinCodeShown">
+/// Whether the TV screen shows the QR code over the game, at the request of the game master, outside the lobby.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -67,4 +70,5 @@ public sealed record GameMasterSnapshot(
     ImmutableArray<RankedPlayer> Ranking,
     string? NextRoundTitle,
     bool RoundSkipped,
-    GameMasterSavedGame? SavedGame);
+    GameMasterSavedGame? SavedGame,
+    bool JoinCodeShown);

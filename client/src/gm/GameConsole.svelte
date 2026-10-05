@@ -73,6 +73,20 @@
     <!-- Registration stays open once started: the address of the QR code may still change. -->
     <AddressControl {snapshot} {session} {interactive} />
 
+    {#if snapshot.phase !== 'Lobby'}
+        <!-- The lobby shows the QR code on the TV screen already. The snapshot tells what the TV shows,
+             whichever console asked. -->
+        <button
+            type="button"
+            class="join-code"
+            aria-pressed={snapshot.joinCodeShown}
+            disabled={!interactive || snapshot.joinAddress === null}
+            onclick={() => session.showJoinCode(!snapshot.joinCodeShown)}
+        >
+            {snapshot.joinCodeShown ? fr.gm.joinCode.hide : fr.gm.joinCode.show}
+        </button>
+    {/if}
+
     <NetworkPanel
         joinAddress={snapshot.joinAddress}
         network={session.network}
@@ -244,6 +258,11 @@
         font: inherit;
         font-weight: 700;
         cursor: pointer;
+    }
+
+    .join-code {
+        align-self: flex-start;
+        touch-action: manipulation;
     }
 
     button:disabled {

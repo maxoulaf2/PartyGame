@@ -72,6 +72,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="SkipRoundAsync"/>, as the clients call it.</summary>
     public const string SkipRound = nameof(SkipRound);
 
+    /// <summary>SignalR target of <see cref="ShowJoinCodeAsync"/>, as the clients call it.</summary>
+    public const string ShowJoinCode = nameof(ShowJoinCode);
+
     /// <summary>SignalR target of <see cref="SendRoundIntentAsync"/>, as the clients call it.</summary>
     public const string SendRoundIntent = nameof(SendRoundIntent);
 
@@ -523,6 +526,28 @@ internal sealed class GameHub(
         // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
         await inputs
             .SubmitAsync(new Engine.Inputs.SkipRound(request.RoundId, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Shows or hides the QR code on the TV screen at the request of the game master, outside the lobby which always shows
+    /// it. The request names the outcome rather than toggling, so that a double tap or two consoles agree. Nothing is
+    /// answered: the snapshots show the QR code either way.
+    /// </summary>
+    /// <param name="message">A <see cref="ShowJoinCodeRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(ShowJoinCode)]
+    public async Task ShowJoinCodeAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ShowJoinCodeRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ShowJoinCode, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.ShowJoinCode(request.Shown, timeProvider.GetUtcNow()), CancellationToken.None)
             .ConfigureAwait(false);
     }
 

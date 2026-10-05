@@ -50,6 +50,8 @@ Ouvrir l'URL « Écran TV » sur le navigateur de la TV, et l'URL « Game master
 
 L'écran TV affiche un QR code et, en clair, l'adresse de la page joueur (`http://192.168.1.42:5000/` dans l'exemple). Les joueurs le scannent avec l'appareil photo de leur téléphone, ou tapent l'adresse dans leur navigateur. Le QR code reprend le port de la page ouverte sur la TV : en développement, un écran TV ouvert sur le port 5173 de Vite envoie les téléphones vers Vite. Tant que le serveur ne connaît aucune adresse, l'écran affiche un message d'attente et réessaie toutes les 5 secondes.
 
+Une fois la partie lancée, les inscriptions restent ouvertes : pour un retardataire, le bouton « Afficher le QR code sur la TV » de la console du game master l'affiche en haut à gauche de l'écran TV, par-dessus le jeu, jusqu'à ce que le GM le masque.
+
 ## Code game master
 
 N'importe qui sur le réseau peut ouvrir `/gm/` : seul le code game master permet de piloter la partie. C'est un code de 6 chiffres, tiré au hasard à chaque démarrage du serveur et affiché uniquement dans la bannière de la console. Il n'est jamais écrit dans les fichiers de `logs/` ni envoyé par le serveur à un navigateur. Après un redémarrage, y compris une reprise après crash, relire le nouveau code dans la console.
