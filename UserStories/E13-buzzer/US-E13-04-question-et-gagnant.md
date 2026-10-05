@@ -1,6 +1,6 @@
 ### US-E13-04 — Question posée et annonce du gagnant
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** poser une question qui ouvre le buzzer, et voir qui a la main
@@ -15,6 +15,8 @@
 - Étant donné un téléphone qui se reconnecte, la TV qui se recharge ou une partie reprise après un crash, quand le snapshot arrive, alors chacun retrouve l'état courant : buzzer ouvert, gagnant désigné ou joueur bloqué.
 - Étant donné les projections, quand elles sont produites, alors seule celle du GM contient la réponse attendue avant la révélation, et aucune ne contient les horodatages des buzz : la `LeakSuite` du mode couvre chaque phase et chaque rôle.
 - Étant donné les tests, quand ils s'exécutent, alors ils couvrent chaque transition et chaque rejet du moteur, la non-fuite, et un scénario E2E avec trois joueurs, la TV et le GM, dont l'appui sur le bouton buzzer (`pointerdown`) sur iPhone (WebKit) et Pixel (Chromium), reporté de US-E13-01.
+
+Les boutons « Bonne réponse » et « Mauvaise réponse » de la console arrivent avec leur intention, `buzzer.judge`, en US-E13-05. La phase `Revealed` aussi.
 
 **Comportement en cas d'erreur**
 Joueurs et public : aucun message ; une image introuvable laisse la question affichée sans image, avec l'incident `DisplayMediaFailed` côté GM (US-E10-04). GM : un échec du mode suit US-E10-02.
