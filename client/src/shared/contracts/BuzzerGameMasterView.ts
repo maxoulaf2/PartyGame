@@ -3,6 +3,14 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { BuzzerQuestionPhase } from './BuzzerQuestionPhase';
+
 export interface BuzzerGameMasterView {
     readonly type: 'buzzer';
+    readonly questionNumber: number;
+    readonly questionCount: number;
+    readonly phase: BuzzerQuestionPhase;
+    readonly text: string;
+    readonly answer: string;
+    readonly winner: string | null;
 }

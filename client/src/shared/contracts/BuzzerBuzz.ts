@@ -3,13 +3,12 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-import type { BuzzerButtonState } from './BuzzerButtonState';
+import type { RoundId } from './RoundId';
 
-export interface BuzzerPlayerView {
-    readonly type: 'buzzer';
+export interface BuzzerBuzz {
+    readonly type: 'buzzer.buzz';
+    readonly roundId: RoundId;
     readonly questionNumber: number;
-    readonly questionCount: number;
     readonly opening: number;
-    readonly buzzer: BuzzerButtonState;
-    readonly winner: string | null;
+    readonly pressedAt: number;
 }

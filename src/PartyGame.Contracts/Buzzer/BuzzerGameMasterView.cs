@@ -1,9 +1,19 @@
 namespace PartyGame.Contracts.Buzzer;
 
 /// <summary>
-/// What a round of buzzer questions shows on the game master console.
+/// What a round of buzzer questions shows on the game master console: the whole question from the start, with its
+/// expected answer, then who has the hand.
 /// </summary>
-/// <remarks>
-/// Empty until the questions are played (US-E13-04): the round finishes as soon as it starts.
-/// </remarks>
-public sealed record BuzzerGameMasterView : GameMasterRoundView;
+/// <param name="QuestionNumber">The question in progress, from 1.</param>
+/// <param name="QuestionCount">How many questions the round has.</param>
+/// <param name="Phase">Phase of the question in progress.</param>
+/// <param name="Text">The text of the question.</param>
+/// <param name="Answer">The expected answer, for the game master to judge the answers given out loud.</param>
+/// <param name="Winner">The nickname of the player who has the hand, or <see langword="null"/>.</param>
+public sealed record BuzzerGameMasterView(
+    int QuestionNumber,
+    int QuestionCount,
+    BuzzerQuestionPhase Phase,
+    string Text,
+    string Answer,
+    string? Winner) : GameMasterRoundView;

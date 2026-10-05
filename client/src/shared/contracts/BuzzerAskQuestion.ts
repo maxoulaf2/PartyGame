@@ -3,7 +3,10 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-import type { BuzzerBuzz } from './BuzzerBuzz';
-import type { QuizSubmitAnswer } from './QuizSubmitAnswer';
+import type { RoundId } from './RoundId';
 
-export type PlayerRoundIntent = BuzzerBuzz | QuizSubmitAnswer;
+export interface BuzzerAskQuestion {
+    readonly type: 'buzzer.askQuestion';
+    readonly roundId: RoundId;
+    readonly questionNumber: number;
+}
