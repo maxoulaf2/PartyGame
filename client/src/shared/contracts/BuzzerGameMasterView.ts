@@ -10,7 +10,9 @@ export interface BuzzerGameMasterView {
     readonly questionNumber: number;
     readonly questionCount: number;
     readonly phase: BuzzerQuestionPhase;
+    readonly opening: number;
     readonly text: string;
     readonly answer: string;
     readonly winner: string | null;
+    readonly foundBy: string | null;
 }

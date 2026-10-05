@@ -19,4 +19,13 @@ public enum BuzzerPhase
 
     /// <summary>The arbitration designated a winner, who has the hand.</summary>
     Answering,
+
+    /// <summary>
+    /// Every connected player is blocked after a wrong answer: the buzzer stays closed until the game master reveals the
+    /// answer.
+    /// </summary>
+    Closed,
+
+    /// <summary>The expected answer is revealed, and the points of the question awarded.</summary>
+    Revealed,
 }

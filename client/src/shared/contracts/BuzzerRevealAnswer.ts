@@ -3,4 +3,10 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type BuzzerQuestionPhase = 'Ready' | 'Open' | 'Answering' | 'Closed' | 'Revealed';
+import type { RoundId } from './RoundId';
+
+export interface BuzzerRevealAnswer {
+    readonly type: 'buzzer.revealAnswer';
+    readonly roundId: RoundId;
+    readonly questionNumber: number;
+}

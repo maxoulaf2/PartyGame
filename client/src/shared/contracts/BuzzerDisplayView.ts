@@ -13,4 +13,6 @@ export interface BuzzerDisplayView {
     readonly text: string | null;
     readonly imageUrl: string | null;
     readonly winner: string | null;
+    readonly answer: string | null;
+    readonly foundBy: string | null;
 }

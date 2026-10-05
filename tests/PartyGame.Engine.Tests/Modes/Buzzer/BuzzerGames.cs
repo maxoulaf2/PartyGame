@@ -74,6 +74,24 @@ internal static class BuzzerGames
     public static GameMasterRoundInput AskQuestion(GameState state, int? questionNumber = null) =>
         new(new BuzzerAskQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
 
+    /// <summary>The game master judges the answer of the player who has the hand on the current opening.</summary>
+    public static GameMasterRoundInput Judge(GameState state, bool correct, int? opening = null, int? questionNumber = null) =>
+        new(
+            new BuzzerJudge(
+                state.CurrentRound!.Id,
+                questionNumber ?? RoundOf(state).QuestionNumber,
+                opening ?? RoundOf(state).Buzzer.Opening,
+                correct),
+            Games.Now);
+
+    /// <summary>The game master reveals the answer of the question in progress.</summary>
+    public static GameMasterRoundInput RevealAnswer(GameState state, int? questionNumber = null) =>
+        new(new BuzzerRevealAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>The game master moves on from the question in progress.</summary>
+    public static GameMasterRoundInput NextQuestion(GameState state, int? questionNumber = null) =>
+        new(new BuzzerNextQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
     /// <summary>
     /// A player buzzes on the current opening of the question in progress, pressed at the given time, by default at
     /// <see cref="Games.Now"/>, and received at once unless told otherwise.
@@ -124,6 +142,23 @@ internal static class BuzzerGames
     {
         state = Buzzed(state, buzzes);
         return Accepted(state, ArbitrationElapsed(state));
+    }
+
+    /// <summary>
+    /// The same game, its question asked, then buzzed by each given player in turn, alone, whose answer is judged:
+    /// <paramref name="correct"/> for the last one, wrong for the others.
+    /// </summary>
+    public static GameState Judged(GameState state, bool correct, params int[] players)
+    {
+        state = Asked(state);
+        for (var index = 0; index < players.Length; index++)
+        {
+            state = Accepted(state, Buzz(state, players[index]));
+            state = Accepted(state, ArbitrationElapsed(state));
+            state = Accepted(state, Judge(state, correct && index == players.Length - 1));
+        }
+
+        return state;
     }
 
     /// <summary>

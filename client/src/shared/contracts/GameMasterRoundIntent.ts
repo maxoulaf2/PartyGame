@@ -4,10 +4,13 @@
 // </auto-generated>
 
 import type { BuzzerAskQuestion } from './BuzzerAskQuestion';
+import type { BuzzerJudge } from './BuzzerJudge';
+import type { BuzzerNextQuestion } from './BuzzerNextQuestion';
+import type { BuzzerRevealAnswer } from './BuzzerRevealAnswer';
 import type { QuizNextQuestion } from './QuizNextQuestion';
 import type { QuizRevealAnswer } from './QuizRevealAnswer';
 import type { QuizShowChoice } from './QuizShowChoice';
 import type { QuizShowQuestion } from './QuizShowQuestion';
 import type { QuizSkipQuestion } from './QuizSkipQuestion';
 
-export type GameMasterRoundIntent = BuzzerAskQuestion | QuizNextQuestion | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;
+export type GameMasterRoundIntent = BuzzerAskQuestion | BuzzerJudge | BuzzerNextQuestion | BuzzerRevealAnswer | QuizNextQuestion | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;

@@ -9,9 +9,14 @@ namespace PartyGame.Contracts.Buzzer;
 /// <param name="Opening">The current opening of the buzzer, which a buzz names.</param>
 /// <param name="Buzzer">What the buzzer of this player shows.</param>
 /// <param name="Winner">The nickname of the player who has the hand, or <see langword="null"/>.</param>
+/// <param name="Points">
+/// The points the player earned with the question, 0 included, once revealed; <see langword="null"/> before. Their total
+/// is <see cref="PlayerSnapshot.Score"/>.
+/// </param>
 public sealed record BuzzerPlayerView(
     int QuestionNumber,
     int QuestionCount,
     int Opening,
     BuzzerButtonState Buzzer,
-    string? Winner) : PlayerRoundView;
+    string? Winner,
+    int? Points) : PlayerRoundView;

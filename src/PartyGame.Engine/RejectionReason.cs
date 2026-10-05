@@ -72,8 +72,8 @@ public enum RejectionReason
 
     /// <summary>
     /// The question in progress is not in the phase the intent acts in: a part of the question shown once every choice is,
-    /// an answer while the answers are not open, a reveal before they are locked, a move to the next question before the
-    /// reveal, or a question skipped once revealed.
+    /// an answer while the answers are not open, a reveal before they are locked, a judgment while nobody has the hand, a
+    /// move to the next question before the reveal, or a question skipped or revealed once revealed.
     /// </summary>
     PhaseMismatch,
 
@@ -127,8 +127,8 @@ public enum RejectionReason
     SavedGameMediaMissing,
 
     /// <summary>
-    /// The buzz names another opening of the buzzer than the current one: it is obsolete, for instance sent again after a
-    /// reconnection once the buzzer reopened.
+    /// The buzz or the judgment names another opening of the buzzer than the current one: it is obsolete, for instance a
+    /// buzz sent again after a reconnection once the buzzer reopened, or a judgment sent twice.
     /// </summary>
     BuzzerOpeningMismatch,
 
