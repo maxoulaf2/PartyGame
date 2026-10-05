@@ -12,6 +12,7 @@
     // image on the TV, and the game master hears of it.
     let failedImage = $state<string | null>(null);
     const image = $derived(view.imageUrl !== failedImage ? view.imageUrl : null);
+    const locked = $derived(view.phase === 'Locked' || view.phase === 'Judged');
 
     function imageFailed(url: string) {
         failedImage = url;
@@ -46,7 +47,7 @@
                         label={fr.modes.openquestion.timeLeft}
                     />
                 </p>
-            {:else if view.phase === 'Locked'}
+            {:else if locked}
                 <p class="time-up">
                     {view.answeredCount === view.participantCount
                         ? fr.modes.openquestion.allAnswered
@@ -73,6 +74,10 @@
             <h1>{view.text}</h1>
         {/if}
     </div>
+    {#if locked && view.answeredCount > 0}
+        <!-- Neither verdict nor answer before the reveal: only that the game master checks them. -->
+        <p class="checking">{fr.modes.openquestion.display.checking}</p>
+    {/if}
 </main>
 
 <style>
@@ -129,6 +134,13 @@
     .time-up {
         color: var(--color-accent);
         font-size: 2rem;
+    }
+
+    .checking {
+        color: var(--color-text-muted);
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-align: center;
     }
 
     .question {

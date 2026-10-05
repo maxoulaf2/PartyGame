@@ -755,6 +755,8 @@ export const fr = {
                 upcoming: 'Question {number}',
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
+                // Once the answers are locked, until their reveal.
+                checking: 'Le game master vérifie les réponses',
             },
             player: {
                 // Labels the field the answer is typed in.
@@ -780,8 +782,21 @@ export const fr = {
                 answersLabel: 'Réponses des joueurs',
                 // A player taking part who has not answered while the answers are open.
                 waitingAnswer: 'Pas encore de réponse',
-                // A player taking part who did not answer before the answers were locked.
-                noAnswer: 'Pas de réponse',
+                // Lists the participants who did not answer, once the answers are locked.
+                withoutAnswer: 'Sans réponse : {nicknames}',
+                // Labels the answers grouped and pre-classified by the server, to judge in one go.
+                groupsLabel: 'Réponses à valider',
+                // How the server pre-classified each answer: the accepted ones start checked.
+                categories: {
+                    Accepted: 'Acceptée',
+                    ToCheck: 'À vérifier',
+                    Rejected: 'Refusée',
+                },
+                // Sends the judgment of every answer checked or not, in one go.
+                validate: 'Valider',
+                // Once judged, the verdict of each answer.
+                right: 'Bonne réponse',
+                wrong: 'Mauvaise réponse',
                 skipQuestion: 'Passer la question',
                 // Asked before skipping: the answers received and the question are lost.
                 skipConfirm: {

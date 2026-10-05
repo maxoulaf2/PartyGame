@@ -12,8 +12,8 @@ namespace PartyGame.Engine.Modes.OpenQuestion;
 /// Plays the rounds of open questions of the packs.
 /// </summary>
 /// <remarks>
-/// For now, the answers lock and the game master moves on by skipping the question: their validation and their reveal come
-/// with US-E16-03 and US-E16-04.
+/// For now, once the answers are judged, the game master moves on by skipping the question: their reveal comes with
+/// US-E16-04.
 /// </remarks>
 public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, OpenQuestionRound>
 {
@@ -86,8 +86,8 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         new(new OpenQuestionRound(descriptor, 0, OpenQuestionPhase.Presentation), []);
 
     /// <summary>
-    /// Plays the intents of the round, each aimed at the question it names. The answers open when the question shows, and
-    /// lock once every participant answered, or when their timer elapses.
+    /// Plays the intents of the round, each aimed at the question it names. The answers open when the question shows, lock
+    /// once every participant answered, or when their timer elapses, then the game master judges them.
     /// </summary>
     /// <inheritdoc />
     public override RoundTransition Handle(OpenQuestionRound round, GameInput input, GameState game, GameContext context)
@@ -100,6 +100,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         {
             GameMasterRoundInput { RoundIntent: OpenQuestionShowQuestion show } => ShowQuestion(round, show, game, context),
             GameMasterRoundInput { RoundIntent: OpenQuestionSkipQuestion skip } => SkipQuestion(round, skip),
+            GameMasterRoundInput { RoundIntent: OpenQuestionJudge judge } => Judge(round, judge),
             PlayerRoundInput { RoundIntent: OpenQuestionSubmitAnswer answer } submitted =>
                 SubmitAnswer(round, submitted.PlayerId, answer, submitted.ReceivedAt),
             TimerElapsed timer => CloseAnswers(round, timer),
@@ -186,6 +187,13 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
                         player.Id,
                         player.Nickname,
                         round.Answers.TryGetValue(player.Id, out var answer) ? answer.Text : null)),
+            ],
+            [
+                .. round.Groups.Select(group => new OpenQuestionGameMasterGroup(
+                    group.Text,
+                    group.Category,
+                    group.Players,
+                    round.Phase == OpenQuestionPhase.Judged ? group.Players.All(round.AcceptedPlayers.Contains) : null)),
             ]);
     }
 
@@ -243,7 +251,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         var closeAt = context.Now.AddSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds);
         var shown = round with { Participants = [.. game.Players.Select(player => player.Id)], AnswersCloseAt = closeAt };
         return shown.Participants.IsEmpty
-            ? new(shown with { Phase = OpenQuestionPhase.Locked }, [])
+            ? new(Lock(shown), [])
             : new(shown with { Phase = OpenQuestionPhase.Answering }, [new ScheduleTimer(AnswersTimer, closeAt)]);
     }
 
@@ -277,7 +285,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
     private static RoundTransition CloseAnswers(OpenQuestionRound round, TimerElapsed timer) =>
         timer.TimerId != AnswersTimer || round.Phase != OpenQuestionPhase.Answering || timer.DueAt != round.AnswersCloseAt
             ? RoundTransition.Rejected(round, RejectionReason.UnexpectedTimer)
-            : new(round with { Phase = OpenQuestionPhase.Locked }, []);
+            : new(Lock(round), []);
 
     /// <summary>
     /// Records the first answer of a participant, received before the answers close, as typed: never truncated, rejected
@@ -304,8 +312,44 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
 
         var answered = round with { Answers = round.Answers.Add(playerId, new OpenAnswer(answer.Answer, receivedAt)) };
         return answered.Answers.Count == answered.Participants.Length
-            ? new(answered with { Phase = OpenQuestionPhase.Locked }, [new CancelTimer(AnswersTimer)])
+            ? new(Lock(answered), [new CancelTimer(AnswersTimer)])
             : new(answered, []);
+    }
+
+    /// <summary>
+    /// Locks the answers, grouped by their normalized text and pre-classified for the game master to judge them. Without
+    /// any answer, there is nothing to judge: the question is judged at once.
+    /// </summary>
+    private static OpenQuestionRound Lock(OpenQuestionRound round)
+    {
+        var groups = round.Participants
+            .Where(round.Answers.ContainsKey)
+            .GroupBy(player => OpenAnswers.Normalize(round.Answers[player].Text), StringComparer.Ordinal)
+            .Select(group => new OpenAnswerGroup(
+
+                // The ordering is stable: on a tie, the text of the first author wins.
+                group.GroupBy(player => round.Answers[player].Text, StringComparer.Ordinal).OrderByDescending(texts => texts.Count()).First().Key,
+                OpenAnswers.Classify(group.Key, round.Question),
+                [.. group]))
+            .OrderBy(group => group.Category)
+            .ToImmutableArray();
+        return round with { Phase = groups.IsEmpty ? OpenQuestionPhase.Judged : OpenQuestionPhase.Locked, Groups = groups };
+    }
+
+    /// <summary>
+    /// Judges the answers locked in one go: the players named answered right, the other participants wrong. A second
+    /// judgment, sent twice or by another console, is obsolete: the first one wins.
+    /// </summary>
+    private static RoundTransition Judge(OpenQuestionRound round, OpenQuestionJudge judge)
+    {
+        RejectionReason? rejection =
+            judge.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != OpenQuestionPhase.Locked ? RejectionReason.PhaseMismatch
+            : !judge.AcceptedPlayers.All(round.Answers.ContainsKey) ? RejectionReason.PlayerWithoutAnswer
+            : null;
+        return rejection is { } reason
+            ? RoundTransition.Rejected(round, reason)
+            : new(round with { Phase = OpenQuestionPhase.Judged, AcceptedPlayers = [.. round.Participants.Where(judge.AcceptedPlayers.Contains)] }, []);
     }
 
     /// <summary>
@@ -319,6 +363,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         OpenQuestionPhase.Presentation => OpenQuestionQuestionPhase.Presentation,
         OpenQuestionPhase.Answering => OpenQuestionQuestionPhase.Answering,
         OpenQuestionPhase.Locked => OpenQuestionQuestionPhase.Locked,
+        OpenQuestionPhase.Judged => OpenQuestionQuestionPhase.Judged,
         _ => throw new InvalidOperationException($"Phase {round.Phase} has no projection."),
     };
 

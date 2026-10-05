@@ -61,7 +61,7 @@
             return fr.modes.openquestion.player.pending;
         }
         // Without an answer, only the end of the countdown locks them: the others lock once everybody answered.
-        if (view.phase === 'Locked') {
+        if (view.phase === 'Locked' || view.phase === 'Judged') {
             return fr.modes.openquestion.timeUp;
         }
         return view.phase === 'Presentation' ? fr.modes.openquestion.player.waitQuestion : null;

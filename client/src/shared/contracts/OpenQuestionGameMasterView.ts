@@ -4,6 +4,7 @@
 // </auto-generated>
 
 import type { OpenQuestionGameMasterAnswer } from './OpenQuestionGameMasterAnswer';
+import type { OpenQuestionGameMasterGroup } from './OpenQuestionGameMasterGroup';
 import type { OpenQuestionQuestionPhase } from './OpenQuestionQuestionPhase';
 
 export interface OpenQuestionGameMasterView {
@@ -17,4 +18,5 @@ export interface OpenQuestionGameMasterView {
     readonly acceptedAnswers: readonly string[];
     readonly answersCloseAt: number | null;
     readonly answers: readonly OpenQuestionGameMasterAnswer[];
+    readonly groups: readonly OpenQuestionGameMasterGroup[];
 }

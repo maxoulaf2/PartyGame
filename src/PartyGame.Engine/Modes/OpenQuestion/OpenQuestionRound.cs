@@ -43,6 +43,18 @@ public sealed record OpenQuestionRound(OpenQuestionRoundDescriptor Descriptor, i
     public ImmutableDictionary<PlayerId, OpenAnswer> Answers { get; init; } = ImmutableDictionary<PlayerId, OpenAnswer>.Empty;
 
     /// <summary>
+    /// The answers to the question in progress grouped and pre-classified when they lock, accepted first, then to check,
+    /// then rejected: kept so that a console reloaded, or a game resumed, finds the same suggestions. Empty before.
+    /// </summary>
+    public ImmutableArray<OpenAnswerGroup> Groups { get; init; } = [];
+
+    /// <summary>
+    /// The participants whose answer to the question in progress the game master accepted, in the order of the
+    /// participants: empty until they judge it.
+    /// </summary>
+    public ImmutableArray<PlayerId> AcceptedPlayers { get; init; } = [];
+
+    /// <summary>
     /// The positions in <see cref="Descriptor"/> of the questions the game master skipped, in order, kept for the history of
     /// the round: they score nothing.
     /// </summary>
