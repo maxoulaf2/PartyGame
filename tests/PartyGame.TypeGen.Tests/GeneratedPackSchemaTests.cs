@@ -29,7 +29,7 @@ public sealed class GeneratedPackSchemaTests
         var types = schema["properties"]!["rounds"]!["items"]!["anyOf"]!.AsArray()
             .Select(variant => (string?)variant!["properties"]!["type"]!["const"]);
 
-        Assert.Equal(["quiz", "buzzer"], types);
+        Assert.Equal(["quiz", "buzzer", "blindtest"], types);
         Assert.Equal(PackDescriptor.CurrentFormatVersion, (int?)schema["properties"]!["formatVersion"]!["const"]);
     }
 }

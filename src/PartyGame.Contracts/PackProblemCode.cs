@@ -115,4 +115,10 @@ public enum PackProblemCode
     /// repeated choice, and the <c>choice</c> parameter its text.
     /// </summary>
     QuizChoiceDuplicated,
+
+    /// <summary>
+    /// No track of a blind test round earns points: its title earns none, and its artist earns none or is not given. The
+    /// round could not tell the players apart. The path is the one of the round.
+    /// </summary>
+    BlindTestPointsMissing,
 }

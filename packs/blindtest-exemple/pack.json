@@ -1,0 +1,26 @@
+{
+  "$schema": "../../schemas/pack.schema.json",
+  "formatVersion": 1,
+  "title": "Blind test des classiques",
+  "description": "Dix airs du domaine public à reconnaître, pour découvrir le blind test : le titre, et le compositeur quand il est connu.",
+  "rounds": [
+    {
+      "type": "blindtest",
+      "title": "Airs connus",
+      "titlePoints": 500,
+      "artistPoints": 500,
+      "tracks": [
+        { "excerpt": { "file": "sons/hymne-a-la-joie.mp3", "duration": 20 }, "title": "L'Hymne à la joie", "artist": "Ludwig van Beethoven" },
+        { "excerpt": { "file": "sons/frere-jacques.mp3", "duration": 15 }, "title": "Frère Jacques" },
+        { "excerpt": { "file": "sons/au-clair-de-la-lune.mp3", "start": 9.6, "duration": 20 }, "title": "Au clair de la lune" },
+        { "excerpt": { "file": "sons/lettre-a-elise.mp3", "duration": 20 }, "title": "La Lettre à Élise", "artist": "Ludwig van Beethoven" },
+        { "excerpt": { "file": "sons/petite-musique-de-nuit.mp3", "duration": 20 }, "title": "Une petite musique de nuit", "artist": "Wolfgang Amadeus Mozart" },
+        { "excerpt": { "file": "sons/joyeux-anniversaire.mp3", "duration": 15 }, "title": "Joyeux anniversaire" },
+        { "excerpt": { "file": "sons/canon-de-pachelbel.mp3", "start": 6.9, "duration": 25 }, "title": "Canon en ré majeur", "artist": "Johann Pachelbel" },
+        { "excerpt": { "file": "sons/vive-le-vent.mp3", "duration": 20 }, "title": "Vive le vent" },
+        { "excerpt": { "file": "sons/marche-turque.mp3", "duration": 15 }, "title": "La Marche turque", "artist": "Wolfgang Amadeus Mozart" },
+        { "excerpt": { "file": "sons/la-marseillaise.mp3", "duration": 20 }, "title": "La Marseillaise", "artist": "Claude Joseph Rouget de Lisle", "image": "images/drapeau-france.png" }
+      ]
+    }
+  ]
+}

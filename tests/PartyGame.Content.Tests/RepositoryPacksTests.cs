@@ -1,6 +1,7 @@
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.BlindTest;
 using PartyGame.Engine.Modes.Buzzer;
 using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Tests.Shared;
@@ -14,7 +15,7 @@ namespace PartyGame.Content.Tests;
 public sealed class RepositoryPacksTests
 {
     private static readonly PackLibrary _library =
-        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
+        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode(), new BlindTestMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
 
     [Fact]
     public void LoadAll_RepositoryPacks_AreAllValid()
@@ -47,6 +48,20 @@ public sealed class RepositoryPacksTests
 
         Assert.Equal(10, round.Questions.Length);
         Assert.Contains(round.Questions, question => question.Image is not null);
+    }
+
+    [Fact]
+    public void SampleBlindTestPack_Content_CoversWhatTheDemonstrationShows()
+    {
+        var pack = Assert.Single(_library.Packs, pack => pack.Id == "blindtest-exemple");
+        Assert.True(pack.IsValid);
+        var round = Assert.IsType<BlindTestRoundDescriptor>(Assert.Single(pack.Descriptor.Rounds));
+
+        Assert.Equal(10, round.Tracks.Length);
+        Assert.Contains(round.Tracks, track => track.Artist is null);
+        Assert.Contains(round.Tracks, track => track.Image is not null);
+        Assert.Contains(round.Tracks, track => track.Excerpt.Start > 0);
+        Assert.True(File.Exists(Path.Combine(pack.Folder, "LICENCE.md")));
     }
 
     [Fact]

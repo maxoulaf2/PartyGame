@@ -207,6 +207,104 @@
               "questions"
             ],
             "additionalProperties": false
+          },
+          {
+            "description": "Manche de blind test : l'écran TV joue un extrait de chaque morceau, le premier joueur qui buzze donne le titre et l'artiste à voix haute, et le game master juge chacun des deux.",
+            "properties": {
+              "type": {
+                "description": "Manche de blind test : l'écran TV joue un extrait de chaque morceau, le premier joueur qui buzze donne le titre et l'artiste à voix haute, et le game master juge chacun des deux.",
+                "const": "blindtest"
+              },
+              "title": {
+                "description": "Titre de la manche, affiché à tous.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "titlePoints": {
+                "description": "Points de qui trouve le titre d'un morceau, de 0 à 10 000. 500 si absent.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "artistPoints": {
+                "description": "Points de qui trouve l'artiste d'un morceau, de 0 à 10 000. 500 si absent. Un morceau sans artiste ne se joue que sur le titre.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "tracks": {
+                "description": "Morceaux de la manche, de 1 à 50, joués dans cet ordre.",
+                "type": "array",
+                "items": {
+                  "description": "Morceau d'une manche de blind test : l'extrait joué sur l'écran TV, et ce que les joueurs doivent trouver.",
+                  "type": "object",
+                  "properties": {
+                    "excerpt": {
+                      "description": "Extrait joué sur l'écran TV.",
+                      "type": "object",
+                      "properties": {
+                        "file": {
+                          "description": "Fichier du morceau : chemin d'un fichier .mp3 du pack.",
+                          "type": "string"
+                        },
+                        "start": {
+                          "description": "Point de départ de l'extrait dans le morceau, en secondes, décimales permises, avant la fin du morceau. 0 si absent.",
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 3600
+                        },
+                        "duration": {
+                          "description": "Durée de l'extrait, en secondes, de 5 à 120. Un extrait qui dépasse la fin du morceau s'arrête avec lui.",
+                          "type": "integer",
+                          "minimum": 5,
+                          "maximum": 120
+                        }
+                      },
+                      "required": [
+                        "file",
+                        "duration"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": {
+                      "description": "Titre du morceau, affiché au game master qui juge les réponses données à voix haute, puis à tous à la révélation.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "artist": {
+                      "description": "Artiste du morceau, affiché comme le titre. Facultatif : un morceau sans artiste ne se joue que sur le titre.",
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "image": {
+                      "description": "Visuel facultatif, comme la pochette de l'album, affiché sur l'écran TV à la révélation : chemin d'un fichier .jpg, .jpeg, .png ou .webp du pack.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "excerpt",
+                    "title"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "title",
+              "tracks"
+            ],
+            "additionalProperties": false
           }
         ]
       },
