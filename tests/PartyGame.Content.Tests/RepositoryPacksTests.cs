@@ -3,6 +3,7 @@ using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Modes.BlindTest;
 using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.OpenQuestion;
 using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Tests.Shared;
 
@@ -15,7 +16,7 @@ namespace PartyGame.Content.Tests;
 public sealed class RepositoryPacksTests
 {
     private static readonly PackLibrary _library =
-        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode(), new BlindTestMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
+        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode(), new BlindTestMode(), new OpenQuestionMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
 
     [Fact]
     public void LoadAll_RepositoryPacks_AreAllValid()
@@ -62,6 +63,21 @@ public sealed class RepositoryPacksTests
         Assert.Contains(round.Tracks, track => track.Image is not null);
         Assert.Contains(round.Tracks, track => track.Excerpt.Start > 0);
         Assert.True(File.Exists(Path.Combine(pack.Folder, "LICENCE.md")));
+    }
+
+    [Fact]
+    public void SampleOpenQuestionPack_Content_CoversWhatTheDemonstrationShows()
+    {
+        var pack = Assert.Single(_library.Packs, pack => pack.Id == "openquestion-exemple");
+        Assert.True(pack.IsValid);
+        var round = Assert.IsType<OpenQuestionRoundDescriptor>(Assert.Single(pack.Descriptor.Rounds));
+
+        Assert.Equal(10, round.Questions.Length);
+        Assert.True(round.SpeedBonus > 0);
+        Assert.Contains(round.Questions, question => question.Image is not null);
+        Assert.Contains(round.Questions, question => question.AnswerSeconds is not null);
+        Assert.Contains(round.Questions, question => !question.AcceptedAnswers.IsEmpty);
+        Assert.Contains(round.Questions, question => question.InputMode == OpenQuestionInputMode.Numeric);
     }
 
     [Fact]

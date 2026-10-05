@@ -15,6 +15,7 @@ namespace PartyGame.Contracts.Packs;
 [JsonDerivedType(typeof(QuizRoundDescriptor), "quiz")]
 [JsonDerivedType(typeof(BuzzerRoundDescriptor), "buzzer")]
 [JsonDerivedType(typeof(BlindTestRoundDescriptor), "blindtest")]
+[JsonDerivedType(typeof(OpenQuestionRoundDescriptor), "openquestion")]
 [Description("Activité du pack, jouée comme une manche. Son type désigne le mode de jeu qui la joue.")]
 public abstract record RoundDescriptor
 {

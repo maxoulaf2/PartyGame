@@ -305,6 +305,111 @@
               "tracks"
             ],
             "additionalProperties": false
+          },
+          {
+            "description": "Manche de questions ouvertes : chaque joueur tape sa réponse sur son téléphone avant la fin du compte à rebours, puis le game master valide les réponses d'un coup, aidé par un pré-classement du serveur.",
+            "properties": {
+              "type": {
+                "description": "Manche de questions ouvertes : chaque joueur tape sa réponse sur son téléphone avant la fin du compte à rebours, puis le game master valide les réponses d'un coup, aidé par un pré-classement du serveur.",
+                "const": "openquestion"
+              },
+              "title": {
+                "description": "Titre de la manche, affiché à tous.",
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "answerSeconds": {
+                "description": "Durée de réponse par défaut des questions, en secondes, de 5 à 120. 30 si absente.",
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 120
+              },
+              "points": {
+                "description": "Points d'une bonne réponse, de 0 à 10 000. 1 000 si absent.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "speedBonus": {
+                "description": "Bonus de rapidité maximal, de 0 à 10 000, ajouté aux points d'une bonne réponse en proportion du temps restant. 0 si absent, c'est-à-dire sans bonus.",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              "maxLength": {
+                "description": "Longueur maximale d'une réponse tapée par un joueur, en caractères, de 5 à 100. 40 si absente. Les réponses attendues et leurs variantes ne doivent pas la dépasser.",
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 100
+              },
+              "questions": {
+                "description": "Questions de la manche, de 1 à 50, posées dans cet ordre.",
+                "type": "array",
+                "items": {
+                  "description": "Question d'une manche de questions ouvertes, avec sa réponse attendue et les variantes acceptées.",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "description": "Texte de la question, affiché sur l'écran TV à l'ouverture des réponses.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "image": {
+                      "description": "Image facultative, affichée sur l'écran TV avec la question : chemin d'un fichier .jpg, .jpeg, .png ou .webp du pack.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "answerSeconds": {
+                      "description": "Durée de réponse de cette question, en secondes, de 5 à 120. Remplace celle de la manche. Si absente, celle de la manche s'applique.",
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 5,
+                      "maximum": 120
+                    },
+                    "answer": {
+                      "description": "Réponse attendue, affichée à la révélation. Pas plus longue que la longueur maximale (maxLength) de la manche.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "acceptedAnswers": {
+                      "description": "Autres réponses acceptées, de 0 à 20, chacune de 1 caractère à la longueur maximale (maxLength) de la manche. La casse, les accents, la ponctuation, les espaces et un article initial sont déjà ignorés : inutile d'ajouter « leonard de vinci » pour « Léonard de Vinci ». Aucune si absent.",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 0,
+                      "maxItems": 20
+                    },
+                    "inputMode": {
+                      "description": "Clavier affiché sur les téléphones : \"text\" pour un texte, \"numeric\" pour un nombre entier écrit en chiffres, comparé sans tolérance. \"text\" si absent.",
+                      "enum": [
+                        "text",
+                        "numeric"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "answer"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "title",
+              "questions"
+            ],
+            "additionalProperties": false
           }
         ]
       },
