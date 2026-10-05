@@ -81,4 +81,22 @@ public sealed class NetworkHealthJournalTests
 
         Assert.Equal([new ConnectionQuality(PlayerId: null, ConnectionTransport.WebSockets, 3, Reconnections: 1)], _journal.Current.Connections);
     }
+
+    [Fact]
+    public void RecordDisplayAudio_ThenReconnection_KeepsItForTheDisplayOnly()
+    {
+        var zoe = new PlayerId(Guid.NewGuid());
+        _journal.DisplayConnected(ConnectionTransport.WebSockets, roundTrip: 3);
+        _journal.PlayerConnected(zoe, ConnectionTransport.WebSockets, roundTrip: 25);
+
+        _journal.RecordDisplayAudio(unlocked: true);
+        _journal.DisplayConnected(ConnectionTransport.WebSockets, roundTrip: null);
+
+        Assert.Equal(
+            [
+                new ConnectionQuality(PlayerId: null, ConnectionTransport.WebSockets, 3, Reconnections: 1, AudioUnlocked: true),
+                new ConnectionQuality(zoe, ConnectionTransport.WebSockets, 25, Reconnections: 0),
+            ],
+            _journal.Current.Connections);
+    }
 }

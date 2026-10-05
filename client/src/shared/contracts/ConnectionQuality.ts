@@ -11,4 +11,5 @@ export interface ConnectionQuality {
     readonly transport: ConnectionTransport;
     readonly roundTrip: number | null;
     readonly reconnections: number;
+    readonly audioUnlocked: boolean | null;
 }

@@ -106,6 +106,7 @@ describe('connectionWarnings', () => {
                 transport: 'ServerSentEvents',
                 roundTrip: 151,
                 reconnections: reconnectionsNotable + 1,
+                audioUnlocked: null,
             }),
         ).toEqual({
             roundTrip: true,
@@ -122,6 +123,7 @@ describe('connectionWarnings', () => {
                 transport: 'WebSockets',
                 roundTrip: null,
                 reconnections: reconnectionsNotable,
+                audioUnlocked: null,
             }),
         ).toEqual({
             roundTrip: false,
@@ -138,6 +140,7 @@ describe('connectionWarnings', () => {
                 transport: 'WebSockets',
                 roundTrip,
                 reconnections: 0,
+                audioUnlocked: null,
             });
 
         expect(warn(2 * clockUncertaintyNotable).clockUncertainty).toBe(false);

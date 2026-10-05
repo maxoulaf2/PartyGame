@@ -8,13 +8,18 @@
     import { ClockSync } from '../shared/connection/clockSync.svelte';
     import { ConnectionStatus } from '../shared/connection/connectionStatus.svelte';
     import { reportRoundTrips } from '../shared/connection/roundTripReport.svelte';
-    import { connectDisplay, reportMediaFailure } from '../shared/connection/displayConnection';
+    import {
+        connectDisplay,
+        reportAudio,
+        reportMediaFailure,
+    } from '../shared/connection/displayConnection';
     import { createGameConnection } from '../shared/connection/gameHub';
     import { connectErrorReporting } from '../shared/errors/errorReporting';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
     import { findDisplayView } from '../modes/registry';
+    import { unlockAudio } from './audioUnlock';
     import FinalRankingScreen from './FinalRankingScreen.svelte';
     import JoinCodeCorner from './JoinCodeCorner.svelte';
     import LobbyScreen from './LobbyScreen.svelte';
@@ -41,6 +46,18 @@
     );
     const mediaFailed = (url: string) => reportMediaFailure(connection, url);
 
+    // Null until the browser tells: no button flashes on a screen whose audio plays already.
+    let audioUnlocked = $state<boolean | null>(null);
+    const announceAudio = () => {
+        if (audioUnlocked !== null) {
+            reportAudio(connection, audioUnlocked);
+        }
+    };
+    async function checkAudio() {
+        audioUnlocked = await unlockAudio();
+        announceAudio();
+    }
+
     onMount(() => {
         const stopStatus = status.start();
         // Before the connection starts, so as not to miss the first one, nor the welcome.
@@ -49,7 +66,9 @@
         const stopRoundTrips = reportRoundTrips(connection, clock);
         const stopBuild = watchBuild(connection);
         const stopErrors = connectErrorReporting(connection, game);
-        const disconnect = connectDisplay(game, connection);
+        // Told again at every announcement: a restarted server forgets it.
+        const disconnect = connectDisplay(game, connection, announceAudio);
+        void checkAudio();
         return () => {
             stopStatus();
             stopClock();
@@ -100,4 +119,30 @@
     <JoinCodeCorner joinAddress={joinCodeAddress} />
 {/if}
 
+{#if audioUnlocked === false}
+    <!-- Over the current screen, which goes on underneath: a TV reloaded during the game needs a
+         click again. It stays until the click unlocks the audio. -->
+    <button type="button" class="start-audio" onclick={checkAudio}>{fr.display.startAudio}</button>
+{/if}
+
 <ConnectionIndicator {status} tv />
+
+<style>
+    /* Above the QR code of the lobby, within the 5% margin TVs may crop. */
+    .start-audio {
+        position: fixed;
+        top: 5vh;
+        left: 5vw;
+        z-index: 2;
+        width: 34vw;
+        padding: var(--space-s) var(--space-m);
+        border: none;
+        border-radius: var(--radius);
+        background: var(--color-accent);
+        color: var(--color-bg);
+        font: inherit;
+        font-size: 3rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+</style>

@@ -25,6 +25,7 @@ import type {
     ResumeSessionResult,
     ClockSyncResult,
     ConnectionQualityReport,
+    DisplayAudioReport,
     NetworkCheckResult,
     NetworkDiagnosticReport,
     SelectPackRequest,
@@ -70,6 +71,7 @@ export interface GameHubMethods {
     CheckNetwork: { args: []; result: NetworkCheckResult };
     ReportNetworkDiagnostic: { args: [report: NetworkDiagnosticReport]; result: null };
     ReportConnectionQuality: { args: [report: ConnectionQualityReport]; result: null };
+    ReportDisplayAudio: { args: [report: DisplayAudioReport]; result: null };
 }
 
 /**

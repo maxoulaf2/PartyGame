@@ -9,4 +9,8 @@ namespace PartyGame.Contracts;
 /// The round trip of their last clock synchronization, in milliseconds, or <see langword="null"/> before the first.
 /// </param>
 /// <param name="Reconnections">How many times they connected again since the server started.</param>
-public sealed record ConnectionQuality(PlayerId? PlayerId, ConnectionTransport Transport, int? RoundTrip, int Reconnections);
+/// <param name="AudioUnlocked">
+/// For the TV screen, whether its browser lets it play sound, or <see langword="null"/> until it tells; always
+/// <see langword="null"/> for a player, whose phone never plays sound.
+/// </param>
+public sealed record ConnectionQuality(PlayerId? PlayerId, ConnectionTransport Transport, int? RoundTrip, int Reconnections, bool? AudioUnlocked = null);

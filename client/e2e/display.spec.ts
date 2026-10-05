@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type BrowserType, type Page } from '@playwright/test';
 import type {
     QuizChoiceLetter,
     DisplayPlayer,
@@ -965,4 +965,52 @@ test('/display/ waits for the game master once the server restarted with a game 
 
     await expect(page.getByText(fr.display.resumePending)).toBeVisible();
     await expect(page.getByText(fr.display.scanToJoin)).toHaveCount(0);
+});
+
+/** The TV screen in a Chromium launched with `autoplayPolicy`, as on a PC or in kiosk mode. */
+async function openDisplayWithAutoplay(
+    chromium: BrowserType,
+    baseURL: string | undefined,
+    autoplayPolicy: 'user-gesture-required' | 'no-user-gesture-required',
+): Promise<{ page: Page; browser: Browser }> {
+    const browser = await chromium.launch({ args: [`--autoplay-policy=${autoplayPolicy}`] });
+    const page = await browser.newPage({ baseURL, viewport: { width: 1920, height: 1080 } });
+    await page.goto('/display/');
+    return { page, browser };
+}
+
+test('/display/ on a PC shows « Démarrer » above the QR code until a click unlocks the audio', async ({
+    playwright,
+    baseURL,
+}) => {
+    const { page, browser } = await openDisplayWithAutoplay(
+        playwright.chromium,
+        baseURL,
+        'user-gesture-required',
+    );
+
+    const start = page.getByRole('button', { name: fr.display.startAudio });
+    await expect(start).toBeVisible();
+    const qrCode = page.getByRole('img', { name: fr.display.qrCodeLabel });
+    const [startBox, qrBox] = [await start.boundingBox(), await qrCode.boundingBox()];
+    expect(startBox!.y + startBox!.height).toBeLessThanOrEqual(qrBox!.y);
+
+    await start.click();
+
+    await expect(start).toHaveCount(0);
+    await browser.close();
+});
+
+test('/display/ in kiosk mode never shows « Démarrer »', async ({ playwright, baseURL }) => {
+    const { page, browser } = await openDisplayWithAutoplay(
+        playwright.chromium,
+        baseURL,
+        'no-user-gesture-required',
+    );
+
+    await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
+    // The silence plays in a few milliseconds: long enough for the button to show otherwise.
+    await page.waitForTimeout(500);
+    await expect(page.getByRole('button', { name: fr.display.startAudio })).toHaveCount(0);
+    await browser.close();
 });

@@ -75,6 +75,15 @@ internal sealed class NetworkHealthJournal(TimeProvider timeProvider)
         }
     }
 
+    /// <summary>Records whether the browser of the TV screen lets it play sound.</summary>
+    public void RecordDisplayAudio(bool unlocked)
+    {
+        lock (_gate)
+        {
+            _display = _display is null ? null : _display with { AudioUnlocked = unlocked };
+        }
+    }
+
     /// <summary>Records the last round trip of a player, or of the TV screen when <paramref name="playerId"/> is null.</summary>
     public void RecordRoundTrip(PlayerId? playerId, int roundTrip)
     {

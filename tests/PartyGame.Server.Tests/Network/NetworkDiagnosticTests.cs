@@ -140,6 +140,38 @@ public sealed class NetworkDiagnosticTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task ReportDisplayAudio_LockedThenUnlocked_TellsTheConsoleUntilItIsUnlocked()
+    {
+        // Given: a TV screen whose browser does not let it play sound yet
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await ReportAudioAsync(display, unlocked: false);
+        Assert.False(Assert.Single((await ConsoleHealthAsync()).Connections).AudioUnlocked);
+
+        // When: someone clicks « Démarrer » on it
+        await ReportAudioAsync(display, unlocked: true);
+
+        // Then
+        Assert.True(Assert.Single((await ConsoleHealthAsync()).Connections).AudioUnlocked);
+    }
+
+    [Fact]
+    public async Task ReportDisplayAudio_FromAPlayer_IsIgnored()
+    {
+        // Given
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+
+        // When
+        await ReportAudioAsync(zoe, unlocked: true);
+
+        // Then
+        Assert.All((await ConsoleHealthAsync()).Connections, c => Assert.Null(c.AudioUnlocked));
+    }
+
+    [Fact]
     public async Task NetworkHealth_EveryFewSeconds_ReachesTheGameMasterOnly()
     {
         // Given: a console, the TV screen, a phone, and a diagnostic run
@@ -171,6 +203,7 @@ public sealed class NetworkDiagnosticTests : IAsyncDisposable
             new(nameof(NetworkHealth.Diagnostics), Audience.AllButGameMaster),
             new(nameof(ConnectionQuality.Reconnections), Audience.AllButGameMaster),
             new(nameof(ConnectionQuality.RoundTrip), Audience.AllButGameMaster),
+            new(nameof(ConnectionQuality.AudioUnlocked), Audience.AllButGameMaster),
         ];
         LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Messages, secrets);
         LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Messages, secrets);
@@ -189,6 +222,9 @@ public sealed class NetworkDiagnosticTests : IAsyncDisposable
     }
 
     private static JsonElement Message<T>(T message) => JsonSerializer.SerializeToElement(message, ContractJsonOptions.Default);
+
+    private static Task ReportAudioAsync(HubConnection connection, bool unlocked) =>
+        connection.InvokeAsync(GameHub.ReportDisplayAudio, Message(new DisplayAudioReport(unlocked)), Ct);
 
     private static Task ReportRoundTripAsync(HubConnection connection, int roundTrip) =>
         connection.InvokeAsync(GameHub.ReportConnectionQuality, Message(new ConnectionQualityReport(roundTrip)), Ct);
