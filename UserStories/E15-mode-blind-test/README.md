@@ -10,7 +10,7 @@
 | [US-E15-01](US-E15-01-descripteur-blind-test.md) | Descripteur d'une manche de blind test | Terminée | US-E14-02 |
 | [US-E15-02](US-E15-02-ecoute-et-buzz.md) | Écoute de l'extrait et buzz | Terminée | US-E13-01, US-E13-02, US-E14-03, US-E15-01 |
 | [US-E15-03](US-E15-03-jugement-et-reprise.md) | Jugement du titre et de l'artiste, reprise après un buzz | Terminée | US-E15-02 |
-| [US-E15-04](US-E15-04-revelation-et-points.md) | Révélation et points | À faire | US-E15-03 |
+| [US-E15-04](US-E15-04-revelation-et-points.md) | Révélation et points | Terminée | US-E15-03 |
 
 ## Décisions
 

@@ -1,6 +1,6 @@
 ### US-E15-04 — Révélation et points
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** public
 **je veux** découvrir le titre, l'artiste et le visuel du morceau, et qui les a trouvés
@@ -18,6 +18,9 @@ Joueurs et public : un visuel introuvable laisse la révélation sans visuel, av
 
 **Notes techniques**
 - Mettre à jour `docs/modes/blindtest.md`.
+
+- Réalisation : intentions `blindtest.revealAnswer` et `blindtest.nextTrack` (GM : morceau). La phase `Closed` de US-E15-03 devient `Revealed`, toujours déduite du buzzer fermé : aucun champ persisté de plus. La révélation arrête la musique (lecture en pause), ferme le buzzer et attribue les points en une transition ; un morceau passé n'en rapporte aucun. La vue `Display` porte le titre, l'artiste et l'URL du visuel une fois révélés, la vue `Player` les points gagnés sur l'extrait (`points`). « Passer l'extrait » n'est plus proposé une fois le morceau révélé. Tests : `BlindTestRevealTests`, scénarios et paires ajoutés à `BlindTestLeakTests` (le titre, l'artiste et le visuel restent cachés aux téléphones après la révélation), `e2e/blindtest.spec.ts`.
+- Écart : le pack E2E n'a qu'une manche, donc le dernier extrait mène au classement final plutôt qu'au classement intermédiaire, qui relève du moteur commun (US-E09-02).
 
 **Hors périmètre**
 - La lecture du morceau en entier à la révélation (habillage, E20).
