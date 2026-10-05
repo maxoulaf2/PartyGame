@@ -86,6 +86,7 @@ export type * from './RoundStep';
 export type * from './SelectPackRefusal';
 export type * from './SelectPackRequest';
 export type * from './SelectPackResult';
+export type * from './ShowJoinCodeRequest';
 export type * from './SkipRoundRequest';
 export type * from './StaleBuildReport';
 export type * from './StartGameRefusal';

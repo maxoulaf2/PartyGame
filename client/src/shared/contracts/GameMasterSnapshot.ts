@@ -30,4 +30,5 @@ export interface GameMasterSnapshot {
     readonly nextRoundTitle: string | null;
     readonly roundSkipped: boolean;
     readonly savedGame: GameMasterSavedGame | null;
+    readonly joinCodeShown: boolean;
 }

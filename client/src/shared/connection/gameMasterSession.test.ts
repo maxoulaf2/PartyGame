@@ -93,6 +93,7 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                     method === 'CheckSavedGameMedia' ||
                     method === 'NextRound' ||
                     method === 'SkipRound' ||
+                    method === 'ShowJoinCode' ||
                     method === 'SendGameMasterRoundIntent'
                 ) {
                     return null;
@@ -173,6 +174,7 @@ function snapshot(version: number): GameMasterSnapshot {
         nextRoundTitle: null,
         roundSkipped: false,
         savedGame: null,
+        joinCodeShown: false,
     };
 }
 
@@ -753,6 +755,17 @@ describe('GameMasterSession', () => {
                 'SkipRound',
                 expect.anything(),
             );
+        });
+    });
+
+    describe('showJoinCode', () => {
+        it('names the outcome rather than toggling', async () => {
+            const { session, server } = await grantedSession();
+
+            expect(await session.showJoinCode(true)).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ShowJoinCode', {
+                shown: true,
+            });
         });
     });
 

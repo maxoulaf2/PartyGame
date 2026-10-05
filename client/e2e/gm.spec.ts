@@ -55,6 +55,7 @@ function fakeLobby(
         nextRoundTitle: null,
         roundSkipped: false,
         savedGame: null,
+        joinCodeShown: false,
     };
 }
 
@@ -632,6 +633,19 @@ test('/gm/ skips the question in progress once the game master confirms', async 
     await expect
         .poll(() => hub.roundIntents)
         .toEqual([{ type: 'quiz.skipQuestion', roundId: firstRound.roundId, questionNumber: 2 }]);
+});
+
+test('/gm/ shows then hides the QR code on the TV screen during a round', async ({ page }) => {
+    await serveGameMasterSnapshot(page, fakeRound(answeringView([])));
+    const show = page.getByRole('button', { name: fr.gm.joinCode.show });
+    const hide = page.getByRole('button', { name: fr.gm.joinCode.hide });
+
+    await openConsole(page);
+
+    await show.click();
+    await expect(hide).toHaveAttribute('aria-pressed', 'true');
+    await hide.click();
+    await expect(show).toHaveAttribute('aria-pressed', 'false');
 });
 
 /** The incidents of a round whose inputs failed `count` times, failing from the third one. */

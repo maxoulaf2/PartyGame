@@ -73,6 +73,7 @@ type GameMasterIntentMethod =
     | 'CheckSavedGameMedia'
     | 'NextRound'
     | 'SkipRound'
+    | 'ShowJoinCode'
     | 'SendGameMasterRoundIntent';
 
 // Six ASCII digits, like `GameMasterCode` on the server.
@@ -270,6 +271,14 @@ export class GameMasterSession {
      */
     skipRound(roundId: RoundId): Promise<IntentOutcome> {
         return this.#send('SkipRound', { roundId });
+    }
+
+    /**
+     * Shows or hides the QR code on the TV screen outside the lobby. The request names the outcome
+     * rather than toggling, so that a double tap or another console leaves it as asked.
+     */
+    showJoinCode(shown: boolean): Promise<IntentOutcome> {
+        return this.#send('ShowJoinCode', { shown });
     }
 
     /**

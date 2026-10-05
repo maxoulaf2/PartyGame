@@ -37,6 +37,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             RenamePlayer rename => Renaming.Rename(state, rename),
             StartGame start => Launch.Start(state, start, modes, context),
             ChooseAdvertisedAddress choice => AddressChoice.Choose(state, choice),
+            ShowJoinCode show => JoinCodeVisibility.Show(state, show),
             SelectPack select => PackChoice.Select(state, select),
             PacksLoaded loaded => PackChoice.Load(state, loaded),
             NextRound next => RoundFlow.Next(state, next, modes, context),

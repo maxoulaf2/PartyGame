@@ -76,6 +76,12 @@ public sealed record GameState(
     public PendingGame? PendingGame { get; init; }
 
     /// <summary>
+    /// Whether the game master asked the TV screen to show the QR code outside the lobby, which always shows it. Absent
+    /// from a game saved before it existed, which then hides it.
+    /// </summary>
+    public bool JoinCodeShown { get; init; }
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>

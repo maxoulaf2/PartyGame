@@ -17,6 +17,7 @@ function snapshot(version: number): DisplaySnapshot {
         round: null,
         roundView: null,
         ranking: [],
+        joinCodeShown: false,
     };
 }
 

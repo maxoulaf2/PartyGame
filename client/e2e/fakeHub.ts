@@ -107,6 +107,11 @@ export async function serveGameMasterSnapshot(
             };
             return { result: null, snapshots: [current] };
         },
+        ShowJoinCode: ([request]) => {
+            const { shown } = request as { shown: boolean };
+            current = { ...current, version: current.version + 1, joinCodeShown: shown };
+            return { result: null, snapshots: [current] };
+        },
         SkipRound: ([request]) => {
             const { roundId } = request as { roundId: RoundId };
             skipped.push(roundId);

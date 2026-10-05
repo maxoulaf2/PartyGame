@@ -20,4 +20,5 @@ export interface DisplaySnapshot {
     readonly round: RoundInfo | null;
     readonly roundView: DisplayRoundView | null;
     readonly ranking: readonly RankedPlayer[];
+    readonly joinCodeShown: boolean;
 }
