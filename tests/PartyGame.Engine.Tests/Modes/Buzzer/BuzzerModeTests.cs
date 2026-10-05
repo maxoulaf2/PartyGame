@@ -56,6 +56,90 @@ public sealed class BuzzerModeTests
     }
 
     [Fact]
+    public void Handle_AskQuestionWithoutShowingIt_OpensTheBuzzerQuestionHidden()
+    {
+        // Given
+        var state = NewGame;
+
+        // When
+        var transition = BuzzerGames.Engine.Handle(state, BuzzerGames.AskQuestion(state, show: false), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        var round = BuzzerGames.RoundOf(transition.State);
+        Assert.Equal((BuzzerPhase.Open, false), (round.Phase, round.Shown));
+        Assert.Null(Assert.IsType<BuzzerDisplayView>(BuzzerGames.Snapshots.ForDisplay(transition.State).RoundView).Text);
+    }
+
+    [Fact]
+    public void Handle_ShowQuestionWhileAPlayerHasTheHand_ShowsItOnTheDisplay()
+    {
+        // Given
+        var state = BuzzerGames.Accepted(BuzzerGames.AskedHidden(NewGame), BuzzerGames.Buzz(BuzzerGames.AskedHidden(NewGame), 2));
+        state = BuzzerGames.Accepted(state, BuzzerGames.ArbitrationElapsed(state));
+
+        // When
+        var transition = BuzzerGames.Engine.Handle(state, BuzzerGames.ShowQuestion(state), Games.Context());
+
+        // Then
+        Assert.Null(transition.Rejection);
+        var round = BuzzerGames.RoundOf(transition.State);
+        Assert.Equal((BuzzerPhase.Answering, true), (round.Phase, round.Shown));
+        var display = Assert.IsType<BuzzerDisplayView>(BuzzerGames.Snapshots.ForDisplay(transition.State).RoundView);
+        Assert.Equal(BuzzerGames.PaintingQuestion.Text, display.Text);
+    }
+
+    [Fact]
+    public void Handle_RevealHiddenQuestion_ShowsItOnTheDisplay()
+    {
+        // Given
+        var state = BuzzerGames.AskedHidden(NewGame);
+
+        // When
+        state = BuzzerGames.Accepted(state, BuzzerGames.RevealAnswer(state));
+
+        // Then
+        var display = Assert.IsType<BuzzerDisplayView>(BuzzerGames.Snapshots.ForDisplay(state).RoundView);
+        Assert.Equal(BuzzerGames.PaintingQuestion.Text, display.Text);
+    }
+
+    [Theory]
+    [InlineData("announced")]
+    [InlineData("shown")]
+    [InlineData("revealed")]
+    public void Handle_ShowQuestionOutOfItsPhase_IsRejected(string stage)
+    {
+        // Given
+        var state = stage switch
+        {
+            "announced" => NewGame,
+            "shown" => BuzzerGames.Asked(NewGame),
+            _ => BuzzerGames.Accepted(BuzzerGames.AskedHidden(NewGame), BuzzerGames.RevealAnswer(BuzzerGames.AskedHidden(NewGame))),
+        };
+
+        // When
+        var transition = BuzzerGames.Engine.Handle(state, BuzzerGames.ShowQuestion(state), Games.Context());
+
+        // Then
+        Assert.Equal(RejectionReason.PhaseMismatch, transition.Rejection);
+        Assert.Same(state, transition.State);
+    }
+
+    [Fact]
+    public void Handle_ShowAnotherQuestion_IsRejected()
+    {
+        // Given
+        var state = BuzzerGames.AskedHidden(NewGame);
+
+        // When
+        var transition = BuzzerGames.Engine.Handle(state, BuzzerGames.ShowQuestion(state, questionNumber: 2), Games.Context());
+
+        // Then
+        Assert.Equal(RejectionReason.QuestionMismatch, transition.Rejection);
+        Assert.Same(state, transition.State);
+    }
+
+    [Fact]
     public void Handle_AskQuestionTwice_IsRejectedAsObsolete()
     {
         // Given

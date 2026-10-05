@@ -9,6 +9,7 @@ namespace PartyGame.Contracts.Buzzer;
 /// <param name="Phase">Phase of the question in progress.</param>
 /// <param name="Opening">The current opening of the buzzer, which a judgment names.</param>
 /// <param name="Text">The text of the question.</param>
+/// <param name="Shown">Whether the TV screen shows the question.</param>
 /// <param name="Answer">The expected answer, for the game master to judge the answers given out loud.</param>
 /// <param name="Winner">The nickname of the player who has the hand, or <see langword="null"/>.</param>
 /// <param name="FoundBy">
@@ -20,6 +21,7 @@ public sealed record BuzzerGameMasterView(
     BuzzerQuestionPhase Phase,
     int Opening,
     string Text,
+    bool Shown,
     string Answer,
     string? Winner,
     string? FoundBy) : GameMasterRoundView;

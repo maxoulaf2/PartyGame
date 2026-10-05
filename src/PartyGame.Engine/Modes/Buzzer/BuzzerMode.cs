@@ -40,6 +40,7 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
         return input switch
         {
             GameMasterRoundInput { RoundIntent: BuzzerAskQuestion ask } => AskQuestion(round, ask, context),
+            GameMasterRoundInput { RoundIntent: BuzzerShowQuestion show } => ShowQuestion(round, show),
             GameMasterRoundInput { RoundIntent: BuzzerJudge judge } => Judge(round, judge, game, context),
             GameMasterRoundInput { RoundIntent: BuzzerRevealAnswer reveal } => RevealAnswer(round, reveal),
             GameMasterRoundInput { RoundIntent: BuzzerNextQuestion next } => NextQuestion(round, next),
@@ -93,7 +94,7 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
         ArgumentNullException.ThrowIfNull(game);
 
         // Nothing the TV screen does not show yet is sent: anyone may read its snapshots.
-        var asked = round.Phase != BuzzerPhase.Ready;
+        var asked = round.Shown || round.Revealed;
         return new BuzzerDisplayView(
             round.QuestionNumber,
             round.Descriptor.Questions.Length,
@@ -115,6 +116,7 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
             PhaseOf(round),
             round.Buzzer.Opening,
             round.Question.Text,
+            round.Shown || round.Revealed,
             round.Question.Answer,
             WinnerOf(round, game),
             FoundByOf(round, game));
@@ -156,7 +158,8 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
     }
 
     /// <summary>
-    /// Asks the question announced: it shows on the TV screen, and its buzzer opens to every player.
+    /// Asks the question announced: its buzzer opens to every player, and it shows on the TV screen unless the game master
+    /// reads it aloud first.
     /// </summary>
     private static RoundTransition AskQuestion(BuzzerRound round, BuzzerAskQuestion ask, GameContext context)
     {
@@ -166,7 +169,19 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
             : null;
         return rejection is { } reason
             ? RoundTransition.Rejected(round, reason)
-            : new(round with { Buzzer = round.Buzzer.Open(context.Now) }, []);
+            : new(round with { Buzzer = round.Buzzer.Open(context.Now), Shown = ask.ShowQuestion }, []);
+    }
+
+    /// <summary>
+    /// Shows on the TV screen the question asked with its buzzer open but the question hidden, whoever has the hand.
+    /// </summary>
+    private static RoundTransition ShowQuestion(BuzzerRound round, BuzzerShowQuestion show)
+    {
+        RejectionReason? rejection =
+            show.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Shown || round.Phase is BuzzerPhase.Ready or BuzzerPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        return rejection is { } reason ? RoundTransition.Rejected(round, reason) : new(round with { Shown = true }, []);
     }
 
     /// <summary>

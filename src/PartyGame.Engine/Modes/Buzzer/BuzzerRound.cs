@@ -29,6 +29,12 @@ public sealed record BuzzerRound(BuzzerRoundDescriptor Descriptor, int QuestionI
     public Buzzers.Buzzer Buzzer { get; init; } = new();
 
     /// <summary>
+    /// Whether the TV screen shows the question in progress: asked, the game master may keep it hidden while they read it
+    /// aloud, and the reveal shows it anyway.
+    /// </summary>
+    public bool Shown { get; init; }
+
+    /// <summary>
     /// Whether the expected answer of the question in progress is revealed.
     /// </summary>
     public bool Revealed { get; init; }

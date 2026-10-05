@@ -70,9 +70,13 @@ internal static class BuzzerGames
     public static GameState AtQuestion(GameState state, int questionIndex) =>
         state with { CurrentRound = state.CurrentRound! with { State = new BuzzerRound(RoundOf(state).Descriptor, questionIndex) } };
 
-    /// <summary>The game master asks the question in progress.</summary>
-    public static GameMasterRoundInput AskQuestion(GameState state, int? questionNumber = null) =>
-        new(new BuzzerAskQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+    /// <summary>The game master asks the question in progress, shown on the TV screen unless told otherwise.</summary>
+    public static GameMasterRoundInput AskQuestion(GameState state, int? questionNumber = null, bool show = true) =>
+        new(new BuzzerAskQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber, show), Games.Now);
+
+    /// <summary>The game master shows the question in progress on the TV screen.</summary>
+    public static GameMasterRoundInput ShowQuestion(GameState state, int? questionNumber = null) =>
+        new(new BuzzerShowQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
 
     /// <summary>The game master judges the answer of the player who has the hand on the current opening.</summary>
     public static GameMasterRoundInput Judge(GameState state, bool correct, int? opening = null, int? questionNumber = null) =>
@@ -119,6 +123,9 @@ internal static class BuzzerGames
 
     /// <summary>The same game, its question in progress asked: the buzzer is open.</summary>
     public static GameState Asked(GameState state) => Accepted(state, AskQuestion(state));
+
+    /// <summary>The same game, its buzzer open while the TV screen does not show the question yet.</summary>
+    public static GameState AskedHidden(GameState state) => Accepted(state, AskQuestion(state, show: false));
 
     /// <summary>
     /// The same game, its question asked, then buzzed by the given players in this order, each pressed the given number of
@@ -170,6 +177,12 @@ internal static class BuzzerGames
         var buzzer = players.Aggregate(round.Buzzer, (blocked, player) => blocked.Block(Games.PlayerIdOf(player)));
         return state with { CurrentRound = state.CurrentRound! with { State = round with { Buzzer = buzzer } } };
     }
+
+    /// <summary>
+    /// The same game, its question in progress kept off the TV screen, as when the game master asks it without showing it.
+    /// </summary>
+    public static GameState Hidden(GameState state) =>
+        state with { CurrentRound = state.CurrentRound! with { State = RoundOf(state) with { Shown = false } } };
 
     /// <summary>
     /// The round in progress of a game of buzzer questions.
