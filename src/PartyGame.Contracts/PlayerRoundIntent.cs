@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Quiz;
 
 namespace PartyGame.Contracts;
@@ -17,4 +18,5 @@ namespace PartyGame.Contracts;
 /// </param>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(QuizSubmitAnswer), "quiz.submitAnswer")]
+[JsonDerivedType(typeof(BuzzerBuzz), "buzzer.buzz")]
 public abstract record PlayerRoundIntent(RoundId RoundId);

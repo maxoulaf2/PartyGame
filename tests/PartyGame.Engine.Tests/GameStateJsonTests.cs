@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.Buzzer;
 using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Engine.Tests.Modes.Quiz;
 using PartyGame.Engine.Tests.Rounds;
@@ -12,7 +13,7 @@ namespace PartyGame.Engine.Tests;
 public sealed class GameStateJsonTests
 {
     private static readonly JsonSerializerOptions _options =
-        GameStateJson.CreateOptions(new GameModes([new FakeMode(), new QuizMode()]), FakeJson.Options);
+        GameStateJson.CreateOptions(new GameModes([new FakeMode(), new QuizMode(), new BuzzerMode()]), FakeJson.Options);
 
     [Fact]
     public void RoundTrip_EveryStateOfEveryLeakSuite_IsRestoredUnchanged()

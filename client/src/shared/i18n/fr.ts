@@ -578,5 +578,24 @@ export const fr = {
                 waitingAnswer: 'Pas encore de réponse',
             },
         },
+        buzzer: {
+            question: 'Question {number}/{count}',
+            // The player who has the hand, on every screen but their own phone.
+            hasHand: '{nickname} a la main',
+            display: {
+                // Shown large until the game master asks the question.
+                upcoming: 'Question {number}',
+                // Read by screen readers: the packs describe no image.
+                imageLabel: 'Illustration de la question',
+            },
+            gm: {
+                // Shows the question on the TV screen and opens the buzzer on every phone.
+                askQuestion: 'Poser la question',
+                // Marks the question the TV screen does not show yet.
+                hiddenOnDisplay: 'Pas encore affichée sur la TV',
+                answer: 'Réponse attendue : {answer}',
+                waitingBuzz: 'Buzzer ouvert : en attente d’un buzz',
+            },
+        },
     },
 } as const;

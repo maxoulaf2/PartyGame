@@ -5,7 +5,7 @@
 
 Le game master pose une question, qui s'affiche sur l'écran TV pendant que le buzzer s'ouvre sur les téléphones. Le premier joueur qui buzze répond à voix haute, et le GM juge sa réponse depuis sa console.
 
-> **État de la réalisation :** le descripteur et ses vérifications sont en place (US-E13-03). Une manche de questions buzzer se termine pour l'instant dès qu'elle démarre : les questions se jouent à partir de US-E13-04 (question posée et gagnant), puis de US-E13-05 (jugement, réouverture et révélation).
+> **État de la réalisation :** le GM pose la première question et le gagnant du buzzer obtient la main (US-E13-04). Le jugement, la réouverture du buzzer, la révélation et le passage aux questions suivantes arrivent avec US-E13-05 : d'ici là, la manche reste sur sa première question.
 
 ## Règles
 
@@ -15,6 +15,17 @@ Le game master pose une question, qui s'affiche sur l'écran TV pendant que le b
 - **Mauvaise réponse.** Le joueur est bloqué pour la question, sans perdre de points, et le buzzer se rouvre aux autres.
 - **Barème.** Une bonne réponse rapporte les points de la manche (`points`, 1 000 par défaut), attribués à la révélation.
 - **Images.** Une question peut avoir une image, affichée sur l'écran TV avec la question. Les téléphones n'affichent aucun média.
+
+## Phases d'une question
+
+| Phase | TV | Téléphones | Console GM |
+|---|---|---|---|
+| `Ready` : question annoncée | « Question n » | Buzzer fermé | Texte, réponse attendue, bouton « Poser la question » |
+| `Open` : buzzer ouvert (`buzzer.askQuestion`) | Question et image | Buzzer ouvert | « Buzzer ouvert : en attente d'un buzz » |
+| `Arbitrating` : fenêtre d'arbitrage en cours | Comme `Open` | Comme `Open` ; « Buzz envoyé… » pour qui a buzzé | Comme `Open` |
+| `Answering` : un gagnant a la main | Question et « Pseudo a la main » | « À toi de répondre ! » pour le gagnant, son pseudo pour les autres | « Pseudo a la main » |
+
+La fenêtre d'arbitrage reste invisible : les projections montrent `Open` tant que le gagnant n'est pas désigné, et aucune ne contient les horodatages des buzz. Un buzz (`buzzer.buzz`) nomme la question et l'ouverture du buzzer : renvoyé après une reconnexion, il ne compte jamais pour une ouverture suivante. Un joueur arrivé pendant la question peut buzzer.
 
 ## Format du descripteur
 
