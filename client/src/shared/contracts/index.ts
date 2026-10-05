@@ -118,6 +118,7 @@ export type * from './ResolveSavedGameRequest';
 export type * from './ResumeSessionRefusal';
 export type * from './ResumeSessionRequest';
 export type * from './ResumeSessionResult';
+export type * from './ReturnToLobbyRequest';
 export type * from './Role';
 export type * from './RoundId';
 export type * from './RoundInfo';

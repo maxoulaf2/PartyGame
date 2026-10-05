@@ -59,7 +59,8 @@ export function serveDisplaySnapshot(page: Page, snapshot: DisplaySnapshot): Pro
  * every address the console sent, `roundIntents` every intent it sent to the round in progress,
  * which changes nothing, and `skipped` every round it asked to skip. `incidents`, if any, are sent
  * after the snapshot. `resolved` records every decision about a game found saved, which changes
- * nothing, while a check of its media files finds them all back.
+ * nothing, while a check of its media files finds them all back. `returned` records every game it
+ * asked to end, which goes back to the lobby when it names the game in progress.
  */
 export async function serveGameMasterSnapshot(
     page: Page,
@@ -70,11 +71,13 @@ export async function serveGameMasterSnapshot(
     roundIntents: GameMasterRoundIntent[];
     skipped: RoundId[];
     resolved: { savedGameId: GameId; resume: boolean }[];
+    returned: GameId[];
 }> {
     const resolved: { savedGameId: GameId; resume: boolean }[] = [];
     const chosen: string[] = [];
     const roundIntents: GameMasterRoundIntent[] = [];
     const skipped: RoundId[] = [];
+    const returned: GameId[] = [];
     let current = snapshot;
     const announced =
         incidents === undefined ? [] : [{ target: 'ReceiveIncidents', arguments: [incidents] }];
@@ -127,8 +130,24 @@ export async function serveGameMasterSnapshot(
             };
             return { result: null, snapshots: [current] };
         },
+        ReturnToLobby: ([request]) => {
+            const { gameId } = request as { gameId: GameId };
+            returned.push(gameId);
+            if (current.phase === 'Lobby' || current.gameId !== gameId) {
+                return { result: null };
+            }
+            current = {
+                ...current,
+                version: current.version + 1,
+                phase: 'Lobby',
+                round: null,
+                roundView: null,
+                ranking: [],
+            };
+            return { result: null, snapshots: [current] };
+        },
     });
-    return { chosen, roundIntents, skipped, resolved };
+    return { chosen, roundIntents, skipped, resolved, returned };
 }
 
 async function serveSnapshot(

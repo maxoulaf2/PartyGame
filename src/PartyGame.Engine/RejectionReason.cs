@@ -34,6 +34,15 @@ public enum RejectionReason
     /// </summary>
     GameAlreadyStarted,
 
+    /// <summary>The game master asks to end a game that has not started: the lobby is already there.</summary>
+    GameNotStarted,
+
+    /// <summary>
+    /// The request names another game than the current one: it is obsolete, for instance sent twice or by a second game
+    /// master console once the game was ended.
+    /// </summary>
+    GameMismatch,
+
     /// <summary>The catalog has no pack with this identifier, for instance one removed by a reload meanwhile.</summary>
     PackUnknown,
 

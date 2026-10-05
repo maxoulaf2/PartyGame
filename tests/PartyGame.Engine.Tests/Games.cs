@@ -134,6 +134,8 @@ internal static class Games
 
     public static SkipRound SkipRound(GameState state) => new(state.CurrentRound!.Id, Now);
 
+    public static ReturnToLobby ReturnToLobby(GameState state) => new(state.GameId, Now);
+
     public static PlayerId PlayerIdOf(int player) => new(new Guid(player, 0, 0, new byte[8]));
 
     /// <summary>When the game of <see cref="Pending"/> was saved, a few minutes before <see cref="Now"/>.</summary>

@@ -93,6 +93,7 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                     method === 'CheckSavedGameMedia' ||
                     method === 'NextRound' ||
                     method === 'SkipRound' ||
+                    method === 'ReturnToLobby' ||
                     method === 'ShowJoinCode' ||
                     method === 'SendGameMasterRoundIntent'
                 ) {
@@ -723,6 +724,28 @@ describe('GameMasterSession', () => {
 
             expect(await session.checkSavedGameMedia()).toBe('sent');
             expect(server.connection.invoke).toHaveBeenLastCalledWith('CheckSavedGameMedia');
+        });
+    });
+
+    describe('returnToLobby', () => {
+        it('names the current game', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.returnToLobby(gameId);
+
+            expect(outcome).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ReturnToLobby', { gameId });
+        });
+
+        it('sends nothing while disconnected', async () => {
+            const { session, server } = await grantedSession();
+            server.drop();
+
+            expect(await session.returnToLobby(gameId)).toBe('unreachable');
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'ReturnToLobby',
+                expect.anything(),
+            );
         });
     });
 

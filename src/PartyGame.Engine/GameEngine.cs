@@ -36,6 +36,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             PlayerConnectionRestored restored => Presence.ConnectionRestored(state, restored),
             RenamePlayer rename => Renaming.Rename(state, rename),
             StartGame start => Launch.Start(state, start, modes, context),
+            ReturnToLobby back => LobbyReturn.Return(state, back, context),
             ChooseAdvertisedAddress choice => AddressChoice.Choose(state, choice),
             ShowJoinCode show => JoinCodeVisibility.Show(state, show),
             SelectPack select => PackChoice.Select(state, select),

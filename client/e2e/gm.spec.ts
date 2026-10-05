@@ -692,6 +692,28 @@ test('/gm/ offers to skip a round that keeps failing, then tells it was skipped'
     await expect(banner).toHaveCount(0);
 });
 
+test('/gm/ goes back to the lobby during a round once confirmed', async ({ page }) => {
+    const snapshot = fakeRound(answeringView([]));
+    const hub = await serveGameMasterSnapshot(page, snapshot);
+    const dialog = page.getByRole('dialog', { name: fr.gm.returnToLobby.confirmTitle });
+
+    await openConsole(page);
+
+    // Cancelling sends nothing.
+    await page.getByRole('button', { name: fr.gm.returnToLobby.action }).click();
+    await expect(dialog.getByText(fr.gm.returnToLobby.confirmMessage)).toBeVisible();
+    await dialog.getByRole('button', { name: fr.gm.returnToLobby.cancel }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(hub.returned).toEqual([]);
+
+    await page.getByRole('button', { name: fr.gm.returnToLobby.action }).click();
+    await dialog.getByRole('button', { name: fr.gm.returnToLobby.confirm }).click();
+
+    await expect.poll(() => hub.returned).toEqual([snapshot.gameId]);
+    await expect(page.getByRole('button', { name: fr.gm.start.action })).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.gm.returnToLobby.action })).toHaveCount(0);
+});
+
 test('/gm/ does not offer to skip a round that failed only twice', async ({ page }) => {
     await serveGameMasterSnapshot(page, fakeRound(answeringView([])), failures(2));
 
@@ -789,10 +811,31 @@ test('/gm/ shows the final ranking once the game is finished, with nothing left 
         `${rankText(fr.game.rank, 1)} Max ${countText(fr.game.points, 3000)}`,
         `${rankText(fr.game.rank, 1)} Zoé ${countText(fr.game.points, 3000)}`,
     ]);
-    // The game is over: neither a round to play nor a game to start.
+    // The game is over: neither a round to play nor a game to start, but a new game from the lobby.
     for (const action of [fr.gm.nextRound.action, fr.gm.start.action]) {
         await expect(page.getByRole('button', { name: action })).toHaveCount(0);
     }
+    await expect(page.getByRole('button', { name: fr.gm.returnToLobby.action })).toBeEnabled();
+});
+
+test('/gm/ goes back to the lobby at once once the game is finished', async ({ page }) => {
+    const snapshot: GameMasterSnapshot = {
+        ...fakeLobby(),
+        phase: 'Finished',
+        packCatalog: null,
+        selectedPackId: 'soiree',
+        packTitle: 'Grande soirée',
+        round: { ...firstRound, number: 3, title: 'Finale' },
+    };
+    const hub = await serveGameMasterSnapshot(page, snapshot);
+
+    await openConsole(page);
+    await page.getByRole('button', { name: fr.gm.returnToLobby.action }).click();
+
+    // Nothing is lost once finished: no confirmation.
+    await expect.poll(() => hub.returned).toEqual([snapshot.gameId]);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: fr.gm.start.action })).toBeVisible();
 });
 
 /** The console of a restarted server that found `savedGame`. */
