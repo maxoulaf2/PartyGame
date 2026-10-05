@@ -12,6 +12,9 @@ import BlindTestPlayer from './blindtest/BlindTestPlayer.svelte';
 import BuzzerDisplay from './buzzer/BuzzerDisplay.svelte';
 import BuzzerGameMaster from './buzzer/BuzzerGameMaster.svelte';
 import BuzzerPlayer from './buzzer/BuzzerPlayer.svelte';
+import OpenQuestionDisplay from './openquestion/OpenQuestionDisplay.svelte';
+import OpenQuestionGameMaster from './openquestion/OpenQuestionGameMaster.svelte';
+import OpenQuestionPlayer from './openquestion/OpenQuestionPlayer.svelte';
 import QuizDisplay from './quiz/QuizDisplay.svelte';
 import QuizGameMaster from './quiz/QuizGameMaster.svelte';
 import QuizPlayer from './quiz/QuizPlayer.svelte';
@@ -29,6 +32,11 @@ export const modes = {
     quiz: { player: QuizPlayer, display: QuizDisplay, gm: QuizGameMaster },
     buzzer: { player: BuzzerPlayer, display: BuzzerDisplay, gm: BuzzerGameMaster },
     blindtest: { player: BlindTestPlayer, display: BlindTestDisplay, gm: BlindTestGameMaster },
+    openquestion: {
+        player: OpenQuestionPlayer,
+        display: OpenQuestionDisplay,
+        gm: OpenQuestionGameMaster,
+    },
 } satisfies { readonly [T in RoundViewType]: ModeViews<T> };
 
 /** The views of a mode, as the pages use them, whatever the type of the round. */

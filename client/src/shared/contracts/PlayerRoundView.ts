@@ -5,6 +5,7 @@
 
 import type { BlindTestPlayerView } from './BlindTestPlayerView';
 import type { BuzzerPlayerView } from './BuzzerPlayerView';
+import type { OpenQuestionPlayerView } from './OpenQuestionPlayerView';
 import type { QuizPlayerView } from './QuizPlayerView';
 
-export type PlayerRoundView = BlindTestPlayerView | BuzzerPlayerView | QuizPlayerView;
+export type PlayerRoundView = BlindTestPlayerView | BuzzerPlayerView | OpenQuestionPlayerView | QuizPlayerView;

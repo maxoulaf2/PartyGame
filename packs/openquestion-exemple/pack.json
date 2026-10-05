@@ -1,0 +1,25 @@
+{
+  "$schema": "../../schemas/pack.schema.json",
+  "formatVersion": 1,
+  "title": "Questions ouvertes d'exemple",
+  "description": "Dix questions à réponse libre, tapée sur le téléphone, pour découvrir le mode question ouverte.",
+  "rounds": [
+    {
+      "type": "openquestion",
+      "title": "Réponses libres",
+      "speedBonus": 500,
+      "questions": [
+        { "text": "Qui a peint La Joconde ?", "answer": "Léonard de Vinci", "acceptedAnswers": ["De Vinci", "Leonardo da Vinci"] },
+        { "text": "De quel pays est ce drapeau ?", "answer": "L'Italie", "image": "images/drapeau.png" },
+        { "text": "En quelle année l'homme a-t-il marché sur la Lune pour la première fois ?", "answer": "1969", "inputMode": "numeric" },
+        { "text": "Quelle est la capitale de l'Australie ?", "answer": "Canberra" },
+        { "text": "Quel est le symbole chimique de l'or ?", "answer": "Au", "answerSeconds": 15 },
+        { "text": "Quel groupe a chanté « Bohemian Rhapsody » ?", "answer": "Queen" },
+        { "text": "Combien de joueurs compte une équipe de football sur le terrain ?", "answer": "11", "inputMode": "numeric", "answerSeconds": 15 },
+        { "text": "Quelle planète est surnommée la planète rouge ?", "answer": "Mars" },
+        { "text": "Qui a écrit « Les Misérables » ?", "answer": "Victor Hugo", "acceptedAnswers": ["Hugo"] },
+        { "text": "Quel est le plus long fleuve de France ?", "answer": "La Loire" }
+      ]
+    }
+  ]
+}

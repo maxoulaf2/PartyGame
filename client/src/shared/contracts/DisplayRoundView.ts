@@ -5,6 +5,7 @@
 
 import type { BlindTestDisplayView } from './BlindTestDisplayView';
 import type { BuzzerDisplayView } from './BuzzerDisplayView';
+import type { OpenQuestionDisplayView } from './OpenQuestionDisplayView';
 import type { QuizDisplayView } from './QuizDisplayView';
 
-export type DisplayRoundView = BlindTestDisplayView | BuzzerDisplayView | QuizDisplayView;
+export type DisplayRoundView = BlindTestDisplayView | BuzzerDisplayView | OpenQuestionDisplayView | QuizDisplayView;

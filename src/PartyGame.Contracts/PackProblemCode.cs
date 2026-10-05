@@ -121,4 +121,30 @@ public enum PackProblemCode
     /// round could not tell the players apart. The path is the one of the round.
     /// </summary>
     BlindTestPointsMissing,
+
+    /// <summary>
+    /// An expected answer or a variant of an open question is longer than the <c>maxLength</c> of its round, or a variant is
+    /// empty: players could not type it. The path is the one of the answer, and the <c>max</c> parameter the
+    /// <c>maxLength</c> of the round.
+    /// </summary>
+    OpenQuestionAnswerLengthOutOfRange,
+
+    /// <summary>
+    /// An expected answer or a variant of an open question normalizes to nothing, once case, accents, punctuation, spaces
+    /// and a leading article are removed (« ! », « Les »): no answer could match it. The path is the one of the answer, and
+    /// the <c>answer</c> parameter its text.
+    /// </summary>
+    OpenQuestionAnswerEmpty,
+
+    /// <summary>
+    /// A variant of an open question normalizes to the same as its expected answer or an earlier variant. The path is the
+    /// one of the repeated variant, and the <c>answer</c> parameter its text.
+    /// </summary>
+    OpenQuestionAnswerDuplicated,
+
+    /// <summary>
+    /// An expected answer or a variant of a numeric open question holds other characters than digits. The path is the one
+    /// of the answer, and the <c>answer</c> parameter its text.
+    /// </summary>
+    OpenQuestionAnswerNotNumeric,
 }

@@ -1,6 +1,6 @@
 ### US-E16-01 — Descripteur d'une manche de questions ouvertes
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack
 **je veux** décrire une manche de questions ouvertes, avec pour chaque question sa réponse attendue et ses variantes acceptées

@@ -281,6 +281,14 @@ export const fr = {
                 QuizChoiceDuplicated: 'Proposition en double : « {choice} »',
                 BlindTestPointsMissing:
                     'Aucun morceau ne rapporte de points : donnez des points au titre, ou à l’artiste d’au moins un morceau',
+                OpenQuestionAnswerLengthOutOfRange:
+                    'Réponse vide ou trop longue : de 1 à {max} caractères (maxLength de la manche)',
+                OpenQuestionAnswerEmpty:
+                    'Réponse « {answer} » vide une fois la casse, les accents, la ponctuation et l’article initial ignorés',
+                OpenQuestionAnswerDuplicated:
+                    'Variante « {answer} » en double : elle revient à la réponse attendue ou à une autre variante',
+                OpenQuestionAnswerNotNumeric:
+                    'Réponse « {answer} » non numérique : une question "numeric" n’accepte que des chiffres',
             },
         },
         start: {

@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using PartyGame.Contracts.BlindTest;
 using PartyGame.Contracts.Buzzer;
+using PartyGame.Contracts.OpenQuestion;
 using PartyGame.Contracts.Quiz;
 
 namespace PartyGame.Contracts;
@@ -17,4 +18,5 @@ namespace PartyGame.Contracts;
 [JsonDerivedType(typeof(QuizGameMasterView), "quiz")]
 [JsonDerivedType(typeof(BuzzerGameMasterView), "buzzer")]
 [JsonDerivedType(typeof(BlindTestGameMasterView), "blindtest")]
+[JsonDerivedType(typeof(OpenQuestionGameMasterView), "openquestion")]
 public abstract record GameMasterRoundView;
