@@ -373,10 +373,86 @@ public sealed class RoundsTests : IAsyncDisposable
                 && e.Line.Contains(GameHub.SkipRound, StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task ReturnToLobby_InProgress_ShowsTheLobbyOnEveryInterfaceWithTheSamePlayers()
+    {
+        // Given: Zoé scored in the first round
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var ended = Game.State.GameId;
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(Game.State.CurrentRound!.Id, 1, QuizChoiceLetter.A));
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+        using var toZoe = new ReceivedSnapshots(zoe);
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.ReturnToLobby, Message(new ReturnToLobbyRequest(ended)), Ct);
+
+        // Then: a new game, which Zoé is still in without doing anything, her score reset
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
+        Assert.Equal(GamePhase.Lobby, Game.State.Phase);
+        Assert.NotEqual(ended, Game.State.GameId);
+        Assert.Equal((Phase.Lobby, Game.State.GameId, null), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].GameId, toDisplay.Display[^1].Round));
+        Assert.Equal((Phase.Lobby, 0), (toGameMaster.GameMaster[^1].Phase, Assert.Single(toGameMaster.GameMaster[^1].Players).Score));
+        Assert.Equal((Phase.Lobby, "Zoé", 0), (toZoe.Player[^1].Phase, toZoe.Player[^1].Nickname, toZoe.Player[^1].Score));
+        Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Level == "Information" && e.Template.Contains("back to the lobby", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ReturnToLobby_TwiceAtOnce_EndsASingleGame()
+    {
+        // Given: two game master consoles during the first round
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var secondGameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var request = Message(new ReturnToLobbyRequest(Game.State.GameId));
+        var version = Game.State.Version;
+
+        // When
+        await Task.WhenAll(
+            gameMaster.InvokeAsync(GameHub.ReturnToLobby, request, Ct),
+            secondGameMaster.InvokeAsync(GameHub.ReturnToLobby, request, Ct));
+
+        // Then
+        Assert.Equal(GamePhase.Lobby, Game.State.Phase);
+        Assert.Equal(version + 1, Game.State.Version);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"gameId":"pas-un-guid"}""")]
+    [InlineData("null")]
+    public async Task ReturnToLobby_Malformed_IsIgnoredWithAWarning(string json)
+    {
+        // Given
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await JoinAsync(zoe, "Zoé");
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var state = Game.State;
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.ReturnToLobby, JsonDocument.Parse(json).RootElement, Ct);
+
+        // Then
+        Assert.Same(state, Game.State);
+        Assert.Contains(
+            LoggedEvent.ReadAll(_logs),
+            e => e.Level == "Warning" && e.Template.StartsWith("Malformed", StringComparison.Ordinal)
+                && e.Line.Contains(GameHub.ReturnToLobby, StringComparison.Ordinal));
+    }
+
     [Theory]
     [InlineData(GameHub.SendGameMasterRoundIntent)]
     [InlineData(GameHub.NextRound)]
     [InlineData(GameHub.SkipRound)]
+    [InlineData(GameHub.ReturnToLobby)]
     public async Task GameMasterRoundIntent_NotAuthenticatedAsGameMaster_IsIgnored(string method)
     {
         // Given: the round finished, so that the next round could start
@@ -395,6 +471,7 @@ public sealed class RoundsTests : IAsyncDisposable
         {
             GameHub.NextRound => Message(new NextRoundRequest(roundId)),
             GameHub.SkipRound => Message(new SkipRoundRequest(roundId)),
+            GameHub.ReturnToLobby => Message(new ReturnToLobbyRequest(Game.State.GameId)),
             _ => Message<GameMasterRoundIntent>(new QuizSkipQuestion(roundId, 1)),
         };
 

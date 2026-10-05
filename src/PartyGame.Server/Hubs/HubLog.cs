@@ -46,6 +46,9 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Saved game {GameId} resolved by the game master, resumed: {Resumed}")]
     public static partial void SavedGameResolved(this ILogger logger, Guid gameId, bool resumed);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Game {GameId} ended by the game master, back to the lobby")]
+    public static partial void ReturnedToLobby(this ILogger logger, Guid gameId);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} ignored: it already identified a player")]
     public static partial void ResumeRepeated(this ILogger logger, string connectionId);
 

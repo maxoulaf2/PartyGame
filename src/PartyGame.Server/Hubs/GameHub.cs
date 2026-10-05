@@ -72,6 +72,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="SkipRoundAsync"/>, as the clients call it.</summary>
     public const string SkipRound = nameof(SkipRound);
 
+    /// <summary>SignalR target of <see cref="ReturnToLobbyAsync"/>, as the clients call it.</summary>
+    public const string ReturnToLobby = nameof(ReturnToLobby);
+
     /// <summary>SignalR target of <see cref="ShowJoinCodeAsync"/>, as the clients call it.</summary>
     public const string ShowJoinCode = nameof(ShowJoinCode);
 
@@ -530,6 +533,33 @@ internal sealed class GameHub(
         await inputs
             .SubmitAsync(new Engine.Inputs.SkipRound(request.RoundId, timeProvider.GetUtcNow()), CancellationToken.None)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Ends the game at the request of the game master, whatever its phase, and goes back to the lobby with the same
+    /// players, for a new game without restarting the server. The loop alone decides whether the request still names the
+    /// current game, so that a double tap or two consoles never end the new one. Nothing is answered: the snapshots show
+    /// the lobby either way.
+    /// </summary>
+    /// <param name="message">A <see cref="ReturnToLobbyRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(ReturnToLobby)]
+    public async Task ReturnToLobbyAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ReturnToLobbyRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ReturnToLobby, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        var outcome = await inputs
+            .SubmitAsync(new Engine.Inputs.ReturnToLobby(request.GameId, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status == InputStatus.Accepted)
+        {
+            logger.ReturnedToLobby(request.GameId.Value);
+        }
     }
 
     /// <summary>
