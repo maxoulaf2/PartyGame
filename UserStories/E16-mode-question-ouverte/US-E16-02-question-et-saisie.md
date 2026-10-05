@@ -1,6 +1,6 @@
 ### US-E16-02 — Question posée et saisie sur le téléphone
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** taper ma réponse sur mon téléphone, avec un clavier adapté, avant la fin du compte à rebours

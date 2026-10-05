@@ -1,0 +1,24 @@
+{
+  "formatVersion": 1,
+  "title": "Questions ouvertes",
+  "rounds": [
+    {
+      "type": "openquestion",
+      "title": "Réponses libres",
+      "maxLength": 30,
+      "questions": [
+        {
+          "text": "Qui a peint La Joconde ?",
+          "answer": "Léonard de Vinci",
+          "acceptedAnswers": ["De Vinci"]
+        },
+        {
+          "text": "En quelle année l'homme a-t-il marché sur la Lune ?",
+          "answer": "1969",
+          "inputMode": "numeric",
+          "answerSeconds": 5
+        }
+      ]
+    }
+  ]
+}

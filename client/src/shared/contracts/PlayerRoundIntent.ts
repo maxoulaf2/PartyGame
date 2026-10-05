@@ -5,6 +5,7 @@
 
 import type { BlindTestBuzz } from './BlindTestBuzz';
 import type { BuzzerBuzz } from './BuzzerBuzz';
+import type { OpenQuestionSubmitAnswer } from './OpenQuestionSubmitAnswer';
 import type { QuizSubmitAnswer } from './QuizSubmitAnswer';
 
-export type PlayerRoundIntent = BlindTestBuzz | BuzzerBuzz | QuizSubmitAnswer;
+export type PlayerRoundIntent = BlindTestBuzz | BuzzerBuzz | OpenQuestionSubmitAnswer | QuizSubmitAnswer;

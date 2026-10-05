@@ -1,9 +1,31 @@
 namespace PartyGame.Contracts.OpenQuestion;
 
 /// <summary>
-/// What a round of open questions shows on the phone of one player.
+/// What a round of open questions shows on the phone of one player: a field to type their answer in. Neither the question,
+/// read on the TV screen, nor its expected answer, nor what the other players answered.
 /// </summary>
-/// <remarks>
-/// Empty until the questions are played (US-E16-02): the round finishes as soon as it starts.
-/// </remarks>
-public sealed record OpenQuestionPlayerView : PlayerRoundView;
+/// <param name="QuestionNumber">Number of the question in the round, from 1.</param>
+/// <param name="QuestionCount">Number of questions of the round.</param>
+/// <param name="Phase">Phase of the question.</param>
+/// <param name="Numeric">Whether the answer is a number: the field opens a numeric keyboard.</param>
+/// <param name="MaxLength">The longest answer accepted, in characters: the field takes no more.</param>
+/// <param name="AnswersCloseAt">
+/// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while their countdown runs;
+/// <see langword="null"/> otherwise.
+/// </param>
+/// <param name="Participating">
+/// Whether the player takes part in the question: always before the question shows, then only if they were registered
+/// when it showed, opening the answers. A player who joined meanwhile plays from the next question.
+/// </param>
+/// <param name="Answer">
+/// The answer this player sent, as typed, or <see langword="null"/> while they have not answered.
+/// </param>
+public sealed record OpenQuestionPlayerView(
+    int QuestionNumber,
+    int QuestionCount,
+    OpenQuestionQuestionPhase Phase,
+    bool Numeric,
+    int MaxLength,
+    long? AnswersCloseAt,
+    bool Participating,
+    string? Answer) : PlayerRoundView;

@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using PartyGame.Contracts.BlindTest;
 using PartyGame.Contracts.Buzzer;
+using PartyGame.Contracts.OpenQuestion;
 using PartyGame.Contracts.Quiz;
 
 namespace PartyGame.Contracts;
@@ -21,4 +22,5 @@ namespace PartyGame.Contracts;
 [JsonDerivedType(typeof(QuizSubmitAnswer), "quiz.submitAnswer")]
 [JsonDerivedType(typeof(BuzzerBuzz), "buzzer.buzz")]
 [JsonDerivedType(typeof(BlindTestBuzz), "blindtest.buzz")]
+[JsonDerivedType(typeof(OpenQuestionSubmitAnswer), "openquestion.submitAnswer")]
 public abstract record PlayerRoundIntent(RoundId RoundId);

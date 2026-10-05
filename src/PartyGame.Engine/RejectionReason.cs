@@ -152,4 +152,10 @@ public enum RejectionReason
 
     /// <summary>The judgment awards the artist of a track played on its title only.</summary>
     ArtistMissing,
+
+    /// <summary>The answer typed is empty once normalized (« ! », « Les »): no answer could match it.</summary>
+    AnswerEmpty,
+
+    /// <summary>The answer typed is longer than the round allows: the server never truncates it.</summary>
+    AnswerTooLong,
 }

@@ -740,5 +740,61 @@ export const fr = {
                 },
             },
         },
+        openquestion: {
+            question: 'Question {number}/{count}',
+            // Shown once the countdown locked the answers.
+            timeUp: 'Temps écoulé',
+            // Shown instead of « Temps écoulé » once everybody answered, which locks the answers early.
+            allAnswered: 'Tous les joueurs ont répondu',
+            // Read by screen readers before the seconds left to answer.
+            timeLeft: 'Temps restant',
+            // How many of the players taking part answered, never what.
+            answered: 'Réponses : {answered} / {participants}',
+            display: {
+                // Shown large while the game master reads out the question, before showing it.
+                upcoming: 'Question {number}',
+                // Read by screen readers: the packs describe no image.
+                imageLabel: 'Illustration de la question',
+            },
+            player: {
+                // Labels the field the answer is typed in.
+                answerLabel: 'Ta réponse',
+                // Before the game master shows the question on the TV screen.
+                waitQuestion: 'Lis la question sur la TV dès qu’elle s’affiche',
+                send: 'Envoyer',
+                // The answer is sent, not confirmed by the server yet.
+                pending: 'Envoi de ta réponse…',
+                recorded: 'Réponse enregistrée',
+                // For a player who joined once the answers were open.
+                nextQuestion: 'Tu joueras à la question suivante',
+            },
+            gm: {
+                // Shows the question on the TV screen, which opens the answers and starts the countdown.
+                showQuestion: 'Afficher la question',
+                // Marks the question while the TV screen does not show it yet.
+                hiddenOnDisplay: 'Pas encore affichée sur la TV',
+                // Heads the expected answer, as the pack writes it.
+                expectedAnswer: 'Réponse attendue : {answer}',
+                // Heads the other answers the pack accepts.
+                acceptedAnswers: 'Aussi acceptées : {answers}',
+                answersLabel: 'Réponses des joueurs',
+                // A player taking part who has not answered while the answers are open.
+                waitingAnswer: 'Pas encore de réponse',
+                // A player taking part who did not answer before the answers were locked.
+                noAnswer: 'Pas de réponse',
+                skipQuestion: 'Passer la question',
+                // Asked before skipping: the answers received and the question are lost.
+                skipConfirm: {
+                    title: 'Passer la question {number} ?',
+                    message:
+                        'Les réponses reçues seront ignorées et personne ne marquera de point sur cette question. La question suivante s’affichera sur tous les écrans.',
+                    // When the question skipped is the last one of the round.
+                    lastMessage:
+                        'Les réponses reçues seront ignorées et personne ne marquera de point sur cette question. C’est la dernière question : la manche se terminera.',
+                    confirm: 'Passer',
+                    cancel: 'Annuler',
+                },
+            },
+        },
     },
 } as const;

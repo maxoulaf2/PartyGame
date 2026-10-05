@@ -82,18 +82,6 @@ public sealed class OpenQuestionModeTests
             Describe(round));
     }
 
-    [Fact]
-    public void Start_UntilTheQuestionsArePlayed_FinishesTheRound()
-    {
-        // When
-        var transition = _mode.Start(_round, Games.NewLobby(), Games.Context(42));
-
-        // Then
-        Assert.True(transition.IsFinished);
-        Assert.IsType<OpenQuestionRound>(transition.State);
-        Assert.Empty(transition.Effects);
-    }
-
     private static OpenQuestionRoundDescriptor WithQuestion(OpenQuestionDescriptor question) => _round with { Questions = [question] };
 
     private static IEnumerable<string> Describe(OpenQuestionRoundDescriptor round) =>
