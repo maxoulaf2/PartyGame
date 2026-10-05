@@ -83,7 +83,7 @@
         <h3>{fill(fr.game.rankingAfter, { number: round.number })}</h3>
         <RankingList ranking={snapshot.ranking} />
     {:else if screen.kind === 'finished'}
-        <!-- Nothing left to start: a new game needs the server to restart. -->
+        <!-- Nothing left to start here: a new game starts from the lobby. -->
         <h2>{fr.game.finished}</h2>
         {#if snapshot.roundSkipped}
             <p class="skipped">{fr.gm.skipRound.skipped}</p>

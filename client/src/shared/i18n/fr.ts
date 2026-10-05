@@ -383,6 +383,16 @@ export const fr = {
             // Between two rounds or once the game is finished, on the console alone.
             skipped: 'Manche passée : les points de la question en cours n’ont pas été attribués.',
         },
+        returnToLobby: {
+            action: 'Revenir au lobby',
+            hint: 'Les joueurs restent inscrits, leurs scores repartent de zéro.',
+            confirmTitle: 'Revenir au lobby ?',
+            confirmMessage:
+                'La partie en cours s’arrête tout de suite, sur tous les écrans, et les scores sont perdus. Les joueurs restent inscrits pour une nouvelle partie.',
+            confirm: 'Revenir au lobby',
+            cancel: 'Annuler',
+            failed: 'Le retour au lobby n’a pas pu être demandé : réessayez.',
+        },
         connected: 'Connecté',
         disconnected: 'Déconnecté',
         // Failures the server recovered from by itself: the game master alone hears of them.

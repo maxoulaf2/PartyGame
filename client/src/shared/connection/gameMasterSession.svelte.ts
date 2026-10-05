@@ -73,6 +73,7 @@ type GameMasterIntentMethod =
     | 'CheckSavedGameMedia'
     | 'NextRound'
     | 'SkipRound'
+    | 'ReturnToLobby'
     | 'ShowJoinCode'
     | 'SendGameMasterRoundIntent';
 
@@ -271,6 +272,15 @@ export class GameMasterSession {
      */
     skipRound(roundId: RoundId): Promise<IntentOutcome> {
         return this.#send('SkipRound', { roundId });
+    }
+
+    /**
+     * Ends `gameId`, the current game, and goes back to the lobby with the same players, for a new
+     * game. Naming it makes the request safe to repeat: a second one, from a double tap or another
+     * console, never ends the new game. The lobby reaches every page through the next snapshots.
+     */
+    returnToLobby(gameId: GameId): Promise<IntentOutcome> {
+        return this.#send('ReturnToLobby', { gameId });
     }
 
     /**

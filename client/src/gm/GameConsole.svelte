@@ -12,6 +12,7 @@
     import PackControl from './PackControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import ResumeOffer from './ResumeOffer.svelte';
+    import ReturnToLobbyControl from './ReturnToLobbyControl.svelte';
     import RoundControl from './RoundControl.svelte';
     import SkipRoundBanner from './SkipRoundBanner.svelte';
     import StartControl from './StartControl.svelte';
@@ -68,6 +69,15 @@
 
     {#if snapshot.phase !== 'Lobby'}
         <RoundControl {snapshot} {session} {clock} {interactive} />
+        <!-- Keyed: a confirmation open for one game never ends another. -->
+        {#key snapshot.gameId}
+            <ReturnToLobbyControl
+                gameId={snapshot.gameId}
+                finished={snapshot.phase === 'Finished'}
+                {session}
+                {interactive}
+            />
+        {/key}
     {/if}
 
     <!-- Registration stays open once started: the address of the QR code may still change. -->

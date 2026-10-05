@@ -32,6 +32,7 @@ import type {
     SelectPackResult,
     ShowJoinCodeRequest,
     SkipRoundRequest,
+    ReturnToLobbyRequest,
     StaleBuildReport,
     StartGameResult,
 } from '../contracts';
@@ -56,11 +57,12 @@ export interface GameHubMethods {
     };
     SelectPack: { args: [request: SelectPackRequest]; result: SelectPackResult | null };
     ReloadPacks: { args: []; result: ReloadPacksResult | null };
-    // The next seven answer nothing: the snapshots show whether the intent was accepted.
+    // The next eight answer nothing: the snapshots show whether the intent was accepted.
     ResolveSavedGame: { args: [request: ResolveSavedGameRequest]; result: null };
     CheckSavedGameMedia: { args: []; result: null };
     NextRound: { args: [request: NextRoundRequest]; result: null };
     SkipRound: { args: [request: SkipRoundRequest]; result: null };
+    ReturnToLobby: { args: [request: ReturnToLobbyRequest]; result: null };
     ShowJoinCode: { args: [request: ShowJoinCodeRequest]; result: null };
     SendRoundIntent: { args: [envelope: PlayerIntentEnvelope]; result: null };
     SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
