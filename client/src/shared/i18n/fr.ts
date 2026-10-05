@@ -658,5 +658,43 @@ export const fr = {
                 endRound: 'Terminer la manche',
             },
         },
+        blindtest: {
+            track: 'Extrait {number} / {count}',
+            // The player who has the hand, on every screen but their own phone.
+            hasHand: '{nickname} a la main',
+            // The buzzer of a phone, where it differs from the questions (see fr.buzzer).
+            buzzer: {
+                closed: 'Attends la musique',
+                blocked: 'Tu ne peux plus buzzer sur cet extrait',
+            },
+            display: {
+                // Under the number of the track, until the game master plays it.
+                ready: 'Prêts ?',
+                // Under it, while the music plays.
+                listen: 'Buzzers ouverts : écoutez bien !',
+            },
+            gm: {
+                // Before the title and the artist, which only the console shows.
+                title: 'Titre : {title}',
+                artist: 'Artiste : {artist}',
+                // For a track played on its title only.
+                noArtist: 'Pas d’artiste à trouver',
+                // Plays the excerpt on the TV screen and opens the buzzer on every phone.
+                play: 'Lancer l’extrait',
+                waitingBuzz: 'Musique en cours : en attente d’un buzz',
+                skipTrack: 'Passer l’extrait',
+                // Asked before skipping: the track earns nobody any point.
+                skipConfirm: {
+                    title: 'Passer l’extrait {number} ?',
+                    message:
+                        'Personne ne marquera de point sur ce morceau. L’extrait suivant s’annoncera sur tous les écrans.',
+                    // When the track skipped is the last one of the round.
+                    lastMessage:
+                        'Personne ne marquera de point sur ce morceau. C’est le dernier extrait : la manche se terminera.',
+                    confirm: 'Passer',
+                    cancel: 'Annuler',
+                },
+            },
+        },
     },
 } as const;

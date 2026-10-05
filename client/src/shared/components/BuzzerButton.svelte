@@ -13,9 +13,11 @@
         interactive: boolean;
         /** Sends the buzz, with the time of the press on the clock of the server. */
         onbuzz: (pressedAt: number) => void;
+        /** What the buzzer says in each state, where a mode words it otherwise. */
+        labels?: Readonly<Partial<Record<BuzzerState, string>>>;
     }
 
-    let { state, opening, clock, interactive, onbuzz }: Props = $props();
+    let { state, opening, clock, interactive, onbuzz, labels = {} }: Props = $props();
 
     // The props are read when a press buzzes, never captured once.
     const presses = new BuzzerPresses(
@@ -57,7 +59,7 @@
             <path d="M6 12h12" />
         {/if}
     </svg>
-    <span>{fr.buzzer[shown]}</span>
+    <span>{labels[shown] ?? fr.buzzer[shown]}</span>
 </button>
 
 <style>

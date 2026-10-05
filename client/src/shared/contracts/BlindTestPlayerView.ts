@@ -3,6 +3,14 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { BuzzerButtonState } from './BuzzerButtonState';
+
 export interface BlindTestPlayerView {
     readonly type: 'blindtest';
+    readonly trackNumber: number;
+    readonly trackCount: number;
+    readonly opening: number;
+    readonly opensAt: number | null;
+    readonly buzzer: BuzzerButtonState;
+    readonly winner: string | null;
 }

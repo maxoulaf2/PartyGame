@@ -6,9 +6,14 @@
 export type * from './Announcement';
 export type * from './AnnouncementRefusal';
 export type * from './AnnouncementResult';
+export type * from './AudioPlayback';
+export type * from './BlindTestBuzz';
 export type * from './BlindTestDisplayView';
 export type * from './BlindTestGameMasterView';
+export type * from './BlindTestPlay';
 export type * from './BlindTestPlayerView';
+export type * from './BlindTestSkipTrack';
+export type * from './BlindTestTrackPhase';
 export type * from './BuzzerAskQuestion';
 export type * from './BuzzerButtonState';
 export type * from './BuzzerBuzz';
