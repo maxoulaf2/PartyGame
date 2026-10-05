@@ -13,4 +13,6 @@ export interface BlindTestPlayerView {
     readonly opensAt: number | null;
     readonly buzzer: BuzzerButtonState;
     readonly winner: string | null;
+    readonly foundTitle: boolean;
+    readonly foundArtist: boolean;
 }

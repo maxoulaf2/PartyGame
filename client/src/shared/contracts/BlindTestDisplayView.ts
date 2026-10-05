@@ -13,4 +13,6 @@ export interface BlindTestDisplayView {
     readonly phase: BlindTestTrackPhase;
     readonly playback: AudioPlayback;
     readonly winner: string | null;
+    readonly titleFoundBy: string | null;
+    readonly artistFoundBy: string | null;
 }

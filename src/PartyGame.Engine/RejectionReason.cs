@@ -143,4 +143,13 @@ public enum RejectionReason
 
     /// <summary>The player already buzzed during this opening of the buzzer: only their first buzz counts.</summary>
     AlreadyBuzzed,
+
+    /// <summary>
+    /// The judgment awards an element of the answer already awarded, for instance the title of a track found by an earlier
+    /// player: it is found once only.
+    /// </summary>
+    ElementAlreadyFound,
+
+    /// <summary>The judgment awards the artist of a track played on its title only.</summary>
+    ArtistMissing,
 }

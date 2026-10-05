@@ -31,5 +31,6 @@ namespace PartyGame.Contracts;
 [JsonDerivedType(typeof(BuzzerRevealAnswer), "buzzer.revealAnswer")]
 [JsonDerivedType(typeof(BuzzerNextQuestion), "buzzer.nextQuestion")]
 [JsonDerivedType(typeof(BlindTestPlay), "blindtest.play")]
+[JsonDerivedType(typeof(BlindTestJudge), "blindtest.judge")]
 [JsonDerivedType(typeof(BlindTestSkipTrack), "blindtest.skipTrack")]
 public abstract record GameMasterRoundIntent(RoundId RoundId);

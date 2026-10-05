@@ -10,6 +10,7 @@ export type * from './AudioPlayback';
 export type * from './BlindTestBuzz';
 export type * from './BlindTestDisplayView';
 export type * from './BlindTestGameMasterView';
+export type * from './BlindTestJudge';
 export type * from './BlindTestPlay';
 export type * from './BlindTestPlayerView';
 export type * from './BlindTestSkipTrack';

@@ -662,10 +662,19 @@ export const fr = {
             track: 'Extrait {number} / {count}',
             // The player who has the hand, on every screen but their own phone.
             hasHand: '{nickname} a la main',
+            // What was found already, on the TV screen and the console: never the answer itself.
+            titleFoundBy: 'Titre trouvé par {nickname}',
+            artistFoundBy: 'Artiste trouvé par {nickname}',
             // The buzzer of a phone, where it differs from the questions (see fr.buzzer).
             buzzer: {
                 closed: 'Attends la musique',
-                blocked: 'Tu ne peux plus buzzer sur cet extrait',
+                blocked: 'Bloqué pour cet extrait',
+            },
+            // On the phone of a player once judged, without the points until the reveal.
+            found: {
+                title: 'Tu as trouvé le titre !',
+                artist: 'Tu as trouvé l’artiste !',
+                both: 'Tu as trouvé le titre et l’artiste !',
             },
             display: {
                 // Under the number of the track, until the game master plays it.
@@ -682,6 +691,14 @@ export const fr = {
                 // Plays the excerpt on the TV screen and opens the buzzer on every phone.
                 play: 'Lancer l’extrait',
                 waitingBuzz: 'Musique en cours : en attente d’un buzz',
+                // The judgment of the answer given out loud, ticked then sent with « Valider ».
+                judge: 'Réponse du joueur',
+                titleFound: 'Titre trouvé',
+                artistFound: 'Artiste trouvé',
+                nothingFound: 'Rien de bon',
+                validate: 'Valider',
+                // Nothing left to find, or nobody left to buzz.
+                closed: 'Plus rien à jouer sur cet extrait',
                 skipTrack: 'Passer l’extrait',
                 // Asked before skipping: the track earns nobody any point.
                 skipConfirm: {

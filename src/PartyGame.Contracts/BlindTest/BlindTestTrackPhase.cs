@@ -17,4 +17,9 @@ public enum BlindTestTrackPhase
 
     /// <summary>A winner has the hand: the music is paused while they answer out loud.</summary>
     Answering,
+
+    /// <summary>
+    /// Nothing is left to find, or nobody is left to buzz: the buzzer is closed and the music stays paused.
+    /// </summary>
+    Closed,
 }

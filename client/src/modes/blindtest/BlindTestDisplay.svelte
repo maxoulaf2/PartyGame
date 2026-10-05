@@ -31,6 +31,16 @@
             <p class="hint listen">{fr.modes.blindtest.display.listen}</p>
         {/if}
     </div>
+    {#if view.titleFoundBy !== null || view.artistFoundBy !== null}
+        <ul class="found">
+            {#if view.titleFoundBy !== null}
+                <li>{fill(fr.modes.blindtest.titleFoundBy, { nickname: view.titleFoundBy })}</li>
+            {/if}
+            {#if view.artistFoundBy !== null}
+                <li>{fill(fr.modes.blindtest.artistFoundBy, { nickname: view.artistFoundBy })}</li>
+            {/if}
+        </ul>
+    {/if}
     {#if view.winner !== null}
         <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
         <p class="winner" role="status">
@@ -88,6 +98,20 @@
 
     .listen {
         color: var(--color-accent);
+    }
+
+    .found {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1vh 4vw;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 3rem;
+        font-weight: 700;
+        text-align: center;
+        overflow-wrap: anywhere;
     }
 
     /* Who answers, readable from the back of the room. */

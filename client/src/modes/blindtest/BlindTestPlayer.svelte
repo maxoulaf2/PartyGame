@@ -53,6 +53,16 @@
         return view.buzzer === 'Open' && buzzed ? 'sent' : states[view.buzzer];
     });
 
+    const found = $derived(
+        view.foundTitle && view.foundArtist
+            ? fr.modes.blindtest.found.both
+            : view.foundTitle
+              ? fr.modes.blindtest.found.title
+              : view.foundArtist
+                ? fr.modes.blindtest.found.artist
+                : null,
+    );
+
     function buzz(pressedAt: number) {
         send({
             type: 'blindtest.buzz',
@@ -79,7 +89,7 @@
     <p class="status" role="status">
         {view.buzzer === 'Lost' && view.winner !== null
             ? fill(fr.modes.blindtest.hasHand, { nickname: view.winner })
-            : ''}
+            : (found ?? '')}
     </p>
 </main>
 
