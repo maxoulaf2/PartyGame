@@ -125,4 +125,22 @@ public enum RejectionReason
 
     /// <summary>The saved game cannot be resumed while media files of its pack are missing from the disk.</summary>
     SavedGameMediaMissing,
+
+    /// <summary>
+    /// The buzz names another opening of the buzzer than the current one: it is obsolete, for instance sent again after a
+    /// reconnection once the buzzer reopened.
+    /// </summary>
+    BuzzerOpeningMismatch,
+
+    /// <summary>
+    /// The buzzer does not accept buzzes: not opened, its winner already designated, or the buzz received after the end of
+    /// its arbitration window.
+    /// </summary>
+    BuzzerClosed,
+
+    /// <summary>The player may not buzz until the buzzer opens anew, for instance after their wrong answer.</summary>
+    PlayerBlocked,
+
+    /// <summary>The player already buzzed during this opening of the buzzer: only their first buzz counts.</summary>
+    AlreadyBuzzed,
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using PartyGame.Content;
 using PartyGame.Contracts;
 using PartyGame.Engine;
@@ -19,6 +20,10 @@ internal static class GameLoopExtensions
     public static WebApplicationBuilder AddGameLoop(this WebApplicationBuilder builder)
     {
         builder.Services.TryAddSingleton(TimeProvider.System);
+        builder.Services.AddOptions<BuzzerOptions>()
+            .BindConfiguration(BuzzerOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         builder.Services.AddGameModes();
         builder.Services.TryAddSingleton<IGameEngine, GameEngine>();
         builder.Services.TryAddSingleton<Snapshots>();
@@ -58,6 +63,7 @@ internal static class GameLoopExtensions
                 services.GetRequiredService<GameInputQueue>(),
                 services.GetRequiredService<IGameEngine>(),
                 services.GetRequiredService<TimeProvider>(),
+                TimeSpan.FromMilliseconds(services.GetRequiredService<IOptions<BuzzerOptions>>().Value.ArbitrationMilliseconds),
                 services.GetRequiredService<IEffectExecutor>(),
                 services.GetServices<IGameStateListener>(),
                 services.GetRequiredService<IIncidentReporter>(),

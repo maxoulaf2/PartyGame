@@ -94,6 +94,7 @@ dotnet run --project src/PartyGame.Server   # port 5000 sur 0.0.0.0 ; sert le fr
                                             # Network:Port change le port (Network__Port=5001 ou -- --Network:Port=5001)
                                             # Packs:Directory désigne le dossier des packs (défaut : packs à côté de l'exécutable)
                                             # Persistence:Directory désigne le dossier où la partie est enregistrée (défaut : data à côté de l'exécutable)
+                                            # Buzzer:ArbitrationMilliseconds règle la fenêtre d'arbitrage du buzzer (0 à 1 000, défaut 250)
                                             # FaultInjection:FailOnInput (type d'entrée, ex. PlayerRoundInput) et FaultInjection:FailCount (défaut 1) font
                                             # échouer le moteur exprès, hors environnement Production seulement (dotnet run est en Production sans
                                             # --environment Development) : vérification à la main du critère de sortie de la phase 3, tests E2E de chaos
