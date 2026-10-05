@@ -130,7 +130,7 @@ public sealed class DescriptorProblemsTests : IDisposable
     }
 
     [Theory]
-    [InlineData("""{ "type": "blindtest", "title": "Manche" }""", "PackRoundTypeUnknown pack.json $.rounds[0].type type=blindtest")]
+    [InlineData("""{ "type": "karaoke", "title": "Manche" }""", "PackRoundTypeUnknown pack.json $.rounds[0].type type=karaoke")]
     [InlineData("""{ "type": "Quiz", "title": "Manche" }""", "PackRoundTypeUnknown pack.json $.rounds[0].type type=Quiz")]
     [InlineData("""{ "title": "Manche", "questions": [] }""", "PackPropertyMissing pack.json $.rounds[0] property=type")]
     [InlineData("""{ "type": 1, "title": "Manche" }""", "PackValueTypeInvalid pack.json $.rounds[0].type expected=string")]

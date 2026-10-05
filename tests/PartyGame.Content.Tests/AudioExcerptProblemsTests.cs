@@ -1,13 +1,15 @@
 using System.Globalization;
 using System.Text.Json;
 using PartyGame.Contracts.Packs;
+using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.BlindTest;
 using PartyGame.Tests.Shared.Audio;
 using static PartyGame.Content.Tests.TestPacks;
 
 namespace PartyGame.Content.Tests;
 
 /// <summary>
-/// The checks of an audio excerpt, read on its own: no game mode uses one yet.
+/// The checks of an audio excerpt, read on its own, then within a blind test round.
 /// </summary>
 public sealed class AudioExcerptProblemsTests : IDisposable
 {
@@ -92,6 +94,33 @@ public sealed class AudioExcerptProblemsTests : IDisposable
 
         // Then
         Assert.Equal(["PackMediaMissing pack.json $.file media=morceau.mp3"], problems);
+    }
+
+    [Fact]
+    public void Load_BlindTestRoundWithInvalidTracks_ReportsEachProblemAtItsPathInTheDescriptor()
+    {
+        // Given: a track that starts past the end of its file, then one whose file and image are missing
+        var folder = _packs.Add("pack", Pack("""
+            { "type": "blindtest", "title": "Manche", "tracks": [
+                { "excerpt": { "file": "sons/ode.mp3", "start": 15, "duration": 20 }, "title": "Ode" },
+                { "excerpt": { "file": "sons/absent.mp3", "duration": 20 }, "title": "Absent", "image": "images/absent.png" }
+            ] }
+            """));
+        Directory.CreateDirectory(Path.Combine(folder, "sons"));
+        File.WriteAllBytes(Path.Combine(folder, "sons", "ode.mp3"), _track);
+
+        // When
+        var pack = new PackLoader(new GameModes([new BlindTestMode()]).Validate).Load(folder);
+
+        // Then
+        Assert.False(pack.IsValid);
+        Assert.Equal(
+            [
+                "PackAudioExcerptStartBeyondEnd pack.json $.rounds[0].tracks[0].excerpt.start duration=10 start=15",
+                "PackMediaMissing pack.json $.rounds[0].tracks[1].excerpt.file media=sons/absent.mp3",
+                "PackMediaMissing pack.json $.rounds[0].tracks[1].image media=images/absent.png",
+            ],
+            Describe(pack).Order(StringComparer.Ordinal));
     }
 
     private List<string> Check(string excerpt, params (string Path, byte[] Content)[] files)

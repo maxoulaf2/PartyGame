@@ -3,7 +3,8 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { BlindTestPlayerView } from './BlindTestPlayerView';
 import type { BuzzerPlayerView } from './BuzzerPlayerView';
 import type { QuizPlayerView } from './QuizPlayerView';
 
-export type PlayerRoundView = BuzzerPlayerView | QuizPlayerView;
+export type PlayerRoundView = BlindTestPlayerView | BuzzerPlayerView | QuizPlayerView;

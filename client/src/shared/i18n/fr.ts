@@ -279,6 +279,8 @@ export const fr = {
                 QuizCorrectChoiceDuplicated:
                     'Question avec plusieurs bonnes réponses : une seule proposition doit avoir "correct": true',
                 QuizChoiceDuplicated: 'Proposition en double : « {choice} »',
+                BlindTestPointsMissing:
+                    'Aucun morceau ne rapporte de points : donnez des points au titre, ou à l’artiste d’au moins un morceau',
             },
         },
         start: {

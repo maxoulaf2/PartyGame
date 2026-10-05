@@ -18,7 +18,7 @@ describe('registry', () => {
     });
 
     // As a newer server could send them, of types this build does not know.
-    it.each(['blindtest', 'toString', '__proto__', ''])(
+    it.each(['karaoke', 'toString', '__proto__', ''])(
         'finds no view for the unknown mode %j',
         (type) => {
             expect(findPlayerView(viewOfType<PlayerRoundView>(type))).toBeNull();
