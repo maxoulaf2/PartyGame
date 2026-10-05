@@ -4,7 +4,7 @@ import { fill } from '../shared/i18n/fill';
 import { fr } from '../shared/i18n/fr';
 import { formatNumber } from '../shared/i18n/numberText';
 import { formatTime } from '../shared/i18n/timeText';
-import { connectionWarnings } from '../shared/networkQuality';
+import { clockUncertainty, connectionWarnings } from '../shared/networkQuality';
 
 const texts = fr.gm.network;
 
@@ -36,6 +36,15 @@ export function qualityParts(quality: ConnectionQuality): QualityPart[] {
                     ? texts.noRoundTrip
                     : fill(texts.roundTrip, { value: formatNumber(quality.roundTrip) }),
             poor: warnings.roundTrip,
+        },
+        {
+            text:
+                quality.roundTrip === null
+                    ? texts.noClockUncertainty
+                    : fill(texts.clockUncertainty, {
+                          value: formatNumber(clockUncertainty(quality.roundTrip)),
+                      }),
+            poor: warnings.clockUncertainty,
         },
         { text: texts.transports[quality.transport], poor: warnings.transport },
         {

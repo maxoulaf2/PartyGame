@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     assessDiagnostic,
+    clockUncertaintyNotable,
     connectionWarnings,
     reconnectionsNotable,
     summarizeRoundTrips,
@@ -106,7 +107,12 @@ describe('connectionWarnings', () => {
                 roundTrip: 151,
                 reconnections: reconnectionsNotable + 1,
             }),
-        ).toEqual({ roundTrip: true, transport: true, reconnections: true });
+        ).toEqual({
+            roundTrip: true,
+            clockUncertainty: true,
+            transport: true,
+            reconnections: true,
+        });
     });
 
     it('marks nothing on a good connection, nor a round trip not measured yet', () => {
@@ -117,6 +123,27 @@ describe('connectionWarnings', () => {
                 roundTrip: null,
                 reconnections: reconnectionsNotable,
             }),
-        ).toEqual({ roundTrip: false, transport: false, reconnections: false });
+        ).toEqual({
+            roundTrip: false,
+            clockUncertainty: false,
+            transport: false,
+            reconnections: false,
+        });
+    });
+
+    it('marks a clock uncertain beyond 50 ms, that is a round trip beyond 100 ms', () => {
+        const warn = (roundTrip: number) =>
+            connectionWarnings({
+                playerId: null,
+                transport: 'WebSockets',
+                roundTrip,
+                reconnections: 0,
+            });
+
+        expect(warn(2 * clockUncertaintyNotable).clockUncertainty).toBe(false);
+        expect(warn(2 * clockUncertaintyNotable + 1)).toMatchObject({
+            roundTrip: false,
+            clockUncertainty: true,
+        });
     });
 });

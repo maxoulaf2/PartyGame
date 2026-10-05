@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeMeasures } from './measuresText';
+import { describeClock, describeMeasures } from './measuresText';
 
 describe('describeMeasures', () => {
     it('lists every measure in French', () => {
@@ -34,5 +34,11 @@ describe('describeMeasures', () => {
                 throughput: null,
             }),
         ).toEqual([{ label: 'Connexion', value: 'Serveur injoignable' }]);
+    });
+});
+
+describe('describeClock', () => {
+    it('tells the round trip and the uncertainty it leaves, half of it', () => {
+        expect(describeClock(24)).toBe('aller-retour 24 ms · incertitude ±12 ms');
     });
 });

@@ -2,7 +2,7 @@ import { countText } from '../shared/i18n/countText';
 import { fill } from '../shared/i18n/fill';
 import { fr } from '../shared/i18n/fr';
 import { formatNumber } from '../shared/i18n/numberText';
-import type { DiagnosticMeasures } from '../shared/networkQuality';
+import { clockUncertainty, type DiagnosticMeasures } from '../shared/networkQuality';
 
 const texts = fr.diagnostic;
 
@@ -59,4 +59,12 @@ export function describeMeasures(measures: DiagnosticMeasures): MeasureLine[] {
                       : texts.networks.other,
         },
     ];
+}
+
+/** The clock of the phone: the round trip of its burst, and the uncertainty it leaves. */
+export function describeClock(roundTrip: number): string {
+    return fill(texts.clock.value, {
+        roundTrip: formatNumber(roundTrip),
+        uncertainty: formatNumber(clockUncertainty(roundTrip)),
+    });
 }

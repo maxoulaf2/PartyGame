@@ -15,6 +15,19 @@ export const throughputGood = 2;
  * wakes up, so a few are expected in an evening.
  */
 export const reconnectionsNotable = 5;
+/**
+ * Uncertainty of the clock of a phone beyond which the console marks it, in milliseconds
+ * (US-E13-06): beyond, two buzzes this close may be told apart wrongly.
+ */
+export const clockUncertaintyNotable = 50;
+
+/**
+ * How far the estimated time of the server may be from the true one, in milliseconds: half the
+ * shortest round trip of the clock burst, since the server answered somewhere within it.
+ */
+export function clockUncertainty(roundTrip: number): number {
+    return roundTrip / 2;
+}
 
 /** The round trips of a burst, in milliseconds. */
 export interface RoundTripSummary {
@@ -121,6 +134,7 @@ export function assessDiagnostic(measures: DiagnosticMeasures): DiagnosticOutcom
 /** Which measures of a connection the game master console marks as poor. */
 export interface ConnectionWarnings {
     readonly roundTrip: boolean;
+    readonly clockUncertainty: boolean;
     readonly transport: boolean;
     readonly reconnections: boolean;
 }
@@ -128,6 +142,9 @@ export interface ConnectionWarnings {
 export function connectionWarnings(quality: ConnectionQuality): ConnectionWarnings {
     return {
         roundTrip: quality.roundTrip !== null && quality.roundTrip > roundTripUsable,
+        clockUncertainty:
+            quality.roundTrip !== null &&
+            clockUncertainty(quality.roundTrip) > clockUncertaintyNotable,
         transport: quality.transport !== 'WebSockets',
         reconnections: quality.reconnections > reconnectionsNotable,
     };

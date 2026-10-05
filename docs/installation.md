@@ -181,7 +181,13 @@ En arrivant dans un lieu inconnu, avant l'arrivée des invités, le GM vérifie 
 
 Le test mesure la connexion au serveur et son mode (WebSocket, ou un repli plus lent), le temps de réponse sur une salve (médiane, maximum, gigue), la stabilité sur 15 secondes (un aller-retour par seconde, pertes et coupures), le débit d'un téléchargement d'environ 1 Mo, et si le téléphone est sur le même réseau que l'adresse annoncée. Seuils : un temps de réponse médian sous 50 ms est bon, jusqu'à 150 ms il est utilisable avec des réserves, au-delà c'est un problème. Une perte de plus de 2 %, une coupure, un mode de repli, un autre réseau ou un débit sous 2 Mbit/s donnent des réserves. La page ne teste pas l'accès à Internet, dont le jeu n'a pas besoin.
 
-Pendant la partie, la liste des joueurs de la console montre aussi, pour chaque téléphone et pour l'écran TV, le temps de réponse récent, le mode de connexion et le nombre de reconnexions, avec un repère ⚠ sur une valeur mauvaise.
+Pendant la partie, la liste des joueurs de la console montre aussi, pour chaque téléphone et pour l'écran TV, le temps de réponse récent, l'incertitude de son horloge, le mode de connexion et le nombre de reconnexions, avec un repère ⚠ sur une valeur mauvaise.
+
+### Horloge et flash synchronisé
+
+Le buzzer départage les joueurs d'après l'heure de leur appui, convertie en heure serveur par l'horloge synchronisée du téléphone. La page de diagnostic affiche, dans sa section « Horloge », l'aller-retour de la synchronisation et l'incertitude qui en découle (la moitié de l'aller-retour) : l'heure serveur estimée par le téléphone est juste à cette marge près. La console du game master marque d'un ⚠ un téléphone dont l'incertitude dépasse 50 ms.
+
+Pour vérifier à l'œil, ouvrir la page de diagnostic sur plusieurs téléphones (et sur l'écran TV) posés côte à côte, puis toucher « Flash synchronisé » sur chacun : l'écran devient blanc pendant 100 ms à chaque seconde entière de l'heure serveur. Des horloges bien alignées clignotent ensemble. Toucher l'écran arrête le flash. Le protocole de mesure et les résultats sont dans [mesures/dispersion-horloge.md](mesures/dispersion-horloge.md).
 
 Si un téléphone n'arrive même pas à ouvrir la page de diagnostic :
 
