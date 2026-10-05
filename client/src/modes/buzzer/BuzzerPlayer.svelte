@@ -1,9 +1,93 @@
 <script lang="ts">
+    import BuzzerButton from '../../shared/components/BuzzerButton.svelte';
+    import type { BuzzerState } from '../../shared/buzzer.svelte';
+    import type { BuzzerButtonState, BuzzerBuzz, BuzzerPlayerView } from '../../shared/contracts';
+    import { fill } from '../../shared/i18n/fill';
+    import { fr } from '../../shared/i18n/fr';
     import type { PlayerViewProps } from '../../shared/modeViews';
 
-    // Until the questions are played (US-E13-04), the round finishes as soon as it starts: this view
-    // only names it, should it ever show.
-    let { round }: Pick<PlayerViewProps, 'round'> = $props();
+    // A buzzer only: the question is read on the TV screen, and the answer given out loud.
+    let {
+        view,
+        round,
+        clock,
+        interactive,
+        send,
+        pending,
+    }: PlayerViewProps<BuzzerPlayerView, BuzzerBuzz> = $props();
+
+    const states: Readonly<Record<BuzzerButtonState, BuzzerState>> = {
+        Closed: 'closed',
+        Open: 'open',
+        Buzzed: 'sent',
+        Won: 'won',
+        Lost: 'lost',
+        Blocked: 'blocked',
+    };
+
+    // A buzz sent and not acknowledged yet shows as sent, even after a reload: the snapshot wins
+    // once it tells otherwise.
+    const state = $derived.by(() => {
+        const buzzed = pending.some(
+            (intent) =>
+                intent.questionNumber === view.questionNumber && intent.opening === view.opening,
+        );
+        return view.buzzer === 'Open' && buzzed ? 'sent' : states[view.buzzer];
+    });
+
+    function buzz(pressedAt: number) {
+        send({
+            type: 'buzzer.buzz',
+            roundId: round.roundId,
+            questionNumber: view.questionNumber,
+            opening: view.opening,
+            pressedAt: Math.round(pressedAt),
+        });
+    }
 </script>
 
-<h1>{round.title}</h1>
+<main>
+    <p class="progress">
+        {fill(fr.modes.buzzer.question, { number: view.questionNumber, count: view.questionCount })}
+    </p>
+    <BuzzerButton
+        {state}
+        opening={`${view.questionNumber}:${view.opening}`}
+        {clock}
+        {interactive}
+        onbuzz={buzz}
+    />
+    <p class="status" role="status">
+        {view.buzzer === 'Lost' && view.winner !== null
+            ? fill(fr.modes.buzzer.hasHand, { nickname: view.winner })
+            : ''}
+    </p>
+</main>
+
+<style>
+    main {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: var(--space-l) var(--space-m);
+    }
+
+    p {
+        margin: 0;
+        text-align: center;
+    }
+
+    .progress {
+        color: var(--color-text-muted);
+        font-weight: 700;
+    }
+
+    .status {
+        min-height: 1.5em;
+        font-size: 1.5rem;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+</style>
