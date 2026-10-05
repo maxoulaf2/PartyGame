@@ -1,6 +1,6 @@
 ### US-E13-02 — Arbitrage du buzz
 
-**Statut :** À faire
+**Statut :** Terminée
 
 Le moteur dispose d'un arbitrage de buzzer réutilisable par tous les modes : il désigne le gagnant d'après l'horodatage des appuis, après une fenêtre d'attente, et résiste aux horloges déréglées comme aux messages forgés.
 

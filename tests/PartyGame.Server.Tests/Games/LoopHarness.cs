@@ -29,6 +29,7 @@ internal sealed class LoopHarness : IAsyncDisposable
             Inputs,
             engine,
             Time,
+            GameContext.DefaultBuzzerArbitrationWindow,
             effects?.Invoke(this) ?? new RecordingEffectExecutor(Journal, effectFails),
             Listeners,
             Incidents,

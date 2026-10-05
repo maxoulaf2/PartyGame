@@ -17,6 +17,7 @@ internal sealed class GameLoop : BackgroundService
     private readonly GameInputQueue _queue;
     private readonly IGameEngine _engine;
     private readonly TimeProvider _timeProvider;
+    private readonly TimeSpan _buzzerArbitrationWindow;
     private readonly IEffectExecutor _effects;
     private readonly ImmutableArray<IGameStateListener> _listeners;
     private readonly IIncidentReporter _incidents;
@@ -29,6 +30,7 @@ internal sealed class GameLoop : BackgroundService
     /// <param name="queue">The queue the loop reads its inputs from.</param>
     /// <param name="engine">The rules of the game.</param>
     /// <param name="timeProvider">Source of <see cref="GameContext.Now"/>.</param>
+    /// <param name="buzzerArbitrationWindow">The <see cref="GameContext.BuzzerArbitrationWindow"/> handed to the engine.</param>
     /// <param name="effects">Executes the effects of each transition.</param>
     /// <param name="listeners">Notified after each transition that changed the state.</param>
     /// <param name="incidents">Tells the game master about the failures the loop recovered from.</param>
@@ -39,6 +41,7 @@ internal sealed class GameLoop : BackgroundService
         GameInputQueue queue,
         IGameEngine engine,
         TimeProvider timeProvider,
+        TimeSpan buzzerArbitrationWindow,
         IEffectExecutor effects,
         IEnumerable<IGameStateListener> listeners,
         IIncidentReporter incidents,
@@ -49,6 +52,7 @@ internal sealed class GameLoop : BackgroundService
         _queue = queue;
         _engine = engine;
         _timeProvider = timeProvider;
+        _buzzerArbitrationWindow = buzzerArbitrationWindow;
         _effects = effects;
         _listeners = [.. listeners];
         _incidents = incidents;
@@ -112,7 +116,10 @@ internal sealed class GameLoop : BackgroundService
         Transition transition;
         try
         {
-            transition = _engine.Handle(state, input, new GameContext(_timeProvider.GetUtcNow(), _random));
+            transition = _engine.Handle(state, input, new GameContext(_timeProvider.GetUtcNow(), _random)
+            {
+                BuzzerArbitrationWindow = _buzzerArbitrationWindow,
+            });
         }
         catch (Exception ex)
         {
