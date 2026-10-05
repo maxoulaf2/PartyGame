@@ -16,6 +16,16 @@
         player.play(view.playback, clock, reportMediaFailure);
     });
     onDestroy(() => player.stop());
+
+    // An image that cannot be loaded leaves the reveal without it: never a broken image on the
+    // TV, and the game master hears of it.
+    let failedImage = $state<string | null>(null);
+    const image = $derived(view.imageUrl !== failedImage ? view.imageUrl : null);
+
+    function imageFailed(url: string) {
+        failedImage = url;
+        reportMediaFailure(url);
+    }
 </script>
 
 <main>
@@ -23,10 +33,33 @@
         <p class="round">{round.title}</p>
     </header>
     <div class="track">
-        <h1>
-            {fill(fr.modes.blindtest.track, { number: view.trackNumber, count: view.trackCount })}
-        </h1>
-        {#if view.phase === 'Ready'}
+        {#if view.title !== null}
+            <!-- The reveal: the track, then who found what below. -->
+            {#if image}
+                {@const src = image}
+                <img
+                    {src}
+                    alt={fr.modes.blindtest.display.imageLabel}
+                    onerror={() => imageFailed(src)}
+                />
+            {/if}
+            <h1 class="title">{view.title}</h1>
+            {#if view.artist !== null}
+                <p class="artist">
+                    {fill(fr.modes.blindtest.display.artist, { artist: view.artist })}
+                </p>
+            {/if}
+        {:else}
+            <h1>
+                {fill(fr.modes.blindtest.track, {
+                    number: view.trackNumber,
+                    count: view.trackCount,
+                })}
+            </h1>
+        {/if}
+        {#if view.phase === 'Revealed' && view.titleFoundBy === null && view.artistFoundBy === null}
+            <p class="hint">{fr.modes.blindtest.nobodyFound}</p>
+        {:else if view.phase === 'Ready'}
             <p class="hint">{fr.modes.blindtest.display.ready}</p>
         {:else if view.phase === 'Listening'}
             <p class="hint listen">{fr.modes.blindtest.display.listen}</p>
@@ -89,6 +122,25 @@
     h1 {
         font-size: 6rem;
         font-weight: 800;
+    }
+
+    .title {
+        font-size: 5rem;
+        color: var(--color-accent);
+        overflow-wrap: anywhere;
+    }
+
+    .artist {
+        font-size: 3.5rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    img {
+        max-width: 50vw;
+        max-height: 35vh;
+        object-fit: contain;
+        border-radius: var(--radius);
     }
 
     .hint {

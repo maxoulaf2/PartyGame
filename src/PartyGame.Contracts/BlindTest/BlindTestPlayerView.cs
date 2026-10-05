@@ -17,6 +17,10 @@ namespace PartyGame.Contracts.BlindTest;
 /// <param name="Winner">The nickname of the player who has the hand, or <see langword="null"/>.</param>
 /// <param name="FoundTitle">Whether this player found the title of the track.</param>
 /// <param name="FoundArtist">Whether this player found the artist of the track.</param>
+/// <param name="Points">
+/// The points the player earned with the track, 0 included, once revealed; <see langword="null"/> before. Their total is
+/// <see cref="PlayerSnapshot.Score"/>.
+/// </param>
 public sealed record BlindTestPlayerView(
     int TrackNumber,
     int TrackCount,
@@ -25,4 +29,5 @@ public sealed record BlindTestPlayerView(
     BuzzerButtonState Buzzer,
     string? Winner,
     bool FoundTitle,
-    bool FoundArtist) : PlayerRoundView;
+    bool FoundArtist,
+    int? Points) : PlayerRoundView;

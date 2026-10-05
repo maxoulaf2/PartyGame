@@ -122,6 +122,14 @@ internal static class BlindTestGames
         return Accepted(state, elapsed, elapsed.DueAt);
     }
 
+    /// <summary>The game master reveals the track in progress.</summary>
+    public static GameMasterRoundInput RevealAnswer(GameState state, int? trackNumber = null) =>
+        new(new BlindTestRevealAnswer(state.CurrentRound!.Id, trackNumber ?? RoundOf(state).TrackNumber), Games.Now);
+
+    /// <summary>The game master moves on from the revealed track.</summary>
+    public static GameMasterRoundInput NextTrack(GameState state, int? trackNumber = null) =>
+        new(new BlindTestNextTrack(state.CurrentRound!.Id, trackNumber ?? RoundOf(state).TrackNumber), Games.Now);
+
     /// <summary>The game master skips the track in progress.</summary>
     public static GameMasterRoundInput SkipTrack(GameState state, int? trackNumber = null) =>
         new(new BlindTestSkipTrack(state.CurrentRound!.Id, trackNumber ?? RoundOf(state).TrackNumber), Games.Now);

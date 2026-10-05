@@ -3,14 +3,21 @@
     import type {
         BlindTestGameMasterView,
         BlindTestJudge,
+        BlindTestNextTrack,
         BlindTestPlay,
+        BlindTestRevealAnswer,
         BlindTestSkipTrack,
     } from '../../shared/contracts';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
     import type { GameMasterViewProps } from '../../shared/modeViews';
 
-    type Intent = BlindTestPlay | BlindTestJudge | BlindTestSkipTrack;
+    type Intent =
+        | BlindTestPlay
+        | BlindTestJudge
+        | BlindTestRevealAnswer
+        | BlindTestNextTrack
+        | BlindTestSkipTrack;
 
     let { view, round, interactive, send }: GameMasterViewProps<BlindTestGameMasterView, Intent> =
         $props();
@@ -48,7 +55,13 @@
         skipping = null;
     }
 
-    function step(type: 'blindtest.play' | 'blindtest.skipTrack') {
+    function step(
+        type:
+            | 'blindtest.play'
+            | 'blindtest.revealAnswer'
+            | 'blindtest.nextTrack'
+            | 'blindtest.skipTrack',
+    ) {
         void act({ type, roundId: round.roundId, trackNumber: view.trackNumber });
     }
 
@@ -90,8 +103,8 @@
         </p>
     {:else if view.phase === 'Listening'}
         <p class="waiting" role="status">{fr.modes.blindtest.gm.waitingBuzz}</p>
-    {:else if view.phase === 'Closed'}
-        <p class="waiting" role="status">{fr.modes.blindtest.gm.closed}</p>
+    {:else if view.phase === 'Revealed' && view.titleFoundBy === null && view.artistFoundBy === null}
+        <p class="waiting" role="status">{fr.modes.blindtest.nobodyFound}</p>
     {/if}
     {#if view.phase === 'Answering'}
         <div class="verdicts" role="group" aria-label={fr.modes.blindtest.gm.judge}>
@@ -145,15 +158,37 @@
             >
                 {fr.modes.blindtest.gm.validate}
             </button>
+        {:else if view.phase === 'Revealed'}
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => step('blindtest.nextTrack')}
+            >
+                {view.trackNumber === view.trackCount
+                    ? fr.modes.blindtest.gm.endRound
+                    : fr.modes.blindtest.gm.nextTrack}
+            </button>
         {/if}
-        <button
-            type="button"
-            class="secondary"
-            disabled={!interactive || sending}
-            onclick={() => (skipping = view.trackNumber)}
-        >
-            {fr.modes.blindtest.gm.skipTrack}
-        </button>
+        {#if view.phase === 'Listening' || view.phase === 'Answering'}
+            <button
+                type="button"
+                class="secondary"
+                disabled={!interactive || sending}
+                onclick={() => step('blindtest.revealAnswer')}
+            >
+                {fr.modes.blindtest.gm.revealAnswer}
+            </button>
+        {/if}
+        {#if view.phase !== 'Revealed'}
+            <button
+                type="button"
+                class="secondary"
+                disabled={!interactive || sending}
+                onclick={() => (skipping = view.trackNumber)}
+            >
+                {fr.modes.blindtest.gm.skipTrack}
+            </button>
+        {/if}
     </div>
 </div>
 

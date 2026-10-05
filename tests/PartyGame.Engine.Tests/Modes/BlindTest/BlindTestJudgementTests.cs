@@ -69,26 +69,26 @@ public sealed class BlindTestJudgementTests
     }
 
     [Fact]
-    public void Handle_BothFound_ClosesTheBuzzerAndKeepsTheMusicPaused()
+    public void Handle_BothFound_RevealsTheTrackWithTheMusicPaused()
     {
         // When
         var state = BlindTestGames.Judged(NewGame, 2, title: true, artist: true);
 
         // Then
         var round = BlindTestGames.RoundOf(state);
-        Assert.Equal((BlindTestPhase.Closed, Games.PlayerIdOf(2), Games.PlayerIdOf(2)), (round.Phase, round.TitleFoundBy, round.ArtistFoundBy));
+        Assert.Equal((BlindTestPhase.Revealed, Games.PlayerIdOf(2), Games.PlayerIdOf(2)), (round.Phase, round.TitleFoundBy, round.ArtistFoundBy));
         Assert.Equal(new ExcerptPlayback(1.25, null), round.Playback);
         Assert.False(round.Buzzer.IsOpen);
     }
 
     [Fact]
-    public void Handle_TitleOfATrackWithoutArtistFound_ClosesTheBuzzer()
+    public void Handle_TitleOfATrackWithoutArtistFound_RevealsTheTrack()
     {
         // When
         var state = BlindTestGames.Judged(BlindTestGames.AtTrack(NewGame, 1), 3, title: true);
 
         // Then
-        Assert.Equal(BlindTestPhase.Closed, BlindTestGames.RoundOf(state).Phase);
+        Assert.Equal(BlindTestPhase.Revealed, BlindTestGames.RoundOf(state).Phase);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class BlindTestJudgementTests
         // Then
         Assert.Null(transition.Rejection);
         var round = BlindTestGames.RoundOf(transition.State);
-        Assert.Equal((BlindTestPhase.Closed, Games.PlayerIdOf(2), Games.PlayerIdOf(3)), (round.Phase, round.TitleFoundBy, round.ArtistFoundBy));
+        Assert.Equal((BlindTestPhase.Revealed, Games.PlayerIdOf(2), Games.PlayerIdOf(3)), (round.Phase, round.TitleFoundBy, round.ArtistFoundBy));
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public sealed class BlindTestJudgementTests
     }
 
     [Fact]
-    public void Handle_LastConnectedPlayerJudged_ClosesTheBuzzer()
+    public void Handle_LastConnectedPlayerJudged_RevealsTheTrack()
     {
         // Given: Léa left, Zoé found nothing, Max has the hand
         var state = BlindTestGames.AnsweringAgain(BlindTestGames.Judged(Disconnected(NewGame, "Léa"), 1), 2);
@@ -131,7 +131,7 @@ public sealed class BlindTestJudgementTests
         // Then
         Assert.Null(transition.Rejection);
         var round = BlindTestGames.RoundOf(transition.State);
-        Assert.Equal(BlindTestPhase.Closed, round.Phase);
+        Assert.Equal(BlindTestPhase.Revealed, round.Phase);
         Assert.False(round.Playback.IsPlaying);
     }
 
@@ -206,7 +206,7 @@ public sealed class BlindTestJudgementTests
     }
 
     [Fact]
-    public void Handle_SkipTrackOnceClosed_AnnouncesTheNextTrackWithNothingFound()
+    public void Handle_SkipTrackOnceRevealed_AnnouncesTheNextTrackWithNothingFound()
     {
         // Given
         var state = BlindTestGames.Judged(NewGame, 2, title: true, artist: true);
@@ -229,8 +229,8 @@ public sealed class BlindTestJudgementTests
 
         // Then
         Assert.Equal((BuzzerButtonState.Closed, false, false), ViewOf(state, 1));
-        Assert.Equal((BuzzerButtonState.Blocked, true, false), ViewOf(state, 2));
-        Assert.Equal((BuzzerButtonState.Blocked, false, true), ViewOf(state, 3));
+        Assert.Equal((BuzzerButtonState.Closed, true, false), ViewOf(state, 2)); // revealed: closed to all
+        Assert.Equal((BuzzerButtonState.Closed, false, true), ViewOf(state, 3));
     }
 
     [Fact]

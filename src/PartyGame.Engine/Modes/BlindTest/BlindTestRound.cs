@@ -51,12 +51,12 @@ public sealed record BlindTestRound(BlindTestRoundDescriptor Descriptor, int Tra
     public bool IsSomethingLeft => TitleFoundBy is null || (Track.Artist is not null && ArtistFoundBy is null);
 
     /// <summary>
-    /// Phase of the track in progress.
+    /// Phase of the track in progress: the reveal closes the buzzer until the next track.
     /// </summary>
     [JsonIgnore] // derived from the buzzer, which is persisted
     public BlindTestPhase Phase =>
         Buzzer.Opening == 0 ? BlindTestPhase.Ready
-        : Buzzer.IsClosed ? BlindTestPhase.Closed
+        : Buzzer.IsClosed ? BlindTestPhase.Revealed
         : Buzzer.Winner is not null ? BlindTestPhase.Answering
         : Buzzer.ArbitrateAt is not null ? BlindTestPhase.Arbitrating
         : BlindTestPhase.Listening;
