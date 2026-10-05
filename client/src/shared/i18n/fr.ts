@@ -534,6 +534,8 @@ export const fr = {
             display: {
                 // Shown large while the game master reads out the question, before showing it.
                 upcoming: 'Question {number}',
+                // Under it, while the buzzer is open and the game master reads the question aloud.
+                listen: 'Buzzers ouverts : écoutez bien !',
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
                 // Read by screen readers: the players who chose a choice, once revealed.
@@ -604,6 +606,8 @@ export const fr = {
             display: {
                 // Shown large until the game master asks the question.
                 upcoming: 'Question {number}',
+                // Under it, while the buzzer is open and the game master reads the question aloud.
+                listen: 'Buzzers ouverts : écoutez bien !',
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
                 // Heads the expected answer once revealed.
@@ -622,6 +626,10 @@ export const fr = {
             gm: {
                 // Shows the question on the TV screen and opens the buzzer on every phone.
                 askQuestion: 'Poser la question',
+                // Opens the buzzer while the TV screen keeps the question hidden, for it to be read aloud.
+                openHidden: 'Ouvrir le buzzer sans afficher',
+                // Shows on the TV screen the question asked hidden.
+                showQuestion: 'Afficher la question',
                 // Marks the question the TV screen does not show yet.
                 hiddenOnDisplay: 'Pas encore affichée sur la TV',
                 answer: 'Réponse attendue : {answer}',

@@ -5,12 +5,18 @@
         BuzzerJudge,
         BuzzerNextQuestion,
         BuzzerRevealAnswer,
+        BuzzerShowQuestion,
     } from '../../shared/contracts';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
     import type { GameMasterViewProps } from '../../shared/modeViews';
 
-    type Intent = BuzzerAskQuestion | BuzzerJudge | BuzzerRevealAnswer | BuzzerNextQuestion;
+    type Intent =
+        | BuzzerAskQuestion
+        | BuzzerShowQuestion
+        | BuzzerJudge
+        | BuzzerRevealAnswer
+        | BuzzerNextQuestion;
 
     let { view, round, interactive, send }: GameMasterViewProps<BuzzerGameMasterView, Intent> =
         $props();
@@ -30,8 +36,18 @@
         sending = false;
     }
 
-    function step(type: Exclude<Intent['type'], 'buzzer.judge'>) {
+    function step(type: Exclude<Intent['type'], 'buzzer.judge' | 'buzzer.askQuestion'>) {
         void act({ type, roundId: round.roundId, questionNumber: view.questionNumber });
+    }
+
+    // Kept hidden, the question is read out while the players may already buzz.
+    function ask(showQuestion: boolean) {
+        void act({
+            type: 'buzzer.askQuestion',
+            roundId: round.roundId,
+            questionNumber: view.questionNumber,
+            showQuestion,
+        });
     }
 
     function judge(correct: boolean) {
@@ -50,9 +66,9 @@
         {fill(fr.modes.buzzer.question, { number: view.questionNumber, count: view.questionCount })}
     </p>
     <!-- The whole question from the start, for the game master to read it out. -->
-    <div class="question" class:hidden={view.phase === 'Ready'}>
+    <div class="question" class:hidden={!view.shown}>
         <h3>{view.text}</h3>
-        {#if view.phase === 'Ready'}
+        {#if !view.shown}
             <span class="hidden-label">{fr.modes.buzzer.gm.hiddenOnDisplay}</span>
         {/if}
     </div>
@@ -74,12 +90,16 @@
     {/if}
     <div class="actions">
         {#if view.phase === 'Ready'}
+            <button type="button" disabled={!interactive || sending} onclick={() => ask(true)}>
+                {fr.modes.buzzer.gm.askQuestion}
+            </button>
             <button
                 type="button"
+                class="secondary"
                 disabled={!interactive || sending}
-                onclick={() => step('buzzer.askQuestion')}
+                onclick={() => ask(false)}
             >
-                {fr.modes.buzzer.gm.askQuestion}
+                {fr.modes.buzzer.gm.openHidden}
             </button>
         {:else if view.phase === 'Revealed'}
             <button
@@ -90,6 +110,15 @@
                 {lastQuestion ? fr.modes.buzzer.gm.endRound : fr.modes.buzzer.gm.nextQuestion}
             </button>
         {:else}
+            {#if !view.shown}
+                <button
+                    type="button"
+                    disabled={!interactive || sending}
+                    onclick={() => step('buzzer.showQuestion')}
+                >
+                    {fr.modes.buzzer.gm.showQuestion}
+                </button>
+            {/if}
             {#if view.phase === 'Answering'}
                 <button
                     type="button"

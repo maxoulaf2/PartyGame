@@ -40,6 +40,11 @@ public sealed class BuzzerLeakTests
             ("found after a wrong answer", BuzzerGames.Judged(Started(), correct: true, 1, 2)),
             ("revealed during the arbitration", Revealed(BuzzerGames.Buzzed(Started(), (2, 40)))),
             ("illustrated question revealed", Revealed(BuzzerGames.Asked(BuzzerGames.AtQuestion(Started(), 1)))),
+            ("question asked hidden", BuzzerGames.AskedHidden(Started())),
+            ("illustrated question asked hidden", BuzzerGames.AskedHidden(BuzzerGames.AtQuestion(Started(), 1))),
+            ("question hidden, arbitrating", BuzzerGames.Hidden(BuzzerGames.Buzzed(Started(), (2, 40)))),
+            ("question hidden, winner designated", BuzzerGames.Hidden(BuzzerGames.Answering(Started(), (2, 40)))),
+            ("question hidden, every player blocked", BuzzerGames.Hidden(BuzzerGames.Judged(Started(), correct: false, 1, 2, 3))),
             ("last question found", BuzzerGames.Judged(BuzzerGames.AtQuestion(Started(), 2), correct: true, 3)),
         ],
         SecretsOf = SecretsOf,
@@ -56,6 +61,11 @@ public sealed class BuzzerLeakTests
                 "text of the question, announced",
                 Started(),
                 BuzzerGames.Started(WithFirstQuestion(BuzzerGames.PaintingQuestion with { Text = "Qui a sculpté Le Penseur ?" }), _players),
+                Audience.AllButGameMaster),
+            new SecretPair<GameState>(
+                "text of the question, asked hidden",
+                BuzzerGames.AskedHidden(Started()),
+                BuzzerGames.AskedHidden(BuzzerGames.Started(WithFirstQuestion(BuzzerGames.PaintingQuestion with { Text = "Qui a sculpté Le Penseur ?" }), _players)),
                 Audience.AllButGameMaster),
 
             // Nobody learns who buzzed before the winner is designated, but the player who did.
@@ -115,8 +125,8 @@ public sealed class BuzzerLeakTests
             yield return new Secret(round.Question.Answer, Audience.AllButGameMaster);
         }
 
-        // The question shows on the TV screen once the game master asks it.
-        if (round.Phase == BuzzerPhase.Ready)
+        // The question shows on the TV screen once the game master shows it, at the latest at the reveal.
+        if (!round.Shown && !round.Revealed)
         {
             yield return new Secret(round.Question.Text, Audience.AllButGameMaster);
             if (round.Question.Image is { } image)

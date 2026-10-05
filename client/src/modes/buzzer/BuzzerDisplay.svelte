@@ -29,10 +29,13 @@
     </header>
     <div class="question">
         {#if view.text === null}
-            <!-- The question shows once the game master asks it, as the buzzer opens. -->
-            <p class="upcoming">
-                {fill(fr.modes.buzzer.display.upcoming, { number: view.questionNumber })}
-            </p>
+            <!-- The question shows once the game master shows it, as the buzzer opens or later. -->
+            <div class="upcoming">
+                <p>{fill(fr.modes.buzzer.display.upcoming, { number: view.questionNumber })}</p>
+                {#if view.phase === 'Open'}
+                    <p class="listen">{fr.modes.buzzer.display.listen}</p>
+                {/if}
+            </div>
         {:else}
             {#if image}
                 {@const src = image}
@@ -110,6 +113,12 @@
         font-size: 5rem;
         font-weight: 800;
         text-align: center;
+    }
+
+    .listen {
+        margin-top: 2vh;
+        color: var(--color-accent);
+        font-size: 3rem;
     }
 
     img {

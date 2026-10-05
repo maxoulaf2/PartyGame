@@ -118,3 +118,27 @@ test('a wrong answer blocks its player and reopens the buzzer to the others', as
     ).toBeVisible();
     await expect(buzzer(zoe.page, 'closed')).toBeDisabled();
 });
+
+test('the buzzer opens before the question shows, for it to be read aloud', async ({ table }) => {
+    const { display, gm } = table;
+    const [zoe] = table.players;
+    await startGame(gm);
+
+    // The game master opens the buzzer and reads the question aloud: the TV screen keeps it hidden.
+    await gm.getByRole('button', { name: fr.modes.buzzer.gm.openHidden, exact: true }).click();
+    await expect(display.getByText(fr.modes.buzzer.display.listen)).toBeVisible();
+    await expect(display.getByText(question)).toHaveCount(0);
+    await expect(gm.getByText(fr.modes.buzzer.gm.hiddenOnDisplay)).toBeVisible();
+
+    // Zoé buzzes before the end of the question.
+    await buzzer(zoe.page, 'open').tap();
+    await expect(
+        display.getByText(fill(fr.modes.buzzer.hasHand, { nickname: zoe.nickname })),
+    ).toBeVisible();
+    await expect(display.getByText(question)).toHaveCount(0);
+
+    // The game master shows it.
+    await gm.getByRole('button', { name: fr.modes.buzzer.gm.showQuestion, exact: true }).click();
+    await expect(display.getByRole('heading', { name: question })).toBeVisible();
+    await expect(gm.getByText(fr.modes.buzzer.gm.hiddenOnDisplay)).toHaveCount(0);
+});

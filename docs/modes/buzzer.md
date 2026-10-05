@@ -7,7 +7,7 @@ Le game master pose une question, qui s'affiche sur l'écran TV pendant que le b
 
 ## Règles
 
-- **Question affichée à l'ouverture du buzzer.** Le GM pose la question : la TV l'affiche, avec son image s'il y en a une, et le buzzer s'ouvre sur tous les téléphones. Le GM peut aussi la lire à voix haute. La réponse attendue n'apparaît que sur la console GM, jusqu'à la révélation.
+- **Question affichée à l'ouverture du buzzer, ou plus tard.** Le GM pose la question : la TV l'affiche, avec son image s'il y en a une, et le buzzer s'ouvre sur tous les téléphones. Le GM peut aussi ouvrir le buzzer sans afficher la question, pour la lire à voix haute pendant que les joueurs peuvent déjà buzzer, puis l'afficher quand il le souhaite (au plus tard, la révélation l'affiche). La réponse attendue n'apparaît que sur la console GM, jusqu'à la révélation.
 - **Départage à l'horodatage.** Le gagnant est celui dont le doigt a touché l'écran en premier, d'après l'heure serveur de l'appui, et non d'après l'arrivée de son message. Le serveur attend une fenêtre d'arbitrage après le premier buzz reçu (250 ms par défaut, `Buzzer:ArbitrationMilliseconds`).
 - **Réponse orale, jugée par le GM.** Le joueur qui a la main répond à voix haute. Le téléphone ne sert qu'à buzzer.
 - **Mauvaise réponse.** Le joueur est bloqué pour la question, sans perdre de points, et le buzzer se rouvre aussitôt aux autres. Quand tous les joueurs connectés sont bloqués, le buzzer reste fermé et le GM ne peut plus que révéler la réponse.
@@ -19,8 +19,8 @@ Le game master pose une question, qui s'affiche sur l'écran TV pendant que le b
 
 | Phase | TV | Téléphones | Console GM |
 |---|---|---|---|
-| `Ready` : question annoncée | « Question n » | Buzzer fermé | Texte, réponse attendue, bouton « Poser la question » |
-| `Open` : buzzer ouvert (`buzzer.askQuestion`) | Question et image | Buzzer ouvert | « Buzzer ouvert : en attente d'un buzz » |
+| `Ready` : question annoncée | « Question n » | Buzzer fermé | Texte, réponse attendue, boutons « Poser la question » et « Ouvrir le buzzer sans afficher » |
+| `Open` : buzzer ouvert (`buzzer.askQuestion`) | Question et image, ou « Question n » et « Buzzers ouverts : écoutez bien ! » tant qu'elle est masquée | Buzzer ouvert | « Buzzer ouvert : en attente d'un buzz » |
 | `Arbitrating` : fenêtre d'arbitrage en cours | Comme `Open` | Comme `Open` ; « Buzz envoyé… » pour qui a buzzé | Comme `Open` |
 | `Answering` : un gagnant a la main | Question et « Pseudo a la main » | « À toi de répondre ! » pour le gagnant, son pseudo pour les autres | « Pseudo a la main », « Bonne réponse », « Mauvaise réponse », « Révéler la réponse » |
 | `Closed` : tous les joueurs connectés sont bloqués | Question | Buzzer bloqué | « Tous les joueurs sont bloqués », « Révéler la réponse » |
@@ -28,7 +28,9 @@ Le game master pose une question, qui s'affiche sur l'écran TV pendant que le b
 
 La fenêtre d'arbitrage reste invisible : les projections montrent `Open` tant que le gagnant n'est pas désigné, et aucune ne contient les horodatages des buzz. Un buzz (`buzzer.buzz`) nomme la question et l'ouverture du buzzer : renvoyé après une reconnexion, il ne compte jamais pour une ouverture suivante. Un joueur arrivé pendant la question peut buzzer.
 
-Les intentions du GM nomment la question : `buzzer.askQuestion`, `buzzer.revealAnswer` et `buzzer.nextQuestion`. Le jugement, `buzzer.judge`, nomme en plus l'ouverture du buzzer qu'il juge : envoyé deux fois, ou par deux consoles, il est rejeté une fois le buzzer rouvert, si bien qu'un joueur ne gagne jamais deux fois et qu'un refus ne bloque jamais le gagnant suivant. Après la dernière question, `buzzer.nextQuestion` termine la manche et le classement intermédiaire s'affiche.
+Tant que la question est masquée, la TV n'en reçoit ni le texte ni l'image, quelle que soit la phase, et la console GM propose « Afficher la question » (`buzzer.showQuestion`), refusé une fois la question affichée.
+
+Les intentions du GM nomment la question : `buzzer.askQuestion` (dont `showQuestion` dit si la TV affiche la question dès l'ouverture), `buzzer.showQuestion`, `buzzer.revealAnswer` et `buzzer.nextQuestion`. Le jugement, `buzzer.judge`, nomme en plus l'ouverture du buzzer qu'il juge : envoyé deux fois, ou par deux consoles, il est rejeté une fois le buzzer rouvert, si bien qu'un joueur ne gagne jamais deux fois et qu'un refus ne bloque jamais le gagnant suivant. Après la dernière question, `buzzer.nextQuestion` termine la manche et le classement intermédiaire s'affiche.
 
 ## Format du descripteur
 

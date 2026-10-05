@@ -16,6 +16,7 @@ export type * from './BuzzerNextQuestion';
 export type * from './BuzzerPlayerView';
 export type * from './BuzzerQuestionPhase';
 export type * from './BuzzerRevealAnswer';
+export type * from './BuzzerShowQuestion';
 export type * from './ChooseAdvertisedAddressRefusal';
 export type * from './ChooseAdvertisedAddressRequest';
 export type * from './ChooseAdvertisedAddressResult';

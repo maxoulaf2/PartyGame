@@ -5,9 +5,8 @@
 
 import type { RoundId } from './RoundId';
 
-export interface BuzzerAskQuestion {
-    readonly type: 'buzzer.askQuestion';
+export interface BuzzerShowQuestion {
+    readonly type: 'buzzer.showQuestion';
     readonly roundId: RoundId;
     readonly questionNumber: number;
-    readonly showQuestion: boolean;
 }
