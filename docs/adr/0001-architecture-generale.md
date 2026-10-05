@@ -46,7 +46,8 @@ public sealed record Transition(GameState State, ImmutableArray<Effect> Effects)
 
 - L'état est immuable : des `record` avec `ImmutableArray` et `ImmutableDictionary`, mis à jour avec `with`.
 - Le temps (`context.Now`) et le hasard (`context.Random`, à graine contrôlée) sont fournis par le contexte. Côté serveur, le temps provient d'un `TimeProvider` injecté.
-- Les effets (`ScheduleTimer`, `PlayAudio`, `ReportIncident`…) décrivent ce qui doit se passer hors du moteur. `GameLoop`, dans `PartyGame.Server`, les exécute.
+- Les effets (`ScheduleTimer`, `CancelTimer`…) décrivent ce qui doit se passer hors du moteur. `GameLoop`, dans `PartyGame.Server`, les exécute.
+- L'audio n'est pas un effet : la projection `Display` d'un mode décrit la lecture en cours (`AudioPlayback` : média, position, instant de déclenchement en heure serveur ou position de pause), dont l'écran TV déduit à tout moment ce qu'il doit jouer, y compris après un rechargement (décision 2 de E14, US-E14-03).
 - Une intention invalide n'est pas une exception : `Handle` retourne la même instance d'état sans effet, et rien n'est diffusé.
 - `PartyGame.Engine` ne dépend que de `PartyGame.Contracts` et ne référence jamais ASP.NET Core ni SignalR. Un test d'architecture le vérifie.
 
