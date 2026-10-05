@@ -1,6 +1,6 @@
 ### US-E13-01 — Bouton buzzer du téléphone
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** joueur
 **je veux** un gros bouton qui réagit à l'instant où je le touche
@@ -13,7 +13,7 @@
 - Étant donné un buzzer fermé, un joueur bloqué ou un téléphone pas encore resynchronisé (pas de snapshot frais, ou première salve de synchronisation d'horloge pas terminée), quand le joueur appuie, alors rien n'est envoyé et le bouton est visiblement désactivé.
 - Étant donné le bouton, quand il s'affiche, alors il occupe l'essentiel de l'écran, reste utilisable d'une main, et porte `touch-action: manipulation` ; aucun zoom, sélection de texte ou menu contextuel ne se déclenche sur un appui long (iOS et Android).
 - Étant donné les états du bouton (fermé, ouvert, envoyé, gagné, perdu, bloqué), quand ils s'affichent, alors ils se distinguent par le texte et la forme, pas seulement par la couleur. Les textes sont dans `fr.ts`.
-- Étant donné les tests, quand ils s'exécutent, alors Vitest couvre la conversion de l'instant d'appui en heure serveur et l'envoi unique par ouverture, et Playwright l'appui sur iPhone (WebKit) et Pixel (Chromium).
+- Étant donné les tests, quand ils s'exécutent, alors Vitest couvre la conversion de l'instant d'appui en heure serveur et l'envoi unique par ouverture (`shared/buzzer.test.ts`). L'appui sur iPhone et Pixel est vérifié par Playwright dans US-E13-04, première page à afficher le bouton.
 
 **Comportement en cas d'erreur**
 Joueur : si la connexion tombe après l'appui, le buzz reste dans la file d'envoi et repart à la reconnexion avec son horodatage d'origine ; le serveur le juge (US-E13-02). Public et GM : rien.

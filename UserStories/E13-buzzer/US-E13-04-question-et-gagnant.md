@@ -14,7 +14,7 @@
 - Étant donné un joueur arrivé pendant la question, quand le buzzer s'ouvre ou se rouvre, alors il peut buzzer. Comme pour le quiz, il commence à 0 point (décision 4 du README de E09).
 - Étant donné un téléphone qui se reconnecte, la TV qui se recharge ou une partie reprise après un crash, quand le snapshot arrive, alors chacun retrouve l'état courant : buzzer ouvert, gagnant désigné ou joueur bloqué.
 - Étant donné les projections, quand elles sont produites, alors seule celle du GM contient la réponse attendue avant la révélation, et aucune ne contient les horodatages des buzz : la `LeakSuite` du mode couvre chaque phase et chaque rôle.
-- Étant donné les tests, quand ils s'exécutent, alors ils couvrent chaque transition et chaque rejet du moteur, la non-fuite, et un scénario E2E avec trois joueurs, la TV et le GM.
+- Étant donné les tests, quand ils s'exécutent, alors ils couvrent chaque transition et chaque rejet du moteur, la non-fuite, et un scénario E2E avec trois joueurs, la TV et le GM, dont l'appui sur le bouton buzzer (`pointerdown`) sur iPhone (WebKit) et Pixel (Chromium), reporté de US-E13-01.
 
 **Comportement en cas d'erreur**
 Joueurs et public : aucun message ; une image introuvable laisse la question affichée sans image, avec l'incident `DisplayMediaFailed` côté GM (US-E10-04). GM : un échec du mode suit US-E10-02.

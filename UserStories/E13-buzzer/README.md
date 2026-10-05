@@ -7,7 +7,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E13-01](US-E13-01-bouton-buzzer.md) | Bouton buzzer du téléphone | À faire | — |
+| [US-E13-01](US-E13-01-bouton-buzzer.md) | Bouton buzzer du téléphone | Terminée | — |
 | [US-E13-02](US-E13-02-arbitrage.md) | Arbitrage du buzz | À faire | — |
 | [US-E13-03](US-E13-03-descripteur-questions-buzzer.md) | Descripteur d'une manche de questions buzzer | À faire | — |
 | [US-E13-04](US-E13-04-question-et-gagnant.md) | Question posée et annonce du gagnant | À faire | US-E13-01, US-E13-02, US-E13-03 |

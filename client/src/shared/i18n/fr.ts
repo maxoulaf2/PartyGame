@@ -39,6 +39,15 @@ export const fr = {
             other: '{count} points',
         },
     },
+    // The buzzer of a phone, by state (see BuzzerState).
+    buzzer: {
+        closed: 'Attends la question',
+        open: 'Buzz !',
+        sent: 'Buzz envoyé…',
+        won: 'À toi de répondre !',
+        lost: 'Un autre joueur a la main',
+        blocked: 'Tu ne peux plus buzzer sur cette question',
+    },
     player: {
         waiting: 'Bienvenue ! La partie va bientôt commencer.',
         // Shown during the game when the phone has nothing more precise to show.

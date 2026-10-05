@@ -31,10 +31,14 @@ const performanceClock: LocalClock = {
     now: () => performance.now(),
 };
 
-/** The clock of the server, as the views of the modes read it to count down. */
+/** The clock of the server, as the views of the modes read it to count down and to buzz. */
 export interface ServerClock {
+    /** Whether the estimate comes from a burst made on the current connection. */
+    readonly synchronized: boolean;
     /** The current time of the server, in milliseconds since the Unix epoch. */
     serverNow(): number;
+    /** The time of the server, since the Unix epoch, at a local `performance.now()` timestamp. */
+    toServerTime(timestamp: number): number;
 }
 
 /**
