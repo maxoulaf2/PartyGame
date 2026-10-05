@@ -159,6 +159,16 @@ Sans règle de pare-feu, le serveur fonctionne sur le PC hôte mais les téléph
 
 Le serveur n'ajoute jamais de règle lui-même : cela exigerait des droits administrateur.
 
+## Son de l'écran TV
+
+Seul l'écran TV joue du son, mais un navigateur refuse de jouer du son tant qu'on n'a pas cliqué dans la page. L'écran TV affiche donc un bouton « Démarrer » au-dessus du QR code : un clic débloque le son, et le bouton disparaît. Si la TV est rechargée en cours de partie, le bouton réapparaît par-dessus l'écran courant. Tant que le son n'est pas débloqué, la console du game master affiche « Son de la TV non activé » à côté de la ligne « Écran TV ».
+
+En mode kiosque (Chromium plein écran, sans clavier ni souris, typiquement sur le Raspberry Pi), lancer le navigateur avec le flag qui autorise la lecture automatique : l'écran détecte que le son est déjà permis et n'affiche pas le bouton.
+
+```bash
+chromium --kiosk --autoplay-policy=no-user-gesture-required http://localhost:5000/display/
+```
+
 ## Vérifier qu'un téléphone atteint le serveur
 
 1. Lire l'adresse des joueurs dans la bannière de démarrage (par exemple `192.168.1.42`). À défaut, `ipconfig` dans un terminal donne la ligne « Adresse IPv4 » de la carte Wi-Fi ou Ethernet.

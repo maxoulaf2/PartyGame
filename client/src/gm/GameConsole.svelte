@@ -103,6 +103,9 @@
         <p class="display-quality">
             <span class="label">{fr.gm.network.display}</span>
             <ConnectionQualityLine quality={displayQuality} />
+            {#if displayQuality.audioUnlocked === false}
+                <span class="audio-locked">{fr.gm.network.displayAudioLocked}</span>
+            {/if}
         </p>
     {/if}
 
@@ -194,6 +197,10 @@
 
     .display-quality .label {
         font-weight: 700;
+    }
+
+    .audio-locked {
+        color: var(--color-accent);
     }
 
     ul {

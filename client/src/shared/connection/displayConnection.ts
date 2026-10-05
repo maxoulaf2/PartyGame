@@ -5,11 +5,13 @@ import type { SnapshotStore } from './snapshotStore.svelte';
 /**
  * Connects the page as the TV screen, which needs no secret, and keeps `store` up to date with
  * every snapshot the server sends: the current one right after the announcement, then one per
- * change. Announces again whenever the connection comes back. Returns a function that disconnects.
+ * change. Announces again whenever the connection comes back, then calls `announced`, from when
+ * the server takes the page for the TV screen. Returns a function that disconnects.
  */
 export function connectDisplay(
     store: SnapshotStore<DisplaySnapshot>,
     connection: GameConnection = createGameConnection(),
+    announced: () => void = () => {},
 ): () => void {
     const unsubscribe = connection.on('ReceiveDisplaySnapshot', (snapshot) => {
         store.accept(snapshot);
@@ -17,7 +19,10 @@ export function connectDisplay(
 
     // An unreachable server leaves the TV screen on its neutral display, never on an error.
     const announce = () =>
-        connection.invoke('Announce', { role: 'Display', gameMasterCode: null }).catch(() => {});
+        connection
+            .invoke('Announce', { role: 'Display', gameMasterCode: null })
+            .then(announced)
+            .catch(() => {});
 
     // The TV screen keeps showing the last snapshot, marked as possibly outdated (US-E05-02).
     connection.onReconnecting(() => store.markStale());
@@ -61,4 +66,13 @@ export function reportMediaFailure(connection: GameConnection, url: string): voi
         return;
     }
     connection.invoke('ReportDisplayMediaFailure', { mediaId }).catch(() => {});
+}
+
+/**
+ * Tells the server whether the browser of the TV screen lets it play sound, for the game master
+ * console to warn while it does not. A report that cannot be sent is dropped: the screen reports
+ * again whenever it announces.
+ */
+export function reportAudio(connection: GameConnection, unlocked: boolean): void {
+    connection.invoke('ReportDisplayAudio', { unlocked }).catch(() => {});
 }

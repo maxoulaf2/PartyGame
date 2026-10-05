@@ -28,6 +28,7 @@ export type * from './ConnectionQualityReport';
 export type * from './ConnectionTransport';
 export type * from './DeviceKind';
 export type * from './DiagnosticVerdict';
+export type * from './DisplayAudioReport';
 export type * from './DisplayMediaFailureReport';
 export type * from './DisplayPlayer';
 export type * from './DisplayRoundView';

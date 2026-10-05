@@ -98,6 +98,8 @@ export const fr = {
         inProgress: 'Partie en cours',
         // Shown while the server, restarted, waits for the game master to resume the game.
         resumePending: 'Reprise de la partie…',
+        // Clicked once on the TV screen to let its browser play sound.
+        startAudio: 'Démarrer',
         // Shown instead of what the TV screen could not render, until the next update.
         continuing: 'La partie continue…',
         // Shown next to the QR code between two rounds, for late arrivals.
@@ -170,6 +172,8 @@ export const fr = {
             },
             // The connection of a player or of the TV screen, in the list of the players.
             display: 'Écran TV',
+            // Next to the TV screen, until someone clicks « Démarrer » on it.
+            displayAudioLocked: 'Son de la TV non activé',
             roundTrip: '{value} ms',
             noRoundTrip: '— ms',
             // How far the clock of the device may be from the server: half its round trip.

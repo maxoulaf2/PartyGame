@@ -108,6 +108,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="RecordConnectionQuality"/>, as the clients call it.</summary>
     public const string ReportConnectionQuality = nameof(ReportConnectionQuality);
 
+    /// <summary>SignalR target of <see cref="RecordDisplayAudio"/>, as the clients call it.</summary>
+    public const string ReportDisplayAudio = nameof(ReportDisplayAudio);
+
     /// <summary>
     /// Longest round trip a page may report, in milliseconds: a longer one is no measure, and would only mislead the game
     /// master.
@@ -883,6 +886,26 @@ internal sealed class GameHub(
         else if (Context.GetRole() == Role.Display)
         {
             networkHealth.RecordRoundTrip(playerId: null, report.RoundTrip);
+        }
+    }
+
+    /// <summary>
+    /// Records whether the browser of the TV screen lets it play sound, for the game master console to warn while it does
+    /// not. The TV screen alone may report it. Logs nothing: the console shows it.
+    /// </summary>
+    /// <param name="message">A <see cref="DisplayAudioReport"/>.</param>
+    [HubMethodName(ReportDisplayAudio)]
+    public void RecordDisplayAudio(JsonElement message)
+    {
+        if (!HubMessage.TryRead<DisplayAudioReport>(message, out var report, out var invalidPath))
+        {
+            logger.MessageMalformed(ReportDisplayAudio, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        if (Context.GetRole() == Role.Display)
+        {
+            networkHealth.RecordDisplayAudio(report.Unlocked);
         }
     }
 

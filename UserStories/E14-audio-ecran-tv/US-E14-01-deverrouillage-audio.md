@@ -1,6 +1,6 @@
 ### US-E14-01 — Déverrouillage de l'audio sur l'écran TV
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** que la TV soit autorisée à jouer du son avant la première manche, et savoir si elle ne l'est pas

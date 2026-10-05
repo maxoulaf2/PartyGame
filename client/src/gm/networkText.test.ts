@@ -27,6 +27,7 @@ describe('qualityParts', () => {
                 transport: 'LongPolling',
                 roundTrip: 240,
                 reconnections: 1,
+                audioUnlocked: null,
             }),
         ).toEqual([
             { text: '240 ms', poor: true },
@@ -43,6 +44,7 @@ describe('qualityParts', () => {
                 transport: 'WebSockets',
                 roundTrip: null,
                 reconnections: 0,
+                audioUnlocked: null,
             })[0],
         ).toEqual({ text: '— ms', poor: false });
         expect(
@@ -51,6 +53,7 @@ describe('qualityParts', () => {
                 transport: 'WebSockets',
                 roundTrip: null,
                 reconnections: 0,
+                audioUnlocked: null,
             })[1],
         ).toEqual({ text: 'horloge ± — ms', poor: false });
     });
