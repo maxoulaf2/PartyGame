@@ -122,6 +122,20 @@ internal static class OpenQuestionGames
         return RoundOf(state).Phase == OpenQuestionPhase.Answering ? Accepted(state, AnswersTimerElapsed(state)) : state;
     }
 
+    /// <summary>The game master judges the answers to the question in progress, accepting those of the given players.</summary>
+    public static GameMasterRoundInput Judge(GameState state, int[] accepted, int? questionNumber = null) =>
+        new(new OpenQuestionJudge(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber, [.. accepted.Select(Games.PlayerIdOf)]), Games.Now);
+
+    /// <summary>
+    /// The same game, its question in progress shown, answered by the given players, locked, then judged, accepting the
+    /// answers of the players in <paramref name="accepted"/>.
+    /// </summary>
+    public static GameState Judged(GameState state, int[] accepted, params (int Player, string Answer)[] answers)
+    {
+        state = Locked(state, answers);
+        return Accepted(state, Judge(state, accepted));
+    }
+
     /// <summary>The same game, its question in progress skipped for the next one.</summary>
     public static GameState Skipped(GameState state) => Accepted(state, SkipQuestion(state));
 

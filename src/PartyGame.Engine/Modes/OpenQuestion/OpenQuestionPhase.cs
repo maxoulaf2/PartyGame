@@ -16,6 +16,13 @@ public enum OpenQuestionPhase
     /// </summary>
     Answering,
 
-    /// <summary>The answers are locked: no answer is accepted anymore.</summary>
+    /// <summary>
+    /// The answers are locked: no answer is accepted anymore, and the game master judges those received, pre-classified.
+    /// </summary>
     Locked,
+
+    /// <summary>
+    /// The game master judged the answers, or none was received: the question waits for its reveal.
+    /// </summary>
+    Judged,
 }

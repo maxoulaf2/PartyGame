@@ -31,8 +31,10 @@ public sealed class OpenQuestionLeakTests
             ("illustrated question shown", OpenQuestionGames.Answering(OpenQuestionGames.Skipped(Started()))),
             ("some answers", OpenQuestionGames.Answering(Started(), (2, "Picasso"), (1, "Vinci"))),
             ("player joined during the answers", OpenQuestionGames.Accepted(OpenQuestionGames.Answering(OpenQuestionGames.Started(_rounds, ["Zoé", "Max"]), (1, "Vinci")), Games.Join("Léa", player: 3))),
-            ("locked without answer", OpenQuestionGames.Locked(Started())),
+            ("judged at once without answer", OpenQuestionGames.Locked(Started())),
             ("locked with answers", OpenQuestionGames.Locked(Started(), (3, "Monet"), (1, "Léonard"))),
+            ("locked with every category", OpenQuestionGames.Locked(Started(), (3, "Monet"), (1, "de vinci"), (2, "Leonard de Vinchi"))),
+            ("judged", OpenQuestionGames.Judged(Started(), [1, 2], (3, "Monet"), (1, "de vinci"), (2, "Leonard de Vinchi"))),
             ("locked once everybody answered", OpenQuestionGames.Answering(Started(), (1, "Vinci"), (2, "Raphaël"), (3, "Dali"))),
             ("second question, after a skipped one", OpenQuestionGames.Skipped(OpenQuestionGames.Locked(Started(), (1, "Vinci"), (2, "Raphaël")))),
         ],
@@ -49,6 +51,16 @@ public sealed class OpenQuestionLeakTests
             ExpectedAnswerPair("expected answer, presented", state => state),
             ExpectedAnswerPair("expected answer, answers open", state => OpenQuestionGames.Answering(state, (1, "Vinci"))),
             ExpectedAnswerPair("expected answer, locked", state => OpenQuestionGames.Locked(state, (1, "Vinci"))),
+
+            // The pre-classification follows from the expected answer: accepted with the one, rejected with the other.
+            ExpectedAnswerPair("pre-classification", state => OpenQuestionGames.Locked(state, (1, "de vinci"))),
+
+            // The verdict of the game master waits for the reveal.
+            new SecretPair<GameState>(
+                "verdict on the answer of Zoé",
+                OpenQuestionGames.Judged(Started(), [1], (1, "Vinci"), (2, "Picasso")),
+                OpenQuestionGames.Judged(Started(), [], (1, "Vinci"), (2, "Picasso")),
+                Audience.AllButGameMaster),
             ExpectedAnswerPair("expected answer of the skipped question", state => OpenQuestionGames.Skipped(OpenQuestionGames.Locked(state, (1, "Vinci"))), Audience.Everyone),
 
             // The answer of a player is told to nobody but them and the game master.

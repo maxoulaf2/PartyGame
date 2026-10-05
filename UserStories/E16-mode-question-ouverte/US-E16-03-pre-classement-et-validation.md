@@ -1,6 +1,6 @@
 ### US-E16-03 — Pré-classement et validation en lot par le GM
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** trouver les réponses déjà triées par le serveur, corriger ce qui doit l'être et valider toutes les réponses d'un coup

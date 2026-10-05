@@ -72,7 +72,7 @@ public enum RejectionReason
 
     /// <summary>
     /// The question in progress is not in the phase the intent acts in: a part of the question shown once every choice is,
-    /// an answer while the answers are not open, a reveal before they are locked, a judgment while nobody has the hand, a
+    /// an answer while the answers are not open, a reveal before they are locked, a judgment while nobody has the hand or of answers not locked or already judged, a
     /// move to the next question before the reveal, or a question skipped or revealed once revealed.
     /// </summary>
     PhaseMismatch,
@@ -158,4 +158,7 @@ public enum RejectionReason
 
     /// <summary>The answer typed is longer than the round allows: the server never truncates it.</summary>
     AnswerTooLong,
+
+    /// <summary>The judgment accepts the answer of a player who gave none.</summary>
+    PlayerWithoutAnswer,
 }

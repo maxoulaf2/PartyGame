@@ -20,6 +20,10 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// <param name="Answers">
 /// The players taking part in the question, in order of arrival, each with their answer: empty until the answers open.
 /// </param>
+/// <param name="Groups">
+/// The answers received, identical ones once normalized grouped together, pre-classified by the server and listed
+/// accepted first, then to check, then rejected: empty until the answers lock.
+/// </param>
 public sealed record OpenQuestionGameMasterView(
     int QuestionNumber,
     int QuestionCount,
@@ -29,4 +33,5 @@ public sealed record OpenQuestionGameMasterView(
     string ExpectedAnswer,
     ImmutableArray<string> AcceptedAnswers,
     long? AnswersCloseAt,
-    ImmutableArray<OpenQuestionGameMasterAnswer> Answers) : GameMasterRoundView;
+    ImmutableArray<OpenQuestionGameMasterAnswer> Answers,
+    ImmutableArray<OpenQuestionGameMasterGroup> Groups) : GameMasterRoundView;

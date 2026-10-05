@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type OpenQuestionQuestionPhase = 'Presentation' | 'Answering' | 'Locked' | 'Judged';
+export type OpenQuestionAnswerCategory = 'Accepted' | 'ToCheck' | 'Rejected';

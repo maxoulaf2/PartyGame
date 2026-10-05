@@ -2,7 +2,9 @@
     import ConfirmDialog from '../../shared/components/ConfirmDialog.svelte';
     import Countdown from '../../shared/components/Countdown.svelte';
     import type {
+        OpenQuestionGameMasterGroup,
         OpenQuestionGameMasterView,
+        OpenQuestionJudge,
         OpenQuestionShowQuestion,
         OpenQuestionSkipQuestion,
     } from '../../shared/contracts';
@@ -10,7 +12,7 @@
     import { fr } from '../../shared/i18n/fr';
     import type { GameMasterViewProps } from '../../shared/modeViews';
 
-    type Intent = OpenQuestionShowQuestion | OpenQuestionSkipQuestion;
+    type Intent = OpenQuestionShowQuestion | OpenQuestionSkipQuestion | OpenQuestionJudge;
 
     let {
         view,
@@ -30,7 +32,42 @@
     const answeredCount = $derived(view.answers.filter((answer) => answer.answer !== null).length);
     const allAnswered = $derived(view.answers.length > 0 && answeredCount === view.answers.length);
 
-    async function step(type: Intent['type'], questionNumber = view.questionNumber) {
+    const locked = $derived(view.phase === 'Locked' || view.phase === 'Judged');
+    const nicknames = $derived(
+        new Map(view.answers.map((answer) => [answer.playerId, answer.nickname])),
+    );
+    const withoutAnswer = $derived(
+        view.answers.filter((answer) => answer.answer === null).map((answer) => answer.nickname),
+    );
+
+    // The boxes the game master changed, until they validate: the accepted answers start checked.
+    // Kept per question, so that the next one starts from its own suggestions.
+    let changed = $state<Record<string, boolean>>({});
+    const keyOf = (index: number) => `${round.roundId}/${view.questionNumber}/${index}`;
+    const isChecked = (group: OpenQuestionGameMasterGroup, index: number) =>
+        changed[keyOf(index)] ?? group.category === 'Accepted';
+
+    async function judge() {
+        if (!interactive || sending) {
+            return;
+        }
+        sending = true;
+        // One intent for the whole batch: sent again, or by a second console, it is obsolete.
+        await send({
+            type: 'openquestion.judge',
+            roundId: round.roundId,
+            questionNumber: view.questionNumber,
+            acceptedPlayers: view.groups.flatMap((group, index) =>
+                isChecked(group, index) ? group.playerIds : [],
+            ),
+        });
+        sending = false;
+    }
+
+    async function step(
+        type: Exclude<Intent['type'], 'openquestion.judge'>,
+        questionNumber = view.questionNumber,
+    ) {
         if (!interactive || sending) {
             return;
         }
@@ -62,7 +99,7 @@
                     label={fr.modes.openquestion.timeLeft}
                 />
             </p>
-        {:else if view.phase === 'Locked' && !allAnswered}
+        {:else if locked && !allAnswered}
             <!-- Locked early once everybody answered: the line of answers already says so. -->
             <p class="time-up">{fr.modes.openquestion.timeUp}</p>
         {/if}
@@ -93,23 +130,62 @@
             })}{#if allAnswered}
                 · <strong>{fr.modes.openquestion.allAnswered}</strong>{/if}
         </p>
-        <ul class="players" aria-label={fr.modes.openquestion.gm.answersLabel}>
-            {#each view.answers as answer (answer.playerId)}
-                <li>
-                    <!-- Plain text interpolation: Svelte escapes nicknames and answers, never read as HTML. -->
-                    <span class="nickname">{answer.nickname}</span>
-                    {#if answer.answer !== null}
-                        <span class="answer">{answer.answer}</span>
-                    {:else}
-                        <span class="none">
-                            {view.phase === 'Answering'
-                                ? fr.modes.openquestion.gm.waitingAnswer
-                                : fr.modes.openquestion.gm.noAnswer}
-                        </span>
-                    {/if}
-                </li>
-            {/each}
-        </ul>
+        {#if !locked}
+            <ul class="players" aria-label={fr.modes.openquestion.gm.answersLabel}>
+                {#each view.answers as answer (answer.playerId)}
+                    <li>
+                        <!-- Plain text interpolation: Svelte escapes nicknames and answers, never read as HTML. -->
+                        <span class="nickname">{answer.nickname}</span>
+                        {#if answer.answer !== null}
+                            <span class="answer">{answer.answer}</span>
+                        {:else}
+                            <span class="none">{fr.modes.openquestion.gm.waitingAnswer}</span>
+                        {/if}
+                    </li>
+                {/each}
+            </ul>
+        {:else}
+            <!-- Identical answers once normalized make one line: accepted, then to check, then rejected. -->
+            <ul class="players" aria-label={fr.modes.openquestion.gm.groupsLabel}>
+                {#each view.groups as group, index (index)}
+                    <li class:accepted={group.accepted === true}>
+                        <label>
+                            {#if view.phase === 'Locked'}
+                                <input
+                                    type="checkbox"
+                                    checked={isChecked(group, index)}
+                                    disabled={!interactive || sending}
+                                    onchange={(event) =>
+                                        (changed[keyOf(index)] = event.currentTarget.checked)}
+                                />
+                            {/if}
+                            <span class="group">
+                                <span class="answer">{group.text}</span>
+                                <span class="authors">
+                                    {group.playerIds
+                                        .map((id) => nicknames.get(id) ?? '')
+                                        .join(', ')}
+                                </span>
+                            </span>
+                            <span class="category">
+                                {group.accepted === null
+                                    ? fr.modes.openquestion.gm.categories[group.category]
+                                    : group.accepted
+                                      ? fr.modes.openquestion.gm.right
+                                      : fr.modes.openquestion.gm.wrong}
+                            </span>
+                        </label>
+                    </li>
+                {/each}
+            </ul>
+            {#if withoutAnswer.length > 0}
+                <p class="none">
+                    {fill(fr.modes.openquestion.gm.withoutAnswer, {
+                        nicknames: withoutAnswer.join(', '),
+                    })}
+                </p>
+            {/if}
+        {/if}
     {/if}
 
     <div class="actions">
@@ -120,6 +196,10 @@
                 onclick={() => step('openquestion.showQuestion')}
             >
                 {fr.modes.openquestion.gm.showQuestion}
+            </button>
+        {:else if view.phase === 'Locked'}
+            <button type="button" disabled={!interactive || sending} onclick={judge}>
+                {fr.modes.openquestion.gm.validate}
             </button>
         {/if}
         <button
@@ -249,6 +329,53 @@
     .answer {
         min-width: 0;
         text-align: right;
+    }
+
+    .players label {
+        display: flex;
+        flex: 1 1 auto;
+        align-items: center;
+        gap: var(--space-m);
+        min-width: 0;
+        min-height: var(--touch-target-min);
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    input[type='checkbox'] {
+        flex: none;
+        width: 1.5rem;
+        height: 1.5rem;
+        margin: 0;
+        accent-color: var(--color-accent);
+    }
+
+    .group {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .group .answer {
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .authors {
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+        overflow-wrap: anywhere;
+    }
+
+    .category {
+        flex: none;
+        color: var(--color-text-muted);
+        font-weight: 700;
+    }
+
+    li.accepted .category {
+        color: var(--color-accent);
     }
 
     .actions {

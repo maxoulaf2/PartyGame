@@ -126,5 +126,53 @@ test('the countdown locks the answers of a numeric question', async ({ table }) 
     await expect(lea.page.getByText(texts.timeUp)).toBeVisible();
     await expect(field(max.page)).toBeDisabled();
     await expect(zoe.page.getByText(texts.player.recorded)).toBeVisible();
-    await expect(gm.getByText(texts.gm.noAnswer)).toHaveCount(2);
+    await expect(
+        gm.getByText(fill(texts.gm.withoutAnswer, { nicknames: 'Max, Léa' })),
+    ).toBeVisible();
+});
+
+test('the game master checks an answer close to the expected one and validates them all', async ({
+    table,
+}) => {
+    const { display, gm } = table;
+    const [zoe, max, lea] = table.players;
+    await startGame(gm);
+    await gm.getByRole('button', { name: texts.gm.showQuestion }).click();
+
+    for (const [player, answer] of [
+        [zoe, 'Léonard de Vinci'],
+        [max, 'Picasso'],
+        [lea, 'Leonard de Vinchi'],
+    ] as const) {
+        await field(player.page).fill(answer);
+        await field(player.page).press('Enter');
+    }
+
+    // The console groups the answers, pre-classified: the accepted one checked, the others not.
+    const groups = gm.getByRole('list', { name: texts.gm.groupsLabel }).getByRole('listitem');
+    await expect(groups).toHaveCount(3);
+    await expect(groups.nth(0)).toContainText(texts.gm.categories.Accepted);
+    await expect(groups.nth(1)).toContainText(texts.gm.categories.ToCheck);
+    await expect(groups.nth(2)).toContainText(texts.gm.categories.Rejected);
+    await expect(groups.nth(0).getByRole('checkbox')).toBeChecked();
+    await expect(groups.nth(1).getByRole('checkbox')).not.toBeChecked();
+    await expect(groups.nth(2).getByRole('checkbox')).not.toBeChecked();
+
+    // The TV screen only says the game master checks them.
+    await expect(display.getByText(texts.display.checking)).toBeVisible();
+    await expect(display.getByText('Vinchi')).toHaveCount(0);
+
+    // The game master accepts the typo too, then validates the whole batch.
+    await groups.nth(1).getByRole('checkbox').check();
+    await gm.getByRole('button', { name: texts.gm.validate }).click();
+    await expect(groups.getByText(texts.gm.right)).toHaveCount(2);
+    await expect(groups.nth(2)).toContainText(texts.gm.wrong);
+    await expect(gm.getByRole('button', { name: texts.gm.validate })).toHaveCount(0);
+
+    // No verdict anywhere else before the reveal.
+    await expect(display.getByText(texts.display.checking)).toBeVisible();
+    for (const player of table.players) {
+        await expect(player.page.getByText(texts.player.recorded)).toBeVisible();
+        await expect(player.page.getByText(texts.gm.right)).toHaveCount(0);
+    }
 });
