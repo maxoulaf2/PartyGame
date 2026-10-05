@@ -1,6 +1,6 @@
 ### US-E15-01 — Descripteur d'une manche de blind test
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack
 **je veux** décrire une manche de blind test dans `pack.json` : les morceaux, leur extrait, leur titre et leur artiste
@@ -21,6 +21,8 @@ Contenu invalide : détecté au chargement, partie non lançable, problème pré
 - `BlindTestRoundDescriptor` et `BlindTestTrack` dans `PartyGame.Contracts.Packs`, déclarés sur `RoundDescriptor` (`[JsonDerivedType(..., "blindtest")]`).
 - `BlindTestMode` dans `PartyGame.Engine/Modes/BlindTest`, enregistré dans `AddGameModes()`, vues déclarées dans `client/src/modes/registry.ts` ; en attendant US-E15-02, la manche se termine aussitôt.
 - Documentation : `docs/modes/blindtest.md` (règles, phases, descripteur avec un exemple complet).
+- Réalisation : `BlindTestRoundDescriptor` (`titlePoints`, `artistPoints`, `tracks`) et `BlindTestTrack` (`excerpt`, `title`, `artist`, `image`). `BlindTestMode.Validate` signale `BlindTestPointsMissing` sur la manche. Les contrôles des extraits (US-E14-02) sont vérifiés dans une manche complète (`AudioExcerptProblemsTests`).
+- Écart : le pack `blindtest-exemple` contient dix mélodies du domaine public (Beethoven, Mozart, Pachelbel, Rouget de Lisle, chansons traditionnelles) jouées par un synthétiseur et générées pour le projet, placées sous CC0 : des airs que les joueurs reconnaissent, ce que des morceaux sous licence libre, inconnus du public, n'auraient pas permis. Les morceaux sans compositeur connu n'ont pas d'artiste. Le chapitre « Phases » de `docs/modes/blindtest.md` arrive avec US-E15-02.
 
 **Hors périmètre**
 - Plusieurs titres ou artistes acceptés : le GM juge à l'oral.
