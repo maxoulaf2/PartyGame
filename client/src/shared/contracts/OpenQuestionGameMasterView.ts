@@ -3,6 +3,18 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { OpenQuestionGameMasterAnswer } from './OpenQuestionGameMasterAnswer';
+import type { OpenQuestionQuestionPhase } from './OpenQuestionQuestionPhase';
+
 export interface OpenQuestionGameMasterView {
     readonly type: 'openquestion';
+    readonly questionNumber: number;
+    readonly questionCount: number;
+    readonly phase: OpenQuestionQuestionPhase;
+    readonly text: string;
+    readonly questionShown: boolean;
+    readonly expectedAnswer: string;
+    readonly acceptedAnswers: readonly string[];
+    readonly answersCloseAt: number | null;
+    readonly answers: readonly OpenQuestionGameMasterAnswer[];
 }

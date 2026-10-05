@@ -3,6 +3,16 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { OpenQuestionQuestionPhase } from './OpenQuestionQuestionPhase';
+
 export interface OpenQuestionPlayerView {
     readonly type: 'openquestion';
+    readonly questionNumber: number;
+    readonly questionCount: number;
+    readonly phase: OpenQuestionQuestionPhase;
+    readonly numeric: boolean;
+    readonly maxLength: number;
+    readonly answersCloseAt: number | null;
+    readonly participating: boolean;
+    readonly answer: string | null;
 }
