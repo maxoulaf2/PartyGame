@@ -13,6 +13,7 @@ namespace PartyGame.Contracts.Packs;
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(QuizRoundDescriptor), "quiz")]
+[JsonDerivedType(typeof(BuzzerRoundDescriptor), "buzzer")]
 [Description("Activité du pack, jouée comme une manche. Son type désigne le mode de jeu qui la joue.")]
 public abstract record RoundDescriptor
 {

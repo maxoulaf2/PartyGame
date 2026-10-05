@@ -3,7 +3,6 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-import type { BuzzerDisplayView } from './BuzzerDisplayView';
-import type { QuizDisplayView } from './QuizDisplayView';
-
-export type DisplayRoundView = BuzzerDisplayView | QuizDisplayView;
+export interface BuzzerDisplayView {
+    readonly type: 'buzzer';
+}

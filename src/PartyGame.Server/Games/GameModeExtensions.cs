@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.Buzzer;
 using PartyGame.Engine.Modes.Quiz;
 
 namespace PartyGame.Server.Games;
@@ -13,6 +14,7 @@ internal static class GameModeExtensions
     public static IServiceCollection AddGameModes(this IServiceCollection services)
     {
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IGameMode, QuizMode>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IGameMode, BuzzerMode>());
         services.TryAddSingleton(provider => new GameModes(provider.GetServices<IGameMode>()));
         return services;
     }

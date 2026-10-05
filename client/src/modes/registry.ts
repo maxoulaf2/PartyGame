@@ -6,6 +6,9 @@ import type {
     ModeViews,
     PlayerViewProps,
 } from '../shared/modeViews';
+import BuzzerDisplay from './buzzer/BuzzerDisplay.svelte';
+import BuzzerGameMaster from './buzzer/BuzzerGameMaster.svelte';
+import BuzzerPlayer from './buzzer/BuzzerPlayer.svelte';
 import QuizDisplay from './quiz/QuizDisplay.svelte';
 import QuizGameMaster from './quiz/QuizGameMaster.svelte';
 import QuizPlayer from './quiz/QuizPlayer.svelte';
@@ -21,6 +24,7 @@ type RoundViewType =
  */
 export const modes = {
     quiz: { player: QuizPlayer, display: QuizDisplay, gm: QuizGameMaster },
+    buzzer: { player: BuzzerPlayer, display: BuzzerDisplay, gm: BuzzerGameMaster },
 } satisfies { readonly [T in RoundViewType]: ModeViews<T> };
 
 /** The views of a mode, as the pages use them, whatever the type of the round. */
