@@ -5,6 +5,7 @@ import type {
     DisplayRoundView,
     DisplaySnapshot,
     GameId,
+    OpenQuestionDisplayView,
     Phase,
     PlayerId,
     QuizDisplayView,
@@ -1013,4 +1014,70 @@ test('/display/ in kiosk mode never shows « Démarrer »', async ({ playwright,
     await page.waitForTimeout(500);
     await expect(page.getByRole('button', { name: fr.display.startAudio })).toHaveCount(0);
     await browser.close();
+});
+
+test('/display/ fits the reveal of an open question answered by 20 players on a 1080p screen', async ({
+    page,
+}) => {
+    const players = longNicknames(20);
+    const nicknames = players.map((player) => player.nickname);
+    await serveImage(page, '/media/question');
+    // 18 different answers of 25 characters, the first one by two authors, and one player
+    // without answer.
+    const groups = Array.from({ length: 18 }, (_, index) => ({
+        text: `Réponse plutôt longue ${index + 1}`,
+        correct: index < 5,
+        nicknames: index === 0 ? nicknames.slice(0, 2) : nicknames.slice(index + 1, index + 2),
+    }));
+    const view: OpenQuestionDisplayView = {
+        type: 'openquestion',
+        questionNumber: 3,
+        questionCount: 5,
+        phase: 'Revealed',
+        text: longText('Qui a peint', 200),
+        imageUrl: '/media/question',
+        answersCloseAt: null,
+        answeredCount: 19,
+        participantCount: 20,
+        reveal: {
+            expectedAnswer: 'Léonard de Vinci',
+            groups,
+            withoutAnswer: nicknames.slice(19),
+        },
+    };
+    await serveDisplaySnapshot(page, fakeSnapshot(players, advertisedAddress, 'Round', view));
+
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    const items = page.getByRole('listitem');
+    await expect(items).toHaveCount(18);
+    await page.screenshot({});
+    for (const item of await items.all()) {
+        await expect(item).toBeVisible();
+        expectWithinSafeArea(await item.boundingBox(), viewport);
+        const fontSize = await item.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        );
+        // About 2.5 cm high on a 55" TV: readable from 3 m.
+        expect(fontSize).toBeGreaterThanOrEqual(26);
+    }
+    expectWithinSafeArea(
+        await page.getByText(fill(fr.modes.openquestion.display.unanswered, {})).boundingBox(),
+        viewport,
+    );
+    const overflows = await page.evaluate(() => {
+        const root = document.documentElement;
+        const main = document.querySelector('main');
+        return (
+            root.scrollHeight > root.clientHeight ||
+            !main ||
+            main.scrollHeight > main.clientHeight ||
+            main.scrollWidth > main.clientWidth
+        );
+    });
+    expect(overflows).toBe(false);
 });

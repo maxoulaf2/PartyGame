@@ -4,6 +4,7 @@
 // </auto-generated>
 
 import type { OpenQuestionQuestionPhase } from './OpenQuestionQuestionPhase';
+import type { OpenQuestionVerdict } from './OpenQuestionVerdict';
 
 export interface OpenQuestionPlayerView {
     readonly type: 'openquestion';
@@ -15,4 +16,7 @@ export interface OpenQuestionPlayerView {
     readonly answersCloseAt: number | null;
     readonly participating: boolean;
     readonly answer: string | null;
+    readonly expectedAnswer: string | null;
+    readonly verdict: OpenQuestionVerdict | null;
+    readonly points: number | null;
 }

@@ -9,4 +9,5 @@ export interface OpenQuestionGameMasterAnswer {
     readonly playerId: PlayerId;
     readonly nickname: string;
     readonly answer: string | null;
+    readonly points: number | null;
 }

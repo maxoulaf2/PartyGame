@@ -11,10 +11,6 @@ namespace PartyGame.Engine.Modes.OpenQuestion;
 /// <summary>
 /// Plays the rounds of open questions of the packs.
 /// </summary>
-/// <remarks>
-/// For now, once the answers are judged, the game master moves on by skipping the question: their reveal comes with
-/// US-E16-04.
-/// </remarks>
 public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, OpenQuestionRound>
 {
     /// <summary>
@@ -87,7 +83,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
 
     /// <summary>
     /// Plays the intents of the round, each aimed at the question it names. The answers open when the question shows, lock
-    /// once every participant answered, or when their timer elapses, then the game master judges them.
+    /// once every participant answered, or when their timer elapses, then the game master judges them and reveals them.
     /// </summary>
     /// <inheritdoc />
     public override RoundTransition Handle(OpenQuestionRound round, GameInput input, GameState game, GameContext context)
@@ -101,6 +97,8 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
             GameMasterRoundInput { RoundIntent: OpenQuestionShowQuestion show } => ShowQuestion(round, show, game, context),
             GameMasterRoundInput { RoundIntent: OpenQuestionSkipQuestion skip } => SkipQuestion(round, skip),
             GameMasterRoundInput { RoundIntent: OpenQuestionJudge judge } => Judge(round, judge),
+            GameMasterRoundInput { RoundIntent: OpenQuestionRevealAnswer reveal } => RevealAnswer(round, reveal),
+            GameMasterRoundInput { RoundIntent: OpenQuestionNextQuestion next } => NextQuestion(round, next),
             PlayerRoundInput { RoundIntent: OpenQuestionSubmitAnswer answer } submitted =>
                 SubmitAnswer(round, submitted.PlayerId, answer, submitted.ReceivedAt),
             TimerElapsed timer => CloseAnswers(round, timer),
@@ -142,7 +140,10 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
 
             // Whoever is registered before the question shows takes part once it opens the answers.
             round.Phase == OpenQuestionPhase.Presentation || round.Participants.Contains(player.Id),
-            round.Answers.TryGetValue(player.Id, out var answer) ? answer.Text : null);
+            round.Answers.TryGetValue(player.Id, out var answer) ? answer.Text : null,
+            round.Phase == OpenQuestionPhase.Revealed ? round.Question.Answer : null,
+            round.Phase == OpenQuestionPhase.Revealed ? VerdictOf(round, player.Id) : null,
+            PointsOf(round, player.Id));
     }
 
     /// <inheritdoc />
@@ -163,7 +164,8 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
 
             // How many answered, never what.
             round.Answers.Count,
-            round.Participants.Length);
+            round.Participants.Length,
+            round.Phase == OpenQuestionPhase.Revealed ? RevealOf(round, game) : null);
     }
 
     /// <inheritdoc />
@@ -186,14 +188,15 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
                     .Select(player => new OpenQuestionGameMasterAnswer(
                         player.Id,
                         player.Nickname,
-                        round.Answers.TryGetValue(player.Id, out var answer) ? answer.Text : null)),
+                        round.Answers.TryGetValue(player.Id, out var answer) ? answer.Text : null,
+                        PointsOf(round, player.Id))),
             ],
             [
                 .. round.Groups.Select(group => new OpenQuestionGameMasterGroup(
                     group.Text,
                     group.Category,
                     group.Players,
-                    round.Phase == OpenQuestionPhase.Judged ? group.Players.All(round.AcceptedPlayers.Contains) : null)),
+                    round.Phase is OpenQuestionPhase.Judged or OpenQuestionPhase.Revealed ? group.Players.All(round.AcceptedPlayers.Contains) : null)),
             ]);
     }
 
@@ -256,24 +259,86 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
     }
 
     /// <summary>
-    /// Gives up the question in progress: its answers are ignored, and its countdown stops if it runs.
+    /// Gives up the question in progress before its reveal: its answers are ignored, and its countdown stops if it runs.
+    /// Once revealed, the game master moves on to the next question instead.
     /// </summary>
     private static RoundTransition SkipQuestion(OpenQuestionRound round, OpenQuestionSkipQuestion skip)
     {
-        if (skip.QuestionNumber != round.QuestionNumber)
+        RejectionReason? rejection =
+            skip.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase == OpenQuestionPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        if (rejection is { } reason)
         {
-            return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
+            return RoundTransition.Rejected(round, reason);
         }
 
-        ImmutableArray<Effect> effects = round.Phase == OpenQuestionPhase.Answering ? [new CancelTimer(AnswersTimer)] : [];
+        var skipped = round with { SkippedQuestions = round.SkippedQuestions.Add(round.QuestionIndex) };
+        return MoveOn(skipped, round.Phase == OpenQuestionPhase.Answering ? [new CancelTimer(AnswersTimer)] : []);
+    }
+
+    /// <summary>
+    /// Reveals the question judged: the expected answer and every answer received. The points of the question are awarded
+    /// now, never before, so that no score tells a verdict ahead of time.
+    /// </summary>
+    private static RoundTransition RevealAnswer(OpenQuestionRound round, OpenQuestionRevealAnswer reveal)
+    {
+        RejectionReason? rejection =
+            reveal.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != OpenQuestionPhase.Judged ? RejectionReason.PhaseMismatch
+            : null;
+        if (rejection is { } reason)
+        {
+            return RoundTransition.Rejected(round, reason);
+        }
+
+        var points = round.Participants.ToImmutableDictionary(
+            player => player,
+            player => round.AcceptedPlayers.Contains(player) ? PointsFor(round, round.Answers[player]) : 0);
+        return new(round with { Phase = OpenQuestionPhase.Revealed, Points = points }, []) { Points = points };
+    }
+
+    /// <summary>
+    /// The points of an accepted answer: those of the round, plus its speed bonus in proportion to the time left when the
+    /// answer was received, rounded to the nearest integer. Computed in integers, so that the result is exact and
+    /// reproducible.
+    /// </summary>
+    private static int PointsFor(OpenQuestionRound round, OpenAnswer answer)
+    {
+        var duration = TimeSpan.FromSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds).Ticks;
+
+        // Set when the question showed, which opened the answers: any answer has one.
+        var left = Math.Clamp((round.AnswersCloseAt!.Value - answer.ReceivedAt).Ticks, 0, duration);
+        var bonus = ((2 * round.Descriptor.SpeedBonus * left) + duration) / (2 * duration);
+        return round.Descriptor.Points + (int)bonus;
+    }
+
+    /// <summary>
+    /// Moves on from the revealed question: to the next one, or to the end of the round after the last one.
+    /// </summary>
+    private static RoundTransition NextQuestion(OpenQuestionRound round, OpenQuestionNextQuestion next)
+    {
+        RejectionReason? rejection =
+            next.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
+            : round.Phase != OpenQuestionPhase.Revealed ? RejectionReason.PhaseMismatch
+            : null;
+        return rejection is { } reason ? RoundTransition.Rejected(round, reason) : MoveOn(round, []);
+    }
+
+    /// <summary>
+    /// Presents the question that follows the one in progress, or ends the round after its last one, the round then
+    /// staying on it.
+    /// </summary>
+    private static RoundTransition MoveOn(OpenQuestionRound round, ImmutableArray<Effect> effects)
+    {
         if (round.QuestionIndex == round.Descriptor.Questions.Length - 1)
         {
-            return new(round with { SkippedQuestions = round.SkippedQuestions.Add(round.QuestionIndex) }, effects) { IsFinished = true };
+            return new(round, effects) { IsFinished = true };
         }
 
         var next = new OpenQuestionRound(round.Descriptor, round.QuestionIndex + 1, OpenQuestionPhase.Presentation)
         {
-            SkippedQuestions = round.SkippedQuestions.Add(round.QuestionIndex),
+            SkippedQuestions = round.SkippedQuestions,
         };
         return new(next, effects);
     }
@@ -353,6 +418,42 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
     }
 
     /// <summary>
+    /// What the reveal tells a player: nothing to one who did not take part in the question.
+    /// </summary>
+    private static OpenQuestionVerdict? VerdictOf(OpenQuestionRound round, PlayerId playerId) =>
+        !round.Participants.Contains(playerId) ? null
+        : !round.Answers.ContainsKey(playerId) ? OpenQuestionVerdict.NoAnswer
+        : round.AcceptedPlayers.Contains(playerId) ? OpenQuestionVerdict.Correct
+        : OpenQuestionVerdict.Wrong;
+
+    /// <summary>
+    /// What a participant earned with the question in progress, once revealed: nothing to one who did not take part.
+    /// </summary>
+    private static int? PointsOf(OpenQuestionRound round, PlayerId playerId) =>
+        round.Phase == OpenQuestionPhase.Revealed && round.Points.TryGetValue(playerId, out var points) ? points : null;
+
+    /// <summary>
+    /// What the TV screen shows of the question revealed: each group of answers with its authors, the correct ones first,
+    /// then the participants without answer. A group judged partly, which the console never sends, splits into its
+    /// correct and wrong authors, so that the screen always agrees with the points.
+    /// </summary>
+    private static OpenQuestionDisplayReveal RevealOf(OpenQuestionRound round, GameState game)
+    {
+        // Players are never removed: every participant is still registered, under their current nickname.
+        string NicknameOf(PlayerId id) => game.Players.First(player => player.Id == id).Nickname;
+
+        var groups = round.Groups
+            .SelectMany(group => group.Players
+                .GroupBy(round.AcceptedPlayers.Contains)
+                .Select(authors => new OpenQuestionRevealedGroup(group.Text, authors.Key, [.. authors.Select(NicknameOf)])))
+            .OrderByDescending(group => group.Correct);
+        return new OpenQuestionDisplayReveal(
+            round.Question.Answer,
+            [.. groups],
+            [.. round.Participants.Where(player => !round.Answers.ContainsKey(player)).Select(NicknameOf)]);
+    }
+
+    /// <summary>
     /// When the answers close, while their countdown runs: the screens count down to it.
     /// </summary>
     private static long? CloseTimeOf(OpenQuestionRound round) =>
@@ -364,6 +465,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         OpenQuestionPhase.Answering => OpenQuestionQuestionPhase.Answering,
         OpenQuestionPhase.Locked => OpenQuestionQuestionPhase.Locked,
         OpenQuestionPhase.Judged => OpenQuestionQuestionPhase.Judged,
+        OpenQuestionPhase.Revealed => OpenQuestionQuestionPhase.Revealed,
         _ => throw new InvalidOperationException($"Phase {round.Phase} has no projection."),
     };
 

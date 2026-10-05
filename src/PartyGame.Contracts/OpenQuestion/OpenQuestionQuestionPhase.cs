@@ -25,4 +25,9 @@ public enum OpenQuestionQuestionPhase
     /// The game master judged the answers, or none was received: the question waits for its reveal.
     /// </summary>
     Judged,
+
+    /// <summary>
+    /// The expected answer and every answer received show on the TV screen, and the points of the question are awarded.
+    /// </summary>
+    Revealed,
 }

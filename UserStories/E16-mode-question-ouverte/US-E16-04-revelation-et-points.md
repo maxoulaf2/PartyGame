@@ -1,6 +1,6 @@
 ### US-E16-04 — Révélation et points
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** public
 **je veux** voir sur la TV la bonne réponse, puis tout ce que les joueurs ont proposé avec leurs pseudos
