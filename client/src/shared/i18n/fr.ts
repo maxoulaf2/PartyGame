@@ -582,11 +582,27 @@ export const fr = {
             question: 'Question {number}/{count}',
             // The player who has the hand, on every screen but their own phone.
             hasHand: '{nickname} a la main',
+            // Once revealed, the player whose answer the game master judged correct.
+            foundBy: '{nickname} a trouvé !',
+            // Once revealed, when nobody found.
+            nobodyFound: 'Personne n’a trouvé',
             display: {
                 // Shown large until the game master asks the question.
                 upcoming: 'Question {number}',
                 // Read by screen readers: the packs describe no image.
                 imageLabel: 'Illustration de la question',
+                // Heads the expected answer once revealed.
+                answer: 'Réponse : {answer}',
+            },
+            player: {
+                // The points the player earned with the question revealed, 0 included, written by formatNumber.
+                pointsEarned: '+{points}',
+                // The points of the player since the start of the game, under those of the question.
+                score: {
+                    zero: 'Total : 0 point',
+                    one: 'Total : {count} point',
+                    other: 'Total : {count} points',
+                },
             },
             gm: {
                 // Shows the question on the TV screen and opens the buzzer on every phone.
@@ -595,6 +611,16 @@ export const fr = {
                 hiddenOnDisplay: 'Pas encore affichée sur la TV',
                 answer: 'Réponse attendue : {answer}',
                 waitingBuzz: 'Buzzer ouvert : en attente d’un buzz',
+                // The game master judges the answer the player who has the hand gave out loud.
+                correct: 'Bonne réponse',
+                wrong: 'Mauvaise réponse',
+                // Once every connected player is blocked: only the reveal remains.
+                allBlocked: 'Tous les joueurs sont bloqués',
+                // Reveals the answer without points, whoever has the hand.
+                revealAnswer: 'Révéler la réponse',
+                nextQuestion: 'Question suivante',
+                // Replaces « Question suivante » once the last question of the round is revealed.
+                endRound: 'Terminer la manche',
             },
         },
     },

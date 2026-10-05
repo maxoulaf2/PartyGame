@@ -1,6 +1,6 @@
 ### US-E13-05 — Jugement, réouverture du buzzer et révélation
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** valider ou refuser la réponse orale du joueur qui a la main, puis rouvrir le buzzer aux autres

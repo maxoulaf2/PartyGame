@@ -3,17 +3,16 @@
 **Type d'activité :** `buzzer`
 **Épopée :** [E13](../../UserStories/E13-buzzer/README.md)
 
-Le game master pose une question, qui s'affiche sur l'écran TV pendant que le buzzer s'ouvre sur les téléphones. Le premier joueur qui buzze répond à voix haute, et le GM juge sa réponse depuis sa console.
-
-> **État de la réalisation :** le GM pose la première question et le gagnant du buzzer obtient la main (US-E13-04). Le jugement, la réouverture du buzzer, la révélation et le passage aux questions suivantes arrivent avec US-E13-05 : d'ici là, la manche reste sur sa première question.
+Le game master pose une question, qui s'affiche sur l'écran TV pendant que le buzzer s'ouvre sur les téléphones. Le premier joueur qui buzze répond à voix haute, et le GM juge sa réponse depuis sa console. La question se joue jusqu'à ce que quelqu'un trouve, ou que le GM révèle la réponse.
 
 ## Règles
 
 - **Question affichée à l'ouverture du buzzer.** Le GM pose la question : la TV l'affiche, avec son image s'il y en a une, et le buzzer s'ouvre sur tous les téléphones. Le GM peut aussi la lire à voix haute. La réponse attendue n'apparaît que sur la console GM, jusqu'à la révélation.
 - **Départage à l'horodatage.** Le gagnant est celui dont le doigt a touché l'écran en premier, d'après l'heure serveur de l'appui, et non d'après l'arrivée de son message. Le serveur attend une fenêtre d'arbitrage après le premier buzz reçu (250 ms par défaut, `Buzzer:ArbitrationMilliseconds`).
 - **Réponse orale, jugée par le GM.** Le joueur qui a la main répond à voix haute. Le téléphone ne sert qu'à buzzer.
-- **Mauvaise réponse.** Le joueur est bloqué pour la question, sans perdre de points, et le buzzer se rouvre aux autres.
-- **Barème.** Une bonne réponse rapporte les points de la manche (`points`, 1 000 par défaut), attribués à la révélation.
+- **Mauvaise réponse.** Le joueur est bloqué pour la question, sans perdre de points, et le buzzer se rouvre aussitôt aux autres. Quand tous les joueurs connectés sont bloqués, le buzzer reste fermé et le GM ne peut plus que révéler la réponse.
+- **Bonne réponse.** Elle rapporte les points de la manche (`points`, 1 000 par défaut) et révèle aussitôt la réponse.
+- **Révélation sans points.** À tout moment une fois la question posée, le GM peut révéler la réponse : personne ne marque.
 - **Images.** Une question peut avoir une image, affichée sur l'écran TV avec la question. Les téléphones n'affichent aucun média.
 
 ## Phases d'une question
@@ -23,9 +22,13 @@ Le game master pose une question, qui s'affiche sur l'écran TV pendant que le b
 | `Ready` : question annoncée | « Question n » | Buzzer fermé | Texte, réponse attendue, bouton « Poser la question » |
 | `Open` : buzzer ouvert (`buzzer.askQuestion`) | Question et image | Buzzer ouvert | « Buzzer ouvert : en attente d'un buzz » |
 | `Arbitrating` : fenêtre d'arbitrage en cours | Comme `Open` | Comme `Open` ; « Buzz envoyé… » pour qui a buzzé | Comme `Open` |
-| `Answering` : un gagnant a la main | Question et « Pseudo a la main » | « À toi de répondre ! » pour le gagnant, son pseudo pour les autres | « Pseudo a la main » |
+| `Answering` : un gagnant a la main | Question et « Pseudo a la main » | « À toi de répondre ! » pour le gagnant, son pseudo pour les autres | « Pseudo a la main », « Bonne réponse », « Mauvaise réponse », « Révéler la réponse » |
+| `Closed` : tous les joueurs connectés sont bloqués | Question | Buzzer bloqué | « Tous les joueurs sont bloqués », « Révéler la réponse » |
+| `Revealed` : réponse révélée | Question, réponse et « Pseudo a trouvé ! » (ou « Personne n'a trouvé ») | Points gagnés sur la question et total | « Question suivante », ou « Terminer la manche » après la dernière |
 
 La fenêtre d'arbitrage reste invisible : les projections montrent `Open` tant que le gagnant n'est pas désigné, et aucune ne contient les horodatages des buzz. Un buzz (`buzzer.buzz`) nomme la question et l'ouverture du buzzer : renvoyé après une reconnexion, il ne compte jamais pour une ouverture suivante. Un joueur arrivé pendant la question peut buzzer.
+
+Les intentions du GM nomment la question : `buzzer.askQuestion`, `buzzer.revealAnswer` et `buzzer.nextQuestion`. Le jugement, `buzzer.judge`, nomme en plus l'ouverture du buzzer qu'il juge : envoyé deux fois, ou par deux consoles, il est rejeté une fois le buzzer rouvert, si bien qu'un joueur ne gagne jamais deux fois et qu'un refus ne bloque jamais le gagnant suivant. Après la dernière question, `buzzer.nextQuestion` termine la manche et le classement intermédiaire s'affiche.
 
 ## Format du descripteur
 
