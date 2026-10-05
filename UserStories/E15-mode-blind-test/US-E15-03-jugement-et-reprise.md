@@ -1,6 +1,6 @@
 ### US-E15-03 — Jugement du titre et de l'artiste, reprise après un buzz
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** juger séparément le titre et l'artiste donnés par le joueur qui a la main, puis relancer la musique pour les autres
@@ -21,6 +21,9 @@ Joueurs et public : aucun message. GM : un jugement rejeté ne change rien ; la 
 **Notes techniques**
 - La TV montre qui a trouvé quoi, mais jamais le titre ou l'artiste avant la révélation : la `LeakSuite` comprend des paires d'états qui ne diffèrent que par le titre ou l'artiste.
 - Réouverture : nouvelle ouverture numérotée de l'arbitrage (`Reopen`, US-E13-02).
+
+- Réalisation : intention `blindtest.judge` (GM : morceau, ouverture, `titleFound`, `artistFound`). `BlindTestRound` garde `TitleFoundBy` et `ArtistFoundBy` ; le joueur jugé est bloqué (`Buzzer.Block`). Nouveaux motifs de rejet `ElementAlreadyFound` et `ArtistMissing`. Les vues `Display` et `GameMaster` portent le pseudo de qui a trouvé chaque élément, la vue `GameMaster` l'ouverture à juger, la vue `Player` ce que le joueur a trouvé (`foundTitle`, `foundArtist`). Seuls les joueurs connectés comptent pour savoir si quelqu'un peut encore buzzer, comme pour les questions buzzer. Tests : `BlindTestJudgementTests`, scénarios et paires ajoutés à `BlindTestLeakTests`, `e2e/blindtest.spec.ts`.
+- Écart : la révélation n'existant qu'avec US-E15-04, un morceau où plus rien n'est à trouver, ou que plus personne ne peut buzzer, passe dans une phase `Closed` (buzzer fermé, musique en pause) ; le GM avance avec « Passer l'extrait ». US-E15-04 y branchera la révélation.
 
 **Hors périmètre**
 - Annuler un jugement (E19).
