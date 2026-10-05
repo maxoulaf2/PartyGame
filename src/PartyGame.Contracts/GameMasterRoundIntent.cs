@@ -39,4 +39,6 @@ namespace PartyGame.Contracts;
 [JsonDerivedType(typeof(OpenQuestionShowQuestion), "openquestion.showQuestion")]
 [JsonDerivedType(typeof(OpenQuestionSkipQuestion), "openquestion.skipQuestion")]
 [JsonDerivedType(typeof(OpenQuestionJudge), "openquestion.judge")]
+[JsonDerivedType(typeof(OpenQuestionRevealAnswer), "openquestion.revealAnswer")]
+[JsonDerivedType(typeof(OpenQuestionNextQuestion), "openquestion.nextQuestion")]
 public abstract record GameMasterRoundIntent(RoundId RoundId);

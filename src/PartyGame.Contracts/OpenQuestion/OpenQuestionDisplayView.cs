@@ -2,7 +2,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 
 /// <summary>
 /// What a round of open questions shows on the TV screen: the question once the game master shows it, never its expected
-/// answer, nor what any player answered: only how many answered.
+/// answer, nor what any player answered before the reveal: only how many answered.
 /// </summary>
 /// <param name="QuestionNumber">Number of the question in the round, from 1.</param>
 /// <param name="QuestionCount">Number of questions of the round.</param>
@@ -20,6 +20,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// How many players take part in the question, the players registered when the question showed, connected or not: 0
 /// until then.
 /// </param>
+/// <param name="Reveal">The expected answer and every answer received, once revealed; <see langword="null"/> before.</param>
 public sealed record OpenQuestionDisplayView(
     int QuestionNumber,
     int QuestionCount,
@@ -28,4 +29,5 @@ public sealed record OpenQuestionDisplayView(
     string? ImageUrl,
     long? AnswersCloseAt,
     int AnsweredCount,
-    int ParticipantCount) : DisplayRoundView;
+    int ParticipantCount,
+    OpenQuestionDisplayReveal? Reveal) : DisplayRoundView;

@@ -2,7 +2,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 
 /// <summary>
 /// What a round of open questions shows on the phone of one player: a field to type their answer in. Neither the question,
-/// read on the TV screen, nor its expected answer, nor what the other players answered.
+/// read on the TV screen, nor its expected answer before the reveal, nor what the other players answered.
 /// </summary>
 /// <param name="QuestionNumber">Number of the question in the round, from 1.</param>
 /// <param name="QuestionCount">Number of questions of the round.</param>
@@ -20,6 +20,16 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// <param name="Answer">
 /// The answer this player sent, as typed, or <see langword="null"/> while they have not answered.
 /// </param>
+/// <param name="ExpectedAnswer">
+/// The expected answer, as the pack writes it, once revealed; <see langword="null"/> before.
+/// </param>
+/// <param name="Verdict">
+/// Whether the player got it right, once revealed, if they took part in the question; <see langword="null"/> otherwise.
+/// </param>
+/// <param name="Points">
+/// The points the player earned with the question, 0 included, once revealed, if they took part in it;
+/// <see langword="null"/> otherwise. Their total is <see cref="PlayerSnapshot.Score"/>.
+/// </param>
 public sealed record OpenQuestionPlayerView(
     int QuestionNumber,
     int QuestionCount,
@@ -28,4 +38,7 @@ public sealed record OpenQuestionPlayerView(
     int MaxLength,
     long? AnswersCloseAt,
     bool Participating,
-    string? Answer) : PlayerRoundView;
+    string? Answer,
+    string? ExpectedAnswer,
+    OpenQuestionVerdict? Verdict,
+    int? Points) : PlayerRoundView;

@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
+import { formatNumber } from '../src/shared/i18n/numberText.ts';
 import { expect, test } from './fixtures/table.ts';
 
 // A round of open questions on a table of its own: each player types their answer on their phone,
@@ -131,7 +132,7 @@ test('the countdown locks the answers of a numeric question', async ({ table }) 
     ).toBeVisible();
 });
 
-test('the game master checks an answer close to the expected one and validates them all', async ({
+test('the game master judges the answers in one go, reveals them, and plays the round to its end', async ({
     table,
 }) => {
     const { display, gm } = table;
@@ -175,4 +176,39 @@ test('the game master checks an answer close to the expected one and validates t
         await expect(player.page.getByText(texts.player.recorded)).toBeVisible();
         await expect(player.page.getByText(texts.gm.right)).toHaveCount(0);
     }
+
+    // The reveal: the expected answer, then the answers with their authors, the right ones first.
+    await gm.getByRole('button', { name: texts.gm.revealAnswer }).click();
+    await expect(display.getByText('Léonard de Vinci', { exact: true })).toHaveCount(2);
+    const revealed = display
+        .getByRole('list', { name: texts.display.answersLabel })
+        .getByRole('listitem');
+    await expect(revealed).toHaveCount(3);
+    await expect(revealed.nth(0)).toContainText('Zoé');
+    await expect(revealed.nth(1)).toContainText(/Leonard de Vinchi\s*Léa/);
+    await expect(revealed.nth(2)).toContainText(/Picasso\s*Max/);
+    await expect(revealed.nth(1).getByRole('img', { name: texts.display.right })).toBeVisible();
+    await expect(revealed.nth(2).getByRole('img', { name: texts.display.wrong })).toBeVisible();
+
+    // Each phone tells its own verdict and points, never the answers of the others.
+    const points = fill(texts.pointsEarned, { points: formatNumber(1000) });
+    await expect(zoe.page.getByText(texts.player.verdicts.Correct)).toBeVisible();
+    await expect(max.page.getByText(texts.player.verdicts.Wrong)).toBeVisible();
+    await expect(lea.page.getByText(texts.player.verdicts.Correct)).toBeVisible();
+    await expect(
+        max.page.getByText(fill(texts.player.expectedAnswer, { answer: 'Léonard de Vinci' })),
+    ).toBeVisible();
+    await expect(max.page.getByText('Vinchi')).toHaveCount(0);
+    await expect(gm.getByRole('button', { name: texts.gm.skipQuestion })).toHaveCount(0);
+    await expect(groups.nth(0)).toContainText(`Zoé (${points})`);
+
+    // Then the last question: nobody answers in time, and the round ends.
+    await gm.getByRole('button', { name: texts.gm.nextQuestion }).click();
+    await gm.getByRole('button', { name: texts.gm.showQuestion }).click();
+    await expect(display.getByText(texts.timeUp)).toBeVisible({ timeout: 10_000 });
+    await gm.getByRole('button', { name: texts.gm.revealAnswer }).click();
+    await expect(display.getByText(texts.display.unanswered)).toBeVisible();
+    await expect(zoe.page.getByText(texts.player.verdicts.NoAnswer)).toBeVisible();
+    await gm.getByRole('button', { name: texts.gm.endRound }).click();
+    await expect(display.getByText(fr.game.finished)).toBeVisible();
 });

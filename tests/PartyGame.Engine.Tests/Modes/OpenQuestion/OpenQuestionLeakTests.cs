@@ -7,8 +7,8 @@ namespace PartyGame.Engine.Tests.Modes.OpenQuestion;
 
 /// <summary>
 /// What the views of a round of open questions may show to each viewer: the expected answer and its variants to the game
-/// master only, the answer of a player to nobody but them and the game master, the question only once the game master
-/// shows it, a skipped question to nobody once the round moved on, the paths of the images to nobody.
+/// master only until the reveal, the answer of a player to nobody but them and the game master until the reveal, then
+/// still to no other phone, the question only once the game master shows it, a skipped question to nobody once the round moved on, the paths of the images to nobody.
 /// </summary>
 public sealed class OpenQuestionLeakTests
 {
@@ -36,6 +36,8 @@ public sealed class OpenQuestionLeakTests
             ("locked with every category", OpenQuestionGames.Locked(Started(), (3, "Monet"), (1, "de vinci"), (2, "Leonard de Vinchi"))),
             ("judged", OpenQuestionGames.Judged(Started(), [1, 2], (3, "Monet"), (1, "de vinci"), (2, "Leonard de Vinchi"))),
             ("locked once everybody answered", OpenQuestionGames.Answering(Started(), (1, "Vinci"), (2, "Raphaël"), (3, "Dali"))),
+            ("revealed", OpenQuestionGames.Revealed(Started(), [1, 2], (3, "Monet"), (1, "Leonard de Vinchi"), (2, "Michel-Ange"))),
+            ("revealed without answer", OpenQuestionGames.Revealed(Started(), [])),
             ("second question, after a skipped one", OpenQuestionGames.Skipped(OpenQuestionGames.Locked(Started(), (1, "Vinci"), (2, "Raphaël")))),
         ],
         SecretsOf = SecretsOf,
@@ -66,6 +68,14 @@ public sealed class OpenQuestionLeakTests
             // The answer of a player is told to nobody but them and the game master.
             AnswerPair("answer of Zoé, answers open", OpenQuestionGames.Answering),
             AnswerPair("answer of Zoé, locked", OpenQuestionGames.Locked),
+
+            // Revealed on the TV screen, never on the other phones. Not « Vinci »: the expected answer, public by now,
+            // contains it.
+            new SecretPair<GameState>(
+                "answer of Zoé, revealed",
+                OpenQuestionGames.Revealed(Started(), [], (1, "Botticelli"), (2, "Picasso")),
+                OpenQuestionGames.Revealed(Started(), [], (1, "Rembrandt"), (2, "Picasso")),
+                Audience.OtherPlayersThan("Zoé")),
             AnswerPair("answer of Zoé on the skipped question", (state, answers) => OpenQuestionGames.Skipped(OpenQuestionGames.Locked(state, answers)), Audience.Everyone),
 
             // Whether a player answered shows on the TV screen as a count, never on the phones of the others.
@@ -132,7 +142,12 @@ public sealed class OpenQuestionLeakTests
         }
 
         // No answer is revealed yet.
-        yield return new Secret(round.Question.Answer, Audience.AllButGameMaster);
+        var revealed = round.Phase == OpenQuestionPhase.Revealed;
+        if (!revealed)
+        {
+            yield return new Secret(round.Question.Answer, Audience.AllButGameMaster);
+        }
+
         foreach (var variant in round.Question.AcceptedAnswers)
         {
             yield return new Secret(variant, Audience.AllButGameMaster);
@@ -149,12 +164,12 @@ public sealed class OpenQuestionLeakTests
             }
         }
 
-        // What each player typed, to nobody but them and the game master.
+        // What each player typed, to nobody but them and the game master, then to every screen but the other phones.
         foreach (var player in state.Players)
         {
             if (round.Answers.TryGetValue(player.Id, out var answer))
             {
-                yield return new Secret(answer.Text, Audience.AllButGameMasterAnd(player.Nickname));
+                yield return new Secret(answer.Text, revealed ? Audience.OtherPlayersThan(player.Nickname) : Audience.AllButGameMasterAnd(player.Nickname));
             }
 
             yield return new Secret(player.Nickname, Audience.OtherPlayersThan(player.Nickname));

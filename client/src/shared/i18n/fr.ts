@@ -750,6 +750,8 @@ export const fr = {
             timeLeft: 'Temps restant',
             // How many of the players taking part answered, never what.
             answered: 'Réponses : {answered} / {participants}',
+            // The points a player earned with the question revealed, 0 included, written by formatNumber.
+            pointsEarned: '+{points}',
             display: {
                 // Shown large while the game master reads out the question, before showing it.
                 upcoming: 'Question {number}',
@@ -757,6 +759,15 @@ export const fr = {
                 imageLabel: 'Illustration de la question',
                 // Once the answers are locked, until their reveal.
                 checking: 'Le game master vérifie les réponses',
+                // Heads the expected answer, once revealed.
+                expectedAnswer: 'La bonne réponse',
+                // Read by screen readers: the answers received once revealed, with their authors.
+                answersLabel: 'Réponses des joueurs',
+                // Read by screen readers: the icon of each answer revealed.
+                right: 'Bonne réponse',
+                wrong: 'Mauvaise réponse',
+                // Heads the players taking part who did not answer, once revealed.
+                unanswered: 'Sans réponse',
             },
             player: {
                 // Labels the field the answer is typed in.
@@ -769,6 +780,20 @@ export const fr = {
                 recorded: 'Réponse enregistrée',
                 // For a player who joined once the answers were open.
                 nextQuestion: 'Tu joueras à la question suivante',
+                // What the reveal tells the player, one per OpenQuestionVerdict.
+                verdicts: {
+                    Correct: 'Bonne réponse !',
+                    Wrong: 'Raté',
+                    NoAnswer: 'Pas de réponse',
+                },
+                // Under the verdict, once revealed.
+                expectedAnswer: 'La bonne réponse : {answer}',
+                // The points of the player since the start of the game, under those of the question.
+                score: {
+                    zero: 'Total : 0 point',
+                    one: 'Total : {count} point',
+                    other: 'Total : {count} points',
+                },
             },
             gm: {
                 // Shows the question on the TV screen, which opens the answers and starts the countdown.
@@ -794,6 +819,11 @@ export const fr = {
                 },
                 // Sends the judgment of every answer checked or not, in one go.
                 validate: 'Valider',
+                // Once judged, reveals the answers on every screen and awards the points.
+                revealAnswer: 'Révéler',
+                nextQuestion: 'Question suivante',
+                // Replaces « Question suivante » once the last question of the round is revealed.
+                endRound: 'Terminer la manche',
                 // Once judged, the verdict of each answer.
                 right: 'Bonne réponse',
                 wrong: 'Mauvaise réponse',

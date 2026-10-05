@@ -3,4 +3,8 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type OpenQuestionQuestionPhase = 'Presentation' | 'Answering' | 'Locked' | 'Judged' | 'Revealed';
+export interface OpenQuestionRevealedGroup {
+    readonly text: string;
+    readonly correct: boolean;
+    readonly nicknames: readonly string[];
+}

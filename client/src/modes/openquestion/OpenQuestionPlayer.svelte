@@ -2,8 +2,10 @@
     import Countdown from '../../shared/components/Countdown.svelte';
     import { sessionCodeStorage } from '../../shared/connection/codeStorage';
     import type { OpenQuestionPlayerView, OpenQuestionSubmitAnswer } from '../../shared/contracts';
+    import { countText } from '../../shared/i18n/countText';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatNumber } from '../../shared/i18n/numberText';
     import type { PlayerViewProps } from '../../shared/modeViews';
 
     // A field to type the answer in: the question is read on the TV screen, so that players look
@@ -11,6 +13,7 @@
     let {
         view,
         round,
+        score,
         clock,
         interactive,
         send,
@@ -51,6 +54,9 @@
     const canAnswer = $derived(interactive && answersOpen && view.participating && sent === null);
 
     const status = $derived.by(() => {
+        if (view.phase === 'Revealed') {
+            return null;
+        }
         if (!view.participating) {
             return fr.modes.openquestion.player.nextQuestion;
         }
@@ -123,6 +129,39 @@
         </button>
     </form>
     <p class="status" role="status">{status ?? ''}</p>
+    {#if view.expectedAnswer !== null}
+        <section class="reveal">
+            {#if view.verdict !== null}
+                <!-- Told by an icon and a text, never by the color alone. -->
+                <p class="verdict {view.verdict}">
+                    <svg viewBox="0 0 24 24" width="1.25em" height="1.25em" aria-hidden="true">
+                        {#if view.verdict === 'Correct'}
+                            <path d="M4 12.5l5 5L20 6.5" />
+                        {:else if view.verdict === 'Wrong'}
+                            <path d="M6 6l12 12M18 6L6 18" />
+                        {:else}
+                            <path d="M6 12h12" />
+                        {/if}
+                    </svg>
+                    {fr.modes.openquestion.player.verdicts[view.verdict]}
+                </p>
+            {/if}
+            <p class="expected">
+                {fill(fr.modes.openquestion.player.expectedAnswer, {
+                    answer: view.expectedAnswer,
+                })}
+            </p>
+            {#if view.points !== null}
+                <!-- Both computed by the server: the phone adds nothing up. -->
+                <p class="earned">
+                    {fill(fr.modes.openquestion.pointsEarned, {
+                        points: formatNumber(view.points),
+                    })}
+                </p>
+                <p class="score">{countText(fr.modes.openquestion.player.score, score)}</p>
+            {/if}
+        </section>
+    {/if}
 </main>
 
 <style>
@@ -212,6 +251,50 @@
     button:disabled {
         opacity: 0.4;
         cursor: default;
+    }
+
+    .reveal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .verdict {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        color: var(--color-text);
+        font-size: 2.25rem;
+        font-weight: 800;
+    }
+
+    .verdict svg {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .verdict.Correct {
+        color: var(--color-accent);
+    }
+
+    .expected {
+        color: var(--color-text);
+        font-size: 1.25rem;
+        overflow-wrap: anywhere;
+    }
+
+    .earned {
+        color: var(--color-text);
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    .score {
+        font-size: 1.25rem;
     }
 
     .status {

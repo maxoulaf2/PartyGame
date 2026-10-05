@@ -5,14 +5,22 @@
         OpenQuestionGameMasterGroup,
         OpenQuestionGameMasterView,
         OpenQuestionJudge,
+        OpenQuestionNextQuestion,
+        OpenQuestionRevealAnswer,
         OpenQuestionShowQuestion,
         OpenQuestionSkipQuestion,
     } from '../../shared/contracts';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatNumber } from '../../shared/i18n/numberText';
     import type { GameMasterViewProps } from '../../shared/modeViews';
 
-    type Intent = OpenQuestionShowQuestion | OpenQuestionSkipQuestion | OpenQuestionJudge;
+    type Intent =
+        | OpenQuestionShowQuestion
+        | OpenQuestionSkipQuestion
+        | OpenQuestionJudge
+        | OpenQuestionRevealAnswer
+        | OpenQuestionNextQuestion;
 
     let {
         view,
@@ -26,15 +34,25 @@
     // The question the game master asked to skip, until they confirm or cancel. The dialog goes away
     // on its own once the round moves on, for instance by a second console.
     let skipping = $state<number | null>(null);
-    const confirmingSkip = $derived(skipping === view.questionNumber);
+    const confirmingSkip = $derived(skipping === view.questionNumber && view.phase !== 'Revealed');
 
     const lastQuestion = $derived(view.questionNumber === view.questionCount);
     const answeredCount = $derived(view.answers.filter((answer) => answer.answer !== null).length);
     const allAnswered = $derived(view.answers.length > 0 && answeredCount === view.answers.length);
 
-    const locked = $derived(view.phase === 'Locked' || view.phase === 'Judged');
-    const nicknames = $derived(
-        new Map(view.answers.map((answer) => [answer.playerId, answer.nickname])),
+    const locked = $derived(
+        view.phase === 'Locked' || view.phase === 'Judged' || view.phase === 'Revealed',
+    );
+    // Each author with their points once revealed, both computed by the server.
+    const authors = $derived(
+        new Map(
+            view.answers.map((answer) => [
+                answer.playerId,
+                answer.points === null
+                    ? answer.nickname
+                    : `${answer.nickname} (${fill(fr.modes.openquestion.pointsEarned, { points: formatNumber(answer.points) })})`,
+            ]),
+        ),
     );
     const withoutAnswer = $derived(
         view.answers.filter((answer) => answer.answer === null).map((answer) => answer.nickname),
@@ -162,9 +180,7 @@
                             <span class="group">
                                 <span class="answer">{group.text}</span>
                                 <span class="authors">
-                                    {group.playerIds
-                                        .map((id) => nicknames.get(id) ?? '')
-                                        .join(', ')}
+                                    {group.playerIds.map((id) => authors.get(id) ?? '').join(', ')}
                                 </span>
                             </span>
                             <span class="category">
@@ -201,15 +217,35 @@
             <button type="button" disabled={!interactive || sending} onclick={judge}>
                 {fr.modes.openquestion.gm.validate}
             </button>
+        {:else if view.phase === 'Judged'}
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => step('openquestion.revealAnswer')}
+            >
+                {fr.modes.openquestion.gm.revealAnswer}
+            </button>
+        {:else if view.phase === 'Revealed'}
+            <button
+                type="button"
+                disabled={!interactive || sending}
+                onclick={() => step('openquestion.nextQuestion')}
+            >
+                {lastQuestion
+                    ? fr.modes.openquestion.gm.endRound
+                    : fr.modes.openquestion.gm.nextQuestion}
+            </button>
         {/if}
-        <button
-            type="button"
-            class="secondary"
-            disabled={!interactive || sending}
-            onclick={() => (skipping = view.questionNumber)}
-        >
-            {fr.modes.openquestion.gm.skipQuestion}
-        </button>
+        {#if view.phase !== 'Revealed'}
+            <button
+                type="button"
+                class="secondary"
+                disabled={!interactive || sending}
+                onclick={() => (skipping = view.questionNumber)}
+            >
+                {fr.modes.openquestion.gm.skipQuestion}
+            </button>
+        {/if}
     </div>
 </div>
 {#if confirmingSkip}

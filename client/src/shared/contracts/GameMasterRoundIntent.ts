@@ -14,6 +14,8 @@ import type { BuzzerNextQuestion } from './BuzzerNextQuestion';
 import type { BuzzerRevealAnswer } from './BuzzerRevealAnswer';
 import type { BuzzerShowQuestion } from './BuzzerShowQuestion';
 import type { OpenQuestionJudge } from './OpenQuestionJudge';
+import type { OpenQuestionNextQuestion } from './OpenQuestionNextQuestion';
+import type { OpenQuestionRevealAnswer } from './OpenQuestionRevealAnswer';
 import type { OpenQuestionShowQuestion } from './OpenQuestionShowQuestion';
 import type { OpenQuestionSkipQuestion } from './OpenQuestionSkipQuestion';
 import type { QuizNextQuestion } from './QuizNextQuestion';
@@ -22,4 +24,4 @@ import type { QuizShowChoice } from './QuizShowChoice';
 import type { QuizShowQuestion } from './QuizShowQuestion';
 import type { QuizSkipQuestion } from './QuizSkipQuestion';
 
-export type GameMasterRoundIntent = BlindTestJudge | BlindTestNextTrack | BlindTestPlay | BlindTestRevealAnswer | BlindTestSkipTrack | BuzzerAskQuestion | BuzzerJudge | BuzzerNextQuestion | BuzzerRevealAnswer | BuzzerShowQuestion | OpenQuestionJudge | OpenQuestionShowQuestion | OpenQuestionSkipQuestion | QuizNextQuestion | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;
+export type GameMasterRoundIntent = BlindTestJudge | BlindTestNextTrack | BlindTestPlay | BlindTestRevealAnswer | BlindTestSkipTrack | BuzzerAskQuestion | BuzzerJudge | BuzzerNextQuestion | BuzzerRevealAnswer | BuzzerShowQuestion | OpenQuestionJudge | OpenQuestionNextQuestion | OpenQuestionRevealAnswer | OpenQuestionShowQuestion | OpenQuestionSkipQuestion | QuizNextQuestion | QuizRevealAnswer | QuizShowChoice | QuizShowQuestion | QuizSkipQuestion;

@@ -136,6 +136,25 @@ internal static class OpenQuestionGames
         return Accepted(state, Judge(state, accepted));
     }
 
+    /// <summary>The game master reveals the question in progress.</summary>
+    public static GameMasterRoundInput RevealAnswer(GameState state, int? questionNumber = null) =>
+        new(new OpenQuestionRevealAnswer(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>The game master moves on from the question revealed.</summary>
+    public static GameMasterRoundInput NextQuestion(GameState state, int? questionNumber = null) =>
+        new(new OpenQuestionNextQuestion(state.CurrentRound!.Id, questionNumber ?? RoundOf(state).QuestionNumber), Games.Now);
+
+    /// <summary>
+    /// The same game, its question in progress answered by the given players, judged accepting the answers of the players
+    /// in <paramref name="accepted"/>, unless nobody answered, then revealed.
+    /// </summary>
+    public static GameState Revealed(GameState state, int[] accepted, params (int Player, string Answer)[] answers)
+    {
+        state = Locked(state, answers);
+        state = RoundOf(state).Phase == OpenQuestionPhase.Locked ? Accepted(state, Judge(state, accepted)) : state;
+        return Accepted(state, RevealAnswer(state));
+    }
+
     /// <summary>The same game, its question in progress skipped for the next one.</summary>
     public static GameState Skipped(GameState state) => Accepted(state, SkipQuestion(state));
 
