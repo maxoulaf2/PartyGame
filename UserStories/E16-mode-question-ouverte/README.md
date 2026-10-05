@@ -7,7 +7,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E16-01](US-E16-01-descripteur-question-ouverte.md) | Descripteur d'une manche de questions ouvertes | À faire | — |
+| [US-E16-01](US-E16-01-descripteur-question-ouverte.md) | Descripteur d'une manche de questions ouvertes | Terminée | — |
 | [US-E16-02](US-E16-02-question-et-saisie.md) | Question posée et saisie sur le téléphone | À faire | US-E16-01 |
 | [US-E16-03](US-E16-03-pre-classement-et-validation.md) | Pré-classement et validation en lot par le GM | À faire | US-E16-02 |
 | [US-E16-04](US-E16-04-revelation-et-points.md) | Révélation et points | À faire | US-E16-03 |
