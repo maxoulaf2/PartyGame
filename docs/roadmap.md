@@ -178,6 +178,8 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 **Critère de sortie :** un pack mêlant QCM, blind test et questions ouvertes peut être écrit sans lire le code, validé en ligne de commande, puis joué.
 
+**Tranché :** compte à rebours et réponse définitive, pré-classement en suggestions pré-cochées validées en lot par le GM, barème du quiz, toutes les réponses révélées sur la TV avec leurs auteurs ; validation par une commande `validate` du serveur, zip extraits dans un cache au chargement, aperçu sur la TV piloté par la console GM depuis le lobby. Voir les README des épopées E16 et E17.
+
 ---
 
 ## Phase 6 — Une vraie soirée
