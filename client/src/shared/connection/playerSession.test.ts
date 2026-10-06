@@ -5,6 +5,7 @@ import type {
     JoinResult,
     PlayerId,
     PlayerSnapshot,
+    RecoverSessionResult,
     ResumeSessionResult,
     RoundId,
 } from '../contracts';
@@ -47,7 +48,10 @@ function snapshot(version: number, nickname = 'Zoé'): PlayerSnapshot {
     };
 }
 
-type Request = { nickname: string } | { token: string };
+type Request = { nickname: string } | { token: string } | { code: string };
+
+/** The reconnection code the fake server knows, of a player whose last intent was numbered 4. */
+const reconnectionCode = 'ABC234';
 
 /**
  * A server that registers any nickname except those already taken, recognizes the tokens it
@@ -79,12 +83,19 @@ function fakeServer(
             async (
                 method: string,
                 request: Request,
-            ): Promise<JoinResult | ResumeSessionResult | null> => {
+            ): Promise<JoinResult | ResumeSessionResult | RecoverSessionResult | null> => {
                 if (!reachable) {
                     throw new Error('disconnected');
                 }
                 if (method === 'SendRoundIntent') {
                     return null;
+                }
+                if ('code' in request) {
+                    if (request.code !== reconnectionCode) {
+                        return { refusal: 'CodeUnknown', token: null, lastClientSeq: 0 };
+                    }
+                    known.add(token);
+                    return { refusal: null, token, lastClientSeq: 4 };
                 }
                 if (pending) {
                     return 'token' in request
@@ -393,6 +404,46 @@ describe('PlayerSession', () => {
 
             expect(session.status).toBe('resuming');
             expect(tokens.value).toBe(token);
+        });
+    });
+
+    describe('recover', () => {
+        it('keeps the token the code gives, resumes the session, and numbers the next intents after the last one handled', async () => {
+            const { session, server, tokens } = await startedSession();
+
+            const outcome = await session.recover(reconnectionCode);
+
+            expect(outcome).toBe('recognized');
+            expect(tokens.value).toBe(token);
+            await vi.waitFor(() => expect(session.status).toBe('joined'));
+            expect(server.connection.invoke).toHaveBeenCalledWith('ResumeSession', { token });
+            session.sendRoundIntent({
+                type: 'quiz.submitAnswer',
+                roundId,
+                questionNumber: 1,
+                choice: 'A',
+            });
+            await vi.waitFor(() => expect(session.pendingIntents).toEqual([]));
+            expect(server.connection.invoke).toHaveBeenLastCalledWith(
+                'SendRoundIntent',
+                expect.objectContaining({ clientSeq: 5 }),
+            );
+        });
+
+        it('answers the refusal of an unknown code and stays on the form', async () => {
+            const { session, tokens } = await startedSession();
+
+            expect(await session.recover('ZZZZZZ')).toBe('CodeUnknown');
+            expect(session.status).toBe('registering');
+            expect(tokens.value).toBeNull();
+        });
+
+        it('answers unreachable when the connection drops meanwhile', async () => {
+            const { session, server } = await startedSession();
+            server.connection.invoke.mockRejectedValueOnce(new Error('disconnected'));
+
+            expect(await session.recover(reconnectionCode)).toBe('unreachable');
+            expect(session.status).toBe('registering');
         });
     });
 

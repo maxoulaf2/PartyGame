@@ -54,8 +54,8 @@ public sealed class RenamePlayerTests : IAsyncDisposable
         Assert.Equal(new RenamePlayerResult(Refusal: null), result);
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
         Assert.Equal(
-            [new GameMasterPlayer(zoeId, "Zoé B", IsConnected: true, Score: 0), new GameMasterPlayer(maxId, "Max", IsConnected: true, Score: 0)],
-            Latest(toGameMaster.GameMaster).Players);
+            [new GameMasterPlayer(zoeId, "Zoé B", IsConnected: true, Score: 0, null), new GameMasterPlayer(maxId, "Max", IsConnected: true, Score: 0, null)],
+            Latest(toGameMaster.GameMaster).Players.Select(p => p with { ReconnectionCode = null }));
         Assert.Equal(["Zoé B", "Max"], Latest(toDisplay.Display).Players.Select(p => p.Nickname));
         Assert.Equal("Zoé B", Latest(toZoe.Player).Nickname);
         Assert.Contains(LoggedEvent.ReadAll(_logs), e => e.Template.Contains("renamed", StringComparison.Ordinal));

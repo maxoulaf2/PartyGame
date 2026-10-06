@@ -151,6 +151,26 @@ public sealed class QuizAnswersTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task RecoverSession_AfterAnAnswer_GivesTheLastClientSeqSoThatTheNewPhoneGoesOnNumbering()
+    {
+        // Given: Zoé answered from a phone she then lost
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        var joined = await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
+        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await PresentAsync(gameMaster, 1);
+        await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(RoundId, 1, QuizChoiceLetter.B));
+        var code = Game.State.ReconnectionCodes[joined.PlayerId!.Value];
+
+        // When
+        await using var newPhone = await HubClients.ConnectAsync(_factory);
+        var recovered = await newPhone.InvokeAsync<RecoverSessionResult>(GameHub.RecoverSession, new RecoverSessionRequest(code), Ct);
+
+        // Then
+        Assert.Equal(new RecoverSessionResult(Refusal: null, joined.Token, LastClientSeq: 1), recovered);
+    }
+
+    [Fact]
     public async Task AnswersTimer_Elapses_LocksTheAnswersOnEveryInterface()
     {
         // Given

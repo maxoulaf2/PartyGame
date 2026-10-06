@@ -7,7 +7,7 @@ namespace PartyGame.Engine.Tests.Projections;
 
 /// <summary>
 /// What the snapshots of the game, outside the views of the modes, may show to each viewer: the tokens to nobody, the
-/// networks of the host and the packs to the game master only, the rounds as they are played, and nothing of a player to
+/// reconnection codes, the networks of the host and the packs to the game master only, the rounds as they are played, and nothing of a player to
 /// the others.
 /// </summary>
 public sealed class SnapshotsLeakTests
@@ -89,6 +89,7 @@ public sealed class SnapshotsLeakTests
         var withoutSecrets = state with
         {
             PlayerTokens = state.PlayerTokens.Clear(),
+            ReconnectionCodes = state.ReconnectionCodes.Clear(),
             JoinAddressCandidates = [],
             Catalog = new PackCatalog(string.Empty, [new CatalogPack(Games.PackId, Games.Pack.Title, RoundCount: null, Descriptor: null, [])]),
         };
@@ -114,6 +115,12 @@ public sealed class SnapshotsLeakTests
         foreach (var token in state.PlayerTokens.Keys)
         {
             yield return new Secret(token.Value, Audience.Everyone);
+        }
+
+        // A reconnection code is as good as a token: the game master reads it to the player alone.
+        foreach (var code in state.ReconnectionCodes.Values)
+        {
+            yield return new Secret(code, Audience.AllButGameMaster);
         }
 
         // The networks of the host: only the advertised address reaches the TV screen.

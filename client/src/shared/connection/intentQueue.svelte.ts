@@ -63,10 +63,13 @@ export class IntentQueue {
         this.#pending = kept.pending;
     }
 
-    /** Starts afresh for a token the server just issued: its numbers start from 1. */
-    reset(token: string): void {
+    /**
+     * Starts afresh for a token the server just issued, its numbers from 1, or for the token of a
+     * player recovered by their code, its numbers after `lastSeq`, the last the server handled.
+     */
+    reset(token: string, lastSeq = 0): void {
         this.#token = token;
-        this.#lastSeq = 0;
+        this.#lastSeq = lastSeq;
         this.#pending = [];
         this.#save();
     }

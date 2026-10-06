@@ -68,7 +68,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
         await FlushAsync(connection);
         var snapshot = Assert.Single(received.GameMaster);
         Assert.Equal((GameId, 2, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
-        Assert.Equal([new GameMasterPlayer(PlayerIdOf(1), "Zoé", IsConnected: true, Score: 0)], snapshot.Players);
+        Assert.Equal([new GameMasterPlayer(PlayerIdOf(1), "Zoé", IsConnected: true, Score: 0, "CODE01")], snapshot.Players);
         Assert.Single(received.Json);
     }
 
@@ -185,7 +185,7 @@ public sealed class SnapshotBroadcastTests : IAsyncDisposable
     private async Task<PlayerId> JoinAsync(string nickname, int player)
     {
         var inputs = _factory.Services.GetRequiredService<IGameInputWriter>();
-        var outcome = await inputs.SubmitAsync(new JoinGame(PlayerIdOf(player), TokenOf(player), nickname, DateTimeOffset.UnixEpoch), Ct);
+        var outcome = await inputs.SubmitAsync(new JoinGame(PlayerIdOf(player), TokenOf(player), nickname, DateTimeOffset.UnixEpoch, $"CODE{player:D2}"), Ct);
         Assert.Equal(InputStatus.Accepted, outcome.Status);
         return PlayerIdOf(player);
     }

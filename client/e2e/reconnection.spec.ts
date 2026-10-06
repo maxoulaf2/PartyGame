@@ -114,6 +114,44 @@ test('a phone with a token the server does not know registers again, nickname fi
     await expect.poll(() => tokenOf(page)).toBeNull();
 });
 
+test('a player gets back in on another phone with the code the GM console shows', async ({
+    page,
+    browser,
+}, testInfo) => {
+    const nickname = uniqueNickname('Léa');
+    const lost = await newPhone(browser, testInfo);
+    await join(lost, nickname);
+    await page.addInitScript(
+        ([key, code]) => {
+            localStorage.setItem(key, code);
+        },
+        [gameMasterCodeKey, gameMasterCode] as const,
+    );
+    await page.goto('/gm/');
+    const row = page
+        .getByRole('list', { name: fr.gm.playerListLabel })
+        .getByRole('listitem')
+        .filter({ hasText: nickname });
+    const shown = fr.gm.reconnectionCode.replace('{code}', '');
+    await expect(row).toContainText(shown);
+    const code = (await row.getByText(shown).textContent())!.trim().slice(shown.length);
+
+    const phone = await newPhone(browser, testInfo);
+    await phone.goto('/');
+    await phone.getByRole('button', { name: fr.player.recover.action }).click();
+    await phone.getByLabel(fr.player.recover.label).fill('wrong1');
+    await phone.getByRole('button', { name: fr.player.recover.submit }).click();
+    await expect(phone.getByText(fr.player.recover.problems.unknown)).toBeVisible();
+    await phone.getByLabel(fr.player.recover.label).fill(code.toLowerCase());
+    await phone.getByRole('button', { name: fr.player.recover.submit }).click();
+
+    await expect(phone.getByText(registeredAs(nickname))).toBeVisible();
+    expect(await tokenOf(phone)).toBe(await tokenOf(lost));
+
+    await lost.context().close();
+    await phone.context().close();
+});
+
 /**
  * Checks the notice of an outage: absent for its first seconds, shown once it lasts longer than
  * 3 s. Called right after the cut.

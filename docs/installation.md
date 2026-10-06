@@ -106,7 +106,7 @@ Les médias référencés par un pack doivent se trouver dans son dossier, avec 
 
 ## Enregistrement de la partie
 
-Après chaque changement, le serveur enregistre la partie dans le fichier `current-game.json` du dossier de données, pour pouvoir la reprendre après un crash ou un redémarrage. L'écriture passe par un fichier temporaire (`current-game.json.tmp`) puis remplace l'ancien fichier : un arrêt brutal laisse toujours le dernier enregistrement complet. Ce fichier contient les jetons des joueurs et les bonnes réponses : il n'est servi par aucune page, mais ne doit pas être partagé.
+Après chaque changement, le serveur enregistre la partie dans le fichier `current-game.json` du dossier de données, pour pouvoir la reprendre après un crash ou un redémarrage. L'écriture passe par un fichier temporaire (`current-game.json.tmp`) puis remplace l'ancien fichier : un arrêt brutal laisse toujours le dernier enregistrement complet. Ce fichier contient les jetons et codes de reconnexion des joueurs et les bonnes réponses : il n'est servi par aucune page, mais ne doit pas être partagé.
 
 Le dossier se règle par le paramètre `Persistence:Directory` (variable d'environnement `Persistence__Directory`), comme celui des packs. Par défaut, c'est le dossier `data` à côté de l'exécutable du serveur ; un chemin relatif est lui aussi relatif au dossier de l'exécutable. Le serveur le crée au besoin. S'il ne peut ni le créer ni y écrire, il s'arrête au démarrage avec un message `FTL` qui nomme le dossier. Si l'écriture échoue en cours de partie (disque plein, par exemple), la partie continue et la console GM affiche un incident jusqu'à ce que l'enregistrement fonctionne de nouveau.
 

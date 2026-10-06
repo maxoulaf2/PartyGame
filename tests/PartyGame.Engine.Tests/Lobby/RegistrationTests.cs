@@ -17,6 +17,7 @@ public sealed class RegistrationTests
         Assert.Empty(transition.Effects);
         Assert.Equal([new Player(Games.PlayerIdOf(1), "Zoé", IsConnected: true), new Player(join.PlayerId, "Max", IsConnected: true)], transition.State.Players);
         Assert.Equal(join.PlayerId, transition.State.PlayerTokens[join.Token]);
+        Assert.Equal(join.ReconnectionCode, transition.State.ReconnectionCodes[join.PlayerId]);
     }
 
     [Fact]
@@ -106,6 +107,21 @@ public sealed class RegistrationTests
         // Given
         var state = Games.LobbyWith("Zoé");
         var join = Games.Join("Max", player: 2) with { Token = new PlayerToken("token-1") };
+
+        // When
+        var transition = Games.Engine.Handle(state, join, Games.Context());
+
+        // Then
+        Assert.Same(state, transition.State);
+        Assert.Equal(RejectionReason.PlayerAlreadyJoined, transition.Rejection);
+    }
+
+    [Fact]
+    public void Handle_JoinGameWithKnownReconnectionCode_IsRejectedAsAlreadyJoined()
+    {
+        // Given
+        var state = Games.LobbyWith("Zoé");
+        var join = Games.Join("Max", player: 2) with { ReconnectionCode = state.ReconnectionCodes[Games.PlayerIdOf(1)] };
 
         // When
         var transition = Games.Engine.Handle(state, join, Games.Context());

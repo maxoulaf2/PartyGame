@@ -76,6 +76,20 @@ export const fr = {
                 failed: 'L’inscription n’a pas abouti : réessaie.',
             },
         },
+        // For a player already registered who changed phone or browser, or lost their place.
+        recover: {
+            action: 'Se connecter avec un code',
+            title: 'Se connecter avec un code',
+            label: 'Code de reconnexion',
+            hint: 'Demande ton code au maître du jeu.',
+            submit: 'Se connecter',
+            back: 'Retour',
+            problems: {
+                unknown:
+                    'Ce code ne correspond à aucun joueur : vérifie-le auprès du maître du jeu.',
+                failed: 'La connexion n’a pas abouti : réessaie.',
+            },
+        },
     },
     display: {
         waiting: 'En attente des joueurs…',
@@ -438,6 +452,8 @@ export const fr = {
                 GameMaster: 'de la console',
             },
         },
+        // Next to each player: the code they type to join again from another phone or browser.
+        reconnectionCode: 'Code {code}',
         rename: {
             action: 'Renommer',
             // Read by screen readers: several « Renommer » buttons must be told apart.

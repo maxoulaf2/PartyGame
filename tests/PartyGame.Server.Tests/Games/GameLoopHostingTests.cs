@@ -32,7 +32,7 @@ public sealed class GameLoopHostingTests : IAsyncDisposable
 
         // When
         var outcome = await services.GetRequiredService<IGameInputWriter>().SubmitAsync(
-            new JoinGame(new PlayerId(Guid.NewGuid()), new PlayerToken("token"), "Zoé", DateTimeOffset.UnixEpoch),
+            new JoinGame(new PlayerId(Guid.NewGuid()), new PlayerToken("token"), "Zoé", DateTimeOffset.UnixEpoch, "CODE01"),
             TestContext.Current.CancellationToken);
 
         // Then

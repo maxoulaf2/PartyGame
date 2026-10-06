@@ -746,8 +746,8 @@ test('/gm/ ranks the players between two rounds, then offers to start the next o
         ...fakeLobby(),
         phase: 'BetweenRounds',
         players: [
-            { id: zoe, nickname: 'Zoé', isConnected: true, score: 1000 },
-            { id: max, nickname: 'Max', isConnected: false, score: 2350 },
+            { id: zoe, nickname: 'Zoé', isConnected: true, score: 1000, reconnectionCode: null },
+            { id: max, nickname: 'Max', isConnected: false, score: 2350, reconnectionCode: null },
         ],
         packCatalog: null,
         selectedPackId: 'soiree',
@@ -788,8 +788,8 @@ test('/gm/ shows the final ranking once the game is finished, with nothing left 
         ...fakeLobby(),
         phase: 'Finished',
         players: [
-            { id: zoe, nickname: 'Zoé', isConnected: true, score: 3000 },
-            { id: max, nickname: 'Max', isConnected: false, score: 3000 },
+            { id: zoe, nickname: 'Zoé', isConnected: true, score: 3000, reconnectionCode: null },
+            { id: max, nickname: 'Max', isConnected: false, score: 3000, reconnectionCode: null },
         ],
         packCatalog: null,
         selectedPackId: 'soiree',

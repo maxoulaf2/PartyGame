@@ -1,4 +1,9 @@
-import type { JoinRefusal, PlayerRoundIntent, PlayerSnapshot } from '../contracts';
+import type {
+    JoinRefusal,
+    PlayerRoundIntent,
+    PlayerSnapshot,
+    RecoverSessionRefusal,
+} from '../contracts';
 import type { CodeStorage } from './codeStorage';
 import type { GameConnection } from './gameHub';
 import { IntentQueue } from './intentQueue.svelte';
@@ -6,6 +11,9 @@ import type { SnapshotStore } from './snapshotStore.svelte';
 
 /** What became of a nickname the player submitted: joined, refused by the server, or not sent. */
 export type JoinOutcome = 'joined' | 'unreachable' | JoinRefusal;
+
+/** What became of a reconnection code the player typed: recognized, refused, or not sent. */
+export type RecoverOutcome = 'recognized' | 'unreachable' | RecoverSessionRefusal;
 
 /**
  * Where the phone stands:
@@ -165,6 +173,39 @@ export class PlayerSession {
         this.#intents.reset(result.token);
         this.#identified();
         return 'joined';
+    }
+
+    /**
+     * Sends the reconnection code the game master read to the player, from another phone or
+     * browser, or after the token was lost. Once recognized, the phone keeps the token of the
+     * player, and resumes their session with it like after any reconnection.
+     */
+    async recover(code: string): Promise<RecoverOutcome> {
+        if (!this.#connected || this.#status !== 'registering' || this.#gamePending) {
+            return 'unreachable';
+        }
+
+        let result;
+        try {
+            result = await this.#connection.invoke('RecoverSession', { code });
+        } catch {
+            return 'unreachable';
+        }
+
+        if (result.refusal !== null) {
+            return result.refusal;
+        }
+        if (result.token === null) {
+            return 'CodeUnknown';
+        }
+
+        this.#token.save(result.token);
+        // The intents of the player go on from the last one the server handled, whichever phone
+        // sent it: numbered from 1, they would be ignored as already handled.
+        this.#intents.reset(result.token, result.lastClientSeq);
+        this.#status = 'resuming';
+        void this.#resume(result.token);
+        return 'recognized';
     }
 
     /**
