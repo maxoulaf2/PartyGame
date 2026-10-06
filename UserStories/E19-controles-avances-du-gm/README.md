@@ -13,7 +13,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E19-01](US-E19-01-pause-et-reprise.md) | Pause et reprise de la partie | À faire | — |
+| [US-E19-01](US-E19-01-pause-et-reprise.md) | Pause et reprise de la partie | Terminée | — |
 | [US-E19-02](US-E19-02-ajustement-des-scores.md) | Ajustement manuel des scores | À faire | — |
 | [US-E19-03](US-E19-03-programme-des-manches.md) | Saut et réordonnancement des manches | À faire | US-E18-01 |
 
