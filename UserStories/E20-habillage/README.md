@@ -7,7 +7,7 @@
 
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
-| [US-E20-01](US-E20-01-theme-et-transitions.md) | Thème visuel et transitions de l'écran TV | À faire | US-E18-01 |
+| [US-E20-01](US-E20-01-theme-et-transitions.md) | Thème visuel et transitions de l'écran TV | Terminée | US-E18-01 |
 | [US-E20-02](US-E20-02-jingles-et-ambiance.md) | Jingles et sons d'ambiance | À faire | US-E18-01, US-E19-01 |
 | [US-E20-03](US-E20-03-accessibilite.md) | Vérification de l'accessibilité | À faire | US-E20-01 |
 
