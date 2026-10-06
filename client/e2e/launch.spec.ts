@@ -438,7 +438,8 @@ test('the game master plays a whole game, from the choice of the pack to the fin
                 name: fill(fr.game.podiumStepLabel, { rank: rankText(fr.game.rank, rank) }),
             })
             .getByRole('listitem');
-    await expect(step(1)).toHaveText([nickname]);
+    // Revealed step by step, the first one last, 7.5 s after the end.
+    await expect(step(1)).toHaveText([nickname], { timeout: 15_000 });
     await expect(step(2)).toHaveText([flakyNickname, thirdNickname, secondNickname]);
     await expect(step(3)).toHaveCount(0);
     await expect(podium.locator('[data-rank="1"]')).toContainText(pointsText(2000));

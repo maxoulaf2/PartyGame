@@ -64,7 +64,7 @@ public sealed class ResumeSessionTests : IAsyncDisposable
         Assert.Equal([HubGroups.Player(playerId)], await GroupsOfAsync(phone, playerId));
         await Task.WhenAll(FlushAsync(phone), FlushAsync(display), FlushAsync(gameMaster));
         Assert.Equal(
-            new PlayerSnapshot(Game.State.GameId, Game.State.Version, Phase.Lobby, playerId, "Zoé", Score: 0, PlayerCount: 1, Round: null, RoundView: null, Standing: null),
+            new PlayerSnapshot(Game.State.GameId, Game.State.Version, Phase.Lobby, playerId, "Zoé", Score: 0, PlayerCount: 1, Round: null, RoundView: null, Standing: null, FinishedAt: null),
             toPhone.Player.MaxBy(s => s.Version));
         Assert.True(toDisplay.Display.MaxBy(s => s.Version)!.Players.Single().IsConnected);
         Assert.True(toGameMaster.GameMaster.MaxBy(s => s.Version)!.Players.Single().IsConnected);

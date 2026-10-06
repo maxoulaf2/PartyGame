@@ -103,7 +103,12 @@
                 score={game.current.score}
             />
         {:else if screen.kind === 'finished'}
-            <FinalScreen standing={game.current.standing} score={game.current.score} />
+            <FinalScreen
+                standing={game.current.standing}
+                score={game.current.score}
+                finishedAt={game.current.finishedAt}
+                {clock}
+            />
         {:else}
             {@render inProgress()}
         {/if}

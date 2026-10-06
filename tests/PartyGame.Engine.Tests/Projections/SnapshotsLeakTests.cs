@@ -167,6 +167,12 @@ public sealed class SnapshotsLeakTests
             Games.WithScores(state, 3000, 1000),
             Games.WithScores(state, 5000, 1000),
             Audience.OtherPlayersThan("Zoé"));
+        // Nor where the others stood in the ranking before.
+        yield return new SecretPair<GameState>(
+            "previous rank of another player",
+            state with { Players = state.Players.SetItem(1, state.Players[1] with { PreviousRank = 1 }) },
+            state with { Players = state.Players.SetItem(1, state.Players[1] with { PreviousRank = 2 }) },
+            Audience.OtherPlayersThan("Max"));
     }
 
     private static IEnumerable<Secret> SecretsOf(GameState state)

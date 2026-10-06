@@ -39,7 +39,8 @@ public sealed class Snapshots(GameModes modes)
 
                     // Without any player, and with the media files of the preview: the round is projected as during a game.
                     previewMode.ProjectForDisplay(shown.Round, state with { Players = [], Media = preview.Media }))
-                : null);
+                : null,
+            FinishedAtOf(state));
     }
 
     /// <summary>
@@ -91,8 +92,12 @@ public sealed class Snapshots(GameModes modes)
             state.Players.Length,
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State!, state, player) : null,
-            StandingOf(state, player));
+            StandingOf(state, player),
+            FinishedAtOf(state));
     }
+
+    private static long? FinishedAtOf(GameState state) =>
+        state.Phase == GamePhase.Finished ? state.FinishedAt?.ToUnixTimeMilliseconds() : null;
 
     private static Phase PhaseOf(GameState state) => state.Phase switch
     {
@@ -170,7 +175,7 @@ public sealed class Snapshots(GameModes modes)
     /// awarded: during a round, the screens show the round alone.
     /// </summary>
     private static ImmutableArray<RankedPlayer> RankingOf(GameState state) =>
-        [.. StandingsOf(state).Select(s => new RankedPlayer(s.Player.Id, s.Player.Nickname, s.Player.IsConnected, s.Rank, s.IsTied, s.Player.Score))];
+        [.. StandingsOf(state).Select(s => new RankedPlayer(s.Player.Id, s.Player.Nickname, s.Player.IsConnected, s.Rank, s.IsTied, s.Player.Score, s.Player.PreviousRank))];
 
     /// <summary>
     /// The rank of <paramref name="player"/> alone: the phone of a player learns nothing else of the others. A player

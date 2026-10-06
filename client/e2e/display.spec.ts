@@ -58,6 +58,7 @@ function fakeSnapshot(
         ranking: [],
         joinCodeShown: false,
         preview: null,
+        finishedAt: null,
     };
 }
 
@@ -181,7 +182,7 @@ function fakeRanking(players: readonly DisplayPlayer[], scores: readonly number[
         const score = scores[index] ?? 0;
         const rank = scores.filter((other) => other > score).length + 1;
         const isTied = scores.filter((other) => other === score).length > 1;
-        return { ...player, rank, isTied, score };
+        return { ...player, rank, isTied, score, previousRank: null };
     });
 }
 
@@ -224,6 +225,39 @@ test('/display/ ranks the players between two rounds as the server sends them', 
     // The lobby gives way to the ranking, but late arrivals can still join.
     await expect(playerList(page)).toHaveCount(0);
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toBeVisible();
+});
+
+test('/display/ marks how each player moved since the previous ranking, by an arrow and a number', async ({
+    page,
+}) => {
+    const players = [
+        fakePlayer(1, 'Max'),
+        fakePlayer(2, 'Zoé'),
+        fakePlayer(3, 'Léa'),
+        fakePlayer(4, 'Ugo'),
+    ];
+    const previousRanks = [3, 1, 3, null];
+    const ranking = fakeRanking(players, [3000, 2000, 1000, 0]).map((player, index) => ({
+        ...player,
+        previousRank: previousRanks[index] ?? null,
+    }));
+    await serveDisplaySnapshot(page, {
+        ...fakeSnapshot(players, advertisedAddress, 'BetweenRounds'),
+        ranking,
+    });
+
+    await page.goto('/display/');
+
+    const rows = rankingList(page).getByRole('listitem');
+    await expect(rows.nth(0)).toContainText(fill(fr.game.rankMove.up, { count: 2 }));
+    await expect(rows.nth(0)).toContainText(countText(fr.game.rankMoveLabel.up, 2));
+    await expect(rows.nth(1)).toContainText(fill(fr.game.rankMove.down, { count: 1 }));
+    await expect(rows.nth(1)).toContainText(countText(fr.game.rankMoveLabel.down, 1));
+    await expect(rows.nth(2)).toContainText(fr.game.rankMove.same);
+    // Joined since the previous ranking: no move to show.
+    await expect(rows.nth(3)).toHaveText(
+        `${rankText(fr.game.rank, 4)} Ugo ${countText(fr.game.points, 0)}`,
+    );
 });
 
 test('/display/ fits a ranking of 20 long nicknames on a 1080p screen, readable and clear of the edges', async ({

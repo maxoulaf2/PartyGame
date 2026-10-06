@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import ConnectionIcon from '../shared/components/ConnectionIcon.svelte';
     import QrCode from '../shared/components/QrCode.svelte';
     import type { DisplaySnapshot, RoundInfo } from '../shared/contracts';
@@ -8,6 +9,7 @@
     import { fr } from '../shared/i18n/fr';
     import { rankText } from '../shared/i18n/rankText';
     import { playerListLayout } from './playerListLayout';
+    import { placesGained, previousIndexes } from './rankMoves';
 
     interface Props {
         snapshot: DisplaySnapshot;
@@ -23,6 +25,40 @@
     const joinUrl = $derived(
         snapshot.joinAddress ? composeJoinUrl(snapshot.joinAddress, location) : null,
     );
+
+    const rows: HTMLLIElement[] = [];
+
+    // The rows show in the order of the previous ranking, then slide to their new place: in CSS
+    // transforms only, smooth even on a Raspberry Pi. Once, as the ranking appears.
+    onMount(() => {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+        const from = previousIndexes(ranking);
+        const places = rows.map((row) => row.getBoundingClientRect());
+        rows.forEach((row, index) => {
+            const start = places[from[index] ?? index];
+            const end = places[index];
+            if (!start || !end || (start.left === end.left && start.top === end.top)) {
+                return;
+            }
+            const offset = `translate(${start.left - end.left}px, ${start.top - end.top}px)`;
+            row.animate([{ transform: offset }, { transform: 'none' }], {
+                duration: 1200,
+                delay: 500,
+                easing: 'ease-in-out',
+                fill: 'backwards',
+            });
+        });
+    });
+
+    function moveText(gained: number): string {
+        return gained > 0
+            ? fill(fr.game.rankMove.up, { count: gained })
+            : gained < 0
+              ? fill(fr.game.rankMove.down, { count: -gained })
+              : fr.game.rankMove.same;
+    }
 </script>
 
 <main>
@@ -47,8 +83,9 @@
         style:--rows={Math.ceil(ranking.length / layout.columns)}
         style:--nickname-size={layout.fontSize}
     >
-        {#each ranking as player (player.id)}
-            <li class:disconnected={!player.isConnected}>
+        {#each ranking as player, index (player.id)}
+            {@const gained = placesGained(player)}
+            <li class:disconnected={!player.isConnected} bind:this={rows[index]}>
                 <span class="rank">{rankText(fr.game.rank, player.rank)}</span>
                 <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
                 <span class="nickname">{player.nickname}</span>
@@ -56,6 +93,18 @@
                     <!-- Dimmed and marked with an icon: never told apart by colour alone. -->
                     <ConnectionIcon connected={false} />
                     <span class="visually-hidden">({fr.display.disconnected})</span>
+                {/if}
+                {#if gained !== null}
+                    <!-- An arrow and a number, never colour alone; a sentence for screen readers. -->
+                    <span class="move">
+                        <span aria-hidden="true">{moveText(gained)}</span>
+                        <span class="visually-hidden">
+                            {countText(
+                                gained >= 0 ? fr.game.rankMoveLabel.up : fr.game.rankMoveLabel.down,
+                                Math.abs(gained),
+                            )}
+                        </span>
+                    </span>
                 {/if}
                 <span class="score">{countText(fr.game.points, player.score)}</span>
             </li>
@@ -162,6 +211,12 @@
 
     .score {
         flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .move {
+        flex: 0 0 auto;
+        color: var(--color-text-muted);
         white-space: nowrap;
     }
 

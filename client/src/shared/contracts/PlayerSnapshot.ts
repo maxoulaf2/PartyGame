@@ -21,4 +21,5 @@ export interface PlayerSnapshot {
     readonly round: RoundInfo | null;
     readonly roundView: PlayerRoundView | null;
     readonly standing: PlayerStanding | null;
+    readonly finishedAt: number | null;
 }

@@ -1,9 +1,10 @@
 <script lang="ts">
+    import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { PlayerStanding } from '../shared/contracts';
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
     import { standingText } from '../shared/i18n/rankText';
-    import { isOnPodium } from '../shared/podium';
+    import { isOnPodium, isRevealed, untilNextReveal } from '../shared/podium';
 
     interface Props {
         /**
@@ -12,14 +13,35 @@
          */
         standing: PlayerStanding | null;
         score: number;
+        /** When the game finished, on the clock of the server: the TV screen reveals the ranks from then on. */
+        finishedAt: number | null;
+        clock: Pick<ServerClock, 'serverNow'>;
     }
 
-    let { standing, score }: Props = $props();
+    let { standing, score, finishedAt, clock }: Props = $props();
+
+    // The rank shows once the TV screen reveals it, not to spoil the podium.
+    let ticks = $state(0);
+    const now = $derived.by(() => {
+        void ticks;
+        return clock.serverNow();
+    });
+    $effect(() => {
+        const wait = untilNextReveal(finishedAt, now);
+        if (wait === null) {
+            return;
+        }
+        const timer = setTimeout(() => ticks++, wait);
+        return () => clearTimeout(timer);
+    });
+    const revealed = $derived(standing !== null && isRevealed(standing.rank, finishedAt, now));
 </script>
 
 <main>
     <h1>{fr.game.finished}</h1>
-    {#if standing}
+    {#if standing && !revealed}
+        <p class="message" role="status">{fr.player.revealing}</p>
+    {:else if standing}
         <p class="standing">
             {standingText(fr.game.standing, fr.game.rank, standing, standing.rankedCount)}
         </p>

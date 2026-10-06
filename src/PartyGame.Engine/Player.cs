@@ -22,10 +22,15 @@ namespace PartyGame.Engine;
 /// <param name="JoinedAfterEnd">
 /// Whether the player joined once the game was finished: having played no round, they are not ranked.
 /// </param>
+/// <param name="PreviousRank">
+/// The rank of the player in the ranking shown after the round before the current one, so that the next ranking shows
+/// who gained or lost places; <see langword="null"/> during the first round and for a player who joined since.
+/// </param>
 public sealed record Player(
     PlayerId Id,
     string Nickname,
     bool IsConnected,
     long LastClientSeq = 0,
     int Score = 0,
-    bool JoinedAfterEnd = false);
+    bool JoinedAfterEnd = false,
+    int? PreviousRank = null);

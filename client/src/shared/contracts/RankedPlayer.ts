@@ -12,4 +12,5 @@ export interface RankedPlayer {
     readonly rank: number;
     readonly isTied: boolean;
     readonly score: number;
+    readonly previousRank: number | null;
 }

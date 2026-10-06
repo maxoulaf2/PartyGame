@@ -25,6 +25,11 @@ namespace PartyGame.Contracts;
 /// Where this player stands in the ranking, between two rounds and once the game is finished; <see langword="null"/>
 /// otherwise, and for a player who joined once the game was finished, who played no round.
 /// </param>
+/// <param name="FinishedAt">
+/// When the game finished, in milliseconds since the Unix epoch on the clock of the server, once it is; <see langword="null"/>
+/// otherwise, and for a game saved before it existed. The phone tells the rank of the player once the TV screen reveals it: the screens reveal the podium step by step from then on, all at
+/// the same time, and a screen opened later knows where the reveal stands.
+/// </param>
 public sealed record PlayerSnapshot(
     GameId GameId,
     long Version,
@@ -35,4 +40,5 @@ public sealed record PlayerSnapshot(
     int PlayerCount,
     RoundInfo? Round,
     PlayerRoundView? RoundView,
-    PlayerStanding? Standing);
+    PlayerStanding? Standing,
+    long? FinishedAt);

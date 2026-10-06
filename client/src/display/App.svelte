@@ -135,7 +135,11 @@
     {:else if game.current && screen?.kind === 'betweenRounds'}
         <RankingScreen snapshot={game.current} round={screen.round} />
     {:else if game.current && screen?.kind === 'finished'}
-        <FinalRankingScreen ranking={game.current.ranking} />
+        <FinalRankingScreen
+            ranking={game.current.ranking}
+            finishedAt={game.current.finishedAt}
+            {clock}
+        />
     {:else if game.current?.phase === 'ResumePending'}
         <!-- Restarted, the server waits for the game master: the game comes back as it was. -->
         <WaitingScreen title={fr.app.name} message={fr.display.resumePending} />

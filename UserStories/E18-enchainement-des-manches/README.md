@@ -12,7 +12,7 @@ Les packs multi-manches de modes différents, l'enchaînement des manches par le
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E18-01](US-E18-01-introduction-de-manche.md) | Écran d'introduction de chaque manche | Terminée | — |
-| [US-E18-02](US-E18-02-classements-animes.md) | Classements animés et podium révélé marche par marche | À faire | — |
+| [US-E18-02](US-E18-02-classements-animes.md) | Classements animés et podium révélé marche par marche | Terminée | — |
 
 ## Décisions
 

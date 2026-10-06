@@ -83,6 +83,7 @@ function displaySnapshot(version: number, view: Partial<DisplaySnapshot> = {}): 
         ranking: [],
         joinCodeShown: false,
         preview: null,
+        finishedAt: null,
         ...view,
     };
 }
@@ -113,6 +114,7 @@ function playerSnapshot(version: number, view: Partial<QuizPlayerView> = {}): Pl
             ...view,
         },
         standing: null,
+        finishedAt: null,
     };
 }
 

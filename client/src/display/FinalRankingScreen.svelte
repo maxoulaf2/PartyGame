@@ -1,19 +1,43 @@
 <script lang="ts">
     import ConnectionIcon from '../shared/components/ConnectionIcon.svelte';
+    import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { RankedPlayer } from '../shared/contracts';
     import { countText } from '../shared/i18n/countText';
     import { fill } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { rankText } from '../shared/i18n/rankText';
-    import { podiumPosition, splitFinalRanking } from '../shared/podium';
+    import {
+        isRevealed,
+        podiumPosition,
+        splitFinalRanking,
+        untilNextReveal,
+    } from '../shared/podium';
     import { playerListLayout } from './playerListLayout';
 
     interface Props {
         /** Ranked by the server, ties in alphabetical order: shown as received, never sorted here. */
         ranking: readonly RankedPlayer[];
+        /** When the game finished, on the clock of the server: the podium is revealed from then on. */
+        finishedAt: number | null;
+        clock: Pick<ServerClock, 'serverNow'>;
     }
 
-    let { ranking }: Props = $props();
+    let { ranking, finishedAt, clock }: Props = $props();
+
+    // Read again at each step of the reveal, which the phones follow as well.
+    let ticks = $state(0);
+    const now = $derived.by(() => {
+        void ticks;
+        return clock.serverNow();
+    });
+    $effect(() => {
+        const wait = untilNextReveal(finishedAt, now);
+        if (wait === null) {
+            return;
+        }
+        const timer = setTimeout(() => ticks++, wait);
+        return () => clearTimeout(timer);
+    });
 
     const final = $derived(splitFinalRanking(ranking));
     // Sized for every player, so that the podium and the rest read alike.
@@ -31,7 +55,12 @@
             {#each final.steps as step (step.rank)}
                 {@const rank = rankText(fr.game.rank, step.rank)}
                 <!-- Ex aequo share their step, which widens with them. -->
-                <li class="step" style:order={podiumPosition(step.rank)}>
+                <!-- Hidden until revealed, its place kept so that the podium never moves. -->
+                <li
+                    class="step"
+                    class:hidden={!isRevealed(step.rank, finishedAt, now)}
+                    style:order={podiumPosition(step.rank)}
+                >
                     <ul aria-label={fill(fr.game.podiumStepLabel, { rank })}>
                         {#each step.players as player (player.id)}
                             <li class:disconnected={!player.isConnected}>
@@ -139,6 +168,21 @@
         flex: 0 1 auto;
         flex-direction: column;
         gap: 0.8vh;
+    }
+
+    .step.hidden {
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(4vh);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .step {
+            transition:
+                opacity 0.8s ease-out,
+                transform 0.8s ease-out,
+                visibility 0.8s;
+        }
     }
 
     .step ul {
