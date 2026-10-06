@@ -177,9 +177,11 @@
     /* Who answers, readable from the back of the room. */
     .winner {
         padding: 2vh 2vw;
-        border-radius: var(--radius);
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(26 * var(--u));
         background: var(--color-accent);
-        color: var(--color-bg);
+        box-shadow: 0 calc(8 * var(--u)) 0 var(--color-ink);
+        color: var(--color-ink);
         font-size: 5rem;
         font-weight: 800;
         text-align: center;

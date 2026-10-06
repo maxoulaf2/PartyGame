@@ -1,0 +1,51 @@
+/* The pop party theme of the pages seen by the room, the phones and the TV screen: an electric violet
+   ground, cream sticker cards with ink outlines and hard drop shadows, chunky type. The game master
+   console keeps the plain theme. Loaded after theme.css, whose tokens it overrides. */
+
+/* Self-hosted, as nothing may be fetched from outside the local network: one variable file covers
+   every weight. */
+@font-face {
+    font-family: 'Bricolage Grotesque';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../assets/fonts/bricolage-grotesque-latin-wght.woff2') format('woff2');
+}
+
+:root {
+    --color-bg: #6a3df5;
+    --color-surface: #fff6e5;
+    --color-text: #fff6e5;
+    --color-text-muted: #e2d9ff;
+    --color-accent: #ffc531;
+    --color-ink: #1b1530;
+    --color-on-surface: var(--color-ink);
+    --color-on-surface-muted: #4a3f6b;
+    --color-backdrop: rgb(27 21 48 / 60%);
+
+    /* The colors of the stickers, all light enough for ink. The four first are those of the
+       choices, which also flood a phone with its verdict. */
+    --color-pink: #ff5a6e;
+    --color-blue: #4ba3ff;
+    --color-orange: #ffb224;
+    --color-green: #3ccf8e;
+    --color-lilac: #c3aaff;
+    --color-rose: #ff8fb3;
+    /* What fades behind: the wrong choices of a reveal, the empty part of a countdown. */
+    --color-violet-light: #8f6cff;
+    --color-night: #2d2152;
+    /* The rank of a player off the podium, on cream. */
+    --color-sand: #e9e0cc;
+    /* The label of the correct choice, on cream. */
+    --color-correct-text: #1a7a50;
+
+    /* The outline of every sticker, thicker on the TV screen. */
+    --sticker-line: 3px;
+
+    --font-family:
+        'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+        Arial, sans-serif;
+    --radius: 1rem;
+
+    color-scheme: light;
+}

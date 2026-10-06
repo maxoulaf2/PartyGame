@@ -79,33 +79,44 @@
 </form>
 
 <style>
+    /* As the nickname form of JoinForm, in the same card. */
     h1 {
         margin: 0;
-        color: var(--color-accent);
-        font-size: var(--font-size-title);
+        font-size: 30px;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
     }
 
     form {
         display: flex;
         flex-direction: column;
-        gap: var(--space-s);
+        gap: 12px;
+    }
+
+    label {
+        color: var(--color-on-surface-muted);
+        font-size: 15px;
+        font-weight: 700;
     }
 
     input,
     button {
         min-height: var(--touch-target-min);
-        border-radius: var(--radius);
         font: inherit;
         touch-action: manipulation;
     }
 
     input {
-        padding: 0 var(--space-m);
-        border: 2px solid var(--color-text-muted);
-        background: var(--color-surface);
-        color: var(--color-text);
+        min-height: 58px;
+        padding: 0 16px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 16px;
+        background: var(--color-white);
+        color: var(--color-ink);
         /* At least 16 px: Safari on iOS zooms into a smaller field when it gets the focus. */
-        font-size: 1.25rem;
+        font-size: 22px;
+        font-weight: 700;
         letter-spacing: 0.2em;
         text-transform: uppercase;
     }
@@ -115,8 +126,8 @@
     }
 
     input:focus-visible {
-        border-color: var(--color-accent);
-        outline: none;
+        outline: var(--sticker-line) solid var(--color-bg);
+        outline-offset: 2px;
     }
 
     .problem,
@@ -125,27 +136,45 @@
     }
 
     .problem {
-        color: var(--color-accent);
+        padding: 6px 12px;
+        border: 2px solid var(--color-ink);
+        border-radius: 12px;
+        background: var(--color-pink);
         font-weight: 700;
     }
 
     .hint {
-        color: var(--color-text-muted);
+        color: var(--color-on-surface-muted);
     }
 
     button {
-        margin-top: var(--space-s);
-        border: none;
+        margin-top: 8px;
+        min-height: 60px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 18px;
         background: var(--color-accent);
-        color: var(--color-bg);
-        font-weight: 700;
+        box-shadow: 0 6px 0 var(--color-ink);
+        color: var(--color-ink);
+        font-size: 22px;
+        font-weight: 800;
         cursor: pointer;
     }
 
+    button:active:enabled {
+        transform: translateY(4px);
+        box-shadow: 0 2px 0 var(--color-ink);
+    }
+
     button.secondary {
-        border: 2px solid var(--color-text-muted);
+        min-height: var(--touch-target-min);
+        margin-top: 0;
+        border: none;
         background: transparent;
-        color: var(--color-text);
+        box-shadow: none;
+        color: var(--color-on-surface-muted);
+        font-size: inherit;
+        font-weight: 700;
+        text-decoration: underline;
     }
 
     button:disabled {

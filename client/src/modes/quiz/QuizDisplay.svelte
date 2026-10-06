@@ -37,9 +37,17 @@
     // The choices the game master has not shown yet keep their room, so that nothing moves on
     // screen as they show one by one.
     const hiddenLetters = $derived(letters.slice(view.choices.length, view.choiceCount));
+    // Long texts take a smaller type, so that a question of 200 characters, its image and four
+    // choices of 80 characters still fit at once.
+    const longQuestion = $derived((view.text?.length ?? 0) > 80);
+    const longChoices = $derived(view.choices.some((choice) => choice.text.length > 40));
+    // A reveal of long texts, or of many players, keeps the smaller type of the nicknames as well.
+    const crowded = $derived(
+        view.reveal !== null && (longQuestion || longChoices || view.reveal.answers.length > 12),
+    );
 </script>
 
-<main class:revealed={view.reveal !== null}>
+<main class:revealed={view.reveal !== null} class:crowded>
     <header>
         <p class="round">{round.title}</p>
         <div class="status">
@@ -65,6 +73,7 @@
                         closeAt={view.answersCloseAt}
                         {clock}
                         label={fr.modes.quiz.timeLeft}
+                        ring
                     />
                 </p>
             {:else if view.phase === 'Locked'}
@@ -76,7 +85,7 @@
             {/if}
         </div>
     </header>
-    <div class="question">
+    <div class="question" class:long={longQuestion}>
         {#if view.text === null}
             <!-- The game master reads the question out first: it shows right after. -->
             <p class="upcoming">
@@ -94,7 +103,7 @@
             <h1>{view.text}</h1>
         {/if}
     </div>
-    <ol class="choices" aria-label={fr.modes.quiz.choicesLabel}>
+    <ol class="choices" class:long={longChoices} aria-label={fr.modes.quiz.choicesLabel}>
         {#each view.choices as choice (choice.letter)}
             {@const correct = view.reveal?.correctChoice === choice.letter}
             <li
@@ -103,7 +112,10 @@
                 style:--choice-color={choiceColor(choice.letter)}
             >
                 <div class="choice">
-                    <ChoiceMarker letter={choice.letter} />
+                    <!-- The letter and the shape of the choice, on a sticker of their own. -->
+                    <span class="badge">
+                        <ChoiceMarker letter={choice.letter} color="var(--color-ink)" />
+                    </span>
                     <span class="text">{choice.text}</span>
                     {#if correct}
                         <span class="mark"><CorrectMark /></span>
@@ -135,7 +147,7 @@
         {#each hiddenLetters as letter (letter)}
             <li class="hidden-choice" aria-hidden="true">
                 <div class="choice">
-                    <ChoiceMarker {letter} />
+                    <span class="badge"><ChoiceMarker {letter} color="var(--color-ink)" /></span>
                     <span class="text">&nbsp;</span>
                 </div>
             </li>
@@ -160,18 +172,18 @@
     main {
         display: flex;
         flex-direction: column;
-        gap: 3vh;
+        gap: calc(18 * var(--u));
         height: 100vh;
         padding: 6vh 6vw;
         overflow: hidden;
+        color: var(--color-ink);
     }
 
     header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 4vw;
-        font-weight: 700;
+        gap: calc(20 * var(--u));
     }
 
     h1,
@@ -180,34 +192,50 @@
     }
 
     .round {
-        color: var(--color-accent);
+        min-width: 0;
+        padding: calc(5 * var(--u)) calc(16 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 999px;
+        background: var(--color-accent);
+        box-shadow: 0 calc(4 * var(--u)) 0 var(--color-ink);
+        font-size: calc(19 * var(--u));
+        font-weight: 800;
         overflow-wrap: anywhere;
+        transform: rotate(-2deg);
     }
 
     .status {
         display: flex;
         flex: none;
         align-items: center;
-        gap: 3vw;
+        gap: calc(12 * var(--u));
+        font-size: calc(17 * var(--u));
     }
 
     .progress,
+    .time-up {
+        padding: calc(5 * var(--u)) calc(14 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 999px;
+        background: var(--color-surface);
+        font-weight: 800;
+    }
+
+    .time-up {
+        background: var(--color-accent);
+    }
+
     .answered {
-        color: var(--color-text-muted);
+        padding: calc(8 * var(--u)) calc(14 * var(--u));
+        border-radius: 999px;
+        background: var(--color-ink);
+        color: var(--color-surface);
+        font-weight: 700;
     }
 
     /* The seconds left, readable from the back of the room. */
     .countdown {
-        min-width: 2.5ch;
-        color: var(--color-accent);
-        font-size: 3.5rem;
-        line-height: 1;
-        text-align: right;
-    }
-
-    .time-up {
-        color: var(--color-accent);
-        font-size: 2rem;
+        font-size: calc(26 * var(--u));
     }
 
     .question {
@@ -216,12 +244,17 @@
         align-items: center;
         gap: 3vw;
         min-height: 0;
+        padding: calc(20 * var(--u)) calc(30 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(26 * var(--u));
+        background: var(--color-surface);
+        box-shadow: 0 calc(8 * var(--u)) 0 var(--color-ink);
     }
 
     .upcoming {
         flex: 1 1 0;
-        color: var(--color-text-muted);
-        font-size: 5rem;
+        color: var(--color-on-surface-muted);
+        font-size: calc(48 * var(--u));
         font-weight: 800;
         text-align: center;
     }
@@ -230,41 +263,70 @@
         flex: none;
         max-width: 35vw;
         max-height: 32vh;
-        border-radius: var(--radius);
+        border-radius: calc(14 * var(--u));
         object-fit: contain;
     }
 
     h1 {
         flex: 1 1 0;
-        font-size: 3.25rem;
-        line-height: 1.2;
+        font-size: calc(38 * var(--u));
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
         overflow-wrap: anywhere;
+        text-wrap: pretty;
+    }
+
+    .question.long {
+        padding: calc(10 * var(--u)) calc(20 * var(--u));
+    }
+
+    .long h1 {
+        font-size: calc(26 * var(--u));
+        line-height: 1.2;
     }
 
     .choices {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 2vh 2vw;
+        gap: calc(14 * var(--u)) calc(18 * var(--u));
         margin: 0;
         padding: 0;
+        font-size: calc(26 * var(--u));
         list-style: none;
+    }
+
+    .choices.long {
+        font-size: calc(20 * var(--u));
     }
 
     .choices > li {
         display: flex;
         flex-direction: column;
         gap: 1vh;
-        padding: 1.5vh 1.5vw;
-        border-left: 0.6vw solid var(--choice-color);
-        border-radius: var(--radius);
-        background: var(--color-surface);
+        padding: calc(10 * var(--u)) calc(16 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(18 * var(--u));
+        background: var(--choice-color);
+        box-shadow: 0 calc(5 * var(--u)) 0 var(--color-ink);
+        font-weight: 800;
         line-height: 1.2;
     }
 
     .choice {
         display: flex;
         align-items: center;
-        gap: 1.5vw;
+        gap: calc(14 * var(--u));
+    }
+
+    .badge {
+        display: flex;
+        flex: none;
+        padding: calc(4 * var(--u)) calc(10 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u));
+        border: calc(2.5 * var(--u)) solid var(--color-ink);
+        border-radius: calc(12 * var(--u));
+        background: var(--color-surface);
+        font-size: calc(22 * var(--u));
     }
 
     .text {
@@ -303,35 +365,52 @@
        choice takes the whole width, its text on the left, who chose it on the right. A question
        of 200 characters, four choices of 80 and 20 nicknames of 16 under the same choice fit. */
     .revealed {
-        gap: 1.5vh;
+        gap: calc(11 * var(--u));
     }
 
     .revealed .question {
         flex: none;
+        margin: calc(2 * var(--u)) 0 calc(4 * var(--u));
+        padding: 0;
+        border: none;
+        background: none;
+        box-shadow: none;
+        color: var(--color-text);
     }
 
     .revealed h1 {
-        font-size: 2.25rem;
+        font-size: calc(24 * var(--u));
+        line-height: 1.15;
     }
 
     .revealed .choices {
         grid-template-columns: 1fr;
-        gap: 1.5vh;
+        gap: calc(11 * var(--u));
     }
 
     .revealed .choices > li {
         flex-direction: row;
         align-items: flex-start;
-        gap: 2vw;
-        padding: 0.6vh 1.5vw;
+        gap: calc(18 * var(--u));
+        padding: calc(8 * var(--u)) calc(14 * var(--u));
+        border-radius: calc(16 * var(--u));
+        background: var(--color-violet-light);
+        box-shadow: none;
     }
 
     .revealed .choice {
         flex: 0 0 34%;
         flex-wrap: wrap;
-        gap: 0.5vh 1vw;
-        font-size: 1.9rem;
+        gap: calc(4 * var(--u)) calc(10 * var(--u));
+        font-size: calc(20 * var(--u));
         line-height: 1.15;
+    }
+
+    .revealed .badge {
+        padding: calc(2 * var(--u)) calc(9 * var(--u)) calc(2 * var(--u)) calc(7 * var(--u));
+        border-radius: calc(10 * var(--u));
+        background: var(--choice-color);
+        font-size: inherit;
     }
 
     .revealed .text {
@@ -341,40 +420,45 @@
     /* On a line of its own, so that the text of the correct choice keeps its width. */
     .mark {
         flex-basis: 100%;
+        color: var(--color-correct-text);
+        font-size: calc(15 * var(--u));
     }
 
-    /* The correct choice stands out by an icon, a label and a frame; the others fade, their
-       nicknames staying readable. */
-    .correct {
-        outline: 0.3vw solid var(--color-text);
+    /* The correct choice stands out by an icon, a label, a cream sticker and its drop shadow; the
+       others fade, their nicknames staying readable. */
+    .revealed .choices > li.correct {
+        background: var(--color-surface);
+        box-shadow: 0 calc(5 * var(--u)) 0 var(--color-ink);
     }
 
     .wrong .choice {
-        opacity: 0.45;
+        opacity: 0.6;
     }
 
     /* The count, then the nicknames below it, over the whole width left: 20 nicknames of 16
        characters fit under a single choice at a size readable from 3 m. */
-    .chosen-by,
-    .unanswered {
+    .chosen-by {
         display: flex;
         flex: 1 1 0;
         flex-direction: column;
-        gap: 0.4vh;
+        gap: calc(4 * var(--u));
         min-width: 0;
-        font-size: 1.9rem;
+        font-size: calc(17 * var(--u));
         line-height: 1.1;
     }
 
     .count {
-        color: var(--color-text-muted);
         font-weight: 700;
+    }
+
+    .correct .count {
+        color: var(--color-on-surface-muted);
     }
 
     .nicknames {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4vh 0.6vw;
+        gap: calc(5 * var(--u));
         margin: 0;
         padding: 0;
         list-style: none;
@@ -382,15 +466,72 @@
 
     .nicknames li {
         min-width: 0;
-        padding: 0 0.3em;
-        border-radius: var(--radius);
-        background: var(--color-bg);
-        font-weight: 700;
+        padding: 0 calc(7 * var(--u));
+        border: calc(2 * var(--u)) solid var(--color-ink);
+        border-radius: calc(8 * var(--u));
+        background: var(--color-white);
+        font-weight: 800;
         overflow-wrap: anywhere;
     }
 
     .unanswered {
-        flex: none;
-        padding: 0 1.5vw;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: calc(10 * var(--u));
+        padding: 0 calc(14 * var(--u));
+        color: var(--color-text);
+        font-size: calc(17 * var(--u));
+        line-height: 1.1;
+    }
+
+    .unanswered .nicknames li {
+        background: var(--color-night);
+        color: var(--color-text);
+    }
+
+    /* Thinner outlines, and those of the nicknames drawn inside them, taking no room. */
+    .crowded {
+        --sticker-line: calc(1.5 * var(--u));
+        gap: 1vh;
+    }
+
+    .crowded .question {
+        margin: 0;
+    }
+
+    .crowded h1 {
+        font-size: calc(18 * var(--u));
+    }
+
+    .crowded .progress,
+    .crowded .round {
+        padding-block: calc(2 * var(--u));
+    }
+
+    .crowded .choice,
+    .crowded .chosen-by,
+    .crowded .unanswered {
+        font-size: calc(15.2 * var(--u));
+    }
+
+    .crowded .choices {
+        gap: 1vh;
+    }
+
+    .crowded .choices > li {
+        padding: calc(3 * var(--u)) calc(12 * var(--u));
+    }
+
+    .crowded .nicknames {
+        gap: 0.4vh 0.6vw;
+        line-height: 1;
+    }
+
+    .crowded .nicknames li {
+        padding: calc(1 * var(--u)) calc(5 * var(--u));
+        border: none;
+        outline: calc(1.5 * var(--u)) solid var(--color-ink);
+        outline-offset: calc(-1.5 * var(--u));
     }
 </style>

@@ -114,7 +114,9 @@ test('/display/ loads its self-hosted font from the server', async ({ page }) =>
     const loaded = await page.evaluate(async () => {
         await document.fonts.ready;
         return [...document.fonts].some(
-            (face) => face.family.replaceAll('"', '') === 'Nunito' && face.status === 'loaded',
+            (face) =>
+                face.family.replaceAll('"', '') === 'Bricolage Grotesque' &&
+                face.status === 'loaded',
         );
     });
     expect(loaded).toBe(true);
@@ -993,7 +995,7 @@ test('/display/ reveals the correct answer, who chose each choice, and who did n
     const opacities = await choices
         .locator(':scope > li .choice')
         .evaluateAll((items) => items.map((item) => Number(getComputedStyle(item).opacity)));
-    expect(opacities).toEqual([0.45, 1, 0.45, 0.45]);
+    expect(opacities).toEqual([0.6, 1, 0.6, 0.6]);
     // Under each choice, how many chose it and who, in order of arrival.
     await expect(choicePlayers(page, 'B').getByRole('listitem')).toHaveText(['Zoé', 'Noé']);
     await expect(choicePlayers(page, 'A').getByRole('listitem')).toHaveText(['Max']);

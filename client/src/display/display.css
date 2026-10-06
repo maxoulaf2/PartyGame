@@ -3,6 +3,10 @@
     --font-size-base: 2.5rem;
     --font-size-title: 6rem;
     --space-l: 5vw;
+    /* One pixel of the 960 × 540 mockups, which show the screens at half their size: the whole
+       layout scales with the TV screen, and fits a window of another shape. */
+    --u: min(100vh / 540, 100vw / 960);
+    --sticker-line: calc(3 * var(--u));
 }
 
 /* The answer a reveal puts forward, shared by the views of every mode: it lands, bounces once and

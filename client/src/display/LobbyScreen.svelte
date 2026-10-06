@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Confetti from '../shared/components/Confetti.svelte';
+    import Logo from '../shared/components/Logo.svelte';
     import QrCode from '../shared/components/QrCode.svelte';
     import type { DisplaySnapshot } from '../shared/contracts';
     import { composeJoinUrl } from '../shared/connection/joinUrl';
@@ -26,7 +28,9 @@
     );
 </script>
 
-<main>
+<!-- Beyond 12 players, the stickers slim down so that 20 long nicknames still fit. -->
+<main class:dense={snapshot.players.length > 12}>
+    <Confetti tv />
     <section class="join">
         {#if joinUrl}
             <p class="invite">{fr.display.scanToJoin}</p>
@@ -41,7 +45,7 @@
         {/if}
     </section>
     <section class="lobby">
-        <h1>{fr.app.name}</h1>
+        <Logo tv />
         {#if packTitle !== null}
             <p class="pack">{packTitle}</p>
         {/if}
@@ -56,9 +60,11 @@
 <style>
     /* TVs may crop their edges (overscan): nothing essential within 5% of any border. */
     main {
+        position: relative;
+        isolation: isolate;
         display: flex;
         align-items: center;
-        gap: 4vw;
+        gap: calc(44 * var(--u));
         height: 100vh;
         padding: 5vh 5vw;
         overflow: hidden;
@@ -66,64 +72,102 @@
 
     .join {
         display: flex;
-        flex: 0 0 34vw;
+        flex: 0 0 calc(300 * var(--u));
         flex-direction: column;
         align-items: center;
-        gap: var(--space-m);
+        gap: calc(12 * var(--u));
+        padding: calc(22 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(26 * var(--u));
+        background: var(--color-surface);
+        box-shadow: 0 calc(8 * var(--u)) 0 var(--color-ink);
+        color: var(--color-on-surface);
         text-align: center;
+        transform: rotate(-2deg);
     }
 
     .qr {
-        width: min(55vh, 30vw);
+        width: calc(220 * var(--u));
+        overflow: hidden;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(14 * var(--u));
     }
 
     .lobby {
         display: flex;
         flex: 1;
         flex-direction: column;
-        gap: var(--space-m);
+        gap: calc(14 * var(--u));
         align-self: stretch;
         justify-content: center;
         min-width: 0;
     }
 
-    h1,
     p {
         margin: 0;
     }
 
-    h1 {
-        color: var(--color-accent);
-        font-size: var(--font-size-title);
-        line-height: 1.1;
-    }
-
-    .invite,
-    .url {
-        font-weight: 700;
+    .invite {
+        font-size: calc(21 * var(--u));
+        font-weight: 800;
+        line-height: 1.15;
     }
 
     .muted {
-        color: var(--color-text-muted);
+        color: var(--color-on-surface-muted);
+        font-size: calc(14 * var(--u));
+        font-weight: 600;
     }
 
     .url {
+        padding: calc(2 * var(--u)) calc(10 * var(--u));
+        border: calc(2 * var(--u)) solid var(--color-ink);
+        border-radius: calc(10 * var(--u));
+        background: var(--color-accent);
+        color: var(--color-ink);
+        font-size: calc(18 * var(--u));
+        font-weight: 800;
         overflow-wrap: anywhere;
     }
 
-    .status {
-        color: var(--color-text-muted);
-    }
-
     .pack {
-        font-size: 1.5em;
-        font-weight: 700;
+        margin-top: calc(8 * var(--u));
+        font-size: calc(24 * var(--u));
+        font-weight: 800;
         overflow-wrap: anywhere;
     }
 
     .headline {
-        font-size: var(--font-size-title);
-        font-weight: 700;
+        font-size: calc(44 * var(--u));
+        font-weight: 800;
         line-height: 1.1;
+        -webkit-text-stroke: calc(1.5 * var(--u)) var(--color-ink);
+    }
+
+    .status {
+        align-self: flex-start;
+        padding: calc(5 * var(--u)) calc(14 * var(--u));
+        border-radius: 999px;
+        background: var(--color-ink);
+        color: var(--color-surface);
+        font-size: calc(16 * var(--u));
+        font-weight: 700;
+    }
+
+    .dense {
+        --sticker-line: calc(2 * var(--u));
+        --player-gap: 0.6vh 1.5vw;
+    }
+
+    .dense .lobby {
+        gap: 1.5vh;
+    }
+
+    .dense .lobby > :global(h1) {
+        font-size: calc(40 * var(--u));
+    }
+
+    .dense .pack {
+        margin-top: 0;
     }
 </style>

@@ -21,6 +21,18 @@ export function rankText(texts: RankTexts, rank: number): string {
 }
 
 /**
+ * Splits a rank as rankText writes it around its number, so that the ordinal can be set apart (raised
+ * on a phone): « 1 » and « er ».
+ */
+export function rankParts(
+    texts: RankTexts,
+    rank: number,
+): { readonly number: string; readonly ordinal: string } {
+    const [before = '', after = ''] = (rank === 1 ? texts.first : texts.other).split('{rank}');
+    return { number: before + formatNumber(rank), ordinal: after };
+}
+
+/**
  * Writes where a player stands out of `count` players, ex aequo when they share their rank: « 3e ex
  * aequo sur 9 ». The server ranks the players: this only writes what it sent.
  */

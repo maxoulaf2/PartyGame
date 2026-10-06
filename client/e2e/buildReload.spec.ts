@@ -59,10 +59,6 @@ async function relayToUpdatableServer(page: Page) {
     };
 }
 
-function registeredAs(nickname: string): string {
-    return fr.player.registeredAs.replace('{nickname}', () => nickname);
-}
-
 test('a phone left open during an update reloads once, then finds its place back', async ({
     page,
 }) => {
@@ -73,7 +69,7 @@ test('a phone left open during an update reloads once, then finds its place back
     await page.goto('/');
     await page.getByLabel(fr.player.join.label).fill(nickname);
     await page.getByRole('button', { name: fr.player.join.submit }).click();
-    await expect(page.getByText(registeredAs(nickname))).toBeVisible();
+    await expect(page.getByText(nickname, { exact: true })).toBeVisible();
     // The build served is the one of the page: nothing to reload.
     expect(loads).toBe(1);
 
@@ -87,7 +83,7 @@ test('a phone left open during an update reloads once, then finds its place back
     expect(await page.evaluate((key) => sessionStorage.getItem(key), reloadTargetKey)).toBe(
         newerBuild,
     );
-    await expect(page.getByText(registeredAs(nickname))).toBeVisible();
+    await expect(page.getByText(nickname, { exact: true })).toBeVisible();
     await expect(page.getByLabel(fr.player.join.label)).toHaveCount(0);
 
     // The page goes on with its build, without reloading in a loop.

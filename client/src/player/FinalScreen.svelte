@@ -1,10 +1,11 @@
 <script lang="ts">
+    import Confetti from '../shared/components/Confetti.svelte';
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { PlayerStanding } from '../shared/contracts';
     import { countText } from '../shared/i18n/countText';
     import { fr } from '../shared/i18n/fr';
-    import { standingText } from '../shared/i18n/rankText';
     import { isOnPodium, isRevealed, untilNextReveal } from '../shared/podium';
+    import StandingBadge from './StandingBadge.svelte';
 
     interface Props {
         /**
@@ -38,13 +39,12 @@
 </script>
 
 <main>
+    <Confetti />
     <h1>{fr.game.finished}</h1>
     {#if standing && !revealed}
         <p class="message" role="status">{fr.player.revealing}</p>
     {:else if standing}
-        <p class="standing">
-            {standingText(fr.game.standing, fr.game.rank, standing, standing.rankedCount)}
-        </p>
+        <StandingBadge {standing} medal={isOnPodium(standing.rank)} />
         <p class="score">{countText(fr.game.points, score)}</p>
         <p class="message">{isOnPodium(standing.rank) ? fr.player.podium : fr.player.finished}</p>
     {:else}
@@ -54,14 +54,17 @@
 
 <style>
     main {
+        position: relative;
+        isolation: isolate;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: var(--space-m);
+        gap: 26px;
         min-height: 100vh;
         min-height: 100dvh;
-        padding: var(--space-l);
+        padding: 40px 24px;
+        overflow: hidden;
         text-align: center;
     }
 
@@ -71,23 +74,29 @@
     }
 
     h1 {
-        color: var(--color-accent);
-        font-size: var(--font-size-title);
-    }
-
-    .standing {
-        font-size: 2.5rem;
-        font-weight: 700;
-        line-height: 1.15;
+        padding: 8px 18px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 999px;
+        background: var(--color-surface);
+        box-shadow: 0 4px 0 var(--color-ink);
+        color: var(--color-on-surface);
+        font-size: 18px;
+        font-weight: 800;
     }
 
     .score {
-        font-size: 1.5rem;
-        font-weight: 700;
+        padding: 10px 20px;
+        border-radius: 999px;
+        background: var(--color-ink);
+        color: var(--color-surface);
+        font-size: 22px;
+        font-weight: 800;
     }
 
     .message {
-        font-size: 1.25rem;
-        font-weight: 700;
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.15;
+        text-wrap: pretty;
     }
 </style>

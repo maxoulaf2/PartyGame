@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Confetti from '../shared/components/Confetti.svelte';
     import type { PlayerSnapshot } from '../shared/contracts';
     import { fr } from '../shared/i18n/fr';
 
@@ -7,29 +8,37 @@
     }
 
     let { snapshot }: Props = $props();
-
-    // A function as replacement: a nickname such as « $& » must show as typed.
-    const registeredAs = $derived(
-        fr.player.registeredAs.replace('{nickname}', () => snapshot.nickname),
-    );
 </script>
 
 <main>
+    <Confetti />
     <h1>{fr.app.name}</h1>
-    <p class="nickname">{registeredAs}</p>
+    <div class="card">
+        <p class="heading">{fr.player.registeredAs}</p>
+        <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
+        <p class="nickname">{snapshot.nickname}</p>
+    </div>
     <p class="status">{fr.player.waiting}</p>
+    <div class="dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
 </main>
 
 <style>
     main {
+        position: relative;
+        isolation: isolate;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: var(--space-m);
+        gap: 40px;
         min-height: 100vh;
         min-height: 100dvh;
-        padding: var(--space-l);
+        padding: 40px 28px;
+        overflow: hidden;
         text-align: center;
     }
 
@@ -39,17 +48,65 @@
     }
 
     h1 {
-        color: var(--color-accent);
-        font-size: var(--font-size-title);
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .card {
+        width: 100%;
+        max-width: 26rem;
+        overflow: hidden;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 28px;
+        background: var(--color-surface);
+        box-shadow: 0 8px 0 var(--color-ink);
+        color: var(--color-on-surface);
+        transform: rotate(-3deg);
+    }
+
+    .heading {
+        padding: 14px 16px;
+        border-bottom: var(--sticker-line) solid var(--color-ink);
+        background: var(--color-pink);
+        font-size: 17px;
+        font-weight: 800;
     }
 
     .nickname {
-        font-size: 1.25rem;
-        font-weight: 700;
+        padding: 32px 16px 38px;
+        font-size: 68px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.03em;
         overflow-wrap: anywhere;
     }
 
     .status {
-        color: var(--color-text-muted);
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.3;
+        text-wrap: pretty;
+    }
+
+    .dots {
+        display: flex;
+        gap: 10px;
+    }
+
+    .dots span {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--color-ink);
+        border-radius: 50%;
+        background: var(--color-accent);
+    }
+
+    .dots span:nth-child(2) {
+        background: var(--color-blue);
+    }
+
+    .dots span:nth-child(3) {
+        background: var(--color-green);
     }
 </style>
