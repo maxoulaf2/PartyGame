@@ -17,6 +17,8 @@ import type {
     JoinResult,
     NextRoundRequest,
     PlayerIntentEnvelope,
+    RecoverSessionRequest,
+    RecoverSessionResult,
     ReloadPacksResult,
     ResolveSavedGameRequest,
     RenamePlayerRequest,
@@ -48,6 +50,7 @@ export interface GameHubMethods {
     Announce: { args: [announcement: Announcement]; result: AnnouncementResult };
     JoinGame: { args: [request: JoinRequest]; result: JoinResult };
     ResumeSession: { args: [request: ResumeSessionRequest]; result: ResumeSessionResult };
+    RecoverSession: { args: [request: RecoverSessionRequest]; result: RecoverSessionResult };
     // Null when the server ignores the intent: the connection is not authenticated as game master.
     RenamePlayer: { args: [request: RenamePlayerRequest]; result: RenamePlayerResult | null };
     StartGame: { args: []; result: StartGameResult | null };

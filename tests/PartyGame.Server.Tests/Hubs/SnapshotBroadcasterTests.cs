@@ -25,7 +25,7 @@ public sealed class SnapshotBroadcasterTests
         var broadcaster = new SnapshotBroadcaster(hub, new Snapshots(modes), new RecordingIncidentReporter(), logger);
         var state = new GameEngine(modes).Handle(
             LoopHarness.InitialState,
-            new JoinGame(new PlayerId(Guid.NewGuid()), new PlayerToken("token"), "Zoé", DateTimeOffset.UnixEpoch),
+            new JoinGame(new PlayerId(Guid.NewGuid()), new PlayerToken("token"), "Zoé", DateTimeOffset.UnixEpoch, "CODE01"),
             new GameContext(DateTimeOffset.UnixEpoch, new Random(42))).State;
         var player = Assert.Single(state.Players);
 

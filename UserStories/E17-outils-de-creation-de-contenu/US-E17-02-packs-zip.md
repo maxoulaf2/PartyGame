@@ -13,6 +13,7 @@
 - Étant donné un zip corrompu, sans `pack.json`, contenant une entrée qui sort du dossier d'extraction (`../`, chemin absolu) ou dont la taille décompressée dépasse 2 Go, quand il est chargé, alors le pack est marqué invalide avec un problème précis, sans rien écrire hors du cache, et les autres packs se chargent normalement.
 - Étant donné un dossier et un zip qui donneraient le même identifiant de pack, quand ils sont chargés, alors les deux sont signalés en conflit, et aucun n'est sélectionnable.
 - Étant donné une partie lancée depuis un pack zip, quand le serveur redémarre, alors la partie reprend (E11) avec ses médias, même si le cache a été vidé.
+- Étant donné un fichier zip passé à la commande `validate` (US-E17-01), quand elle s'exécute, alors il est vérifié comme un dossier, sans laisser de fichier extrait derrière lui.
 - Étant donné les tests, quand ils s'exécutent, alors ils couvrent le chargement, la réutilisation du cache, chaque refus ci-dessus, et un test E2E qui joue un extrait audio d'un pack zip.
 
 **Comportement en cas d'erreur**

@@ -109,7 +109,7 @@ internal static class Games
     public static GameContext Context(int seed = 42) => new(Now, new Random(seed));
 
     public static JoinGame Join(string nickname, int player = 1) =>
-        new(PlayerIdOf(player), new PlayerToken($"token-{player}"), nickname, Now);
+        new(PlayerIdOf(player), new PlayerToken($"token-{player}"), nickname, Now, $"CODE{player:D2}");
 
     public static RenamePlayer Rename(int player, string nickname) => new(PlayerIdOf(player), nickname, Now);
 

@@ -10,8 +10,11 @@ internal static class Registration
 {
     public static Transition Join(GameState state, JoinGame join)
     {
-        // The hub generates both values, so a known one means the same registration handled twice.
-        if (state.Players.Any(p => p.Id == join.PlayerId) || state.PlayerTokens.ContainsKey(join.Token))
+        // The hub generates these values, so a known one means the same registration handled twice. A code drawn twice is
+        // unlikely, but it would designate two players: refused all the same.
+        if (state.Players.Any(p => p.Id == join.PlayerId)
+            || state.PlayerTokens.ContainsKey(join.Token)
+            || state.ReconnectionCodes.ContainsValue(join.ReconnectionCode))
         {
             return Transition.Rejected(state, RejectionReason.PlayerAlreadyJoined);
         }
@@ -31,6 +34,7 @@ internal static class Registration
             Players = state.Players.Add(
                 new Player(join.PlayerId, nickname, IsConnected: true, JoinedAfterEnd: state.Phase == GamePhase.Finished)),
             PlayerTokens = state.PlayerTokens.Add(join.Token, join.PlayerId),
+            ReconnectionCodes = state.ReconnectionCodes.Add(join.PlayerId, join.ReconnectionCode),
         };
         return new Transition(newState, []);
     }

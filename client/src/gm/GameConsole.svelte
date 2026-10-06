@@ -4,6 +4,7 @@
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { countText } from '../shared/i18n/countText';
+    import { fill } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import AddressControl from './AddressControl.svelte';
     import ConnectionQualityLine from './ConnectionQualityLine.svelte';
@@ -131,6 +132,12 @@
                             <!-- Computed by the server, at every moment of the game. -->
                             <span class="score">{countText(fr.gm.score, player.score)}</span>
                         {/if}
+                        {#if player.reconnectionCode !== null}
+                            <!-- Read to the player who changed phone or browser, to join again. -->
+                            <span class="code">
+                                {fill(fr.gm.reconnectionCode, { code: player.reconnectionCode })}
+                            </span>
+                        {/if}
                         <span class="status">
                             <ConnectionIcon connected={player.isConnected} />
                             {player.isConnected ? fr.gm.connected : fr.gm.disconnected}
@@ -250,6 +257,12 @@
 
     .score {
         font-weight: 700;
+    }
+
+    .code {
+        color: var(--color-text-muted);
+        font-family: ui-monospace, monospace;
+        letter-spacing: 0.1em;
     }
 
     .status {

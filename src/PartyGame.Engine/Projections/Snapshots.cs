@@ -45,7 +45,7 @@ public sealed class Snapshots(GameModes modes)
             state.GameId,
             state.Version,
             PhaseOf(state),
-            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected, p.Score))],
+            [.. state.Players.Select(p => new GameMasterPlayer(p.Id, p.Nickname, p.IsConnected, p.Score, state.ReconnectionCodes.GetValueOrDefault(p.Id)))],
             Launch.MinimumPlayerCount,
             state.JoinAddress,
             [.. state.JoinAddressCandidates.Select(c => new GameMasterJoinAddress(c.Address, c.InterfaceName))],

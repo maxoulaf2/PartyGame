@@ -80,9 +80,9 @@ public sealed class SnapshotsTests
         Assert.Equal((state.GameId, 7, Phase.Lobby), (snapshot.GameId, snapshot.Version, snapshot.Phase));
         Assert.Equal(
             [
-                new GameMasterPlayer(Games.PlayerIdOf(1), "Zoé", IsConnected: true, Score: 0),
-                new GameMasterPlayer(Games.PlayerIdOf(2), "Max", IsConnected: false, Score: 0),
-                new GameMasterPlayer(Games.PlayerIdOf(3), "Léa", IsConnected: true, Score: 0),
+                new GameMasterPlayer(Games.PlayerIdOf(1), "Zoé", IsConnected: true, Score: 0, "CODE01"),
+                new GameMasterPlayer(Games.PlayerIdOf(2), "Max", IsConnected: false, Score: 0, "CODE02"),
+                new GameMasterPlayer(Games.PlayerIdOf(3), "Léa", IsConnected: true, Score: 0, "CODE03"),
             ],
             snapshot.Players);
     }

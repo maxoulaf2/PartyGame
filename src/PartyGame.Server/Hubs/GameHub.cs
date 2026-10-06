@@ -51,6 +51,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="ResumeSessionAsync"/>, as the clients call it.</summary>
     public const string ResumeSession = nameof(ResumeSession);
 
+    /// <summary>SignalR target of <see cref="LookUpReconnectionCode"/>, as the clients call it.</summary>
+    public const string RecoverSession = nameof(RecoverSession);
+
     /// <summary>SignalR target of <see cref="RenamePlayerAsync"/>, as the clients call it.</summary>
     public const string RenamePlayer = nameof(RenamePlayer);
 
@@ -122,6 +125,18 @@ internal sealed class GameHub(
 
     /// <summary>Size of a player token: 128 random bits, out of reach of guessing.</summary>
     private const int TokenBytes = 16;
+
+    /// <summary>
+    /// The characters of a reconnection code: letters and digits, without those a player could confuse when reading them
+    /// from the console (0 and O, 1 and I, L).
+    /// </summary>
+    private const string ReconnectionCodeCharacters = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+    /// <summary>
+    /// Length of a reconnection code: short to type on a phone, and 31^6, about 887 million codes, out of reach of a
+    /// guess over the evening.
+    /// </summary>
+    private const int ReconnectionCodeLength = 6;
 
     /// <summary>
     /// Longest build identifier a page may report: those of <c>npm run build</c> are far shorter, and a longer one would
@@ -234,6 +249,7 @@ internal sealed class GameHub(
 
         var playerId = new PlayerId(Guid.NewGuid());
         var token = new PlayerToken(Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(TokenBytes)));
+        var reconnectionCode = RandomNumberGenerator.GetString(ReconnectionCodeCharacters, ReconnectionCodeLength);
         var group = HubGroups.Player(playerId);
 
         // In the group before the loop broadcasts the new state, so that no snapshot sent meanwhile is missed.
@@ -242,7 +258,7 @@ internal sealed class GameHub(
         // Not cancelled with the connection: once enqueued, the registration may be accepted, and its connection must
         // then be tracked like any other, so that the player is shown disconnected.
         var outcome = await inputs
-            .SubmitAsync(new Engine.Inputs.JoinGame(playerId, token, request.Nickname, timeProvider.GetUtcNow()), CancellationToken.None)
+            .SubmitAsync(new Engine.Inputs.JoinGame(playerId, token, request.Nickname, timeProvider.GetUtcNow(), reconnectionCode), CancellationToken.None)
             .ConfigureAwait(false);
         if (outcome.Status != InputStatus.Accepted)
         {
@@ -333,6 +349,48 @@ internal sealed class GameHub(
         networkHealth.PlayerConnected(playerId, Transport(), ReportedRoundTrip());
         await Clients.Caller.ReceivePlayerSnapshot(snapshots.ForPlayer(state, player)).ConfigureAwait(false);
         return new ResumeSessionResult(Refusal: null, playerId);
+    }
+
+    /// <summary>
+    /// Gives the token of the player whose reconnection code the message holds, to a phone that lost its token or never had
+    /// it: the phone then resumes the session of the player with it, like after any reconnection. The connection itself
+    /// stays anonymous until then.
+    /// </summary>
+    /// <remarks>
+    /// The code is looked up in the state without going through the loop, like a token: codes are never removed, and the
+    /// state read is immutable.
+    /// </remarks>
+    /// <param name="message">A <see cref="RecoverSessionRequest"/>.</param>
+    [HubMethodName(RecoverSession)]
+    public RecoverSessionResult LookUpReconnectionCode(JsonElement message)
+    {
+        if (!HubMessage.TryRead<RecoverSessionRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(RecoverSession, Context.ConnectionId, invalidPath);
+            return new RecoverSessionResult(RecoverSessionRefusal.MessageInvalid, Token: null, LastClientSeq: 0);
+        }
+
+        var state = game.State;
+        if (IsPending(state))
+        {
+            // The code may belong to the game found saved: the phone asks again once the game master decides.
+            return new RecoverSessionResult(RecoverSessionRefusal.GamePending, Token: null, LastClientSeq: 0);
+        }
+
+        // ponytail: no limit on attempts, the size of the codes alone keeps a guess out of reach; count the failures of a
+        // client address if one ever floods the logs.
+        var code = request.Code.Trim().ToUpperInvariant();
+        var player = state.Players.FirstOrDefault(p => state.ReconnectionCodes.GetValueOrDefault(p.Id) == code);
+        if (player is null)
+        {
+            logger.ReconnectionCodeRejected(Context.ConnectionId);
+            return new RecoverSessionResult(RecoverSessionRefusal.CodeUnknown, Token: null, LastClientSeq: 0);
+        }
+
+        // Every registered player has exactly one token.
+        var token = state.PlayerTokens.First(entry => entry.Value == player.Id).Key;
+        logger.SessionRecovered(player.Id.Value, Context.ConnectionId);
+        return new RecoverSessionResult(Refusal: null, token.Value, player.LastClientSeq);
     }
 
     /// <summary>

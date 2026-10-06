@@ -121,7 +121,15 @@ function gameMasterSnapshot(
         gameId,
         version,
         phase: 'Round',
-        players: [{ id: playerId, nickname: 'Zoé', isConnected: true, score: 0 }],
+        players: [
+            {
+                id: playerId,
+                nickname: 'Zoé',
+                isConnected: true,
+                score: 0,
+                reconnectionCode: 'ABC234',
+            },
+        ],
         minimumPlayerCount: 1,
         joinAddress: '192.168.1.42',
         joinAddressCandidates: [{ address: '192.168.1.42', interfaceName: 'Wi-Fi' }],

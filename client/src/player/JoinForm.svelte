@@ -3,6 +3,7 @@
     import type { JoinOutcome, PlayerSession } from '../shared/connection/playerSession.svelte';
     import { fr } from '../shared/i18n/fr';
     import { checkNickname } from '../shared/nickname';
+    import RecoverForm from './RecoverForm.svelte';
 
     interface Props {
         session: PlayerSession;
@@ -18,6 +19,8 @@
     // The refusal of the server, shown while the field still holds the nickname it refused.
     let refused = $state<{ nickname: string; outcome: JoinOutcome } | null>(null);
     let input: HTMLInputElement | undefined = $state();
+    // Whether the player chose to join again with the code the game master reads them.
+    let withCode = $state(false);
 
     const problem = $derived(checkNickname(nickname));
     const canSubmit = $derived(interactive && !sending && problem === null);
@@ -59,6 +62,14 @@
 </script>
 
 <main>
+    {#if withCode}
+        <RecoverForm {session} {interactive} onback={() => (withCode = false)} />
+    {:else}
+        {@render nicknameForm()}
+    {/if}
+</main>
+
+{#snippet nicknameForm()}
     <h1>{fr.player.join.title}</h1>
     <form onsubmit={submit} novalidate>
         <label for="nickname">{fr.player.join.label}</label>
@@ -80,7 +91,10 @@
         {/if}
         <button type="submit" disabled={!canSubmit}>{fr.player.join.submit}</button>
     </form>
-</main>
+    <button type="button" class="secondary" onclick={() => (withCode = true)}>
+        {fr.player.recover.action}
+    </button>
+{/snippet}
 
 <style>
     main {
@@ -145,6 +159,13 @@
         color: var(--color-bg);
         font-weight: 700;
         cursor: pointer;
+    }
+
+    button.secondary {
+        border: 2px solid var(--color-text-muted);
+        background: transparent;
+        color: var(--color-text);
+        touch-action: manipulation;
     }
 
     button:disabled {

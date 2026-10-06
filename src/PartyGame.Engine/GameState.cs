@@ -82,6 +82,12 @@ public sealed record GameState(
     public bool JoinCodeShown { get; init; }
 
     /// <summary>
+    /// The code each player types to join again from another phone or browser, drawn by the hub at registration. Secret:
+    /// only the game master sees it. Absent from a game saved before it existed, whose players then have none.
+    /// </summary>
+    public ImmutableDictionary<PlayerId, string> ReconnectionCodes { get; init; } = ImmutableDictionary<PlayerId, string>.Empty;
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>

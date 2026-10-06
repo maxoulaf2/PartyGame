@@ -10,4 +10,5 @@ export interface GameMasterPlayer {
     readonly nickname: string;
     readonly isConnected: boolean;
     readonly score: number;
+    readonly reconnectionCode: string | null;
 }

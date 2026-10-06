@@ -37,6 +37,13 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} resumed their session on connection {ConnectionId}")]
     public static partial void SessionResumed(this ILogger logger, Guid playerId, string connectionId);
 
+    // The code typed is never logged, wrong or right: it is as good as a token.
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Connection {ConnectionId} gave an unknown reconnection code")]
+    public static partial void ReconnectionCodeRejected(this ILogger logger, string connectionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Player {PlayerId} recovered their session with their reconnection code on connection {ConnectionId}")]
+    public static partial void SessionRecovered(this ILogger logger, Guid playerId, string connectionId);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} refused: unknown token")]
     public static partial void SessionUnknown(this ILogger logger, string connectionId);
 

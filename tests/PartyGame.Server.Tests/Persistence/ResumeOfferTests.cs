@@ -165,6 +165,7 @@ public sealed class ResumeOfferTests : IAsyncDisposable
         var welcomes = new List<Welcome>();
         await using var zoe = await HubClients.ConnectAsync(_factory!, beforeStart: c => c.On<Welcome>(nameof(IGameClient.ReceiveWelcome), welcomes.Add));
         var waiting = await zoe.InvokeAsync<ResumeSessionResult>(GameHub.ResumeSession, new ResumeSessionRequest(saved.Tokens[0]), Ct);
+        var recovering = await zoe.InvokeAsync<RecoverSessionResult>(GameHub.RecoverSession, new RecoverSessionRequest("ABCDEF"), Ct);
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(gameMaster, Role.GameMaster, Code);
 
@@ -173,6 +174,7 @@ public sealed class ResumeOfferTests : IAsyncDisposable
 
         // Then: the game goes on counting, its round resumed right after it, and the phone finds its place back with its token
         Assert.Equal(ResumeSessionRefusal.GamePending, waiting.Refusal);
+        Assert.Equal(RecoverSessionRefusal.GamePending, recovering.Refusal);
         Assert.Equal((saved.GameId, saved.Version + 2, GamePhase.Round), (Game.State.GameId, Game.State.Version, Game.State.Phase));
         await FlushAsync(zoe);
         Assert.Equal([true, false], welcomes.Select(w => w.GamePending));
