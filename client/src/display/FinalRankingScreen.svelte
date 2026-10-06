@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Confetti from '../shared/components/Confetti.svelte';
     import ConnectionIcon from '../shared/components/ConnectionIcon.svelte';
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { RankedPlayer } from '../shared/contracts';
@@ -44,7 +45,9 @@
     const layout = $derived(playerListLayout(ranking.length));
 </script>
 
-<main style:--nickname-size={layout.fontSize}>
+<!-- Beyond 12 players, the stickers slim down so that 20 long nicknames still fit. -->
+<main style:--nickname-size={layout.fontSize} class:dense={ranking.length > 12}>
+    <Confetti tv />
     <header>
         <p class="progress">{fr.game.finished}</p>
         <h1>{fr.game.finalRanking}</h1>
@@ -111,19 +114,22 @@
 <style>
     /* TVs may crop their edges (overscan): nothing essential within 5% of any border. */
     main {
+        position: relative;
+        isolation: isolate;
         display: flex;
         flex-direction: column;
-        gap: 2.5vh;
+        gap: calc(14 * var(--u));
         height: 100vh;
         padding: 5vh 5vw;
         overflow: hidden;
+        color: var(--color-ink);
     }
 
     header {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5vh;
+        gap: calc(6 * var(--u));
         text-align: center;
     }
 
@@ -132,15 +138,23 @@
         margin: 0;
     }
 
-    h1 {
-        color: var(--color-accent);
-        font-size: 6.5vh;
-        line-height: 1.1;
+    .progress {
+        padding: calc(4 * var(--u)) calc(14 * var(--u));
+        border-radius: 999px;
+        background: var(--color-ink);
+        color: var(--color-surface);
+        font-size: calc(16 * var(--u));
+        font-weight: 700;
     }
 
-    .progress {
-        color: var(--color-text-muted);
-        font-weight: 700;
+    h1 {
+        color: var(--color-surface);
+        font-size: calc(42 * var(--u));
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        -webkit-text-stroke: calc(1.5 * var(--u)) var(--color-ink);
+        text-shadow: 0 calc(4 * var(--u)) 0 var(--color-ink);
     }
 
     ol,
@@ -155,9 +169,9 @@
         flex: 0 0 auto;
         align-items: flex-end;
         justify-content: center;
-        gap: 1.5vw;
+        gap: calc(16 * var(--u));
         font-size: var(--nickname-size);
-        font-weight: 700;
+        font-weight: 800;
         line-height: 1.25;
     }
 
@@ -167,7 +181,7 @@
         display: flex;
         flex: 0 1 auto;
         flex-direction: column;
-        gap: 0.8vh;
+        gap: calc(8 * var(--u));
     }
 
     .step.hidden {
@@ -190,16 +204,18 @@
         flex-wrap: wrap;
         align-content: flex-end;
         justify-content: center;
-        gap: 0.6vh 0.8vw;
+        gap: calc(6 * var(--u));
     }
 
     .step li {
         display: flex;
         align-items: center;
         gap: 0.4em;
-        padding: 0.15em 0.6em;
-        border-radius: var(--radius);
+        padding: 0.1em 0.5em;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(12 * var(--u));
         background: var(--color-surface);
+        box-shadow: 0 calc(4 * var(--u)) 0 var(--color-ink);
     }
 
     .step .nickname {
@@ -212,33 +228,38 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-width: 20vw;
-        border-radius: var(--radius) var(--radius) 0 0;
+        min-width: calc(200 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-bottom: none;
+        border-radius: calc(18 * var(--u)) calc(18 * var(--u)) 0 0;
         background: var(--color-accent);
-        color: var(--color-bg);
-        line-height: 1.1;
+        line-height: 1.05;
         text-align: center;
     }
 
     /* The higher the rank, the higher the step. */
     .block[data-rank='1'] {
-        height: 14vh;
+        height: calc(124 * var(--u));
     }
 
     .block[data-rank='2'] {
-        height: 11vh;
+        height: calc(92 * var(--u));
+        background: var(--color-blue);
     }
 
     .block[data-rank='3'] {
-        height: 8vh;
+        height: calc(66 * var(--u));
+        background: var(--color-pink);
     }
 
     .block .rank {
-        font-size: 4.2vh;
+        font-size: calc(40 * var(--u));
+        letter-spacing: -0.03em;
     }
 
     .block .score {
-        font-size: 2.8vh;
+        font-size: calc(17 * var(--u));
+        font-weight: 700;
     }
 
     /* Filled column by column, so that the ranks read top to bottom. */
@@ -248,13 +269,13 @@
         grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
         grid-auto-flow: column;
         align-content: start;
-        gap: 0.6vh 2vw;
+        gap: calc(8 * var(--u)) calc(14 * var(--u));
         /* A score stays close to its nickname, even in a single column. */
         width: 100%;
         max-width: calc(var(--columns) * 45vw);
         margin: 0 auto;
         font-size: var(--nickname-size);
-        font-weight: 700;
+        font-weight: 800;
         line-height: 1.25;
     }
 
@@ -263,14 +284,15 @@
         align-items: center;
         gap: 0.5em;
         min-width: 0;
-        padding: 0.15em 0.5em;
-        border-radius: var(--radius);
+        padding: 0.1em 0.6em;
+        border: calc(2.5 * var(--u)) solid var(--color-ink);
+        border-radius: calc(12 * var(--u));
         background: var(--color-surface);
     }
 
     .rest .rank {
         flex: 0 0 2.6em;
-        color: var(--color-accent);
+        color: var(--color-bg);
     }
 
     .rest .nickname {
@@ -282,11 +304,38 @@
 
     .rest .score {
         flex: 0 0 auto;
+        font-weight: 700;
         white-space: nowrap;
     }
 
     .disconnected .nickname {
         opacity: 0.45;
+    }
+
+    .dense {
+        --sticker-line: calc(2 * var(--u));
+        gap: 1.5vh;
+    }
+
+    .dense .block[data-rank='1'] {
+        height: 14vh;
+    }
+
+    .dense .block[data-rank='2'] {
+        height: 11vh;
+    }
+
+    .dense .block[data-rank='3'] {
+        height: 8vh;
+    }
+
+    .dense .rest {
+        gap: 0.6vh 2vw;
+    }
+
+    .dense .rest li {
+        padding: 0 0.5em;
+        border-width: calc(2 * var(--u));
     }
 
     .visually-hidden {

@@ -280,15 +280,18 @@
         display: flex;
         flex-direction: column;
         padding: 0.3em 0.6em;
-        border: 3px solid var(--color-text-muted);
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: var(--radius);
         background: var(--color-surface);
+        color: var(--color-on-surface);
         font-size: 1.625rem;
         line-height: 1.2;
     }
 
+    /* Told by its icon as well, never by its color alone. */
     li.correct {
-        border-color: var(--color-accent);
+        background: var(--color-accent);
+        color: var(--color-ink);
     }
 
     /* An answer of 100 characters stays within its box: two lines at most. */
@@ -311,12 +314,8 @@
         stroke-linejoin: round;
     }
 
-    li.correct svg {
-        color: var(--color-accent);
-    }
-
     .authors {
-        color: var(--color-text-muted);
+        color: var(--color-on-surface-muted);
         font-size: 1.25rem;
         overflow-wrap: anywhere;
     }

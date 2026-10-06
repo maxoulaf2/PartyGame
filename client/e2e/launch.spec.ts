@@ -387,10 +387,15 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     ] as const;
     for (const [other, rank, points] of standings) {
         await expect(
-            other.getByText(
-                standingText(fr.game.standing, fr.game.rank, { rank, isTied: true }, playerCount),
-                { exact: true },
-            ),
+            other.getByRole('img', {
+                name: standingText(
+                    fr.game.standing,
+                    fr.game.rank,
+                    { rank, isTied: true },
+                    playerCount,
+                ),
+                exact: true,
+            }),
         ).toBeVisible();
         await expect(other.getByText(pointsText(points), { exact: true })).toBeVisible();
     }
@@ -460,7 +465,8 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     for (const [other, standing, points, message] of finalStandings) {
         await expect(other.getByRole('heading', { name: fr.game.finished })).toBeVisible();
         await expect(
-            other.getByText(standingText(fr.game.standing, fr.game.rank, standing, playerCount), {
+            other.getByRole('img', {
+                name: standingText(fr.game.standing, fr.game.rank, standing, playerCount),
                 exact: true,
             }),
         ).toBeVisible();

@@ -144,7 +144,7 @@ catch (Exception ex)
   - variables et fonctions en camelCase.
 - Styles :
   - CSS scopé dans les composants ;
-  - thème en variables CSS dans `shared/theme.css` ;
+  - thème en variables CSS dans `shared/theme.css`, surchargées par `shared/pop.css` (habillage « pop party ») pour les pages joueur et TV ;
   - aucun framework CSS ;
   - polices auto-hébergées dans `client/src/assets/fonts/`.
 - Interface joueur :

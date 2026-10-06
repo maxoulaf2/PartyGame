@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Confetti from '../shared/components/Confetti.svelte';
     import type { RoundInfo } from '../shared/contracts';
     import { roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
@@ -16,6 +17,7 @@
 </script>
 
 <main>
+    <Confetti />
     <p class="progress">{roundText(fr.game.round, round)}</p>
     <h1>{round.title}</h1>
     {#if mode}
@@ -25,14 +27,17 @@
 
 <style>
     main {
+        position: relative;
+        isolation: isolate;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: var(--space-m);
+        gap: 28px;
         min-height: 100vh;
         min-height: 100dvh;
-        padding: var(--space-l);
+        padding: 40px 24px;
+        overflow: hidden;
         text-align: center;
     }
 
@@ -43,17 +48,35 @@
     }
 
     .progress {
-        color: var(--color-text-muted);
-        font-weight: 700;
+        padding: 8px 18px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 999px;
+        background: var(--color-surface);
+        box-shadow: 0 4px 0 var(--color-ink);
+        color: var(--color-on-surface);
+        font-size: 18px;
+        font-weight: 800;
     }
 
     h1 {
-        color: var(--color-accent);
-        font-size: var(--font-size-title);
-        line-height: 1.15;
+        font-size: 44px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        -webkit-text-stroke: 1.5px var(--color-ink);
+        text-shadow: 0 4px 0 var(--color-ink);
     }
 
     .rule {
-        font-size: 1.125rem;
+        padding: 20px 24px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 28px;
+        background: var(--color-surface);
+        box-shadow: 0 8px 0 var(--color-ink);
+        color: var(--color-on-surface);
+        font-size: 19px;
+        font-weight: 700;
+        line-height: 1.3;
+        transform: rotate(-2deg);
     }
 </style>

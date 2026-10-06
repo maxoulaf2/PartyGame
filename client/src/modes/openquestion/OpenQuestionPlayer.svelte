@@ -209,10 +209,10 @@
     input {
         min-height: var(--touch-target-min);
         padding: var(--space-s) var(--space-m);
-        border: 2px solid var(--color-text-muted);
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: var(--radius);
-        background: var(--color-surface);
-        color: var(--color-text);
+        background: var(--color-white);
+        color: var(--color-ink);
         font: inherit;
         /* 16 px at least: Safari zooms on a smaller field. */
         font-size: 1.5rem;
@@ -220,8 +220,8 @@
     }
 
     input:focus {
-        border-color: var(--color-accent);
-        outline: none;
+        outline: var(--sticker-line) solid var(--color-accent);
+        outline-offset: 2px;
     }
 
     input:disabled {
@@ -236,10 +236,11 @@
     button {
         min-height: var(--touch-target-min);
         padding: 0 var(--space-l);
-        border: none;
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: var(--radius);
         background: var(--color-accent);
-        color: var(--color-bg);
+        box-shadow: 0 6px 0 var(--color-ink);
+        color: var(--color-ink);
         font: inherit;
         font-size: 1.25rem;
         font-weight: 700;

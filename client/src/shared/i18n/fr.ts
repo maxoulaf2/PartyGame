@@ -3,6 +3,11 @@
 export const fr = {
     app: {
         name: 'PartyGame',
+        // The name as the logo shows it, on two stickers: read as the name above.
+        logo: {
+            first: 'Party',
+            second: 'Game',
+        },
     },
     connection: {
         // Shown on every page once the server has been out of reach for a few seconds.
@@ -28,6 +33,11 @@ export const fr = {
         standing: {
             alone: '{rank} sur {count}',
             tied: '{rank} ex aequo sur {count}',
+        },
+        // Under the rank alone, which a phone shows large: the end of the standing above.
+        standingOf: {
+            alone: 'sur {count}',
+            tied: 'ex aequo sur {count}',
         },
         // Read by screen readers: the ranked players.
         rankingLabel: 'Classement',
@@ -77,7 +87,8 @@ export const fr = {
         revealing: 'Le classement se dévoile sur l’écran…',
         // Shown to a phone that joined once the game was finished: it has no rank.
         joinedAfterEnd: 'Cette partie vient de se terminer : rendez-vous à la prochaine !',
-        registeredAs: 'Tu es inscrit sous le nom {nickname}',
+        // Heads the nickname of the player, shown large below.
+        registeredAs: 'Tu es inscrit sous le nom',
         // Shown while a phone that joined before waits to be recognized by the server.
         resuming: 'Retour dans la partie…',
         // Shown instead of the form while the server, restarted, waits for the game master to
@@ -696,6 +707,8 @@ export const fr = {
                 // The choice is sent, not confirmed by the server yet.
                 pending: 'Envoi de ta réponse…',
                 recorded: 'Réponse enregistrée',
+                // Under the pad while the player may still choose: the question is read on the TV.
+                choose: 'Regarde l’écran et choisis !',
                 // For a player who joined once the answers were open.
                 nextQuestion: 'Tu joueras à la question suivante',
                 // What the reveal tells the player, one per QuizVerdict.

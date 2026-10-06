@@ -1,6 +1,8 @@
 <script lang="ts">
     import { untrack } from 'svelte';
     import type { JoinOutcome, PlayerSession } from '../shared/connection/playerSession.svelte';
+    import Confetti from '../shared/components/Confetti.svelte';
+    import Logo from '../shared/components/Logo.svelte';
     import { fr } from '../shared/i18n/fr';
     import { checkNickname } from '../shared/nickname';
     import RecoverForm from './RecoverForm.svelte';
@@ -62,11 +64,15 @@
 </script>
 
 <main>
-    {#if withCode}
-        <RecoverForm {session} {interactive} onback={() => (withCode = false)} />
-    {:else}
-        {@render nicknameForm()}
-    {/if}
+    <Confetti />
+    <Logo />
+    <div class="card">
+        {#if withCode}
+            <RecoverForm {session} {interactive} onback={() => (withCode = false)} />
+        {:else}
+            {@render nicknameForm()}
+        {/if}
+    </div>
 </main>
 
 {#snippet nicknameForm()}
@@ -98,43 +104,68 @@
 
 <style>
     main {
+        position: relative;
+        isolation: isolate;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        gap: var(--space-m);
-        max-width: 24rem;
+        justify-content: space-between;
+        gap: 32px;
+        max-width: 30rem;
         min-height: 100vh;
         min-height: 100dvh;
         margin: 0 auto;
-        padding: var(--space-l);
+        padding: 72px 24px 40px;
+        overflow: hidden;
     }
 
+    main > :global(h1) {
+        margin-top: 40px;
+    }
+
+    .card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 24px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 28px;
+        background: var(--color-surface);
+        box-shadow: 0 8px 0 var(--color-ink);
+        color: var(--color-on-surface);
+    }
+
+    /* The two forms of the card, this one and RecoverForm, look alike. */
     h1 {
         margin: 0;
-        color: var(--color-accent);
-        font-size: var(--font-size-title);
+        font-size: 30px;
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
     }
 
     form {
         display: flex;
         flex-direction: column;
-        gap: var(--space-s);
+        gap: 12px;
     }
 
-    input,
-    button {
-        min-height: var(--touch-target-min);
-        border-radius: var(--radius);
-        font: inherit;
+    label {
+        color: var(--color-on-surface-muted);
+        font-size: 15px;
+        font-weight: 700;
     }
 
     input {
-        padding: 0 var(--space-m);
-        border: 2px solid var(--color-text-muted);
-        background: var(--color-surface);
-        color: var(--color-text);
+        min-height: 58px;
+        padding: 0 16px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 16px;
+        background: var(--color-white);
+        color: var(--color-ink);
+        font: inherit;
         /* At least 16 px: Safari on iOS zooms into a smaller field when it gets the focus. */
-        font-size: 1.25rem;
+        font-size: 22px;
+        font-weight: 700;
     }
 
     input:disabled {
@@ -142,29 +173,48 @@
     }
 
     input:focus-visible {
-        border-color: var(--color-accent);
-        outline: none;
+        outline: var(--sticker-line) solid var(--color-bg);
+        outline-offset: 2px;
     }
 
     .problem {
         margin: 0;
-        color: var(--color-accent);
+        padding: 6px 12px;
+        border: 2px solid var(--color-ink);
+        border-radius: 12px;
+        background: var(--color-pink);
         font-weight: 700;
     }
 
     button {
-        margin-top: var(--space-s);
-        border: none;
-        background: var(--color-accent);
-        color: var(--color-bg);
-        font-weight: 700;
+        min-height: var(--touch-target-min);
+        font: inherit;
         cursor: pointer;
     }
 
+    button[type='submit'] {
+        min-height: 60px;
+        margin-top: 8px;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 18px;
+        background: var(--color-accent);
+        box-shadow: 0 6px 0 var(--color-ink);
+        color: var(--color-ink);
+        font-size: 22px;
+        font-weight: 800;
+    }
+
+    button[type='submit']:active:enabled {
+        transform: translateY(4px);
+        box-shadow: 0 2px 0 var(--color-ink);
+    }
+
     button.secondary {
-        border: 2px solid var(--color-text-muted);
+        border: none;
         background: transparent;
-        color: var(--color-text);
+        color: var(--color-on-surface-muted);
+        font-weight: 700;
+        text-decoration: underline;
         touch-action: manipulation;
     }
 

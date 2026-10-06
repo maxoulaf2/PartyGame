@@ -216,9 +216,11 @@
         z-index: 1;
         margin: 0;
         padding: var(--space-s) var(--space-m);
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: var(--radius);
         background: var(--color-accent);
-        color: var(--color-bg);
+        box-shadow: 0 calc(4 * var(--u)) 0 var(--color-ink);
+        color: var(--color-ink);
         font-size: 2.5rem;
         font-weight: 800;
     }
@@ -236,9 +238,11 @@
     .paused p {
         margin: 0;
         padding: var(--space-m) var(--space-l);
-        border-radius: var(--radius);
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(26 * var(--u));
         background: var(--color-accent);
-        color: var(--color-bg);
+        box-shadow: 0 calc(8 * var(--u)) 0 var(--color-ink);
+        color: var(--color-ink);
         font-size: 8rem;
         font-weight: 800;
     }
@@ -251,10 +255,11 @@
         z-index: 2;
         width: 34vw;
         padding: var(--space-s) var(--space-m);
-        border: none;
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: var(--radius);
         background: var(--color-accent);
-        color: var(--color-bg);
+        box-shadow: 0 calc(6 * var(--u)) 0 var(--color-ink);
+        color: var(--color-ink);
         font: inherit;
         font-size: 3rem;
         font-weight: 700;

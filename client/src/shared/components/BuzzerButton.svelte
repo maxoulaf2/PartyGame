@@ -75,10 +75,11 @@
         aspect-ratio: 1;
         margin: auto;
         padding: var(--space-l);
-        border: 0.5rem solid transparent;
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: 50%;
         background: var(--color-surface);
-        color: var(--color-text);
+        box-shadow: 0 8px 0 var(--color-ink);
+        color: var(--color-on-surface);
         font: inherit;
         font-size: 1.5rem;
         font-weight: 800;
@@ -103,29 +104,33 @@
 
     .open {
         background: var(--color-accent);
-        color: var(--color-bg);
+        color: var(--color-ink);
         font-size: 2.5rem;
     }
 
     .open:active {
-        transform: scale(0.97);
+        transform: translateY(5px);
+        box-shadow: 0 3px 0 var(--color-ink);
     }
 
     .sent {
+        border-width: 0.375rem;
         border-style: dashed;
-        border-color: var(--color-accent);
     }
 
     /* A square: the shape alone tells this player has the hand. */
     .won {
-        border-color: var(--color-accent);
-        border-radius: var(--radius);
+        border-width: 0.375rem;
+        border-radius: 26px;
+        background: var(--color-green);
+        color: var(--color-ink);
     }
 
     .closed,
     .lost,
     .blocked {
-        color: var(--color-text-muted);
+        color: var(--color-on-surface-muted);
+        box-shadow: 0 3px 0 var(--color-ink);
     }
 
     .buzzer:disabled {

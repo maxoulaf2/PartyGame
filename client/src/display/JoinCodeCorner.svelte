@@ -34,8 +34,11 @@
         gap: var(--space-s);
         width: 16vh;
         padding: var(--space-s);
+        border: var(--sticker-line) solid var(--color-ink);
         border-radius: var(--radius);
         background: var(--color-surface);
+        box-shadow: 0 calc(5 * var(--u)) 0 var(--color-ink);
+        color: var(--color-on-surface);
         pointer-events: none;
     }
 

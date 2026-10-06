@@ -8,15 +8,26 @@
         clock: ServerClock;
         /** Read by screen readers before the number, which alone shows. */
         label: string;
+        /** The number in a sticker ring that empties as the time runs out, sized by the font. */
+        ring?: boolean;
     }
 
-    let { closeAt, clock, label }: Props = $props();
+    let { closeAt, clock, label, ring = false }: Props = $props();
 
     // Read again at each tick, and whenever the estimate of the clock changes.
     let ticks = $state(0);
     const seconds = $derived.by(() => {
         void ticks;
         return secondsLeft(closeAt, clock.serverNow());
+    });
+
+    // ponytail: the snapshot tells when the countdown ends, not how long it lasts, so the ring
+    // starts full from the time first seen: a page reloaded midway starts it full again. Add the
+    // duration to the views if that ever matters.
+    let longest = 0;
+    const left = $derived.by(() => {
+        longest = Math.max(longest, seconds);
+        return longest > 0 ? (seconds / longest) * 100 : 0;
     });
 
     // Ticks when a whole second of the server passes, the same instant on every screen, and stops
@@ -36,7 +47,7 @@
     });
 </script>
 
-<span class="countdown" role="timer">
+<span class="countdown" class:ring role="timer" style:--left="{left}%">
     <span class="visually-hidden">{label}</span>
     <span class="seconds">{seconds}</span>
 </span>
@@ -45,6 +56,32 @@
     .countdown {
         font-variant-numeric: tabular-nums;
         font-weight: 800;
+    }
+
+    .ring {
+        display: inline-grid;
+        place-items: center;
+        width: 2.75em;
+        height: 2.75em;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 50%;
+        background: conic-gradient(
+            var(--color-accent) 0 var(--left),
+            var(--color-night) var(--left) 100%
+        );
+        box-shadow: 0 0.15em 0 var(--color-ink);
+        line-height: 1;
+    }
+
+    .ring .seconds {
+        display: grid;
+        place-items: center;
+        width: 2em;
+        height: 2em;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: 50%;
+        background: var(--color-surface);
+        color: var(--color-on-surface);
     }
 
     .visually-hidden {

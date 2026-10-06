@@ -61,7 +61,8 @@
     }
 </script>
 
-<main>
+<!-- Beyond 6 rows, the stickers slim down so that 20 long nicknames still fit. -->
+<main class:dense={ranking.length > 6 * layout.columns}>
     <header>
         <div class="titles">
             <p class="progress">{roundText(fr.game.roundEnded, round)}</p>
@@ -86,7 +87,10 @@
         {#each ranking as player, index (player.id)}
             {@const gained = placesGained(player)}
             <li class:disconnected={!player.isConnected} bind:this={rows[index]}>
-                <span class="rank">{rankText(fr.game.rank, player.rank)}</span>
+                <!-- Told by its written rank, never by the color of its badge alone. -->
+                <span class="rank" data-rank={player.rank}
+                    >{rankText(fr.game.rank, player.rank)}</span
+                >
                 <!-- Plain text interpolation: Svelte escapes it, so a nickname is never read as HTML. -->
                 <span class="nickname">{player.nickname}</span>
                 {#if !player.isConnected}
@@ -117,23 +121,25 @@
     main {
         display: flex;
         flex-direction: column;
-        gap: 3vh;
+        gap: calc(20 * var(--u));
         height: 100vh;
         padding: 5vh 5vw;
         overflow: hidden;
+        background: var(--color-blue);
+        color: var(--color-ink);
     }
 
     header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 3vw;
+        gap: calc(28 * var(--u));
     }
 
     .titles {
         display: flex;
         flex-direction: column;
-        gap: 1vh;
+        gap: calc(6 * var(--u));
         min-width: 0;
     }
 
@@ -142,31 +148,55 @@
         margin: 0;
     }
 
-    h1 {
-        color: var(--color-accent);
-        font-size: 6.5vh;
-        line-height: 1.1;
+    .progress {
+        align-self: flex-start;
+        padding: calc(4 * var(--u)) calc(14 * var(--u));
+        border-radius: 999px;
+        background: var(--color-ink);
+        color: var(--color-surface);
+        font-size: calc(16 * var(--u));
+        font-weight: 700;
     }
 
-    .progress {
-        color: var(--color-text-muted);
-        font-weight: 700;
+    h1 {
+        color: var(--color-surface);
+        font-size: calc(40 * var(--u));
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        -webkit-text-stroke: calc(1.5 * var(--u)) var(--color-ink);
+        text-shadow: 0 calc(4 * var(--u)) 0 var(--color-ink);
     }
 
     .join {
         display: flex;
         flex: 0 0 auto;
         align-items: center;
-        gap: 1.5vw;
+        gap: calc(12 * var(--u));
         max-width: 34vw;
-        color: var(--color-text-muted);
-        font-size: 2.4vh;
+        padding: calc(8 * var(--u)) calc(8 * var(--u)) calc(8 * var(--u)) calc(14 * var(--u));
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(18 * var(--u));
+        background: var(--color-surface);
+        box-shadow: 0 calc(5 * var(--u)) 0 var(--color-ink);
+        color: var(--color-on-surface);
+        transform: rotate(2deg);
+    }
+
+    .join p {
+        max-width: calc(120 * var(--u));
+        font-size: calc(14 * var(--u));
+        font-weight: 700;
+        line-height: 1.2;
         text-align: right;
     }
 
     .qr {
         flex: 0 0 auto;
-        width: 16vh;
+        width: calc(80 * var(--u));
+        overflow: hidden;
+        border: calc(2 * var(--u)) solid var(--color-ink);
+        border-radius: calc(10 * var(--u));
     }
 
     /* Filled column by column, so that the ranks read top to bottom as on a podium list. */
@@ -176,7 +206,7 @@
         grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
         grid-auto-flow: column;
         align-content: start;
-        gap: 0.8vh 2vw;
+        gap: calc(12 * var(--u)) calc(22 * var(--u));
         /* A score stays close to its nickname, even in a single column. */
         max-width: calc(var(--columns) * 45vw);
         margin: 0;
@@ -189,17 +219,37 @@
     li {
         display: flex;
         align-items: center;
-        gap: 0.5em;
+        gap: 0.55em;
         min-width: 0;
-        padding: 0.15em 0.5em;
-        border-radius: var(--radius);
+        padding: 0.27em 0.64em 0.27em 0.27em;
+        border: var(--sticker-line) solid var(--color-ink);
+        border-radius: calc(16 * var(--u));
         background: var(--color-surface);
-        font-weight: 700;
+        box-shadow: 0 calc(5 * var(--u)) 0 var(--color-ink);
+        font-weight: 800;
     }
 
     .rank {
+        display: grid;
         flex: 0 0 2.6em;
-        color: var(--color-accent);
+        place-items: center;
+        height: 2em;
+        border: calc(2.5 * var(--u)) solid var(--color-ink);
+        border-radius: calc(12 * var(--u));
+        background: var(--color-sand);
+        font-size: 0.9em;
+    }
+
+    .rank[data-rank='1'] {
+        background: var(--color-accent);
+    }
+
+    .rank[data-rank='2'] {
+        background: var(--color-blue);
+    }
+
+    .rank[data-rank='3'] {
+        background: var(--color-pink);
     }
 
     .nickname {
@@ -211,17 +261,37 @@
 
     .score {
         flex: 0 0 auto;
+        font-size: 0.82em;
+        font-weight: 700;
         white-space: nowrap;
     }
 
     .move {
         flex: 0 0 auto;
-        color: var(--color-text-muted);
+        color: var(--color-on-surface-muted);
+        font-size: 0.82em;
         white-space: nowrap;
     }
 
     .disconnected .nickname {
         opacity: 0.45;
+    }
+
+    .dense {
+        --sticker-line: calc(2 * var(--u));
+    }
+
+    .dense ol {
+        gap: 0.8vh 2vw;
+    }
+
+    .dense li {
+        padding: 0.1em 0.5em 0.1em 0.1em;
+        box-shadow: 0 calc(3 * var(--u)) 0 var(--color-ink);
+    }
+
+    .dense .rank {
+        height: 1.3em;
     }
 
     .visually-hidden {

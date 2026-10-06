@@ -47,9 +47,10 @@
         align-items: center;
         gap: 0.4em;
         padding: 0.25em 0.75em;
+        border: var(--sticker-line, 0) solid var(--color-ink);
         border-radius: 999px;
         background: var(--color-surface);
-        color: var(--color-text-muted);
+        color: var(--color-on-surface-muted);
         font-size: 0.875rem;
         white-space: nowrap;
     }

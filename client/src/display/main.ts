@@ -1,6 +1,7 @@
 import { mount } from 'svelte';
 import { startErrorReporting } from '../shared/errors/errorReporting';
 import '../shared/theme.css';
+import '../shared/pop.css';
 import './display.css';
 import App from './App.svelte';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fr } from './fr';
-import { rankText, standingText } from './rankText';
+import { rankParts, rankText, standingText } from './rankText';
 
 describe('rankText', () => {
     it('writes the first rank with its irregular ordinal', () => {
@@ -15,6 +15,15 @@ describe('rankText', () => {
 
     it('groups the digits of a large rank the French way', () => {
         expect(rankText(fr.game.rank, 1000)).toBe('1 000e');
+    });
+});
+
+describe('rankParts', () => {
+    it('sets the ordinal apart from the number', () => {
+        expect(rankParts(fr.game.rank, 1)).toEqual({ number: '1', ordinal: 'er' });
+        const { number, ordinal } = rankParts(fr.game.rank, 1000);
+        expect(number + ordinal).toBe(rankText(fr.game.rank, 1000));
+        expect(ordinal).toBe('e');
     });
 });
 

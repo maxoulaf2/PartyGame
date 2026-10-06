@@ -16,6 +16,11 @@
     --color-text: #f5f3ff;
     --color-text-muted: #b9b4d0;
     --color-accent: #ffc531;
+    /* Text on the accent and on the colors of the choices, all light. */
+    --color-ink: #14121f;
+    /* Text on a surface, which a lighter theme may make light. */
+    --color-on-surface: var(--color-text);
+    --color-on-surface-muted: var(--color-text-muted);
     --color-backdrop: rgb(0 0 0 / 60%);
     /* Whatever the theme: the QR code (phone cameras expect dark on light), the flash of the
        diagnostic page. */

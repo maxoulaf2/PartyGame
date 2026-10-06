@@ -6,14 +6,16 @@
         letter: QuizChoiceLetter;
         /** The color of the shape: the one of the letter, unless it stands on that very color. */
         color?: string;
+        /** The shape above the letter, larger, as on the answer pad of a phone. */
+        stacked?: boolean;
     }
 
-    let { letter, color = choiceColor(letter) }: Props = $props();
+    let { letter, color = choiceColor(letter), stacked = false }: Props = $props();
 </script>
 
 <!-- The shape repeats what the letter says, for those who tell the choices apart at a glance:
      screen readers read the letter only. -->
-<span class="marker">
+<span class="marker" class:stacked>
     <span
         class="shape"
         aria-hidden="true"
@@ -36,5 +38,15 @@
         display: inline-block;
         width: 1em;
         height: 1em;
+    }
+
+    .stacked {
+        flex-direction: column;
+        line-height: 1;
+    }
+
+    .stacked .shape {
+        width: 1.55em;
+        height: 1.55em;
     }
 </style>
