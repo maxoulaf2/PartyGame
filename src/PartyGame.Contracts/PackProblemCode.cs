@@ -104,6 +104,41 @@ public enum PackProblemCode
     /// </summary>
     PackLoadFailed,
 
+    /// <summary>
+    /// A zip pack is not a readable zip file. The file is the one of the archive, and the path <c>$</c>.
+    /// </summary>
+    PackArchiveInvalid,
+
+    /// <summary>
+    /// A zip pack holds no <c>pack.json</c>, neither at its root nor in a single folder at its root. The file is the one of
+    /// the archive, and the path <c>$</c>.
+    /// </summary>
+    PackArchiveDescriptorMissing,
+
+    /// <summary>
+    /// An entry of a zip pack leads out of the folder it is extracted to (<c>..</c> segment, absolute path): nothing is
+    /// extracted. The file is the one of the archive, the path <c>$</c>, and the <c>entry</c> parameter the entry.
+    /// </summary>
+    PackArchiveEntryOutside,
+
+    /// <summary>
+    /// A zip pack would take more than 2 GB once extracted: nothing is extracted. The file is the one of the archive, and
+    /// the path <c>$</c>.
+    /// </summary>
+    PackArchiveTooLarge,
+
+    /// <summary>
+    /// A zip pack could not be extracted to the disk of the server, which is full or refuses the writing. The file is the
+    /// one of the archive, and the path <c>$</c>.
+    /// </summary>
+    PackArchiveExtractionFailed,
+
+    /// <summary>
+    /// A folder and a zip of the pack directory, or two zips, give the same pack identifier: neither can be chosen. The
+    /// file is the one of the archive, the path <c>$</c>, and the <c>id</c> parameter the identifier.
+    /// </summary>
+    PackIdConflict,
+
     /// <summary>A question of a quiz round has no correct choice. The path is the one of the question.</summary>
     QuizCorrectChoiceMissing,
 

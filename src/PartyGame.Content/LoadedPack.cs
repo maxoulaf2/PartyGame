@@ -9,8 +9,8 @@ namespace PartyGame.Content;
 /// A pack found in the pack directory, loaded and checked once and for all: the descriptor is never read again during a
 /// game.
 /// </summary>
-/// <param name="Id">The identifier of the pack: the name of its folder.</param>
-/// <param name="Folder">The full path of the folder of the pack.</param>
+/// <param name="Id">The identifier of the pack: the name of its folder, or of its zip without the extension.</param>
+/// <param name="Folder">The full path of the folder of the pack, or of its zip file.</param>
 /// <param name="Title">The title of the pack, when the descriptor gives one, even if the pack is invalid.</param>
 /// <param name="RoundCount">The number of activities of the pack, when the descriptor lists them, even if the pack is invalid.</param>
 /// <param name="Descriptor">The descriptor of a valid pack, or <see langword="null"/> when the pack has problems.</param>

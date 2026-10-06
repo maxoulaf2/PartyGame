@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using PartyGame.Contracts;
 using PartyGame.Server.Packs;
 using PartyGame.Tests.Shared;
@@ -37,6 +38,21 @@ public sealed class PackValidationCommandTests : IDisposable
             output,
             StringComparison.Ordinal);
         Assert.Contains("Pack invalide : 1 problème", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Run_ZipOfAPack_ChecksItAsAFolderAndLeavesNoExtractedFile()
+    {
+        var folder = WritePack("valide", TestPacks.Quiz("Pack valide", "Première manche"));
+        var archive = folder + ".zip";
+        ZipFile.CreateFromDirectory(folder, archive, CompressionLevel.Fastest, includeBaseDirectory: true);
+        var extractions = Extractions();
+
+        var (code, output) = Run(archive);
+
+        Assert.Equal(PackValidationCommand.Valid, code);
+        Assert.Contains($"Pack « Pack valide » ({archive})", output, StringComparison.Ordinal);
+        Assert.Equal(extractions, Extractions());
     }
 
     [Fact]
@@ -101,4 +117,6 @@ public sealed class PackValidationCommandTests : IDisposable
         var code = PackValidationCommand.Run([path], output);
         return (code, output.ToString());
     }
+
+    private static string[] Extractions() => Directory.GetDirectories(Path.GetTempPath(), "partygame-validate-*");
 }

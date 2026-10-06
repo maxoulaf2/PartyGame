@@ -29,13 +29,15 @@ internal static class PackValidationCommand
 
         if (arguments.Count != 1)
         {
-            output.WriteLine("Usage : PartyGame.Server validate <dossier d'un pack, ou dossier de packs>");
+            output.WriteLine("Usage : PartyGame.Server validate <dossier ou zip d'un pack, ou dossier de packs>");
             return NotFound;
         }
 
+        // The zips are extracted to a cache of their own, deleted afterwards: the command leaves no file behind.
+        var cache = Path.Combine(Path.GetTempPath(), $"partygame-validate-{Guid.NewGuid():N}");
         try
         {
-            return Validate(Path.GetFullPath(arguments[0]), output);
+            return Validate(Path.GetFullPath(arguments[0]), cache, output);
         }
         catch (Exception ex)
         {
@@ -43,10 +45,23 @@ internal static class PackValidationCommand
             output.WriteLine($"Erreur inattendue pendant la vérification : {ex.Message} (détail dans le journal du serveur).");
             return Failed;
         }
+        finally
+        {
+            if (Directory.Exists(cache))
+            {
+                Directory.Delete(cache, recursive: true);
+            }
+        }
     }
 
-    private static int Validate(string path, TextWriter output)
+    private static int Validate(string path, string cache, TextWriter output)
     {
+        var loader = new PackLoader(CreateModes().Validate);
+        if (File.Exists(path) && string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            return Report(loader.LoadArchive(path, cache), output) ? Valid : Invalid;
+        }
+
         // A pack.json given directly stands for its pack.
         if (File.Exists(path) && Path.GetFileName(path) == Contracts.Packs.PackDescriptor.FileName)
         {
@@ -56,21 +71,20 @@ internal static class PackValidationCommand
         if (!Directory.Exists(path))
         {
             output.WriteLine(File.Exists(path)
-                ? $"{path} n'est ni un pack ni un dossier de packs : un pack est un dossier qui contient un fichier pack.json."
+                ? $"{path} n'est ni un pack ni un dossier de packs : un pack est un dossier qui contient un fichier pack.json, ou un zip de ce dossier."
                 : $"{path} est introuvable.");
             return NotFound;
         }
 
-        var loader = new PackLoader(CreateModes().Validate);
         if (PackLoader.HasDescriptor(path))
         {
             return Report(loader.Load(path), output) ? Valid : Invalid;
         }
 
-        var library = loader.LoadAll(path);
+        var library = loader.LoadAll(path, cache);
         if (library.Packs.IsEmpty)
         {
-            output.WriteLine($"{path} n'est ni un pack ni un dossier de packs : aucun de ses sous-dossiers ne contient de fichier pack.json.");
+            output.WriteLine($"{path} n'est ni un pack ni un dossier de packs : aucun de ses sous-dossiers ne contient de fichier pack.json, et il ne contient aucun zip.");
             return NotFound;
         }
 

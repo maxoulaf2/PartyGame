@@ -88,7 +88,7 @@ L'adresse est calculée une seule fois : après un changement de réseau, relanc
 
 ## Dossier des packs
 
-Au démarrage, avant d'accepter la moindre connexion, le serveur charge et vérifie entièrement chaque pack du dossier des packs : chaque sous-dossier qui contient un fichier `pack.json` (nom exact, en minuscules) est un pack, et son identifiant est le nom du sous-dossier. Les autres sous-dossiers sont ignorés. Le descripteur n'est relu que sur demande : après avoir corrigé un pack, le GM appuie sur « Actualiser les packs » dans sa console, et le serveur recharge et revérifie tous les packs. Une fois la partie lancée, le pack choisi est copié dans la partie : modifier ses fichiers n'a plus d'effet, et l'actualisation n'est plus proposée.
+Au démarrage, avant d'accepter la moindre connexion, le serveur charge et vérifie entièrement chaque pack du dossier des packs : chaque sous-dossier qui contient un fichier `pack.json` (nom exact, en minuscules) est un pack, et son identifiant est le nom du sous-dossier. Les autres sous-dossiers sont ignorés. Chaque fichier `.zip` du dossier est aussi un pack, dont l'identifiant est le nom du fichier sans `.zip` (voir ci-dessous). Le descripteur n'est relu que sur demande : après avoir corrigé un pack, le GM appuie sur « Actualiser les packs » dans sa console, et le serveur recharge et revérifie tous les packs. Une fois la partie lancée, le pack choisi est copié dans la partie : modifier ses fichiers n'a plus d'effet, et l'actualisation n'est plus proposée.
 
 La bannière liste les packs, avec pour chacun son titre, son nombre de manches et son état : valide, ou invalide avec le nombre de problèmes. Chaque problème est détaillé dans le journal, en `WRN`, avec le fichier, le chemin dans le descripteur (par exemple `$.rounds[1].questions[4].choices`) et ses paramètres. Un pack invalide n'empêche jamais le démarrage : il ne pourra simplement pas être choisi. Un dossier des packs absent ou vide non plus : la bannière le signale.
 
@@ -104,12 +104,19 @@ Le dossier se règle par le paramètre `Packs:Directory`. Par défaut, c'est le 
 
 Les médias référencés par un pack doivent se trouver dans son dossier, avec exactement la même casse que dans `pack.json` : Windows ne la distingue pas, mais le Raspberry Pi si, et le serveur la vérifie partout pour qu'un pack préparé sur un PC fonctionne aussi sur le Pi.
 
+### Packs au format zip
+
+Un pack peut se partager en un seul fichier zip, déposé tel quel dans le dossier des packs. Son `pack.json` est à la racine du zip, ou dans un unique dossier à sa racine (ce que produit « Compresser » sur le dossier du pack, sous Windows comme sous macOS). Le serveur extrait chaque zip dans le dossier `packs-cache` du dossier de données (voir « Enregistrement de la partie »), puis le charge et le vérifie comme un dossier. Un zip inchangé (même taille, même date de modification) n'est pas extrait de nouveau, et l'extraction d'un zip retiré du dossier des packs est supprimée. Ce cache peut être vidé à tout moment, serveur arrêté : il est recréé au démarrage, y compris pour reprendre une partie.
+
+Un zip est invalide, sans que rien ne soit écrit hors du cache, s'il est illisible, sans `pack.json` là où il est attendu, s'il contient un chemin qui sortirait de son dossier d'extraction, ou s'il dépasse 2 Go une fois décompressé. Un dossier et un zip (ou deux zips) qui donnent le même identifiant sont signalés en conflit, et aucun des deux ne peut être choisi.
+
 ### Vérifier un pack sans lancer de partie
 
 La commande `validate` vérifie un pack avec exactement le chargement du serveur, puis s'arrête sans écouter le réseau ni afficher de code GM :
 
 ```bash
 dotnet run --project src/PartyGame.Server -- validate packs/quiz-exemple   # un pack (son dossier, ou son pack.json)
+dotnet run --project src/PartyGame.Server -- validate soiree.zip           # un pack zip, extrait dans un dossier temporaire supprimé ensuite
 dotnet run --project src/PartyGame.Server -- validate packs                # chaque pack d'un dossier de packs
 ./PartyGame.Server validate /home/pi/packs                                 # avec l'exécutable publié
 ```
@@ -120,7 +127,7 @@ Pour un pack valide, elle affiche son titre, ses manches (titre et mode) et « P
 |---|---|
 | 0 | Tous les packs vérifiés sont valides |
 | 1 | Au moins un pack est invalide |
-| 2 | Chemin introuvable, ou qui n'est ni un pack ni un dossier de packs |
+| 2 | Chemin introuvable, ou qui n'est ni un pack (dossier ou zip) ni un dossier de packs |
 | 3 | Erreur inattendue, détaillée dans le journal du serveur |
 
 ## Enregistrement de la partie

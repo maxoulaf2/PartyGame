@@ -25,14 +25,19 @@ public sealed class PackLoader(RoundValidator validateRound)
     private static readonly string _roundsProperty = PackJsonOptions.Default.PropertyNamingPolicy!.ConvertName(nameof(PackDescriptor.Rounds));
 
     /// <summary>
-    /// Loads each subfolder of the pack directory that holds a <c>pack.json</c>, and ignores the others. A pack that fails
-    /// to load because of a bug is reported as <see cref="PackProblemCode.PackLoadFailed"/>, with the
-    /// <see cref="LoadedPack.Failure"/> to log, and the other packs load as usual.
+    /// Loads each subfolder of the pack directory that holds a <c>pack.json</c>, and each zip file, extracted to the cache;
+    /// ignores the rest. A folder and a zip, or two zips, with the same identifier are reported as one pack in
+    /// <see cref="PackProblemCode.PackIdConflict"/>. A pack that fails to load because of a bug is reported as
+    /// <see cref="PackProblemCode.PackLoadFailed"/>, with the <see cref="LoadedPack.Failure"/> to log, and the other packs
+    /// load as usual.
     /// </summary>
     /// <param name="directory">The pack directory, which may not exist.</param>
-    public PackLibrary LoadAll(string directory)
+    /// <param name="cacheDirectory">The folder the zip packs are extracted to, created when needed. The folders of the zips no
+    /// longer in the pack directory are deleted from it.</param>
+    public PackLibrary LoadAll(string directory, string cacheDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(cacheDirectory);
 
         var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
         if (!Directory.Exists(fullPath))
@@ -41,31 +46,77 @@ public sealed class PackLoader(RoundValidator validateRound)
         }
 
         var packs = ImmutableArray.CreateBuilder<LoadedPack>();
-        foreach (var folder in Directory.EnumerateDirectories(fullPath).Order(StringComparer.Ordinal))
+        var sources = new List<(string Id, string Path, bool IsArchive)>();
+        foreach (var folder in Directory.EnumerateDirectories(fullPath))
         {
             try
             {
                 if (HasDescriptor(folder))
                 {
-                    packs.Add(Load(folder));
+                    sources.Add((Path.GetFileName(folder), folder, false));
                 }
             }
             catch (Exception ex)
             {
-                packs.Add(new LoadedPack(
-                    Path.GetFileName(folder),
-                    folder,
-                    Title: null,
-                    RoundCount: null,
-                    Descriptor: null,
-                    [Problems.InDescriptor(PackProblemCode.PackLoadFailed, JsonPath.Root)])
-                {
-                    Failure = ex,
-                });
+                packs.Add(Failed(Path.GetFileName(folder), folder, ex));
             }
         }
 
+        sources.AddRange(Directory.EnumerateFiles(fullPath)
+            .Where(file => string.Equals(Path.GetExtension(file), PackArchive.Extension, StringComparison.OrdinalIgnoreCase))
+            .Select(file => (Path.GetFileNameWithoutExtension(file), file, true)));
+
+        var fullCache = Path.TrimEndingDirectorySeparator(Path.GetFullPath(cacheDirectory));
+        PackArchive.RemoveOthers(fullCache, sources.Where(source => source.IsArchive).Select(source => source.Id).ToHashSet(StringComparer.Ordinal));
+
+        foreach (var group in sources.GroupBy(source => source.Id, StringComparer.Ordinal))
+        {
+            if (group.Count() > 1)
+            {
+                packs.Add(new LoadedPack(
+                    group.Key,
+                    Path.Combine(fullPath, group.Key),
+                    Title: null,
+                    RoundCount: null,
+                    Descriptor: null,
+                    [.. group.Where(source => source.IsArchive)
+                        .Select(source => Problems.InFile(PackProblemCode.PackIdConflict, Path.GetFileName(source.Path), ("id", group.Key)))]));
+                continue;
+            }
+
+            var (id, path, isArchive) = group.Single();
+            try
+            {
+                packs.Add(isArchive ? LoadArchive(path, fullCache) : Load(path));
+            }
+            catch (Exception ex)
+            {
+                packs.Add(Failed(id, path, ex));
+            }
+        }
+
+        packs.Sort((left, right) => string.CompareOrdinal(left.Id, right.Id));
         return new PackLibrary(fullPath, DirectoryExists: true, packs.ToImmutable());
+    }
+
+    /// <summary>
+    /// Extracts a zip pack to the cache, unless already done for this very zip, then loads it as a folder. Its identifier is
+    /// the name of the zip without its extension, and its <see cref="LoadedPack.Folder"/> the zip, which the author knows.
+    /// </summary>
+    /// <param name="archive">The zip file.</param>
+    /// <param name="cacheDirectory">The folder the zip packs are extracted to.</param>
+    /// <exception cref="IOException">The zip, the cache or a file of the pack cannot be read.</exception>
+    public LoadedPack LoadArchive(string archive, string cacheDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(archive);
+        ArgumentException.ThrowIfNullOrWhiteSpace(cacheDirectory);
+
+        var fullPath = Path.GetFullPath(archive);
+        var id = Path.GetFileNameWithoutExtension(fullPath);
+        var folder = Path.Combine(Path.TrimEndingDirectorySeparator(Path.GetFullPath(cacheDirectory)), id);
+        return PackArchive.Extract(fullPath, folder) is { } problem
+            ? new LoadedPack(id, fullPath, Title: null, RoundCount: null, Descriptor: null, [problem])
+            : Load(folder) with { Folder = fullPath };
     }
 
     /// <summary>
@@ -120,6 +171,12 @@ public sealed class PackLoader(RoundValidator validateRound)
     /// </summary>
     public static bool HasDescriptor(string folder) =>
         Directory.EnumerateFiles(folder).Any(file => string.Equals(Path.GetFileName(file), PackDescriptor.FileName, StringComparison.Ordinal));
+
+    private static LoadedPack Failed(string id, string path, Exception failure) =>
+        new(id, path, Title: null, RoundCount: null, Descriptor: null, [Problems.InDescriptor(PackProblemCode.PackLoadFailed, JsonPath.Root)])
+        {
+            Failure = failure,
+        };
 
     private static PackProblem SyntaxProblem(JsonException exception, string text)
     {

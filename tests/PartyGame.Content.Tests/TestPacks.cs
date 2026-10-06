@@ -13,6 +13,9 @@ internal sealed class TestPacks : IDisposable
 
     public string Root { get; } = Path.Combine(Path.GetTempPath(), "partygame-tests", Guid.NewGuid().ToString("N"));
 
+    /// <summary>The folder the zip packs of <see cref="Root"/> are extracted to, out of it.</summary>
+    public string Cache => Root + "-cache";
+
     public static string Pack(params string[] rounds) =>
         $$"""{ "formatVersion": 1, "title": "Pack de test", "rounds": [{{string.Join(", ", rounds)}}] }""";
 
@@ -67,9 +70,9 @@ internal sealed class TestPacks : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(Root))
+        foreach (var folder in new[] { Root, Cache }.Where(Directory.Exists))
         {
-            Directory.Delete(Root, recursive: true);
+            Directory.Delete(folder, recursive: true);
         }
     }
 }

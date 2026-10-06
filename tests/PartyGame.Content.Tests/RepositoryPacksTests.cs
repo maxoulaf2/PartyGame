@@ -15,8 +15,11 @@ namespace PartyGame.Content.Tests;
 /// </summary>
 public sealed class RepositoryPacksTests
 {
+    // The repository holds no zip pack: nothing is ever extracted there.
+    private static readonly string _noCache = Path.Combine(Path.GetTempPath(), "partygame-tests", "no-cache");
+
     private static readonly PackLibrary _library =
-        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode(), new BlindTestMode(), new OpenQuestionMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"));
+        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode(), new BlindTestMode(), new OpenQuestionMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"), _noCache);
 
     [Fact]
     public void LoadAll_RepositoryPacks_AreAllValid()
@@ -85,7 +88,7 @@ public sealed class RepositoryPacksTests
     {
         // Given: the packs of the Playwright tests (client/e2e/packs), which check what the console shows of them
         var library = new PackLoader(new GameModes([new QuizMode()]).Validate)
-            .LoadAll(Path.Combine(RepositoryRoot.Find(), "client", "e2e", "packs"));
+            .LoadAll(Path.Combine(RepositoryRoot.Find(), "client", "e2e", "packs"), _noCache);
 
         // Then
         Assert.Equal(
