@@ -62,7 +62,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         using var toZoe = new ReceivedSnapshots(zoe);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
         var started = Game.State;
         var counts = (toDisplay.Messages.Count, toGameMaster.Messages.Count, toZoe.Messages.Count);
@@ -136,7 +136,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
             await AnnounceAsync(other, role, role == Role.GameMaster ? Code : null);
         }
 
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await FlushAsync(gameMaster);
         Assert.Equal(GamePhase.Round, Game.State.Phase);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
@@ -165,7 +165,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         using var toZoe = new ReceivedSnapshots(zoe);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
         var started = Game.State;
         var counts = (toDisplay.Messages.Count, toGameMaster.Messages.Count, toZoe.Messages.Count);
@@ -181,7 +181,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         var list = Assert.Single(toGameMaster.Incidents);
         var incident = Assert.Single(list.Incidents);
         Assert.Equal(
-            (IncidentCode.DisplayMediaFailed, new RoundInfo(started.CurrentRound!.Id, Number: 1, Count: 1, "Manche illustrée"), (int?)question),
+            (IncidentCode.DisplayMediaFailed, new RoundInfo(started.CurrentRound!.Id, Number: 1, Count: 1, "Manche illustrée", Mode: "quiz", Description: null), (int?)question),
             (incident.Code, incident.Round, incident.Step));
         Assert.Empty(list.FailingRounds);
 
@@ -210,7 +210,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await FlushAsync(gameMaster);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
         var report = new DisplayMediaFailureReport(IdOf(Flag));
@@ -231,7 +231,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await FlushAsync(gameMaster);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
 
@@ -255,7 +255,7 @@ public sealed class DisplayIncidentsTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await FlushAsync(gameMaster);
         Assert.Equal(GamePhase.Round, Game.State.Phase);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);

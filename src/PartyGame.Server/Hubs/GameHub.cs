@@ -74,6 +74,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="NextRoundAsync"/>, as the clients call it.</summary>
     public const string NextRound = nameof(NextRound);
 
+    /// <summary>SignalR target of <see cref="StartRoundAsync"/>, as the clients call it.</summary>
+    public const string StartRound = nameof(StartRound);
+
     /// <summary>SignalR target of <see cref="SkipRoundAsync"/>, as the clients call it.</summary>
     public const string SkipRound = nameof(SkipRound);
 
@@ -561,9 +564,9 @@ internal sealed class GameHub(
     }
 
     /// <summary>
-    /// Starts the next round at the request of the game master, between two rounds. The loop alone decides whether the
-    /// request still names the round that just finished, so that a double tap or two consoles start the next round only
-    /// once. Nothing is answered: the snapshots show the round in progress either way.
+    /// Announces the next round at the request of the game master, between two rounds. The loop alone decides whether the
+    /// request still names the round that just finished, so that a double tap or two consoles announce the next round only
+    /// once. Nothing is answered: the snapshots show the round announced either way.
     /// </summary>
     /// <param name="message">A <see cref="NextRoundRequest"/>.</param>
     [GameMasterOnly]
@@ -579,6 +582,28 @@ internal sealed class GameHub(
         // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
         await inputs
             .SubmitAsync(new Engine.Inputs.NextRound(request.AfterRound, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Starts the round announced at the request of the game master, once its rule is told. The loop alone decides whether
+    /// the request still names the round announced, so that a double tap or two consoles start it only once. Nothing is
+    /// answered: the snapshots show the round in progress either way.
+    /// </summary>
+    /// <param name="message">A <see cref="StartRoundRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(StartRound)]
+    public async Task StartRoundAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<StartRoundRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(StartRound, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.StartRound(request.RoundId, timeProvider.GetUtcNow()), CancellationToken.None)
             .ConfigureAwait(false);
     }
 

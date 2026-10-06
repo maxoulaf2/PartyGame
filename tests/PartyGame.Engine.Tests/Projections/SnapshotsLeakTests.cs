@@ -69,6 +69,8 @@ public sealed class SnapshotsLeakTests
 
         yield return ("illustrated pack", Games.PlayedUpTo(phase, Games.IllustratedLobbyWith("Zoé", "Max")));
 
+        yield return ("described rounds", Games.PlayedUpTo(phase, DescribedLobby()));
+
         yield return ("other address chosen", Games.PlayedUpTo(phase, Games.Accepted(Games.LobbyWith("Zoé"), Games.ChooseAddress(Games.OtherAddress))));
 
         if (phase == GamePhase.Lobby)
@@ -94,6 +96,21 @@ public sealed class SnapshotsLeakTests
         return Games.Accepted(state, new ShowPreviewStep(2, FakeMode.PreviewStepCount, PlayExcerpt: true, Games.Now));
     }
 
+    /// <summary>
+    /// A lobby where a pack of two rounds, each told of by its author, is chosen.
+    /// </summary>
+    private static GameState DescribedLobby()
+    {
+        var pack = Games.ValidPack(
+            "decrite",
+            "Soirée décrite",
+            [
+                new FakeRoundDescriptor { Title = "Échauffement", Description = "Pour se mettre en jambes." },
+                new FakeRoundDescriptor { Title = "Finale", Description = "Tout se joue ici." },
+            ]);
+        return Games.Accepted(Games.Accepted(Games.LobbyWith("Zoé", "Max"), Games.Loaded(Games.Pack, pack)), Games.Select(pack.Id));
+    }
+
     private static IEnumerable<SecretPair<GameState>> Pairs(GamePhase phase)
     {
         if (phase == GamePhase.ResumePending)
@@ -109,6 +126,19 @@ public sealed class SnapshotsLeakTests
         {
             var previewed = Previewed("illustre");
             yield return new SecretPair<GameState>("preview", previewed, previewed with { Preview = null }, Audience.Players);
+        }
+
+        // Before the round starts, nothing of its content reaches anybody, not even the game master: only its title and
+        // what the author tells of it.
+        if (phase == GamePhase.RoundIntro)
+        {
+            var announced = Games.PlayedUpTo(phase, Games.IllustratedLobbyWith("Zoé", "Max"));
+            var pack = announced.Pack!;
+            var otherContent = announced with
+            {
+                Pack = pack with { Rounds = pack.Rounds.SetItem(0, ((FakeRoundDescriptor)pack.Rounds[0]) with { Image = Games.Monument }) },
+            };
+            yield return new SecretPair<GameState>("content of the round announced", announced, otherContent, Audience.Everyone);
         }
 
         var state = Games.InPhase(phase, "Zoé", "Max");
@@ -204,6 +234,10 @@ public sealed class SnapshotsLeakTests
         foreach (var round in chosen?.Rounds.Skip(played + 1) ?? [])
         {
             yield return new Secret(round.Title, RoundsHiddenFrom(state.Pack is null ? state.SelectedPackId : null));
+            if (round.Description is { } description)
+            {
+                yield return new Secret(description, Audience.Everyone);
+            }
         }
 
         // A media file is named after what it shows, which may be the answer.

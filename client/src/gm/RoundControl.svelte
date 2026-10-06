@@ -1,12 +1,12 @@
 <script lang="ts">
-    import type { GameMasterRoundIntent, GameMasterSnapshot, RoundId } from '../shared/contracts';
+    import type { GameMasterRoundIntent, GameMasterSnapshot } from '../shared/contracts';
     import type { ServerClock } from '../shared/connection/clockSync.svelte';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import ViewBoundary from '../shared/components/ViewBoundary.svelte';
     import { selectGameScreen } from '../shared/gameScreen';
     import { fill, roundText } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
-    import { findGameMasterView } from '../modes/registry';
+    import { findGameMasterView, findModeTexts } from '../modes/registry';
     import RankingList from './RankingList.svelte';
 
     interface Props {
@@ -25,20 +25,42 @@
     const screen = $derived(selectGameScreen(snapshot, findGameMasterView));
     const send = (intent: GameMasterRoundIntent) => session.sendRoundIntent(intent);
 
-    async function nextRound(afterRound: RoundId) {
+    // Answered once the server handled it: the next step is in the snapshot by then. A lost
+    // connection is for the connection indicator to show, and both requests are safe to repeat.
+    async function advance(request: () => Promise<unknown>) {
         if (!interactive || sending) {
             return;
         }
         sending = true;
-        // Answered once the server handled it: the new round is in the snapshot by then. A lost
-        // connection is for the connection indicator to show, and the request is safe to repeat.
-        await session.nextRound(afterRound);
+        await request();
         sending = false;
     }
 </script>
 
 <section class="round">
-    {#if screen.kind === 'round'}
+    {#if screen.kind === 'roundIntro'}
+        <!-- What the TV screen announces, for the game master to tell the rule aloud. -->
+        {@const round = screen.round}
+        {@const mode = findModeTexts(round.mode)}
+        <p class="progress">{roundText(fr.game.round, round)}</p>
+        <h2>{round.title}</h2>
+        {#if mode}
+            <p class="mode">{mode.name}</p>
+            <p aria-label={fr.game.ruleLabel}>{mode.rule}</p>
+        {/if}
+        {#if round.description}
+            <p class="description">{round.description}</p>
+        {/if}
+        <button
+            type="button"
+            disabled={!interactive || sending}
+            aria-describedby="start-round-hint"
+            onclick={() => advance(() => session.startRound(round.roundId))}
+        >
+            {fr.gm.startRound.action}
+        </button>
+        <p id="start-round-hint" class="hint">{fr.gm.startRound.hint}</p>
+    {:else if screen.kind === 'round'}
         {@const ModeView = screen.component}
         <p class="progress">{roundText(fr.game.round, screen.round)}</p>
         <h2>{screen.round.title}</h2>
@@ -74,7 +96,7 @@
             type="button"
             disabled={!interactive || sending}
             aria-describedby="next-round-hint"
-            onclick={() => nextRound(round.roundId)}
+            onclick={() => advance(() => session.nextRound(round.roundId))}
         >
             {fr.gm.nextRound.action}
         </button>
@@ -128,8 +150,17 @@
         color: var(--color-text-muted);
     }
 
-    .skipped {
+    .skipped,
+    .description {
         color: var(--color-text-muted);
+    }
+
+    .mode {
+        font-weight: 700;
+    }
+
+    .description {
+        overflow-wrap: anywhere;
     }
 
     .unavailable {

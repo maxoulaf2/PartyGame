@@ -72,6 +72,7 @@ type GameMasterIntentMethod =
     | 'ResolveSavedGame'
     | 'CheckSavedGameMedia'
     | 'NextRound'
+    | 'StartRound'
     | 'SkipRound'
     | 'ReturnToLobby'
     | 'ShowJoinCode'
@@ -259,12 +260,22 @@ export class GameMasterSession {
     }
 
     /**
-     * Starts the round that follows `afterRound`, the one that just finished. Naming it makes the
-     * request safe to repeat: a second one, from a double tap or another console, is ignored by
-     * the server. The new round reaches every page through the next snapshots.
+     * Announces the round that follows `afterRound`, the one that just finished. Naming it makes
+     * the request safe to repeat: a second one, from a double tap or another console, is ignored
+     * by the server. The introduction of the new round reaches every page through the next
+     * snapshots.
      */
     nextRound(afterRound: RoundId): Promise<IntentOutcome> {
         return this.#send('NextRound', { afterRound });
+    }
+
+    /**
+     * Starts `roundId`, the round announced, once its rule is told. Naming it makes the request
+     * safe to repeat: a second one, from a double tap or another console, is ignored by the
+     * server. The round reaches every page through the next snapshots.
+     */
+    startRound(roundId: RoundId): Promise<IntentOutcome> {
+        return this.#send('StartRound', { roundId });
     }
 
     /**

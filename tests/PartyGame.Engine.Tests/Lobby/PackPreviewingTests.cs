@@ -254,7 +254,7 @@ public sealed class PackPreviewingTests
         var state = Games.Accepted(Previewed(), Games.Start());
 
         // Then
-        Assert.Equal(GamePhase.Round, state.Phase);
+        Assert.Equal(GamePhase.RoundIntro, state.Phase);
         Assert.Null(state.Preview);
         Assert.Null(Games.Snapshots.ForDisplay(state).Preview);
     }

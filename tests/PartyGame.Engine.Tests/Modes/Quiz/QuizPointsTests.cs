@@ -247,6 +247,7 @@ public sealed class QuizPointsTests
         Assert.Equal(GamePhase.BetweenRounds, state.Phase);
         Assert.Equal([2000, 0, 0], state.Players.Select(p => p.Score));
         state = QuizGames.Accepted(state, Games.NextRound(state), seed: 43);
+        state = QuizGames.Accepted(state, Games.StartRound(state));
         state = QuizGames.Revealed(state, (1, QuizChoiceLetter.A), (2, QuizChoiceLetter.A));
 
         // Then

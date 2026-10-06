@@ -60,7 +60,9 @@ public sealed class ServerKilledTests : IDisposable
                 await console.WaitForAsync(snapshot => snapshot.Players.Length == players.Count);
                 Assert.Null((await console.Connection.InvokeAsync<SelectPackResult>("SelectPack", new SelectPackRequest("bots"), Ct)).Refusal);
                 Assert.Null((await console.Connection.InvokeAsync<StartGameResult>("StartGame", Ct)).Refusal);
-                round = (await console.WaitForAsync(snapshot => snapshot.Round is not null)).Round!.RoundId;
+                round = (await console.WaitForAsync(snapshot => snapshot.Phase == Phase.RoundIntro)).Round!.RoundId;
+                await console.Connection.InvokeAsync("StartRound", new StartRoundRequest(round), Ct);
+                await console.WaitForAsync(snapshot => snapshot.Phase == Phase.Round);
                 await console.SendAsync(new QuizShowQuestion(round, 1));
 
                 // When: the server is killed in the middle of the answers, some acknowledged, others on their way

@@ -36,6 +36,7 @@ import type {
     ShowPreviewStepRequest,
     SkipRoundRequest,
     StartPreviewRequest,
+    StartRoundRequest,
     ReturnToLobbyRequest,
     StaleBuildReport,
     StartGameResult,
@@ -66,6 +67,7 @@ export interface GameHubMethods {
     ResolveSavedGame: { args: [request: ResolveSavedGameRequest]; result: null };
     CheckSavedGameMedia: { args: []; result: null };
     NextRound: { args: [request: NextRoundRequest]; result: null };
+    StartRound: { args: [request: StartRoundRequest]; result: null };
     SkipRound: { args: [request: SkipRoundRequest]; result: null };
     ReturnToLobby: { args: [request: ReturnToLobbyRequest]; result: null };
     ShowJoinCode: { args: [request: ShowJoinCodeRequest]; result: null };

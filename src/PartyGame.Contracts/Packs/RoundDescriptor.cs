@@ -26,4 +26,13 @@ public abstract record RoundDescriptor
     [StringLength(60, MinimumLength = 1)]
     [Description("Titre de la manche, affiché à tous.")]
     public required string Title { get; init; }
+
+    /// <summary>
+    /// What the author of the pack tells of the round, shown with the rule of its mode when the round is announced, or
+    /// <see langword="null"/> for the rule alone.
+    /// </summary>
+    [JsonPropertyOrder(-1)]
+    [StringLength(300, MinimumLength = 1)]
+    [Description("Présentation facultative de la manche, affichée avec la règle du mode quand la manche est annoncée.")]
+    public string? Description { get; init; }
 }

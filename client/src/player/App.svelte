@@ -25,6 +25,7 @@
     import JoinForm from './JoinForm.svelte';
     import LobbyScreen from './LobbyScreen.svelte';
     import RankingScreen from './RankingScreen.svelte';
+    import RoundIntroScreen from './RoundIntroScreen.svelte';
 
     const game = new SnapshotStore<PlayerSnapshot>();
     const connection = createGameConnection();
@@ -77,6 +78,8 @@
     {#if session.joined && game.current && screen}
         {#if screen.kind === 'lobby'}
             <LobbyScreen snapshot={game.current} />
+        {:else if screen.kind === 'roundIntro'}
+            <RoundIntroScreen round={screen.round} />
         {:else if screen.kind === 'round'}
             {@const ModeView = screen.component}
             <ViewBoundary shown={game.current} fallback={inProgress}>

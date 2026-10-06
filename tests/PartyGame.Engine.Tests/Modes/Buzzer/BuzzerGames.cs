@@ -51,7 +51,8 @@ internal static class BuzzerGames
             Media = [.. round.Questions.Select(q => q.Image).OfType<MediaPath>().Distinct()],
         };
         var lobby = Games.Accepted(Games.Accepted(Games.LobbyWith(nicknames), Games.Loaded(pack)), Games.Select(PackId));
-        return Accepted(lobby, Games.Start());
+        var announced = Accepted(lobby, Games.Start());
+        return Accepted(announced, Games.StartRound(announced));
     }
 
     /// <summary>

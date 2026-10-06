@@ -20,8 +20,10 @@ internal sealed class IncidentReporter(
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        // Between two rounds, the last round played is over: what fails then is not part of it.
-        return SendAsync(code, journal.Record(code, state.Phase == GamePhase.Round ? Snapshots.RoundInfoOf(state) : null, role), cancellationToken);
+        // Between two rounds, the last round played is over: what fails then is not part of it. A round announced is, since
+        // what fails then is its start, and the game master may skip it.
+        var round = state.Phase is GamePhase.Round or GamePhase.RoundIntro ? Snapshots.RoundInfoOf(state) : null;
+        return SendAsync(code, journal.Record(code, round, role), cancellationToken);
     }
 
     public ValueTask ReportIncidentAsync(IncidentCode code, RoundInfo? round, int? step, CancellationToken cancellationToken) =>

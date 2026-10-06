@@ -41,7 +41,7 @@ public sealed class StartGameTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task StartGame_AsGameMasterWithPlayers_PresentsTheFirstQuestionOnEveryInterface()
+    public async Task StartGameThenStartRound_AsGameMasterWithPlayers_PresentsTheFirstQuestionOnEveryInterface()
     {
         // Given
         await using var display = await HubClients.ConnectAsync(_factory);
@@ -53,8 +53,9 @@ public sealed class StartGameTests : IAsyncDisposable
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
 
-        // When
+        // When: the game starts, then the round it announces
         var result = await StartAsync(gameMaster);
+        await gameMaster.InvokeAsync(GameHub.StartRound, new StartRoundRequest(Game.State.CurrentRound!.Id), Ct);
 
         // Then
         Assert.Equal(new StartGameResult(Refusal: null), result);
@@ -163,9 +164,8 @@ public sealed class StartGameTests : IAsyncDisposable
 
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(max));
-        // Joined during the presentation of the first question, Max sees it like everybody else.
-        Assert.Equal((Phase.Round, "Max"), (toMax.Player[^1].Phase, toMax.Player[^1].Nickname));
-        Assert.Equal(QuizQuestionPhase.Presentation, Assert.IsType<QuizPlayerView>(toMax.Player[^1].RoundView).Phase);
+        // Joined during the introduction of the first round, Max sees it like everybody else.
+        Assert.Equal((Phase.RoundIntro, "Max", 1), (toMax.Player[^1].Phase, toMax.Player[^1].Nickname, toMax.Player[^1].Round!.Number));
         Assert.Equal(["Zoé", "Max"], toDisplay.Display[^1].Players.Select(p => p.Nickname));
         Assert.Equal(["Zoé", "Max"], toGameMaster.GameMaster[^1].Players.Select(p => p.Nickname));
     }

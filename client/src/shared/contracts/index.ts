@@ -138,4 +138,5 @@ export type * from './StaleBuildReport';
 export type * from './StartGameRefusal';
 export type * from './StartGameResult';
 export type * from './StartPreviewRequest';
+export type * from './StartRoundRequest';
 export type * from './Welcome';

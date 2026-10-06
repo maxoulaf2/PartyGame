@@ -36,6 +36,8 @@ const fakeRound: RoundInfo = {
     number: 1,
     count: 3,
     title: 'Échauffement',
+    mode: 'quiz',
+    description: null,
 };
 
 function fakeSnapshot(
@@ -337,6 +339,60 @@ test('/display/ shows the final ranking as the server sends it: a podium, then t
     // The game is over: neither the lobby nor its QR code anymore.
     await expect(playerList(page)).toHaveCount(0);
     await expect(page.getByRole('img', { name: fr.display.qrCodeLabel })).toHaveCount(0);
+});
+
+test('/display/ announces a round with its rule and a description of 300 characters, readable and clear of the edges', async ({
+    page,
+}) => {
+    const description = 'Une présentation bien longue de la manche, '.repeat(7).slice(0, 300);
+    const round: RoundInfo = {
+        ...fakeRound,
+        title: 'Le grand final du blind test',
+        mode: 'blindtest',
+        description,
+    };
+    await serveDisplaySnapshot(page, {
+        ...fakeSnapshot([], advertisedAddress, 'RoundIntro'),
+        round,
+    });
+
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    expect(description).toHaveLength(300);
+    const shown = [
+        page.getByText(roundText(fr.game.round, round)),
+        page.getByRole('heading', { name: round.title }),
+        page.getByText(fr.modes.blindtest.name, { exact: true }),
+        page.getByText(fr.modes.blindtest.rule),
+        page.getByText(description),
+    ];
+    for (const element of shown) {
+        await expect(element).toBeVisible();
+        expectWithinSafeArea(await element.boundingBox(), viewport);
+        // About 2 cm high on a 55" TV at the least: readable from 3 m.
+        const fontSize = await element.evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+        expect(fontSize).toBeGreaterThanOrEqual(36);
+    }
+    const overflows = await page.evaluate(() => {
+        const main = document.querySelector('main');
+        return (
+            !main || main.scrollHeight > main.clientHeight || main.scrollWidth > main.clientWidth
+        );
+    });
+    expect(overflows).toBe(false);
+});
+
+test('/display/ announces a round without description with its rule alone', async ({ page }) => {
+    await serveDisplaySnapshot(page, fakeSnapshot([], advertisedAddress, 'RoundIntro'));
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fr.modes.quiz.rule)).toBeVisible();
+    await expect(page.locator('main p')).toHaveCount(3);
 });
 
 // Scores of 20 players: distinct but for a few ex aequo, every player ex aequo, and one player

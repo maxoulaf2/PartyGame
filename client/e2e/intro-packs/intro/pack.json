@@ -1,0 +1,22 @@
+{
+  "formatVersion": 1,
+  "title": "Soirée annoncée",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Échauffement",
+      "questions": [
+        {
+          "text": "Combien de pattes a une araignée ?",
+          "choices": [{ "text": "6" }, { "text": "8", "correct": true }]
+        }
+      ]
+    },
+    {
+      "type": "buzzer",
+      "title": "Le plus rapide",
+      "description": "Dernière ligne droite : le premier qui buzze a la main, à vous de jouer !",
+      "questions": [{ "text": "Qui a peint La Joconde ?", "answer": "Léonard de Vinci" }]
+    }
+  ]
+}

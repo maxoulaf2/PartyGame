@@ -142,6 +142,9 @@ internal sealed class BotGameMaster : IAsyncDisposable
                     .InvokeAsync("SendGameMasterRoundIntent", JsonSerializer.SerializeToElement(step, ContractJsonOptions.Default), cancellationToken)
                     .ConfigureAwait(false);
                 break;
+            case { Phase: Phase.RoundIntro, Round: { } announced }:
+                await _connection.InvokeAsync("StartRound", new StartRoundRequest(announced.RoundId), cancellationToken).ConfigureAwait(false);
+                break;
             case { Phase: Phase.BetweenRounds, Round: { } finished }:
                 await _connection.InvokeAsync("NextRound", new NextRoundRequest(finished.RoundId), cancellationToken).ConfigureAwait(false);
                 break;

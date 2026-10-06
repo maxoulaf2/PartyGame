@@ -7,32 +7,50 @@ using PartyGame.Engine.Modes;
 namespace PartyGame.Engine.Rounds;
 
 /// <summary>
-/// Sequence of the rounds of the pack: each one is started, fed with the inputs aimed at it and ended by its game mode,
-/// then the game master asks for the next one, until the last one.
+/// Sequence of the rounds of the pack: each one is announced, started by the game master, fed with the inputs aimed at it
+/// and ended by its game mode, then the game master asks for the next one, until the last one.
 /// </summary>
 internal static class RoundFlow
 {
     /// <summary>
-    /// Starts a round of the pack. Every activity has a game mode: the start of the game checked it.
+    /// Announces a round of the pack, which its game mode does not play until the game master starts it.
     /// </summary>
-    public static Transition Start(GameState state, int index, GameModes modes, GameContext context)
+    public static Transition Announce(GameState state, int index, GameContext context) =>
+        new(state with { Phase = GamePhase.RoundIntro, CurrentRound = new PlayedRound(NewRoundId(context.Random), index, State: null) }, []);
+
+    /// <summary>
+    /// Starts the round announced that the game master names: a request sent twice, or by two consoles at once, starts it
+    /// only once. Every activity has a game mode: the start of the game checked it.
+    /// </summary>
+    public static Transition Start(GameState state, StartRound start, GameModes modes, GameContext context)
     {
-        var descriptor = state.Rounds[index];
+        if (state.Phase != GamePhase.RoundIntro)
+        {
+            return Transition.Rejected(state, RejectionReason.NoRoundAnnounced);
+        }
+
+        var round = state.CurrentRound!;
+        if (round.Id != start.RoundId)
+        {
+            return Transition.Rejected(state, RejectionReason.RoundMismatch);
+        }
+
+        var descriptor = state.Rounds[round.Index];
         var started = modes.For(descriptor).Start(descriptor, state, context);
         if (started.Rejection is { } rejection)
         {
             throw new InvalidOperationException($"Game mode for {descriptor.GetType().Name} rejected the start of a round: {rejection}.");
         }
 
-        var round = new PlayedRound(NewRoundId(context.Random), index, started.State);
-        return Apply(state with { Phase = GamePhase.Round, CurrentRound = round }, round, started);
+        var playing = round with { State = started.State };
+        return Apply(state with { Phase = GamePhase.Round, CurrentRound = playing }, playing, started);
     }
 
     /// <summary>
-    /// Starts the round that follows the one the game master names, which must be the one that just finished: a request
-    /// sent twice, or by two consoles at once, starts it only once.
+    /// Announces the round that follows the one the game master names, which must be the one that just finished: a request
+    /// sent twice, or by two consoles at once, announces it only once.
     /// </summary>
-    public static Transition Next(GameState state, NextRound next, GameModes modes, GameContext context)
+    public static Transition Next(GameState state, NextRound next, GameContext context)
     {
         if (state.Phase != GamePhase.BetweenRounds)
         {
@@ -45,18 +63,19 @@ internal static class RoundFlow
             return Transition.Rejected(state, RejectionReason.RoundMismatch);
         }
 
-        return Start(state, finished.Index + 1, modes, context);
+        return Announce(state, finished.Index + 1, context);
     }
 
     /// <summary>
-    /// Ends the round in progress that the game master names, without its game mode, since it may be what keeps failing.
+    /// Ends the round in progress, or announced, that the game master names, without its game mode, since it may be what
+    /// keeps failing, even to start.
     /// The points already added to the scores stay, those its question in progress would award are never awarded, and its
     /// timers are cancelled. The game then goes between two rounds, or is finished after the last one, as when the mode
     /// ends the round itself. A request sent twice, or by two consoles at once, skips the round only once.
     /// </summary>
     public static Transition Skip(GameState state, SkipRound skip)
     {
-        if (state.Phase != GamePhase.Round)
+        if (state.Phase is not (GamePhase.Round or GamePhase.RoundIntro))
         {
             return Transition.Rejected(state, RejectionReason.NotInRound);
         }
@@ -133,7 +152,7 @@ internal static class RoundFlow
 
         var round = state.CurrentRound!;
         var descriptor = state.Rounds[round.Index];
-        var handled = modes.For(descriptor).ResumeRound(round.State, state, context.Now - resumed.SavedAt, context);
+        var handled = modes.For(descriptor).ResumeRound(round.State!, state, context.Now - resumed.SavedAt, context);
         if (handled.Rejection is { } rejection)
         {
             throw new InvalidOperationException($"Game mode for {descriptor.GetType().Name} rejected the resumption of a round: {rejection}.");
@@ -160,7 +179,7 @@ internal static class RoundFlow
     private static Transition Handle(GameState state, GameInput input, GameModes modes, GameContext context)
     {
         var round = state.CurrentRound!;
-        var handled = modes.For(state.Rounds[round.Index]).Handle(round.State, input, state, context);
+        var handled = modes.For(state.Rounds[round.Index]).Handle(round.State!, input, state, context);
         return Apply(state, round, handled);
     }
 

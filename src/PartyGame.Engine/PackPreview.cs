@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
+using PartyGame.Engine.Modes;
 
 namespace PartyGame.Engine;
 
@@ -31,5 +32,12 @@ public sealed record PackPreview(
     /// <summary>
     /// The round shown, as every role knows a round.
     /// </summary>
-    public RoundInfo Round => new(RoundIds[RoundIndex], RoundIndex + 1, Pack.Rounds.Length, Pack.Rounds[RoundIndex].Title);
+    public RoundInfo Round
+    {
+        get
+        {
+            var descriptor = Pack.Rounds[RoundIndex];
+            return new(RoundIds[RoundIndex], RoundIndex + 1, Pack.Rounds.Length, descriptor.Title, GameModes.TypeOf(descriptor), descriptor.Description);
+        }
+    }
 }

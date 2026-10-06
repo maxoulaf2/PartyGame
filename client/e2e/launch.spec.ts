@@ -86,6 +86,11 @@ test('the game master plays a whole game, from the choice of the pack to the fin
     await start.click();
     await dialog.getByRole('button', { name: fr.gm.start.confirm, exact: true }).click();
 
+    // The first round is announced on every interface, then the game master starts it.
+    await expect(display.getByRole('heading', { name: playedPack.rounds[0] })).toBeVisible();
+    await expect(phone.getByRole('heading', { name: playedPack.rounds[0] })).toBeVisible();
+    await page.getByRole('button', { name: fr.gm.startRound.action }).click();
+
     // The first question of the first round is presented on every interface, its correct answer
     // on the console only. The TV screen shows its number alone, until the game master shows it.
     const question = 'Combien de pattes a une araignée ?';
@@ -406,6 +411,7 @@ test('the game master plays a whole game, from the choice of the pack to the fin
 
     // The game master starts the last round, of a single question: two players get it right.
     await page.getByRole('button', { name: fr.gm.nextRound.action }).click();
+    await page.getByRole('button', { name: fr.gm.startRound.action }).click();
     const last = 'Quel est le plus grand océan ?';
     const lastProgress = fill(fr.modes.quiz.question, { number: 1, count: 1 });
     await expect(page.getByRole('heading', { name: playedPack.rounds[1] })).toBeVisible();

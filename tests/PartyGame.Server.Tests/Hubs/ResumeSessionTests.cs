@@ -79,7 +79,7 @@ public sealed class ResumeSessionTests : IAsyncDisposable
         await other.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Max"), Ct);
         var (playerId, token) = await JoinAndLeaveAsync("Zoé");
         await using var gameMaster = await AnnounceAsync(Role.GameMaster);
-        var started = await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var started = await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         Assert.Null(started.Refusal);
         await using var phone = await HubClients.ConnectAsync(_factory);
         using var toPhone = new ReceivedSnapshots(phone);

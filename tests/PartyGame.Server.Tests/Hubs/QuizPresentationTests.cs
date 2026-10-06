@@ -57,7 +57,7 @@ public sealed class QuizPresentationTests : IAsyncDisposable
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
         using var toDisplay = new ReceivedSnapshots(display);
-        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(Game, Ct)).Refusal);
         await FlushAsync(display);
         var presented = toDisplay.Json.Count;
 
@@ -86,7 +86,7 @@ public sealed class QuizPresentationTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
         await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A));
         await FlushAsync(display);
@@ -109,7 +109,7 @@ public sealed class QuizPresentationTests : IAsyncDisposable
         // Given
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var state = Game.State;
 
         // When: a player sends what only the game master may send

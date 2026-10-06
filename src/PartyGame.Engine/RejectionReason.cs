@@ -70,6 +70,9 @@ public enum RejectionReason
     /// <summary>The next round is asked for while the game is not between two rounds.</summary>
     NotBetweenRounds,
 
+    /// <summary>A round is started while none is announced.</summary>
+    NoRoundAnnounced,
+
     /// <summary>The game mode of the round in progress plays no such intent.</summary>
     IntentUnsupported,
 

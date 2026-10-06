@@ -7,7 +7,7 @@ namespace PartyGame.Engine.Tests.Lobby;
 public sealed class LaunchTests
 {
     [Fact]
-    public void Handle_StartGameWithPlayers_StartsTheFirstRoundAndKeepsThePlayers()
+    public void Handle_StartGameWithPlayers_AnnouncesTheFirstRoundAndKeepsThePlayers()
     {
         // Given
         var state = Games.InPhase(GamePhase.Lobby, "Zoé", "Max");
@@ -17,7 +17,7 @@ public sealed class LaunchTests
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(GamePhase.Round, transition.State.Phase);
+        Assert.Equal(GamePhase.RoundIntro, transition.State.Phase);
         Assert.Equal(0, transition.State.CurrentRound!.Index);
         Assert.Equal(state.Players, transition.State.Players);
         Assert.Equal(state.PlayerTokens, transition.State.PlayerTokens);
@@ -83,7 +83,7 @@ public sealed class LaunchTests
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(GamePhase.Round, transition.State.Phase);
+        Assert.Equal(GamePhase.RoundIntro, transition.State.Phase);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public sealed class LaunchTests
         var state = Games.PlayedUpTo(GamePhase.BetweenRounds, Games.IllustratedLobbyWith("Zoé"));
 
         // When
-        var next = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        var next = Games.NextRoundStarted(state);
 
         // Then: a URL serves the same file for the whole game
         Assert.Same(state.Media, next.Media);

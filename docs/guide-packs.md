@@ -27,7 +27,7 @@ Le nom du dossier est l'identifiant du pack. Le dossier se dépose dans le dossi
   "title": "Ma soirée",
   "description": "Facultative : quelques mots pour le GM.",
   "rounds": [
-    { "type": "quiz", "title": "Échauffement", "questions": [] },
+    { "type": "quiz", "title": "Échauffement", "description": "Facultative : affichée quand la manche est annoncée.", "questions": [] },
     { "type": "blindtest", "title": "Airs connus", "tracks": [] }
   ]
 }
@@ -55,6 +55,13 @@ Chaque mode a sa page, avec ses règles, chacune de ses propriétés et un exemp
 | `blindtest` | Blind test : extrait joué sur la TV, titre et artiste donnés à voix haute | Un MP3 par morceau, visuel facultatif | [blindtest.md](modes/blindtest.md) |
 
 Un pack peut mélanger les modes et répéter un même mode dans plusieurs manches.
+
+Chaque manche s'ouvre sur un écran d'introduction : la TV affiche son numéro (« Manche 2/4 »), son titre, le nom du mode et sa règle en deux ou trois lignes, et le GM la démarre quand il a fini de l'expliquer. Deux propriétés valent pour toutes les manches, quel que soit leur mode :
+
+| Propriété | Obligatoire | Description |
+|---|---|---|
+| `title` | Oui | Titre de la manche, de 1 à 60 caractères, affiché à tous à partir de son introduction. |
+| `description` | Non | Présentation de la manche, de 1 à 300 caractères, affichée sur la TV et la console GM sous la règle du mode pendant l'introduction. Sans elle, seule la règle est affichée. La règle elle-même n'est pas à écrire : elle est la même pour toutes les manches d'un mode. |
 
 ## Aide à la saisie dans VS Code
 

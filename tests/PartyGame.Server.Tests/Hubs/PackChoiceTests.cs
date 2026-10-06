@@ -174,7 +174,7 @@ public sealed class PackChoiceTests : IAsyncDisposable
         var state = Game.State;
 
         // When
-        var result = await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var result = await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
 
         // Then
         Assert.Equal(new StartGameResult(StartGameRefusal.PackNotSelected), result);
@@ -195,7 +195,7 @@ public sealed class PackChoiceTests : IAsyncDisposable
         using var toDisplay = new ReceivedSnapshots(display);
 
         // When
-        var result = await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var result = await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
 
         // Then
         Assert.Null(result.Refusal);
@@ -256,7 +256,7 @@ public sealed class PackChoiceTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
         await SelectAsync(gameMaster, "soiree");
-        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(Game, Ct)).Refusal);
         TestPacks.Write(_packs.Path, "soiree", TestPacks.Quiz("Autre titre", "Autre manche"));
         var state = Game.State;
 
@@ -277,7 +277,7 @@ public sealed class PackChoiceTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
         await SelectAsync(gameMaster, "soiree");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
 
         // When
         var result = await SelectAsync(gameMaster, "apero");

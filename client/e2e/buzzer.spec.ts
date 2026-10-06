@@ -24,6 +24,8 @@ async function startGame(gm: Page): Promise<void> {
         .getByRole('dialog', { name: fr.gm.start.confirmTitle })
         .getByRole('button', { name: fr.gm.start.confirm, exact: true })
         .click();
+    // The first round is announced first.
+    await gm.getByRole('button', { name: fr.gm.startRound.action }).click();
 }
 
 function buzzer(phone: Page, state: keyof typeof fr.buzzer) {

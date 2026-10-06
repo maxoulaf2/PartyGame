@@ -315,7 +315,7 @@ public sealed class ResumeOfferTests : IAsyncDisposable
         {
             await using var gameMaster = await HubClients.ConnectAsync(factory);
             await AnnounceAsync(gameMaster, Role.GameMaster, PreviousCode);
-            Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+            Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(factory.Services.GetRequiredService<GameLoop>(), Ct)).Refusal);
         }
 
         var gameId = factory.Services.GetRequiredService<GameLoop>().State.GameId;

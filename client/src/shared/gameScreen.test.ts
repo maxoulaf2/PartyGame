@@ -11,6 +11,8 @@ const round: RoundInfo = {
     number: 1,
     count: 2,
     title: 'Échauffement',
+    mode: 'quiz',
+    description: null,
 };
 
 const quizView: View = { type: 'quiz' };
@@ -53,6 +55,17 @@ describe('selectGameScreen', () => {
         expect(selectGameScreen(progress('Round', null, quizView), findView)).toEqual({
             kind: 'waiting',
         });
+    });
+
+    it('shows the introduction of the round announced, without any view', () => {
+        expect(selectGameScreen(progress('RoundIntro', round), findView)).toEqual({
+            kind: 'roundIntro',
+            round,
+        });
+    });
+
+    it('waits neutrally on an introduction without the round announced', () => {
+        expect(selectGameScreen(progress('RoundIntro'), findView)).toEqual({ kind: 'waiting' });
     });
 
     it('shows the end of the round that just finished between two rounds', () => {

@@ -17,6 +17,13 @@ internal sealed class RoundProgressLog(ILogger<RoundProgressLog> logger) : IGame
     {
         ArgumentNullException.ThrowIfNull(state);
 
+        // A round announced is not started yet: it is logged once its game mode plays it.
+        if (state.Phase == GamePhase.RoundIntro)
+        {
+            _phase = state.Phase;
+            return ValueTask.CompletedTask;
+        }
+
         if (state.CurrentRound is { } round)
         {
             var number = round.Index + 1;

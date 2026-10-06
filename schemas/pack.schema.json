@@ -52,6 +52,15 @@
                 "minLength": 1,
                 "maxLength": 60
               },
+              "description": {
+                "description": "Présentation facultative de la manche, affichée avec la règle du mode quand la manche est annoncée.",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 300
+              },
               "answerSeconds": {
                 "description": "Durée de réponse par défaut des questions, en secondes, de 5 à 120. 20 si absente.",
                 "type": "integer",
@@ -159,6 +168,15 @@
                 "minLength": 1,
                 "maxLength": 60
               },
+              "description": {
+                "description": "Présentation facultative de la manche, affichée avec la règle du mode quand la manche est annoncée.",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 300
+              },
               "points": {
                 "description": "Points d'une bonne réponse, de 0 à 10 000. 1 000 si absent.",
                 "type": "integer",
@@ -220,6 +238,15 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 60
+              },
+              "description": {
+                "description": "Présentation facultative de la manche, affichée avec la règle du mode quand la manche est annoncée.",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 300
               },
               "titlePoints": {
                 "description": "Points de qui trouve le titre d'un morceau, de 0 à 10 000. 500 si absent.",
@@ -318,6 +345,15 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 60
+              },
+              "description": {
+                "description": "Présentation facultative de la manche, affichée avec la règle du mode quand la manche est annoncée.",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 300
               },
               "answerSeconds": {
                 "description": "Durée de réponse par défaut des questions, en secondes, de 5 à 120. 30 si absente.",

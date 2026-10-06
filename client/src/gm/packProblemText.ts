@@ -1,5 +1,6 @@
 import type { PackProblem, PackProblemCode } from '../shared/contracts';
 import { fr } from '../shared/i18n/fr';
+import { findModeTexts } from '../modes/registry';
 
 /** The forms of the message of a bound, depending on which of `min` and `max` it has. */
 interface BoundTexts {
@@ -33,8 +34,7 @@ export function describeProblem(problem: PackProblem): string {
 
 /** The name of a game mode, by the type of activity that designates it in the packs. */
 export function describeMode(mode: string): string {
-    const modes: Readonly<Record<string, string>> = fr.gm.packs.modes;
-    return modes[mode] ?? mode;
+    return findModeTexts(mode)?.name ?? mode;
 }
 
 function boundText(texts: BoundTexts, parameters: Readonly<Record<string, string>>): string {
