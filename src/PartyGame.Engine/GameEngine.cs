@@ -46,7 +46,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             PacksLoaded loaded => PackChoice.Load(state, loaded),
             NextRound next => RoundFlow.Next(state, next, context),
             StartRound start => RoundFlow.Start(state, start, modes, context),
-            SkipRound skip => RoundFlow.Skip(state, skip),
+            SkipRound skip => RoundFlow.Skip(state, skip, context),
             PlayerRoundInput player => RoundFlow.HandlePlayerIntent(state, player, modes, context),
             GameMasterRoundInput gameMaster => RoundFlow.HandleGameMasterIntent(state, gameMaster, modes, context),
 

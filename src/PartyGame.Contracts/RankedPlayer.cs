@@ -13,4 +13,8 @@ namespace PartyGame.Contracts;
 /// </param>
 /// <param name="IsTied">Whether another player shares <paramref name="Rank"/>.</param>
 /// <param name="Score">The points of the player since the start of the game.</param>
-public sealed record RankedPlayer(PlayerId Id, string Nickname, bool IsConnected, int Rank, bool IsTied, int Score);
+/// <param name="PreviousRank">
+/// Rank of the player in the ranking before this one, to show who gained or lost places; <see langword="null"/> in the
+/// ranking after the first round, and for a player who joined since the previous ranking.
+/// </param>
+public sealed record RankedPlayer(PlayerId Id, string Nickname, bool IsConnected, int Rank, bool IsTied, int Score, int? PreviousRank);

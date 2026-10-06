@@ -215,8 +215,8 @@ public sealed class RoundsTests : IAsyncDisposable
         var ids = Game.State.Players.ToDictionary(p => p.Nickname, p => p.Id);
         RankedPlayer[] expected =
         [
-            new(ids["Max"], "Max", IsConnected: true, Rank: 1, IsTied: true, Score: 0),
-            new(ids["Zoé"], "Zoé", IsConnected: true, Rank: 1, IsTied: true, Score: 0),
+            new(ids["Max"], "Max", IsConnected: true, Rank: 1, IsTied: true, Score: 0, PreviousRank: null),
+            new(ids["Zoé"], "Zoé", IsConnected: true, Rank: 1, IsTied: true, Score: 0, PreviousRank: null),
         ];
         Assert.Equal(Phase.BetweenRounds, toDisplay.Display[^1].Phase);
         Assert.Equal(expected, toDisplay.Display[^1].Ranking);
@@ -257,14 +257,16 @@ public sealed class RoundsTests : IAsyncDisposable
         var ids = Game.State.Players.ToDictionary(p => p.Nickname, p => p.Id);
         RankedPlayer[] expected =
         [
-            new(ids["Zoé"], "Zoé", IsConnected: true, Rank: 1, IsTied: false, Score: TestQuizMode.PointsPerIntent),
-            new(ids["Max"], "Max", IsConnected: true, Rank: 2, IsTied: false, Score: 0),
+            new(ids["Zoé"], "Zoé", IsConnected: true, Rank: 1, IsTied: false, Score: TestQuizMode.PointsPerIntent, PreviousRank: 1),
+            new(ids["Max"], "Max", IsConnected: true, Rank: 2, IsTied: false, Score: 0, PreviousRank: 2),
         ];
         Assert.Equal(Phase.Finished, toDisplay.Display[^1].Phase);
         Assert.Equal(expected, toDisplay.Display[^1].Ranking);
         Assert.Equal(expected, toGameMaster.GameMaster[^1].Ranking);
         Assert.Equal(new PlayerStanding(1, IsTied: false, RankedCount: 2), toZoe.Player[^1].Standing);
         Assert.Equal(new PlayerStanding(2, IsTied: false, RankedCount: 2), toMax.Player[^1].Standing);
+        Assert.NotNull(toDisplay.Display[^1].FinishedAt);
+        Assert.Equal(toDisplay.Display[^1].FinishedAt, toMax.Player[^1].FinishedAt);
         LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, new Secret("Max", Audience.OtherPlayersThan("Max")));
         LeakAssert.NoSecretReceived(Viewer.PhoneOf("Max"), toMax.Json, new Secret("Zoé", Audience.OtherPlayersThan("Zoé")));
     }

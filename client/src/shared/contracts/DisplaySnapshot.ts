@@ -23,4 +23,5 @@ export interface DisplaySnapshot {
     readonly ranking: readonly RankedPlayer[];
     readonly joinCodeShown: boolean;
     readonly preview: DisplayPreview | null;
+    readonly finishedAt: number | null;
 }

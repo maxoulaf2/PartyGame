@@ -95,6 +95,12 @@ public sealed record GameState(
     public PackPreview? Preview { get; init; }
 
     /// <summary>
+    /// When the last round ended, once the game is finished: the screens reveal the podium step by step from then on.
+    /// Absent from a game saved before it existed, whose podium shows at once.
+    /// </summary>
+    public DateTimeOffset? FinishedAt { get; init; }
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>

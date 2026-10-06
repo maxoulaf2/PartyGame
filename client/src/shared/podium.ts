@@ -49,3 +49,36 @@ export function splitFinalRanking<P extends { readonly rank: number }>(
 export function podiumPosition(rank: number): number {
     return rank === 1 ? 2 : rank === 2 ? 1 : 3;
 }
+
+/** The milliseconds between two steps of the reveal of the final ranking. */
+export const podiumRevealInterval = 2500;
+
+/**
+ * When the screens reveal the players of `rank`, in milliseconds after the end of the game: the
+ * rest of the ranking at once, then the third step, the second and the first, the whole reveal
+ * lasting 7.5 s. A fixed sequence, so that the TV screen and the phones agree on it.
+ */
+export function revealDelay(rank: number): number {
+    return isOnPodium(rank) ? (podiumRankCount + 1 - rank) * podiumRevealInterval : 0;
+}
+
+/**
+ * Whether the players of `rank` are revealed at `now`, both times of the server in milliseconds
+ * since the Unix epoch. A game saved before the server told when it finished shows everything.
+ */
+export function isRevealed(rank: number, finishedAt: number | null, now: number): boolean {
+    return finishedAt === null || now >= finishedAt + revealDelay(rank);
+}
+
+/**
+ * The milliseconds before the next step of the reveal at `now`, or null once the whole podium is
+ * revealed: a screen opened after the end shows the final ranking at once.
+ */
+export function untilNextReveal(finishedAt: number | null, now: number): number | null {
+    if (finishedAt === null) {
+        return null;
+    }
+    const elapsed = now - finishedAt;
+    const next = [3, 2, 1].map(revealDelay).find((delay) => delay > elapsed);
+    return next === undefined ? null : next - elapsed;
+}

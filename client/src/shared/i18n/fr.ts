@@ -36,6 +36,17 @@ export const fr = {
         // The players who share a step of the podium, `{rank}` written by rankText.
         podiumStepLabel: 'Sur la marche {rank}',
         restLabel: 'Suite du classement',
+        // How a player moved since the previous ranking, on the TV screen: an arrow and a number,
+        // never colour alone, and a sentence for screen readers.
+        rankMove: {
+            up: '▲ {count}',
+            down: '▼ {count}',
+            same: '=',
+        },
+        rankMoveLabel: {
+            up: { zero: 'Même place', one: 'Gagne {count} place', other: 'Gagne {count} places' },
+            down: { zero: 'Même place', one: 'Perd {count} place', other: 'Perd {count} places' },
+        },
         // The points of a player since the start of the game, in a ranking.
         points: {
             zero: '0 point',
@@ -60,6 +71,8 @@ export const fr = {
         finished: 'Merci d’avoir joué !',
         // Once the game is finished, under the final rank of a player on the podium.
         podium: 'Bravo, tu es sur le podium !',
+        // Once the game is finished, until the TV screen reveals the rank of the player.
+        revealing: 'Le classement se dévoile sur l’écran…',
         // Shown to a phone that joined once the game was finished: it has no rank.
         joinedAfterEnd: 'Cette partie vient de se terminer : rendez-vous à la prochaine !',
         registeredAs: 'Tu es inscrit sous le nom {nickname}',

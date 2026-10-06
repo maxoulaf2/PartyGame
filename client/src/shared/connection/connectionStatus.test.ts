@@ -19,6 +19,7 @@ function snapshot(version: number): DisplaySnapshot {
         ranking: [],
         joinCodeShown: false,
         preview: null,
+        finishedAt: null,
     };
 }
 

@@ -3,6 +3,7 @@ using PartyGame.Contracts;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Scores;
 
 namespace PartyGame.Engine.Rounds;
 
@@ -13,10 +14,21 @@ namespace PartyGame.Engine.Rounds;
 internal static class RoundFlow
 {
     /// <summary>
-    /// Announces a round of the pack, which its game mode does not play until the game master starts it.
+    /// Announces a round of the pack, which its game mode does not play until the game master starts it. The ranking the
+    /// players leave is remembered, for the next one to show who gained or lost places: none before the first round.
     /// </summary>
-    public static Transition Announce(GameState state, int index, GameContext context) =>
-        new(state with { Phase = GamePhase.RoundIntro, CurrentRound = new PlayedRound(NewRoundId(context.Random), index, State: null) }, []);
+    public static Transition Announce(GameState state, int index, GameContext context)
+    {
+        var ranks = index == 0 ? [] : Ranking.Of(state.Players).ToDictionary(s => s.Player.Id, s => s.Rank);
+        return new(
+            state with
+            {
+                Phase = GamePhase.RoundIntro,
+                Players = [.. state.Players.Select(p => p with { PreviousRank = ranks.TryGetValue(p.Id, out var rank) ? rank : null })],
+                CurrentRound = new PlayedRound(NewRoundId(context.Random), index, State: null),
+            },
+            []);
+    }
 
     /// <summary>
     /// Starts the round announced that the game master names: a request sent twice, or by two consoles at once, starts it
@@ -43,7 +55,7 @@ internal static class RoundFlow
         }
 
         var playing = round with { State = started.State };
-        return Apply(state with { Phase = GamePhase.Round, CurrentRound = playing }, playing, started);
+        return Apply(state with { Phase = GamePhase.Round, CurrentRound = playing }, playing, started, context);
     }
 
     /// <summary>
@@ -73,7 +85,7 @@ internal static class RoundFlow
     /// timers are cancelled. The game then goes between two rounds, or is finished after the last one, as when the mode
     /// ends the round itself. A request sent twice, or by two consoles at once, skips the round only once.
     /// </summary>
-    public static Transition Skip(GameState state, SkipRound skip)
+    public static Transition Skip(GameState state, SkipRound skip, GameContext context)
     {
         if (state.Phase is not (GamePhase.Round or GamePhase.RoundIntro))
         {
@@ -87,7 +99,7 @@ internal static class RoundFlow
         }
 
         return new Transition(
-            state with { Phase = PhaseAfter(state, round), CurrentRound = round with { IsSkipped = true } },
+            Ended(state, context) with { CurrentRound = round with { IsSkipped = true } },
             [new CancelRoundTimers(round.Id)]);
     }
 
@@ -158,7 +170,7 @@ internal static class RoundFlow
             throw new InvalidOperationException($"Game mode for {descriptor.GetType().Name} rejected the resumption of a round: {rejection}.");
         }
 
-        return Apply(state, round, handled);
+        return Apply(state, round, handled, context);
     }
 
     private static Transition HandleIntent(GameState state, GameInput input, RoundId roundId, GameModes modes, GameContext context)
@@ -180,14 +192,14 @@ internal static class RoundFlow
     {
         var round = state.CurrentRound!;
         var handled = modes.For(state.Rounds[round.Index]).Handle(round.State!, input, state, context);
-        return Apply(state, round, handled);
+        return Apply(state, round, handled, context);
     }
 
     /// <summary>
     /// Folds what the game mode did into the game: its new round state, its effects with the timers marked, the points it
     /// awards, and the end of the round, after which the game goes between two rounds, or is finished after the last one.
     /// </summary>
-    private static Transition Apply(GameState state, PlayedRound round, RoundTransition handled)
+    private static Transition Apply(GameState state, PlayedRound round, RoundTransition handled, GameContext context)
     {
         if (handled.Rejection is { } rejection)
         {
@@ -203,22 +215,21 @@ internal static class RoundFlow
             return new Transition(state, effects);
         }
 
-        var phase = handled.IsFinished ? PhaseAfter(state, round) : GamePhase.Round;
-        return new Transition(
-            state with
-            {
-                Phase = phase,
-                Players = Award(state.Players, handled.Points),
-                CurrentRound = round with { State = handled.State },
-            },
-            effects);
+        var played = state with
+        {
+            Players = Award(state.Players, handled.Points),
+            CurrentRound = round with { State = handled.State },
+        };
+        return new Transition(handled.IsFinished ? Ended(played, context) : played, effects);
     }
 
     /// <summary>
-    /// The phase of the game once a round is over: between two rounds, or finished after the last one.
+    /// The game once its current round is over: between two rounds, or finished after the last one, from now on.
     /// </summary>
-    private static GamePhase PhaseAfter(GameState state, PlayedRound round) =>
-        round.Index == state.Rounds.Length - 1 ? GamePhase.Finished : GamePhase.BetweenRounds;
+    private static GameState Ended(GameState state, GameContext context) =>
+        state.CurrentRound!.Index == state.Rounds.Length - 1
+            ? state with { Phase = GamePhase.Finished, FinishedAt = context.Now }
+            : state with { Phase = GamePhase.BetweenRounds };
 
     /// <summary>
     /// Adds the points a round awards to the scores of the players. Players are never removed, so every player a round

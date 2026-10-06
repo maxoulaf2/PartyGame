@@ -36,6 +36,11 @@ namespace PartyGame.Contracts;
 /// The step of a pack the game master previews on the TV screen, in the lobby, or <see langword="null"/>. The phones never
 /// receive it: they stay on the lobby.
 /// </param>
+/// <param name="FinishedAt">
+/// When the game finished, in milliseconds since the Unix epoch on the clock of the server, once it is; <see langword="null"/>
+/// otherwise, and for a game saved before it existed. The screens reveal the podium step by step from then on, all at
+/// the same time, and a screen opened later knows where the reveal stands.
+/// </param>
 public sealed record DisplaySnapshot(
     GameId GameId,
     long Version,
@@ -47,4 +52,5 @@ public sealed record DisplaySnapshot(
     DisplayRoundView? RoundView,
     ImmutableArray<RankedPlayer> Ranking,
     bool JoinCodeShown,
-    DisplayPreview? Preview);
+    DisplayPreview? Preview,
+    long? FinishedAt);

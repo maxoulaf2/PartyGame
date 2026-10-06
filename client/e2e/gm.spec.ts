@@ -757,8 +757,24 @@ test('/gm/ ranks the players between two rounds, then offers to start the next o
         packTitle: 'Grande soirée',
         round: firstRound,
         ranking: [
-            { id: max, nickname: 'Max', isConnected: false, rank: 1, isTied: false, score: 2350 },
-            { id: zoe, nickname: 'Zoé', isConnected: true, rank: 2, isTied: false, score: 1000 },
+            {
+                id: max,
+                nickname: 'Max',
+                isConnected: false,
+                rank: 1,
+                isTied: false,
+                score: 2350,
+                previousRank: null,
+            },
+            {
+                id: zoe,
+                nickname: 'Zoé',
+                isConnected: true,
+                rank: 2,
+                isTied: false,
+                score: 1000,
+                previousRank: null,
+            },
         ],
         nextRoundTitle: 'Culture générale',
     });
@@ -799,8 +815,24 @@ test('/gm/ shows the final ranking once the game is finished, with nothing left 
         packTitle: 'Grande soirée',
         round: lastRound,
         ranking: [
-            { id: max, nickname: 'Max', isConnected: false, rank: 1, isTied: true, score: 3000 },
-            { id: zoe, nickname: 'Zoé', isConnected: true, rank: 1, isTied: true, score: 3000 },
+            {
+                id: max,
+                nickname: 'Max',
+                isConnected: false,
+                rank: 1,
+                isTied: true,
+                score: 3000,
+                previousRank: null,
+            },
+            {
+                id: zoe,
+                nickname: 'Zoé',
+                isConnected: true,
+                rank: 1,
+                isTied: true,
+                score: 3000,
+                previousRank: null,
+            },
         ],
     });
 
