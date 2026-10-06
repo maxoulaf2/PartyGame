@@ -6,14 +6,18 @@ using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using PartyGame.Contracts;
+using PartyGame.Contracts.BlindTest;
+using PartyGame.Contracts.Buzzer;
+using PartyGame.Contracts.OpenQuestion;
 using PartyGame.Contracts.Quiz;
 using PartyGame.Server.Tests;
+using PartyGame.Tests.Shared.Audio;
 using ServerProgram = Server::Program;
 
 namespace PartyGame.Bots.Tests;
 
 /// <summary>
-/// Bots playing a whole game against a real server, reached in memory, with the real quiz mode and the real clock.
+/// Bots playing a whole game against a real server, reached in memory, with every real game mode and the real clock.
 /// </summary>
 public sealed class BotGameTests : IAsyncDisposable
 {
@@ -24,16 +28,25 @@ public sealed class BotGameTests : IAsyncDisposable
 
     public BotGameTests()
     {
-        // Two rounds of a single question, "Oui" (A) being the correct answer: the fast bots always choose it.
+        // Two quiz rounds of a single question, "Oui" (A) being the correct answer: the fast bots always choose it. Then one
+        // round of every other mode, which the game master judges at random.
         var packs = Directory.CreateDirectory(Path.Combine(_scratch.Path, "packs"));
         var pack = packs.CreateSubdirectory("bots");
-        var rounds = Enumerable.Range(1, 2).Select(number => $"Manche {number}").Select(title => new
+        var quizzes = Enumerable.Range(1, 2).Select(number => $"Manche {number}").Select(title => (object)new
         {
             type = "quiz",
             title,
             answerSeconds = 5,
             questions = new[] { new { text = "Question ?", choices = new[] { new { text = "Oui", correct = true }, new { text = "Non", correct = false } } } },
         });
+        object[] rounds =
+        [
+            .. quizzes,
+            new { type = "openquestion", title = "Libre", answerSeconds = 5, questions = new[] { new { text = "Capitale ?", answer = "Paris" } } },
+            new { type = "buzzer", title = "Buzzer", questions = new[] { new { text = "Question ?", answer = "Réponse" } } },
+            new { type = "blindtest", title = "Blind test", tracks = new[] { new { excerpt = new { file = "extrait.mp3", duration = 5 }, title = "Titre", artist = "Artiste" } } },
+        ];
+        File.WriteAllBytes(Path.Combine(pack.FullName, "extrait.mp3"), Mp3Samples.Constant(383));
         File.WriteAllText(Path.Combine(pack.FullName, "pack.json"), JsonSerializer.Serialize(new { formatVersion = 1, title = "Soirée des bots", rounds }));
 
         _factory = new WebApplicationFactory<ServerProgram>().WithWebHostBuilder(builder => builder
@@ -74,14 +87,14 @@ public sealed class BotGameTests : IAsyncDisposable
         var players = behaviors
             .Select((behavior, index) => new BotPlayer(ServerUrl, $"Bot {index + 1:00}", behavior, stats, TimeSpan.FromSeconds(1), InMemory))
             .ToList();
-        await using var gameMaster = new BotGameMaster(ServerUrl, Code, "bots", players.Count, TimeSpan.FromMilliseconds(100), InMemory);
+        await using var gameMaster = new BotGameMaster(ServerUrl, Code, "bots", players.Count, TimeSpan.FromMilliseconds(100), InMemory, TimeSpan.FromSeconds(3));
         using var stopping = CancellationTokenSource.CreateLinkedTokenSource(Ct);
 
         try
         {
             // When
             var playing = players.Select(player => player.RunAsync(stopping.Token)).ToList();
-            await gameMaster.RunAsync(stopping.Token).WaitAsync(TimeSpan.FromSeconds(90), Ct);
+            await gameMaster.RunAsync(stopping.Token).WaitAsync(TimeSpan.FromSeconds(120), Ct);
 
             // Then: every bot reaches the final ranking, flaky ones included once they are back
             await WaitUntilAsync(() => players.All(player => player.Snapshot?.Phase == Phase.Finished));
@@ -108,6 +121,11 @@ public sealed class BotGameTests : IAsyncDisposable
             Assert.All(
                 views.Where(view => view.Reveal is not null),
                 view => Assert.Equal(view.Reveal!.Answers.Length, view.Reveal.Answers.DistinctBy(answer => answer.PlayerId).Count()));
+
+            // And: every other mode was played up to its reveal
+            Assert.Contains(displayed, s => s.RoundView is OpenQuestionDisplayView { Reveal: not null });
+            Assert.Contains(displayed, s => s.RoundView is BuzzerDisplayView { Phase: BuzzerQuestionPhase.Revealed });
+            Assert.Contains(displayed, s => s.RoundView is BlindTestDisplayView { Phase: BlindTestTrackPhase.Revealed });
         }
     }
 

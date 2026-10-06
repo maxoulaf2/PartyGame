@@ -16,15 +16,16 @@ internal static class QuizBot
         view is { Participating: true, Answer: null, Phase: QuizQuestionPhase.Presentation or QuizQuestionPhase.Answering, ShownChoiceCount: > 0 };
 
     /// <summary>
-    /// When the bot answers, in server time (milliseconds), or null when it does not know yet or never answers.
+    /// When the bot answers a question that closes at <paramref name="answersCloseAt"/>, in server time (milliseconds), or
+    /// null when it does not know yet or never answers. Open questions are answered the same way.
     /// </summary>
-    public static long? AnswerAt(QuizPlayerView view, BotBehavior behavior, long now, Random random) => behavior switch
+    public static long? AnswerAt(long? answersCloseAt, BotBehavior behavior, long now, Random random) => behavior switch
     {
         BotBehavior.Fast => now,
 
         // A countdown starts once the last choice shows: the slow bot waits for it.
-        BotBehavior.Slow => view.AnswersCloseAt - SlowMarginMs,
-        BotBehavior.Random or BotBehavior.Flaky => Math.Min(now + random.NextInt64(500, 4000), (view.AnswersCloseAt ?? long.MaxValue) - SlowMarginMs),
+        BotBehavior.Slow => answersCloseAt - SlowMarginMs,
+        BotBehavior.Random or BotBehavior.Flaky => Math.Min(now + random.NextInt64(500, 4000), (answersCloseAt ?? long.MaxValue) - SlowMarginMs),
         _ => null,
     };
 
