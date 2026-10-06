@@ -130,8 +130,59 @@ public sealed class OpenQuestionAnswersTests
         AssertRejected(OpenQuestionGames.Answering(Presented(), (1, "Vinci")), s => OpenQuestionGames.Answer(s, 1, "Michel-Ange"), RejectionReason.AlreadyAnswered);
 
     [Fact]
-    public void Handle_SubmitAnswer_BeforeTheQuestionShows_IsRejected() =>
-        AssertRejected(Presented(), s => OpenQuestionGames.Answer(s, 1, "Vinci"), RejectionReason.PhaseMismatch);
+    public void Handle_SubmitAnswer_WhileTheQuestionIsRead_RecordsItWithoutLockingTheAnswers()
+    {
+        // Given: everybody answers but Léa, while the game master reads the question
+        var state = OpenQuestionGames.Accepted(Presented(), OpenQuestionGames.Answer(Presented(), 1, "Vinci"));
+        state = OpenQuestionGames.Accepted(state, OpenQuestionGames.Answer(state, 2, "Picasso"));
+
+        // When
+        var transition = OpenQuestionGames.Engine.Handle(state, OpenQuestionGames.Answer(state, 3, "Monet"), Games.Context());
+
+        // Then: the participants are fixed only when the question shows
+        Assert.Null(transition.Rejection);
+        Assert.Empty(transition.Effects);
+        var round = OpenQuestionGames.RoundOf(transition.State);
+        Assert.Equal((OpenQuestionPhase.Presentation, 3), (round.Phase, round.Answers.Count));
+    }
+
+    [Fact]
+    public void Handle_SubmitAnswer_SecondWhileTheQuestionIsRead_IsRejected() =>
+        AssertRejected(OpenQuestionGames.Accepted(Presented(), OpenQuestionGames.Answer(Presented(), 1, "Vinci")), s => OpenQuestionGames.Answer(s, 1, "Michel-Ange"), RejectionReason.AlreadyAnswered);
+
+    [Fact]
+    public void Handle_ShowQuestion_SomeAnsweredWhileItWasRead_KeepsTheirAnswersAndStartsTheCountdown()
+    {
+        // Given
+        var state = OpenQuestionGames.Accepted(Presented(), OpenQuestionGames.Answer(Presented(), 1, "Vinci"));
+
+        // When
+        var transition = OpenQuestionGames.Engine.Handle(state, OpenQuestionGames.ShowQuestion(state), Games.Context());
+
+        // Then
+        var round = OpenQuestionGames.RoundOf(transition.State);
+        Assert.Equal(OpenQuestionPhase.Answering, round.Phase);
+        Assert.Equal("Vinci", round.Answers[Games.PlayerIdOf(1)].Text);
+        Assert.IsType<ScheduleTimer>(Assert.Single(transition.Effects));
+    }
+
+    [Fact]
+    public void Handle_ShowQuestion_EverybodyAnsweredWhileItWasRead_LocksTheAnswers()
+    {
+        // Given
+        var state = Presented();
+        foreach (var player in new[] { 1, 2, 3 })
+        {
+            state = OpenQuestionGames.Accepted(state, OpenQuestionGames.Answer(state, player, "Vinci"));
+        }
+
+        // When
+        var transition = OpenQuestionGames.Engine.Handle(state, OpenQuestionGames.ShowQuestion(state), Games.Context());
+
+        // Then: no countdown to wait for
+        Assert.Equal(OpenQuestionPhase.Locked, OpenQuestionGames.RoundOf(transition.State).Phase);
+        Assert.Empty(transition.Effects);
+    }
 
     [Fact]
     public void Handle_SubmitAnswer_ReceivedAtTheDeadline_IsRejectedEvenBeforeTheTimer() =>

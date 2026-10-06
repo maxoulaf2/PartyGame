@@ -10,7 +10,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// <param name="QuestionCount">Number of questions of the round.</param>
 /// <param name="Phase">Phase of the question.</param>
 /// <param name="Text">The text of the question, shown to the game master before the TV screen, so that they read it out.</param>
-/// <param name="QuestionShown">Whether the TV screen shows the question, which opens the answers.</param>
+/// <param name="QuestionShown">Whether the TV screen shows the question, which starts the countdown of the answers.</param>
 /// <param name="ExpectedAnswer">The expected answer, as the pack writes it.</param>
 /// <param name="AcceptedAnswers">The other answers the pack accepts, as it writes them.</param>
 /// <param name="AnswersCloseAt">
@@ -18,7 +18,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// <see langword="null"/> otherwise.
 /// </param>
 /// <param name="Answers">
-/// The players taking part in the question, in order of arrival, each with their answer: empty until the answers open.
+/// The players taking part in the question, in order of arrival, each with their answer: empty until the question shows.
 /// </param>
 /// <param name="Groups">
 /// The answers received, identical ones once normalized grouped together, pre-classified by the server and listed

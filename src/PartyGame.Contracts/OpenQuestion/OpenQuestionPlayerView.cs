@@ -15,7 +15,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// </param>
 /// <param name="Participating">
 /// Whether the player takes part in the question: always before the question shows, then only if they were registered
-/// when it showed, opening the answers. A player who joined meanwhile plays from the next question.
+/// when it showed. A player who joined meanwhile plays from the next question.
 /// </param>
 /// <param name="Answer">
 /// The answer this player sent, as typed, or <see langword="null"/> while they have not answered.
