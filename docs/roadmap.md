@@ -205,6 +205,8 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
 
 **À trancher :** jeu en équipes ou en individuel, et participation à la manche en cours et points de départ d'un joueur qui arrive en cours de partie (les inscriptions restent ouvertes, décision E04).
 
+**Tranché :** jeu en individuel seulement, retardataire qui joue dès la prochaine question ouverte avec 0 point (le GM peut ajuster son score), pause en gel complet (comptes à rebours et audio arrêtés, intentions refusées), introduction de manche pilotée par le GM, sons embarqués remplaçables par le pack. Voir les README des épopées E18 à E20.
+
 ---
 
 ## Phase 7 — Raspberry Pi et terrain
@@ -238,6 +240,7 @@ Ce document découpe le projet en phases et en épopées. Il sert de base à l'�
   - devinettes en émojis ;
   - mise de points avant la question ;
   - élimination jusqu'au dernier survivant.
+- **Jeu en équipes** (écarté en phase 6 au profit du jeu en individuel).
 - **HTTPS en local** (domaine réel pointant vers l'IP locale, certificat via validation DNS), qui débloquerait la caméra, le micro et les capteurs, et donc des modes photo, chant ou « secouer le téléphone ».
 - **Hébergement en ligne.**
 - **Historique et statistiques des soirées**, et export des scores.
