@@ -3,6 +3,7 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+export type * from './AdjustScoreRequest';
 export type * from './Announcement';
 export type * from './AnnouncementRefusal';
 export type * from './AnnouncementResult';

@@ -39,6 +39,7 @@ import type {
     StartRoundRequest,
     ReturnToLobbyRequest,
     PauseGameRequest,
+    AdjustScoreRequest,
     StaleBuildReport,
     StartGameResult,
 } from '../contracts';
@@ -73,6 +74,7 @@ export interface GameHubMethods {
     ReturnToLobby: { args: [request: ReturnToLobbyRequest]; result: null };
     ShowJoinCode: { args: [request: ShowJoinCodeRequest]; result: null };
     PauseGame: { args: [request: PauseGameRequest]; result: null };
+    AdjustScore: { args: [request: AdjustScoreRequest]; result: null };
     StartPreview: { args: [request: StartPreviewRequest]; result: null };
     ShowPreviewStep: { args: [request: ShowPreviewStepRequest]; result: null };
     StopPreview: { args: []; result: null };

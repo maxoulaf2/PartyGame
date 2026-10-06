@@ -63,6 +63,12 @@ public sealed class SnapshotsLeakTests
         // Once the game is finished, a late arrival is not ranked: neither are they shown to the others.
         yield return ("late arrival", Games.Accepted(Games.WithScores(Games.InPhase(phase, "Zoé", "Max"), 1000, 2000), Games.Join("Léa", player: 3)));
 
+        // A score adjusted by the game master is a score like any other: a phone sees its own total only.
+        if (phase != GamePhase.Lobby)
+        {
+            yield return ("adjusted score", Games.Accepted(Games.InPhase(phase, "Zoé", "Max"), new AdjustScore(Games.PlayerIdOf(2), 0, 4321, Games.Now)));
+        }
+
         var neighbour = Games.ValidPack("pack-voisin", "Titre voisin", [new FakeRoundDescriptor { Title = "Manche voisine" }]);
         var packs = Games.Loaded(Games.Pack, neighbour, Games.InvalidPack("pack-casse", "Titre cassé"));
         yield return ("other packs", Games.PlayedUpTo(phase, Games.Accepted(Games.LobbyWith("Zoé", "Max"), packs)));
@@ -173,6 +179,15 @@ public sealed class SnapshotsLeakTests
             Games.WithScores(state, 3000, 1000),
             Games.WithScores(state, 5000, 1000),
             Audience.OtherPlayersThan("Zoé"));
+        if (phase != GamePhase.Lobby)
+        {
+            yield return new SecretPair<GameState>(
+                "adjusted score of another player",
+                Games.WithScores(state, 3000, 1000),
+                Games.Accepted(Games.WithScores(state, 3000, 1000), new AdjustScore(state.Players[0].Id, 3000, 5000, Games.Now)),
+                Audience.OtherPlayersThan("Zoé"));
+        }
+
         // Nor where the others stood in the ranking before.
         yield return new SecretPair<GameState>(
             "previous rank of another player",

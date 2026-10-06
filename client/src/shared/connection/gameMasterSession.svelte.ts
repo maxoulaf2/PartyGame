@@ -77,6 +77,7 @@ type GameMasterIntentMethod =
     | 'ReturnToLobby'
     | 'ShowJoinCode'
     | 'PauseGame'
+    | 'AdjustScore'
     | 'StartPreview'
     | 'ShowPreviewStep'
     | 'StopPreview'
@@ -312,6 +313,18 @@ export class GameMasterSession {
      */
     pauseGame(gameId: GameId, paused: boolean): Promise<IntentOutcome> {
         return this.#send('PauseGame', { gameId, paused });
+    }
+
+    /**
+     * Corrects the score of `playerId` from `expectedScore`, as the console shows it, to `newScore`.
+     * Naming the score corrected, the request never applies twice, nor over another console's.
+     */
+    adjustScore(
+        playerId: PlayerId,
+        expectedScore: number,
+        newScore: number,
+    ): Promise<IntentOutcome> {
+        return this.#send('AdjustScore', { playerId, expectedScore, newScore });
     }
 
     /**

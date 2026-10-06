@@ -191,4 +191,16 @@ public enum RejectionReason
 
     /// <summary>The game is paused: nothing moves in a round until the game master resumes it.</summary>
     GamePaused,
+
+    /// <summary>The game master adjusts a score in the lobby, before the game is started.</summary>
+    NotAdjustable,
+
+    /// <summary>The game master gives a player a negative score.</summary>
+    ScoreNegative,
+
+    /// <summary>
+    /// The game master corrects a score that is no longer the one of the player: the request is obsolete, for instance sent
+    /// twice or by a second game master console.
+    /// </summary>
+    ScoreObsolete,
 }
