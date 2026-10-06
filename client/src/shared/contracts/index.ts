@@ -71,6 +71,7 @@ export type * from './NetworkDiagnosticReport';
 export type * from './NetworkHealth';
 export type * from './NextRoundRequest';
 export type * from './OpenQuestionAnswerCategory';
+export type * from './OpenQuestionDisplayParticipant';
 export type * from './OpenQuestionDisplayReveal';
 export type * from './OpenQuestionDisplayView';
 export type * from './OpenQuestionGameMasterAnswer';

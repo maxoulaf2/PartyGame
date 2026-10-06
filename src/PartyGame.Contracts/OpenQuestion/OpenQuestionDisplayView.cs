@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace PartyGame.Contracts.OpenQuestion;
 
 /// <summary>
@@ -20,6 +22,10 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// How many players take part in the question, the players registered when the question showed, connected or not: 0
 /// until then.
 /// </param>
+/// <param name="Participants">
+/// The players taking part, in order of arrival in the game, once the question shows and until its reveal: empty
+/// otherwise.
+/// </param>
 /// <param name="Reveal">The expected answer and every answer received, once revealed; <see langword="null"/> before.</param>
 public sealed record OpenQuestionDisplayView(
     int QuestionNumber,
@@ -30,4 +36,5 @@ public sealed record OpenQuestionDisplayView(
     long? AnswersCloseAt,
     int AnsweredCount,
     int ParticipantCount,
+    ImmutableArray<OpenQuestionDisplayParticipant> Participants,
     OpenQuestionDisplayReveal? Reveal) : DisplayRoundView;

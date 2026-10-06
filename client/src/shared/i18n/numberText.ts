@@ -7,3 +7,13 @@ const french = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
 export function formatNumber(value: number): string {
     return french.format(value);
 }
+
+const tenths = new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+});
+
+/** Writes a duration in seconds to the tenth, the French way (« 4,3 »): how fast a player answered. */
+export function formatSeconds(milliseconds: number): string {
+    return tenths.format(milliseconds / 1000);
+}

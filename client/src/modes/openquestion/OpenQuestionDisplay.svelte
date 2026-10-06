@@ -3,6 +3,7 @@
     import type { OpenQuestionDisplayView } from '../../shared/contracts';
     import { fill } from '../../shared/i18n/fill';
     import { fr } from '../../shared/i18n/fr';
+    import { formatSeconds } from '../../shared/i18n/numberText';
     import type { DisplayViewProps } from '../../shared/modeViews';
 
     let { view, round, clock, reportMediaFailure }: DisplayViewProps<OpenQuestionDisplayView> =
@@ -13,6 +14,9 @@
     let failedImage = $state<string | null>(null);
     const image = $derived(view.imageUrl !== failedImage ? view.imageUrl : null);
     const locked = $derived(view.phase === 'Locked' || view.phase === 'Judged');
+
+    // A tilt each, as the stickers of the lobby, taken in turn in the order of arrival.
+    const tilts = [-2, 1.5, -1, 2, -1.5, 1];
 
     function imageFailed(url: string) {
         failedImage = url;
@@ -75,6 +79,41 @@
             <h1>{view.text}</h1>
         {/if}
     </div>
+    {#if view.participants.length > 0}
+        <!-- Who answered and how fast, never what: a ghost until then, a sticker slapped on once
+             they did. Told by the time and its mark too, never by the color alone. -->
+        <ul class="participants" aria-label={fr.modes.openquestion.display.participantsLabel}>
+            {#each view.participants as participant, index (index)}
+                {@const time = participant.answerMilliseconds}
+                <li class:answered={time !== null} style:--tilt="{tilts[index % tilts.length]}deg">
+                    <!-- Plain text interpolation: Svelte escapes nicknames. -->
+                    <span class="nickname">{participant.nickname}</span>
+                    {#if time === null}
+                        <!-- The room of the time, kept so that no sticker moves when one answers. -->
+                        <span class="time" aria-hidden="true">…</span>
+                        <span class="visually-hidden">
+                            ({fr.modes.openquestion.display.waitingMark})
+                        </span>
+                    {:else}
+                        <span class="time">
+                            <svg
+                                viewBox="0 0 24 24"
+                                width="1em"
+                                height="1em"
+                                role="img"
+                                aria-label={fr.modes.openquestion.display.answeredMark}
+                            >
+                                <path d="M4 12.5l5 5L20 6.5" />
+                            </svg>
+                            {fill(fr.modes.openquestion.display.answerTime, {
+                                seconds: formatSeconds(time),
+                            })}
+                        </span>
+                    {/if}
+                </li>
+            {/each}
+        </ul>
+    {/if}
     {#if locked && view.answeredCount > 0}
         <!-- Neither verdict nor answer before the reveal: only that the game master checks them. -->
         <p class="checking">{fr.modes.openquestion.display.checking}</p>
@@ -206,7 +245,8 @@
     img {
         flex: none;
         max-width: 40vw;
-        max-height: 60vh;
+        /* Leaves its room to the participants below. */
+        max-height: min(60vh, 100%);
         border-radius: var(--radius);
         object-fit: contain;
     }
@@ -216,6 +256,85 @@
         font-size: 4rem;
         line-height: 1.2;
         overflow-wrap: anywhere;
+    }
+
+    /* Up to 20 players fit below the question, from the back of the room. */
+    .participants {
+        display: flex;
+        flex: none;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1.5vh 1.2vw;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* Not answered yet: a ghost of a sticker, dashed, flat on the ground. */
+    .participants li {
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+        min-width: 0;
+        padding: 0.15em 0.5em;
+        border: var(--sticker-line) dashed var(--color-text-muted);
+        border-radius: calc(14 * var(--u));
+        color: var(--color-text-muted);
+        font-size: 1.625rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    /* Answered: a cream sticker, outlined, tilted, with its hard drop shadow. The individual
+       rotate property leaves transform to the animation. */
+    .participants li.answered {
+        border-style: solid;
+        border-color: var(--color-ink);
+        background: var(--color-surface);
+        box-shadow: 0 calc(4 * var(--u)) 0 var(--color-ink);
+        color: var(--color-ink);
+        rotate: var(--tilt);
+    }
+
+    .nickname {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* As wide as « 10,3 s » with its mark, answered or not. */
+    .time {
+        display: flex;
+        flex: none;
+        justify-content: center;
+        align-items: center;
+        gap: 0.2em;
+        min-width: 4.6em;
+        padding: 0 0.45em;
+        border-radius: 999px;
+        font-size: 0.85em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .answered .time {
+        background: var(--color-ink);
+        color: var(--color-accent);
+    }
+
+    .time svg {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 3.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
 
     /* Once revealed, the question gives its room to the answers: 20 players fit without
@@ -267,7 +386,7 @@
         overflow-wrap: anywhere;
     }
 
-    ul {
+    .reveal ul {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1vh 1vw;
@@ -276,7 +395,7 @@
         list-style: none;
     }
 
-    li {
+    .reveal li {
         display: flex;
         flex-direction: column;
         padding: 0.3em 0.6em;
@@ -289,7 +408,7 @@
     }
 
     /* Told by its icon as well, never by its color alone. */
-    li.correct {
+    .reveal li.correct {
         background: var(--color-accent);
         color: var(--color-ink);
     }
@@ -305,7 +424,7 @@
         line-clamp: 2;
     }
 
-    li svg {
+    .reveal li svg {
         vertical-align: -0.125em;
         fill: none;
         stroke: currentColor;
@@ -334,7 +453,12 @@
 
         /* The expected answer and the answers accepted, the moment they are revealed. */
         .expected,
-        li.correct {
+        .reveal li.correct {
+            animation: reveal-highlight 0.6s ease-out;
+        }
+
+        /* The sticker of a player, the moment they answer. */
+        .participants li.answered {
             animation: reveal-highlight 0.6s ease-out;
         }
     }

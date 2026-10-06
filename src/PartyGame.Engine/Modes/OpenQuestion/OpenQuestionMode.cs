@@ -166,6 +166,9 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
             // How many answered, never what, once the question shows.
             shown ? round.Answers.Count : 0,
             round.Participants.Length,
+
+            // Once revealed, the answers tell the rest.
+            shown && round.Phase != OpenQuestionPhase.Revealed ? ParticipantsOf(round, game) : [],
             round.Phase == OpenQuestionPhase.Revealed ? RevealOf(round, game) : null);
     }
 
@@ -269,7 +272,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         }
 
         // Fixed now, so that the last answer expected is known: a player who joins later plays the next question.
-        var closeAt = context.Now.AddSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds);
+        var closeAt = context.Now + AnswerTimeOf(round);
         var shown = round with { Participants = [.. game.Players.Select(player => player.Id)], AnswersCloseAt = closeAt };
         return shown.Answers.Count == shown.Participants.Length
             ? new(Lock(shown), [])
@@ -323,7 +326,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
     /// </summary>
     private static int PointsFor(OpenQuestionRound round, OpenAnswer answer)
     {
-        var duration = TimeSpan.FromSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds).Ticks;
+        var duration = AnswerTimeOf(round).Ticks;
 
         // Set when the question showed, which opened the answers: any answer has one.
         var left = Math.Clamp((round.AnswersCloseAt!.Value - answer.ReceivedAt).Ticks, 0, duration);
@@ -474,6 +477,30 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
             [.. groups],
             [.. round.Participants.Where(player => !round.Answers.ContainsKey(player)).Select(NicknameOf)]);
     }
+
+    /// <summary>
+    /// The participants as the TV screen lists them, each with the time they took to answer since the question showed: no
+    /// less than 0 for an answer sent while it was read.
+    /// </summary>
+    private static ImmutableArray<OpenQuestionDisplayParticipant> ParticipantsOf(OpenQuestionRound round, GameState game)
+    {
+        // Set when the question showed, as the countdown started.
+        var shownAt = round.AnswersCloseAt!.Value - AnswerTimeOf(round);
+        return
+        [
+            .. game.Players
+                .Where(player => round.Participants.Contains(player.Id))
+                .Select(player => new OpenQuestionDisplayParticipant(
+                    player.Nickname,
+                    round.Answers.TryGetValue(player.Id, out var answer) ? Math.Max(0, (long)(answer.ReceivedAt - shownAt).TotalMilliseconds) : null)),
+        ];
+    }
+
+    /// <summary>
+    /// The time given to answer the question in progress.
+    /// </summary>
+    private static TimeSpan AnswerTimeOf(OpenQuestionRound round) =>
+        TimeSpan.FromSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds);
 
     /// <summary>
     /// When the answers close, while their countdown runs: the screens count down to it.

@@ -1147,6 +1147,65 @@ test('/display/ in kiosk mode never shows « Démarrer »', async ({ playwright,
     await browser.close();
 });
 
+test('/display/ fits the 20 players of an open question on a 1080p screen, each timed once answered', async ({
+    page,
+}) => {
+    const players = longNicknames(20);
+    await serveImage(page, '/media/question');
+    // The first 12 answered, the others not yet.
+    const participants = players.map((player, index) => ({
+        nickname: player.nickname,
+        answerMilliseconds: index < 12 ? 1_000 * index + 250 : null,
+    }));
+    const view: OpenQuestionDisplayView = {
+        type: 'openquestion',
+        questionNumber: 3,
+        questionCount: 5,
+        phase: 'Answering',
+        text: longText('Qui a peint', 200),
+        imageUrl: '/media/question',
+        answersCloseAt: Date.now() + 60_000,
+        answeredCount: 12,
+        participantCount: 20,
+        participants,
+        reveal: null,
+    };
+    await serveDisplaySnapshot(page, fakeSnapshot(players, advertisedAddress, 'Round', view));
+
+    await page.goto('/display/');
+
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('The test needs a fixed viewport');
+    }
+    const list = page.getByRole('list', { name: fr.modes.openquestion.display.participantsLabel });
+    const items = list.getByRole('listitem');
+    await expect(items).toHaveCount(20);
+    await expect(
+        list.getByRole('img', { name: fr.modes.openquestion.display.answeredMark }),
+    ).toHaveCount(12);
+    await expect(items.nth(1)).toContainText('1,3 s');
+    for (const item of await items.all()) {
+        await expect(item).toBeVisible();
+        expectWithinSafeArea(await item.boundingBox(), viewport);
+        const fontSize = await item.evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+        );
+        expect(fontSize).toBeGreaterThanOrEqual(26);
+    }
+    // The question stays clear of the stickers.
+    const question = await page.getByRole('heading', { level: 1 }).boundingBox();
+    const stickers = await list.boundingBox();
+    expect(question && stickers && question.y + question.height <= stickers.y).toBe(true);
+    const overflows = await page.evaluate(() => {
+        const main = document.querySelector('main');
+        return (
+            !main || main.scrollHeight > main.clientHeight || main.scrollWidth > main.clientWidth
+        );
+    });
+    expect(overflows).toBe(false);
+});
+
 test('/display/ fits the reveal of an open question answered by 20 players on a 1080p screen', async ({
     page,
 }) => {
@@ -1170,6 +1229,7 @@ test('/display/ fits the reveal of an open question answered by 20 players on a 
         answersCloseAt: null,
         answeredCount: 19,
         participantCount: 20,
+        participants: [],
         reveal: {
             expectedAnswer: 'Léonard de Vinci',
             groups,

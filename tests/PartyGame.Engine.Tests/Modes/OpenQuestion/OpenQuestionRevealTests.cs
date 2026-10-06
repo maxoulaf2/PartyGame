@@ -152,6 +152,7 @@ public sealed class OpenQuestionRevealTests
             [("de vinci", true, "Zoé"), ("Picasso", false, "Max, Léa")],
             reveal.Groups.Select(group => (group.Text, group.Correct, string.Join(", ", group.Nicknames))));
         Assert.Equal(["Tom"], reveal.WithoutAnswer);
+        Assert.Empty(view.Participants);
     }
 
     [Fact]
