@@ -5,14 +5,16 @@
     import { fr } from '../shared/i18n/fr';
 
     interface Props {
-        /** The round in progress, which keeps failing. */
+        /** The round announced or in progress. */
         roundId: RoundId;
+        /** Whether the round keeps failing: the offer to skip it is then an alert. */
+        failing: boolean;
         session: GameMasterSession;
         /** Whether the page is synchronized with the server: everything is disabled otherwise. */
         interactive: boolean;
     }
 
-    let { roundId, session, interactive }: Props = $props();
+    let { roundId, failing, session, interactive }: Props = $props();
 
     let confirming = $state(false);
     let sending = $state(false);
@@ -36,13 +38,23 @@
 </script>
 
 <!-- Outside the view of the round: it stays offered even when that view cannot be shown. -->
-<section class="banner" role="alert">
-    <p class="problem">{fr.gm.skipRound.problem}</p>
-    <p id="skip-round-hint" class="hint">{fr.gm.skipRound.hint}</p>
+{#if failing}
+    <section class="banner" role="alert">
+        <p class="problem">{fr.gm.skipRound.problem}</p>
+        <p id="skip-round-hint" class="hint">{fr.gm.skipRound.hint}</p>
+        {@render offer()}
+    </section>
+{:else}
+    <section class="plain">
+        {@render offer()}
+    </section>
+{/if}
+
+{#snippet offer()}
     <button
         type="button"
         disabled={!canSkip}
-        aria-describedby="skip-round-hint"
+        aria-describedby={failing ? 'skip-round-hint' : undefined}
         onclick={() => {
             failed = false;
             confirming = true;
@@ -53,7 +65,7 @@
     {#if failed}
         <p class="failed">{fr.gm.skipRound.failed}</p>
     {/if}
-</section>
+{/snippet}
 {#if confirming}
     <ConfirmDialog
         title={fr.gm.skipRound.confirmTitle}
@@ -75,6 +87,17 @@
         border-radius: var(--radius);
         background: var(--color-accent);
         color: var(--color-bg);
+    }
+
+    .plain {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .plain button {
+        border-color: var(--color-accent);
+        background: transparent;
     }
 
     p {

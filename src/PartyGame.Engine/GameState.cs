@@ -107,6 +107,12 @@ public sealed record GameState(
     public DateTimeOffset? PausedAt { get; init; }
 
     /// <summary>
+    /// The programme of the rounds, around <see cref="CurrentRound"/>; <see cref="RoundSchedule.Empty"/> in the lobby. Only
+    /// the game master sees it. Absent from a game saved before it existed: the loader then follows the order of the pack.
+    /// </summary>
+    public RoundSchedule Schedule { get; init; } = RoundSchedule.Empty;
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>

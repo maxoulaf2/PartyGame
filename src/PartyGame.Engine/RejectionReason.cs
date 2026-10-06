@@ -203,4 +203,22 @@ public enum RejectionReason
     /// twice or by a second game master console.
     /// </summary>
     ScoreObsolete,
+
+    /// <summary>The game master changes the programme outside a game in progress: in the lobby, or once it is finished.</summary>
+    NotReorderable,
+
+    /// <summary>
+    /// The game master replaces a programme that is no longer the current one: the request is obsolete, for instance sent
+    /// twice or by a second game master console.
+    /// </summary>
+    ScheduleObsolete,
+
+    /// <summary>The game master names a round the pack does not have.</summary>
+    RoundUnknown,
+
+    /// <summary>The game master moves or withdraws a round already played, or the current one.</summary>
+    RoundFixed,
+
+    /// <summary>The new programme does not hold exactly the rounds to come and withdrawn, each once.</summary>
+    ScheduleIncomplete,
 }

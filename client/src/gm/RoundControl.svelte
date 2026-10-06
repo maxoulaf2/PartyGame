@@ -98,9 +98,12 @@
             aria-describedby="next-round-hint"
             onclick={() => advance(() => session.nextRound(round.roundId))}
         >
-            {fr.gm.nextRound.action}
+            {snapshot.nextRoundTitle === null ? fr.gm.nextRound.finish : fr.gm.nextRound.action}
         </button>
-        <p id="next-round-hint" class="hint">{fr.gm.nextRound.hint}</p>
+        <!-- Every round to come withdrawn: the next step is the final ranking. -->
+        <p id="next-round-hint" class="hint">
+            {snapshot.nextRoundTitle === null ? fr.gm.nextRound.finishHint : fr.gm.nextRound.hint}
+        </p>
         <!-- After the action: with many players, a long ranking would push it out of sight. -->
         <h3>{fill(fr.game.rankingAfter, { number: round.number })}</h3>
         <RankingList ranking={snapshot.ranking} />

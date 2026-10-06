@@ -58,6 +58,7 @@ function fakeLobby(
         joinCodeShown: false,
         preview: null,
         pausedAt: null,
+        schedule: [],
     };
 }
 

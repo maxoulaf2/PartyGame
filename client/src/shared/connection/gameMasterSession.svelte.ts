@@ -8,6 +8,7 @@ import type {
     ReloadPacksRefusal,
     RenamePlayerRefusal,
     RoundId,
+    ScheduledRound,
     SelectPackRefusal,
     StartGameRefusal,
 } from '../contracts';
@@ -78,6 +79,7 @@ type GameMasterIntentMethod =
     | 'ShowJoinCode'
     | 'PauseGame'
     | 'AdjustScore'
+    | 'ReorderRounds'
     | 'StartPreview'
     | 'ShowPreviewStep'
     | 'StopPreview'
@@ -325,6 +327,19 @@ export class GameMasterSession {
         newScore: number,
     ): Promise<IntentOutcome> {
         return this.#send('AdjustScore', { playerId, expectedScore, newScore });
+    }
+
+    /**
+     * Replaces the programme of `gameId`, the rounds to come then those withdrawn as the console
+     * shows them in `expectedOrder`, by `newOrder`. Naming the programme replaced, the request
+     * never applies twice, nor over another console's.
+     */
+    reorderRounds(
+        gameId: GameId,
+        expectedOrder: readonly ScheduledRound[],
+        newOrder: readonly ScheduledRound[],
+    ): Promise<IntentOutcome> {
+        return this.#send('ReorderRounds', { gameId, expectedOrder, newOrder });
     }
 
     /**

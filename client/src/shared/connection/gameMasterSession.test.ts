@@ -182,6 +182,7 @@ function snapshot(version: number): GameMasterSnapshot {
         joinCodeShown: false,
         preview: null,
         pausedAt: null,
+        schedule: [],
     };
 }
 

@@ -89,6 +89,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="AdjustScoreAsync"/>, as the clients call it.</summary>
     public const string AdjustScore = nameof(AdjustScore);
 
+    /// <summary>SignalR target of <see cref="ReorderRoundsAsync"/>, as the clients call it.</summary>
+    public const string ReorderRounds = nameof(ReorderRounds);
+
     /// <summary>SignalR target of <see cref="ShowJoinCodeAsync"/>, as the clients call it.</summary>
     public const string ShowJoinCode = nameof(ShowJoinCode);
 
@@ -713,6 +716,34 @@ internal sealed class GameHub(
         if (outcome.Status == InputStatus.Accepted)
         {
             logger.ScoreAdjusted(request.PlayerId.Value, request.ExpectedScore, request.NewScore);
+        }
+    }
+
+    /// <summary>
+    /// Changes the programme of the rounds at the request of the game master. The loop alone decides whether the request
+    /// still makes sense, so that a request sent twice or two consoles never change the programme twice. Nothing is
+    /// answered: the snapshots show the programme either way.
+    /// </summary>
+    /// <param name="message">A <see cref="ReorderRoundsRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(ReorderRounds)]
+    public async Task ReorderRoundsAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ReorderRoundsRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ReorderRounds, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        var outcome = await inputs
+            .SubmitAsync(
+                new Engine.Inputs.ReorderRounds(request.GameId, request.ExpectedOrder, request.NewOrder, timeProvider.GetUtcNow()),
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status == InputStatus.Accepted)
+        {
+            logger.RoundsReordered(request.GameId.Value);
         }
     }
 

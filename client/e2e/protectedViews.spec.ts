@@ -166,6 +166,7 @@ function gameMasterSnapshot(
         joinCodeShown: false,
         preview: null,
         pausedAt: null,
+        schedule: [],
     };
 }
 

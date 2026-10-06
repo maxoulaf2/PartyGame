@@ -405,6 +405,10 @@ export const fr = {
             upcoming: 'Manche suivante ({number}/{count}) : {title}',
             action: 'Manche suivante',
             hint: 'Tous les écrans annoncent la manche suivante et rappellent sa règle, avant qu’elle commence.',
+            // Once every round to come is withdrawn from the programme.
+            finish: 'Classement final',
+            finishHint:
+                'Plus aucune manche au programme : tous les écrans passent au classement final.',
         },
         // While a round is announced: the game master tells its rule, then starts it.
         startRound: {
@@ -525,6 +529,26 @@ export const fr = {
                 unknown: 'Ce joueur est introuvable.',
                 failed: 'Le renommage n’a pas abouti : réessayez.',
             },
+        },
+        // The programme of the rounds, once the game is started: the TV and the phones never see it.
+        schedule: {
+            title: 'Programme',
+            status: {
+                Played: 'Jouée',
+                Skipped: 'Passée',
+                Current: 'Actuelle',
+                Upcoming: 'À venir',
+                Withdrawn: 'Retirée',
+            },
+            up: 'Monter',
+            down: 'Descendre',
+            withdraw: 'Retirer',
+            putBack: 'Remettre',
+            // Read by screen readers: the buttons of each round must be told apart.
+            upFor: 'Monter {title}',
+            downFor: 'Descendre {title}',
+            withdrawFor: 'Retirer {title}',
+            putBackFor: 'Remettre {title}',
         },
         adjustScore: {
             action: 'Modifier le score',

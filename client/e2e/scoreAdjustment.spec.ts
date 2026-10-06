@@ -33,17 +33,20 @@ test('the game master adjusts a score, which the phone of the player shows', asy
             name: fill(fr.gm.adjustScore.actionFor, { nickname: zoe.nickname }),
         })
         .click();
-    const amount = gm.getByLabel(fr.gm.adjustScore.amount, { exact: true });
+    const form = gm.getByRole('group', {
+        name: fill(fr.gm.adjustScore.legend, { nickname: zoe.nickname }),
+    });
+    const amount = form.getByLabel(fr.gm.adjustScore.amount, { exact: true });
     const confirm = gm.getByRole('button', { name: fr.gm.adjustScore.submit, exact: true });
 
     // Below zero: refused by the form.
-    await gm.getByText(fr.gm.adjustScore.modes.remove, { exact: true }).click();
+    await form.getByText(fr.gm.adjustScore.modes.remove, { exact: true }).click();
     await amount.fill('200');
     await expect(gm.getByText(fr.gm.adjustScore.negative)).toBeVisible();
     await expect(confirm).toBeDisabled();
 
     // A bonus: the totals before and after, then the phone shows the new one.
-    await gm.getByText(fr.gm.adjustScore.modes.add, { exact: true }).click();
+    await form.getByText(fr.gm.adjustScore.modes.add, { exact: true }).click();
     await amount.fill('500');
     await expect(gm.getByText(fill(fr.gm.adjustScore.preview, { old: 0, new: 500 }))).toBeVisible();
     await confirm.click();
