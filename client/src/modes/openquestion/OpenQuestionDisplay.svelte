@@ -332,6 +332,12 @@
         img {
             animation: appear 0.4s ease-out;
         }
+
+        /* The expected answer and the answers accepted, the moment they are revealed. */
+        .expected,
+        li.correct {
+            animation: reveal-highlight 0.6s ease-out;
+        }
     }
 
     @keyframes appear {

@@ -73,7 +73,7 @@
     }
 
     dialog::backdrop {
-        background: rgb(0 0 0 / 60%);
+        background: var(--color-backdrop);
     }
 
     .content {

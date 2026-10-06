@@ -13,8 +13,7 @@
     const shape = $derived(qrCodeShape(text));
 </script>
 
-<!-- Dark modules on a light background whatever the theme: phone cameras expect it. The quiet
-     zone is part of the drawing, so it survives any surrounding background. -->
+<!-- The quiet zone is part of the drawing, so it survives any surrounding background. -->
 <svg
     viewBox="0 0 {shape.size} {shape.size}"
     role="img"
@@ -22,8 +21,8 @@
     shape-rendering="crispEdges"
     data-qr-text={text}
 >
-    <rect width={shape.size} height={shape.size} fill="#fff" />
-    <path d={shape.path} fill="#000" />
+    <rect width={shape.size} height={shape.size} />
+    <path d={shape.path} />
 </svg>
 
 <style>
@@ -31,5 +30,14 @@
         display: block;
         width: 100%;
         height: auto;
+    }
+
+    /* Dark modules on a light background whatever the theme: phone cameras expect it. */
+    rect {
+        fill: var(--color-white);
+    }
+
+    path {
+        fill: var(--color-black);
     }
 </style>

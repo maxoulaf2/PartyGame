@@ -114,7 +114,8 @@ test('the game master plays a whole game, from the choice of the pack to the fin
         page.getByText(fr.gm.packs.played.replace('{title}', () => playedPack.title)),
     ).toBeVisible();
 
-    await expect(display.getByText(playedPack.rounds[0], { exact: true })).toBeVisible();
+    // The first of the introduction going out, or of the round coming in.
+    await expect(display.getByText(playedPack.rounds[0], { exact: true }).first()).toBeVisible();
     await expect(display.getByText(progress)).toBeVisible();
     await expect(
         display.getByText(fill(fr.modes.quiz.display.upcoming, { number: 1 }), { exact: true }),

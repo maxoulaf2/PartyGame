@@ -53,7 +53,8 @@ test('the players type their answer on their phones until every one answered', a
     await expect(
         display.getByText(fill(texts.display.upcoming, { number: 1 }), { exact: true }),
     ).toBeVisible();
-    await expect(display.getByText('Réponses libres')).toBeVisible();
+    // The first of the introduction going out, or of the round coming in.
+    await expect(display.getByText('Réponses libres').first()).toBeVisible();
     await expect(display.getByText('Joconde')).toHaveCount(0);
     await expect(gm.getByText('Qui a peint La Joconde ?')).toBeVisible();
     await expect(
