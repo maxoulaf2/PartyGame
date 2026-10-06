@@ -1,6 +1,6 @@
 ### US-E19-01 — Pause et reprise de la partie
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** mettre la partie en pause et la reprendre là où elle en était
@@ -26,6 +26,11 @@ Défaut : rien côté joueurs et public. Une intention obsolète est rejetée sa
 - Intentions GM `PauseGame(gameId)` et `ResumeGame(gameId)`, `[GameMasterOnly]` ; elles nomment la partie et sont rejetées si la partie est déjà dans l'état demandé.
 - Audio : la projection `Display` ne décrit aucune lecture pendant la pause ; à la reprise, l'`AudioPlayback` porte la position atteinte et un nouvel instant de déclenchement.
 - Le buzzer reste fermé pendant la pause : un buzz horodaté avant la pause mais reçu après est refusé.
+- Réalisation : une seule intention `PauseGame(gameId, paused)` (`PauseGameRequest`) plutôt que deux : comme `ShowJoinCode`, elle nomme le résultat voulu, et une requête qui ne change rien est rejetée (`PauseUnchanged`). Hors des phases `RoundIntro`, `Round` et `BetweenRounds`, elle est rejetée (`NotPausable`).
+- Réalisation : moteur. `GameState.PausedAt` est persisté avec l'état. Pendant la pause, `GameEngine` refuse (`GamePaused`) `NextRound`, `StartRound`, `SkipRound`, les intentions de manche des joueurs et du GM et les timers ; le renommage, les inscriptions, le QR code et le retour au lobby (qui efface la pause) restent possibles. La reprise passe par `RoundFlow.ResumeRound` avec un décalage égal à la durée de la pause, le chemin de `GameResumed` ; une partie enregistrée en pause ne replanifie rien au redémarrage. La projection `Display` du blind test fige la lecture à l'instant de la pause (`ExcerptPlayback.Pause`, bornée à la fin de l'extrait).
+- Réalisation : contrats. `DisplaySnapshot`, `PlayerSnapshot` et `GameMasterSnapshot` portent `PausedAt` (ms depuis l'epoch Unix, heure serveur), nul hors pause.
+- Réalisation : client. `shared/pausedClock.ts` donne aux vues de manche une horloge arrêtée à `pausedAt`, ce qui fige tous les comptes à rebours sans toucher aux modes. La TV affiche « Pause » par-dessus l'écran courant (le QR code reste au-dessus), les téléphones affichent un écran d'attente « Pause », la console GM un bouton « Pause » / « Reprendre » et désactive les contrôles de la manche.
+- Réalisation : tests. `GamePauseTests` (phases, rejets, intentions refusées, reprise après redémarrage), `ModePauseTests` (chaque phase de chaque mode : pause puis reprise identiques à une reprise après redémarrage ; compte à rebours de 12 s ; extrait figé puis repris ; buzz refusé), scénarios « paused » des suites de non-fuite (et donc de l'aller-retour JSON), `PauseGameTests` côté hub, `pausedClock.test.ts` et `e2e/pause.spec.ts`.
 
 **Hors périmètre**
 - Une pause automatique quand la TV se déconnecte.

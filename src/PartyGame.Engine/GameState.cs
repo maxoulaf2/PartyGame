@@ -101,6 +101,12 @@ public sealed record GameState(
     public DateTimeOffset? FinishedAt { get; init; }
 
     /// <summary>
+    /// When the game master paused the game, or <see langword="null"/> while it is not paused. The phase and the round stay
+    /// as they were: the resumption moves the deadlines of the round on by the length of the pause.
+    /// </summary>
+    public DateTimeOffset? PausedAt { get; init; }
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>

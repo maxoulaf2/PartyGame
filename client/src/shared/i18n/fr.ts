@@ -68,6 +68,8 @@ export const fr = {
         // Shown during the game when the phone has nothing more precise to show.
         inProgress: 'La partie est en cours : garde un œil sur l’écran !',
         betweenRounds: 'La suite arrive bientôt : garde un œil sur l’écran !',
+        // Shown instead of anything interactive while the game master pauses the game.
+        paused: 'Pause : la partie reprend bientôt.',
         finished: 'Merci d’avoir joué !',
         // Once the game is finished, under the final rank of a player on the podium.
         podium: 'Bravo, tu es sur le podium !',
@@ -133,6 +135,8 @@ export const fr = {
         startAudio: 'Démarrer',
         // Over a pack the game master previews before the evening, answers included.
         previewBanner: 'Aperçu',
+        // Over the current screen while the game master pauses the game.
+        paused: 'Pause',
         // Shown instead of what the TV screen could not render, until the next update.
         continuing: 'La partie continue…',
         // Shown next to the QR code between two rounds, for late arrivals.
@@ -442,6 +446,12 @@ export const fr = {
             playExcerpt: 'Écouter l’extrait',
             stop: 'Quitter l’aperçu',
             failed: 'L’aperçu n’a pas pu être piloté : réessayez.',
+        },
+        pause: {
+            pause: 'Pause',
+            resume: 'Reprendre',
+            // While paused: the controls of the round wait for the game to resume.
+            paused: 'Partie en pause : les comptes à rebours et le son sont arrêtés.',
         },
         returnToLobby: {
             action: 'Revenir au lobby',

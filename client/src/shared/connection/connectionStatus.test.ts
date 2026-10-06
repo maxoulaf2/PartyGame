@@ -20,6 +20,7 @@ function snapshot(version: number): DisplaySnapshot {
         joinCodeShown: false,
         preview: null,
         finishedAt: null,
+        pausedAt: null,
     };
 }
 

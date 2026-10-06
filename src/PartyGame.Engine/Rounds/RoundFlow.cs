@@ -153,18 +153,23 @@ internal static class RoundFlow
 
     /// <summary>
     /// Hands the time spent offline to the round in progress of a game just resumed, for it to move its deadlines on and
-    /// schedule its timers again. Out of a round, nothing waits for any time: there is nothing to resume.
+    /// schedule its timers again. Out of a round, nothing waits for any time: there is nothing to resume. Nor in a game
+    /// saved paused: its round waits for the game master to resume it, which moves its deadlines on by the whole pause.
     /// </summary>
-    public static Transition Resume(GameState state, GameResumed resumed, GameModes modes, GameContext context)
-    {
-        if (state.Phase != GamePhase.Round)
-        {
-            return new Transition(state, []);
-        }
+    public static Transition Resume(GameState state, GameResumed resumed, GameModes modes, GameContext context) =>
+        state.Phase != GamePhase.Round || state.PausedAt is not null
+            ? new Transition(state, [])
+            : ResumeRound(state, context.Now - resumed.SavedAt, modes, context);
 
+    /// <summary>
+    /// Hands the time the round in progress stood still to its game mode, for it to move its deadlines on by
+    /// <paramref name="shift"/> and schedule its timers again: after a restart, or a pause.
+    /// </summary>
+    public static Transition ResumeRound(GameState state, TimeSpan shift, GameModes modes, GameContext context)
+    {
         var round = state.CurrentRound!;
         var descriptor = state.Rounds[round.Index];
-        var handled = modes.For(descriptor).ResumeRound(round.State!, state, context.Now - resumed.SavedAt, context);
+        var handled = modes.For(descriptor).ResumeRound(round.State!, state, shift, context);
         if (handled.Rejection is { } rejection)
         {
             throw new InvalidOperationException($"Game mode for {descriptor.GetType().Name} rejected the resumption of a round: {rejection}.");

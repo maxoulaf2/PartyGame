@@ -19,6 +19,7 @@
     import { fill } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
+    import { pausedClock } from '../shared/pausedClock';
     import { findDisplayView } from '../modes/registry';
     import { unlockAudio } from './audioUnlock';
     import FinalRankingScreen from './FinalRankingScreen.svelte';
@@ -51,6 +52,9 @@
             : null,
     );
     const mediaFailed = (url: string) => reportMediaFailure(connection, url);
+    const paused = $derived(game.current?.pausedAt ?? null);
+    // While paused, the countdowns of the round stand still with the time they had left.
+    const roundClock = $derived(pausedClock(clock, paused));
 
     // Null until the browser tells: no button flashes on a screen whose audio plays already.
     let audioUnlocked = $state<boolean | null>(null);
@@ -101,7 +105,7 @@
                 <ModeView
                     view={screen.view}
                     round={screen.round}
-                    {clock}
+                    clock={roundClock}
                     reportMediaFailure={mediaFailed}
                 />
             {/key}
@@ -151,6 +155,11 @@
     {/if}
 </ViewBoundary>
 
+{#if paused !== null}
+    <!-- Over the current screen, which stays as it was: the game resumes where it stood. -->
+    <div class="paused" role="status"><p>{fr.display.paused}</p></div>
+{/if}
+
 {#if joinCodeAddress}
     <JoinCodeCorner joinAddress={joinCodeAddress} />
 {/if}
@@ -176,6 +185,26 @@
         background: var(--color-accent);
         color: var(--color-bg);
         font-size: 2.5rem;
+        font-weight: 800;
+    }
+
+    /* Under the QR code, which late arrivals may still scan during the pause. */
+    .paused {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+    }
+
+    .paused p {
+        margin: 0;
+        padding: var(--space-m) var(--space-l);
+        border-radius: var(--radius);
+        background: var(--color-accent);
+        color: var(--color-bg);
+        font-size: 8rem;
         font-weight: 800;
     }
 

@@ -179,4 +179,16 @@ public enum RejectionReason
 
     /// <summary>The pack previewed has no such round, or the round no such step.</summary>
     PreviewStepUnknown,
+
+    /// <summary>The game master pauses a game in the lobby, finished, or waiting for a saved game to be resumed.</summary>
+    NotPausable,
+
+    /// <summary>
+    /// The game master pauses a game already paused, or resumes one that is not: the request is obsolete, for instance sent
+    /// twice or by a second game master console.
+    /// </summary>
+    PauseUnchanged,
+
+    /// <summary>The game is paused: nothing moves in a round until the game master resumes it.</summary>
+    GamePaused,
 }

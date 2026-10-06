@@ -25,6 +25,12 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             return Transition.Rejected(state, RejectionReason.GamePending);
         }
 
+        if (state.PausedAt is not null && input is NextRound or StartRound or SkipRound or PlayerRoundInput or GameMasterRoundInput or TimerElapsed)
+        {
+            // Nothing moves in a round: the timers were cancelled, but one may have elapsed just before the pause.
+            return Transition.Rejected(state, RejectionReason.GamePaused);
+        }
+
         return input switch
         {
             ResumeSavedGame resume => SavedGameChoice.Resume(state, resume),
@@ -36,6 +42,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             PlayerConnectionRestored restored => Presence.ConnectionRestored(state, restored),
             RenamePlayer rename => Renaming.Rename(state, rename),
             StartGame start => Launch.Start(state, start, modes, context),
+            PauseGame pause => GamePause.Handle(state, pause, modes, context),
             ReturnToLobby back => LobbyReturn.Return(state, back, context),
             ChooseAdvertisedAddress choice => AddressChoice.Choose(state, choice),
             ShowJoinCode show => JoinCodeVisibility.Show(state, show),

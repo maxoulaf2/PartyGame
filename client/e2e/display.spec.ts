@@ -59,6 +59,7 @@ function fakeSnapshot(
         joinCodeShown: false,
         preview: null,
         finishedAt: null,
+        pausedAt: null,
     };
 }
 

@@ -1,4 +1,5 @@
 using PartyGame.Contracts.Packs;
+using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes.BlindTest;
 using PartyGame.Tests.Shared.Leaks;
 
@@ -27,6 +28,7 @@ public sealed class BlindTestLeakTests
             ("track without artist announced", BlindTestGames.AtTrack(Started(), 1)),
             ("last track announced", BlindTestGames.AtTrack(Started(), 2)),
             ("excerpt played", BlindTestGames.Played(Started())),
+            ("excerpt paused with the game", Paused(BlindTestGames.Played(Started()))),
             ("excerpt from the middle played", BlindTestGames.Played(BlindTestGames.AtTrack(Started(), 1))),
             ("player joined once played", BlindTestGames.Accepted(BlindTestGames.Played(BlindTestGames.Started(_round, "Zoé", "Max")), Games.Join("Léa", player: 3))),
             ("one buzz, arbitrating", BlindTestGames.Buzzed(Started(), (2, 1000))),
@@ -82,6 +84,9 @@ public sealed class BlindTestLeakTests
     public void BlindTestViews_WithoutTheSecrets_LookTheSameToWhomTheyAreHiddenFrom() => _suite.AssertPairsLookTheSame();
 
     private static GameState Started() => BlindTestGames.Started(_round, _players);
+
+    private static GameState Paused(GameState state) =>
+        BlindTestGames.Accepted(state, new PauseGame(state.GameId, Paused: true, Games.Now), BlindTestGames.StartsAt(state).AddSeconds(3));
 
     private static GameState Revealed(GameState state) => BlindTestGames.Accepted(state, BlindTestGames.RevealAnswer(state));
 

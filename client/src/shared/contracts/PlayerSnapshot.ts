@@ -22,4 +22,5 @@ export interface PlayerSnapshot {
     readonly roundView: PlayerRoundView | null;
     readonly standing: PlayerStanding | null;
     readonly finishedAt: number | null;
+    readonly pausedAt: number | null;
 }

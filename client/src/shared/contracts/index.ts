@@ -86,6 +86,7 @@ export type * from './OpenQuestionSubmitAnswer';
 export type * from './OpenQuestionVerdict';
 export type * from './PackProblem';
 export type * from './PackProblemCode';
+export type * from './PauseGameRequest';
 export type * from './Phase';
 export type * from './PlayerId';
 export type * from './PlayerIntentEnvelope';

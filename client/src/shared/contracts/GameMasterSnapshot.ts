@@ -33,4 +33,5 @@ export interface GameMasterSnapshot {
     readonly savedGame: GameMasterSavedGame | null;
     readonly joinCodeShown: boolean;
     readonly preview: GameMasterPreview | null;
+    readonly pausedAt: number | null;
 }

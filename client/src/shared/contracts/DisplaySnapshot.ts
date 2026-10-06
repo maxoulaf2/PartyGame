@@ -24,4 +24,5 @@ export interface DisplaySnapshot {
     readonly joinCodeShown: boolean;
     readonly preview: DisplayPreview | null;
     readonly finishedAt: number | null;
+    readonly pausedAt: number | null;
 }

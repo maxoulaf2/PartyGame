@@ -83,6 +83,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="ReturnToLobbyAsync"/>, as the clients call it.</summary>
     public const string ReturnToLobby = nameof(ReturnToLobby);
 
+    /// <summary>SignalR target of <see cref="PauseGameAsync"/>, as the clients call it.</summary>
+    public const string PauseGame = nameof(PauseGame);
+
     /// <summary>SignalR target of <see cref="ShowJoinCodeAsync"/>, as the clients call it.</summary>
     public const string ShowJoinCode = nameof(ShowJoinCode);
 
@@ -653,6 +656,32 @@ internal sealed class GameHub(
         if (outcome.Status == InputStatus.Accepted)
         {
             logger.ReturnedToLobby(request.GameId.Value);
+        }
+    }
+
+    /// <summary>
+    /// Pauses or resumes the game at the request of the game master. The loop alone decides whether the request still makes
+    /// sense, so that a double tap or two consoles never pause or resume twice. Nothing is answered: the snapshots show the
+    /// pause either way.
+    /// </summary>
+    /// <param name="message">A <see cref="PauseGameRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(PauseGame)]
+    public async Task PauseGameAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<PauseGameRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(PauseGame, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        var outcome = await inputs
+            .SubmitAsync(new Engine.Inputs.PauseGame(request.GameId, request.Paused, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status == InputStatus.Accepted)
+        {
+            logger.GamePaused(request.GameId.Value, request.Paused);
         }
     }
 
