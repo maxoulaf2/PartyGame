@@ -1,0 +1,71 @@
+{
+  "$schema": "../../schemas/pack.schema.json",
+  "formatVersion": 1,
+  "title": "Soirée d'exemple",
+  "description": "Une manche de chaque mode, à jouer ou à copier pour écrire son propre pack : quiz, question ouverte, questions buzzer et blind test.",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Échauffement",
+      "speedBonus": 500,
+      "questions": [
+        {
+          "text": "Quelle est la capitale de l'Australie ?",
+          "choices": [
+            { "text": "Sydney" },
+            { "text": "Melbourne" },
+            { "text": "Canberra", "correct": true },
+            { "text": "Perth" }
+          ]
+        },
+        {
+          "text": "Combien de côtés a cette figure ?",
+          "image": "images/figure.png",
+          "choices": [
+            { "text": "5" },
+            { "text": "6", "correct": true },
+            { "text": "7" },
+            { "text": "8" }
+          ]
+        },
+        {
+          "text": "La baleine est un poisson.",
+          "answerSeconds": 10,
+          "choices": [
+            { "text": "Vrai" },
+            { "text": "Faux", "correct": true }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "openquestion",
+      "title": "Réponses libres",
+      "questions": [
+        { "text": "Qui a peint La Joconde ?", "answer": "Léonard de Vinci", "acceptedAnswers": ["De Vinci", "Leonardo da Vinci"] },
+        { "text": "En quelle année l'homme a-t-il marché sur la Lune pour la première fois ?", "answer": "1969", "inputMode": "numeric" },
+        { "text": "Quel est le plus long fleuve de France ?", "answer": "La Loire" }
+      ]
+    },
+    {
+      "type": "buzzer",
+      "title": "Le plus rapide",
+      "questions": [
+        { "text": "De quel pays est ce drapeau ?", "answer": "L'Italie", "image": "images/drapeau.png" },
+        { "text": "Dans quelle ville se trouve le Colisée ?", "answer": "Rome" },
+        { "text": "Quelle planète est surnommée la planète rouge ?", "answer": "Mars" }
+      ]
+    },
+    {
+      "type": "blindtest",
+      "title": "Airs connus",
+      "artistPoints": 300,
+      "tracks": [
+        { "excerpt": { "file": "sons/hymne-a-la-joie.mp3", "duration": 20 }, "title": "L'Hymne à la joie", "artist": "Ludwig van Beethoven" },
+        { "excerpt": { "file": "sons/frere-jacques.mp3", "duration": 15 }, "title": "Frère Jacques" },
+        { "excerpt": { "file": "sons/petite-musique-de-nuit.mp3", "start": 2, "duration": 20 }, "title": "Une petite musique de nuit", "artist": "Wolfgang Amadeus Mozart" },
+        { "excerpt": { "file": "sons/la-marseillaise.mp3", "duration": 20 }, "title": "La Marseillaise", "artist": "Claude Joseph Rouget de Lisle", "image": "images/drapeau-france.png" }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 ### US-E17-04 — Guide de rédaction et pack d'exemple de tous les modes
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack
 **je veux** un guide qui m'explique pas à pas comment écrire un pack, et un pack d'exemple qui utilise tous les modes

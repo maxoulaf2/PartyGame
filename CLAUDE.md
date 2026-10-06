@@ -33,7 +33,7 @@ Un serveur ASP.NET Core sert à la fois le front (fichiers statiques) et un hub 
 
 ## Packs de contenu
 
-Un pack est un dossier, ou un zip de ce dossier, contenant un descripteur `pack.json` et ses médias (MP3, images). Un zip est extrait dans `packs-cache` sous `Persistence:Directory`, puis chargé comme un dossier. Des exemples se trouvent dans `packs/`.
+Un pack est un dossier, ou un zip de ce dossier, contenant un descripteur `pack.json` et ses médias (MP3, images). Un zip est extrait dans `packs-cache` sous `Persistence:Directory`, puis chargé comme un dossier. Des exemples se trouvent dans `packs/`, et le guide de rédaction dans [docs/guide-packs.md](docs/guide-packs.md).
 
 - Chaque activité du descripteur a un champ `type` qui désigne son mode de jeu (désérialisation polymorphe avec System.Text.Json).
 - Le schéma de référence est `schemas/pack.schema.json`. Il est généré depuis les types C# du descripteur (`PartyGame.Contracts.Packs`) par `npm run generate:contracts`, à chaque évolution de leur format. `.vscode/settings.json` l'associe aux fichiers `packs/*/pack.json`.
@@ -93,7 +93,8 @@ dotnet test
 dotnet run --project src/PartyGame.Server   # port 5000 sur 0.0.0.0 ; sert le front construit dans wwwroot
                                             # Network:Port change le port (Network__Port=5001 ou -- --Network:Port=5001)
                                             # Packs:Directory désigne le dossier des packs (défaut : packs à côté de l'exécutable)
-dotnet run --project src/PartyGame.Server -- validate packs   # vérifie un pack (dossier ou zip) ou un dossier de packs, sans lancer le serveur
+dotnet run --project src/PartyGame.Server -- validate "$PWD/packs"   # vérifie un pack (dossier ou zip) ou un dossier de packs, sans lancer le serveur
+                                            # chemin complet : dotnet run lance le serveur depuis src/PartyGame.Server
                                             # code de sortie : 0 valide, 1 invalide, 2 chemin introuvable, 3 erreur inattendue
                                             # Persistence:Directory désigne le dossier où la partie est enregistrée (défaut : data à côté de l'exécutable)
                                             # Buzzer:ArbitrationMilliseconds règle la fenêtre d'arbitrage du buzzer (0 à 1 000, défaut 250)
