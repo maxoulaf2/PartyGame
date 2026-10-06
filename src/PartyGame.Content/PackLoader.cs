@@ -114,8 +114,11 @@ public sealed class PackLoader(RoundValidator validateRound)
         }
     }
 
-    // On Windows, a search pattern ignores case: the exact name is required, as on the Raspberry Pi.
-    private static bool HasDescriptor(string folder) =>
+    /// <summary>
+    /// Whether a folder holds a descriptor, named exactly <c>pack.json</c>: on Windows, a search pattern ignores case, where
+    /// the Raspberry Pi would not find a <c>Pack.json</c>.
+    /// </summary>
+    public static bool HasDescriptor(string folder) =>
         Directory.EnumerateFiles(folder).Any(file => string.Equals(Path.GetFileName(file), PackDescriptor.FileName, StringComparison.Ordinal));
 
     private static PackProblem SyntaxProblem(JsonException exception, string text)

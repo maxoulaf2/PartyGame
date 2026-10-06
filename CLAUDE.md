@@ -93,6 +93,8 @@ dotnet test
 dotnet run --project src/PartyGame.Server   # port 5000 sur 0.0.0.0 ; sert le front construit dans wwwroot
                                             # Network:Port change le port (Network__Port=5001 ou -- --Network:Port=5001)
                                             # Packs:Directory désigne le dossier des packs (défaut : packs à côté de l'exécutable)
+dotnet run --project src/PartyGame.Server -- validate packs   # vérifie un pack ou un dossier de packs, sans lancer le serveur
+                                            # code de sortie : 0 valide, 1 invalide, 2 chemin introuvable, 3 erreur inattendue
                                             # Persistence:Directory désigne le dossier où la partie est enregistrée (défaut : data à côté de l'exécutable)
                                             # Buzzer:ArbitrationMilliseconds règle la fenêtre d'arbitrage du buzzer (0 à 1 000, défaut 250)
                                             # FaultInjection:FailOnInput (type d'entrée, ex. PlayerRoundInput) et FaultInjection:FailCount (défaut 1) font

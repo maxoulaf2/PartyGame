@@ -104,6 +104,25 @@ Le dossier se règle par le paramètre `Packs:Directory`. Par défaut, c'est le 
 
 Les médias référencés par un pack doivent se trouver dans son dossier, avec exactement la même casse que dans `pack.json` : Windows ne la distingue pas, mais le Raspberry Pi si, et le serveur la vérifie partout pour qu'un pack préparé sur un PC fonctionne aussi sur le Pi.
 
+### Vérifier un pack sans lancer de partie
+
+La commande `validate` vérifie un pack avec exactement le chargement du serveur, puis s'arrête sans écouter le réseau ni afficher de code GM :
+
+```bash
+dotnet run --project src/PartyGame.Server -- validate packs/quiz-exemple   # un pack (son dossier, ou son pack.json)
+dotnet run --project src/PartyGame.Server -- validate packs                # chaque pack d'un dossier de packs
+./PartyGame.Server validate /home/pi/packs                                 # avec l'exécutable publié
+```
+
+Pour un pack valide, elle affiche son titre, ses manches (titre et mode) et « Pack valide ». Pour un pack invalide, elle affiche chaque problème en français, avec le fichier, le chemin dans le descripteur et le code. Pour un dossier de packs, elle résume par exemple « 3 packs valides, 1 invalide ». Le chemin est relatif au dossier courant.
+
+| Code de sortie | Signification |
+|---|---|
+| 0 | Tous les packs vérifiés sont valides |
+| 1 | Au moins un pack est invalide |
+| 2 | Chemin introuvable, ou qui n'est ni un pack ni un dossier de packs |
+| 3 | Erreur inattendue, détaillée dans le journal du serveur |
+
 ## Enregistrement de la partie
 
 Après chaque changement, le serveur enregistre la partie dans le fichier `current-game.json` du dossier de données, pour pouvoir la reprendre après un crash ou un redémarrage. L'écriture passe par un fichier temporaire (`current-game.json.tmp`) puis remplace l'ancien fichier : un arrêt brutal laisse toujours le dernier enregistrement complet. Ce fichier contient les jetons et codes de reconnexion des joueurs et les bonnes réponses : il n'est servi par aucune page, mais ne doit pas être partagé.

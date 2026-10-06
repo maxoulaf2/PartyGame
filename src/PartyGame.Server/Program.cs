@@ -17,6 +17,12 @@ using Serilog;
 using var bootstrapLogger = new LoggerConfiguration().WriteTo.Console(formatProvider: CultureInfo.InvariantCulture).CreateLogger();
 IConfiguration? configuration = null;
 
+// A command for pack authors, run before the web host is built: no network, no game master code.
+if (args is [PackValidationCommand.Name, .. var validateArguments])
+{
+    return PackValidationCommand.Run(validateArguments, Console.Out);
+}
+
 try
 {
     var builder = WebApplication.CreateBuilder(args);
