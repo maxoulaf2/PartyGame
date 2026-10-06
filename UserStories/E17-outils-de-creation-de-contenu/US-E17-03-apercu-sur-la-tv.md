@@ -1,6 +1,6 @@
 ### US-E17-03 — Aperçu d'un pack sur la TV
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack ou game master
 **je veux** faire défiler chaque question d'un pack sur la TV, réponse comprise, avant la soirée
@@ -22,6 +22,7 @@ Public : en cas d'échec d'une vue d'aperçu, la TV affiche l'écran d'attente e
 - L'aperçu vit dans l'état du lobby (pack, manche, question), n'est pas une partie et n'attribue aucun point ; il n'est pas repris après un redémarrage.
 - Chaque mode fournit la liste de ses étapes d'aperçu et une vue `Display` révélée pour chacune, à partir de son descripteur, en réutilisant ses vues de partie : le moteur et la TV n'ajoutent qu'un conteneur générique, sans connaître les modes.
 - Les médias de l'aperçu sont servis sous `/media/<identifiant>` comme en partie, avec des identifiants tirés à l'entrée dans l'aperçu.
+- Réalisation : `GameState.Preview` (`PackPreview` : pack, médias, manche, étape, début de l'extrait) n'est pas enregistré. Intentions GM `StartPreview`, `ShowPreviewStep` (qui nomme la manche et l'étape à montrer, et demande ou non l'extrait) et `StopPreview`. Chaque mode implémente `CountPreviewSteps` et `Preview`, qui rend l'état d'une manche révélée sans joueur ; le moteur la projette avec `ProjectForDisplay` dans `DisplaySnapshot.Preview`, la console reçoit `GameMasterSnapshot.Preview`. La TV affiche la vue du mode avec le bandeau ; « Précédente » s'arrête à la première question d'une manche, le choix de la manche permet de revenir en arrière.
 
 **Hors périmètre**
 - Rafraîchir l'aperçu automatiquement quand le pack change sur le disque (« Actualiser les packs » suffit).

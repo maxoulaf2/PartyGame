@@ -83,6 +83,7 @@ describe('connectDisplay', () => {
             roundView: null,
             ranking: [],
             joinCodeShown: false,
+            preview: null,
         });
 
         expect(store.current?.players.map((player) => player.nickname)).toEqual(['Zoé']);
@@ -103,6 +104,7 @@ describe('connectDisplay', () => {
             roundView: null,
             ranking: [],
             joinCodeShown: false,
+            preview: null,
         };
         handlers.get('ReceiveDisplaySnapshot')?.(shown);
 

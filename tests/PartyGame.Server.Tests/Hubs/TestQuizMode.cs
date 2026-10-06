@@ -45,4 +45,9 @@ internal sealed class TestQuizMode : GameMode<QuizRoundDescriptor, TestQuizRound
 
     public override GameMasterRoundView ProjectForGameMaster(TestQuizRound round, GameState game) =>
         _quiz.ProjectForGameMaster(round.Quiz, game);
+
+    public override int CountPreviewSteps(QuizRoundDescriptor descriptor) => _quiz.CountPreviewSteps(descriptor);
+
+    public override RoundPreview Preview(QuizRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt) =>
+        new(new TestQuizRound((QuizRound)_quiz.Preview(descriptor, stepIndex, excerptStartsAt).Round, PlayerIntents: 0), HasExcerpt: false);
 }

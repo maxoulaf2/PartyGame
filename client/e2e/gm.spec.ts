@@ -56,6 +56,7 @@ function fakeLobby(
         roundSkipped: false,
         savedGame: null,
         joinCodeShown: false,
+        preview: null,
     };
 }
 

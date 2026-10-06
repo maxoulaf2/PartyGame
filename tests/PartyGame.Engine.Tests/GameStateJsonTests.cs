@@ -33,14 +33,14 @@ public sealed class GameStateJsonTests
                 var json = JsonSerializer.Serialize(state, _options);
                 var restored = JsonSerializer.Deserialize<GameState>(json, _options)!;
 
-                // Then: nothing is lost, down to what the projections show
+                // Then: nothing is lost, down to what the projections show, but the preview of a pack, which is no game
                 var context = $"{suiteName}, scenario \"{name}\"";
                 if (JsonSerializer.Serialize(restored, _options) != json)
                 {
                     failures.Add($"{context}: the restored state serializes differently");
                 }
 
-                foreach (var (viewer, projection) in suite.Project(state).All)
+                foreach (var (viewer, projection) in suite.Project(state with { Preview = null }).All)
                 {
                     if (!JsonNode.DeepEquals(projection, suite.Project(restored).For(viewer)))
                     {

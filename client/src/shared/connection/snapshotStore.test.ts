@@ -18,6 +18,7 @@ function snapshot(version: number, gameId: GameId = gameA, host = 1): DisplaySna
         roundView: null,
         ranking: [],
         joinCodeShown: false,
+        preview: null,
     };
 }
 

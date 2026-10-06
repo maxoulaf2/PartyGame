@@ -4,6 +4,7 @@
 // </auto-generated>
 
 import type { DisplayPlayer } from './DisplayPlayer';
+import type { DisplayPreview } from './DisplayPreview';
 import type { DisplayRoundView } from './DisplayRoundView';
 import type { GameId } from './GameId';
 import type { Phase } from './Phase';
@@ -21,4 +22,5 @@ export interface DisplaySnapshot {
     readonly roundView: DisplayRoundView | null;
     readonly ranking: readonly RankedPlayer[];
     readonly joinCodeShown: boolean;
+    readonly preview: DisplayPreview | null;
 }

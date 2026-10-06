@@ -88,6 +88,13 @@ public sealed record GameState(
     public ImmutableDictionary<PlayerId, string> ReconnectionCodes { get; init; } = ImmutableDictionary<PlayerId, string>.Empty;
 
     /// <summary>
+    /// The pack the game master previews on the TV screen, in the lobby only, or <see langword="null"/>. Only the TV screen
+    /// and the game master see it.
+    /// </summary>
+    [JsonIgnore] // a preview is no game: a restarted server never resumes it
+    public PackPreview? Preview { get; init; }
+
+    /// <summary>
     /// Creates the state of a new game: a lobby without any player, at version 1. When the catalog holds a single valid
     /// pack, it is already chosen.
     /// </summary>

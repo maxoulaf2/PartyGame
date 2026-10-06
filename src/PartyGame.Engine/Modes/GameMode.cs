@@ -57,6 +57,12 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     /// <inheritdoc cref="IGameMode.StepOf" />
     public virtual RoundStep? StepOf(TState round) => null;
 
+    /// <inheritdoc cref="IGameMode.CountPreviewSteps" />
+    public abstract int CountPreviewSteps(TDescriptor descriptor);
+
+    /// <inheritdoc cref="IGameMode.Preview" />
+    public abstract RoundPreview Preview(TDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt);
+
     ImmutableArray<PackProblem> IGameMode.Validate(RoundDescriptor descriptor, string path) =>
         Validate((TDescriptor)descriptor, path);
 
@@ -80,4 +86,9 @@ public abstract class GameMode<TDescriptor, TState> : IGameMode
     int? IGameMode.LocateMedia(RoundState round, MediaPath media) => LocateMedia((TState)round, media);
 
     RoundStep? IGameMode.StepOf(RoundState round) => StepOf((TState)round);
+
+    int IGameMode.CountPreviewSteps(RoundDescriptor descriptor) => CountPreviewSteps((TDescriptor)descriptor);
+
+    RoundPreview IGameMode.Preview(RoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt) =>
+        Preview((TDescriptor)descriptor, stepIndex, excerptStartsAt);
 }

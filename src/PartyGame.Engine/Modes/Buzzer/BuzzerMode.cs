@@ -133,6 +133,23 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
     }
 
     /// <summary>
+    /// One step per question.
+    /// </summary>
+    /// <inheritdoc />
+    public override int CountPreviewSteps(BuzzerRoundDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return descriptor.Questions.Length;
+    }
+
+    /// <summary>
+    /// The question revealed with its answer, found by nobody.
+    /// </summary>
+    /// <inheritdoc />
+    public override RoundPreview Preview(BuzzerRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt) =>
+        new(new BuzzerRound(descriptor, stepIndex) { Shown = true, Revealed = true }, HasExcerpt: false);
+
+    /// <summary>
     /// The number of the question the image illustrates: the question in progress when it does, since the TV screen shows
     /// only its image, or else the first one of the round.
     /// </summary>

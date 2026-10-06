@@ -110,6 +110,12 @@ Un pack peut se partager en un seul fichier zip, déposé tel quel dans le dossi
 
 Un zip est invalide, sans que rien ne soit écrit hors du cache, s'il est illisible, sans `pack.json` là où il est attendu, s'il contient un chemin qui sortirait de son dossier d'extraction, ou s'il dépasse 2 Go une fois décompressé. Un dossier et un zip (ou deux zips) qui donnent le même identifiant sont signalés en conflit, et aucun des deux ne peut être choisi.
 
+### Aperçu d'un pack sur la TV
+
+Dans le lobby, « Aperçu » à côté d'un pack valide le fait défiler sur l'écran TV, après confirmation, puisque les réponses s'y affichent. Chaque question apparaît telle que le public la verra en partie, déjà révélée (bonne réponse, titre et artiste, visuel), sous un bandeau « Aperçu » qui donne la position (« Manche 2/3 · Question 4/10 »). La console GM avance et recule d'une question, choisit une manche, joue l'extrait d'un blind test sur la TV (« Écouter l'extrait », avec son début et sa durée) et quitte l'aperçu. Une image ou un extrait que la TV n'arrive pas à charger apparaît dans les incidents de la console, avec la manche et la question, comme en partie.
+
+Les téléphones restent sur le lobby et ne reçoivent rien du pack. L'aperçu n'est pas une partie : il n'attribue aucun point, se termine au lancement de la partie et n'est pas repris après un redémarrage du serveur. Après avoir modifié un pack, « Actualiser les packs » puis relancer l'aperçu.
+
 ### Vérifier un pack sans lancer de partie
 
 La commande `validate` vérifie un pack avec exactement le chargement du serveur, puis s'arrête sans écouter le réseau ni afficher de code GM :

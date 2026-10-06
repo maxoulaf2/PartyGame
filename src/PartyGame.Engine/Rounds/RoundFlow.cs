@@ -213,7 +213,7 @@ internal static class RoundFlow
     /// <summary>
     /// A round identifier drawn from the random generator of the context, so that a replayed game gets the same ones.
     /// </summary>
-    private static RoundId NewRoundId(Random random)
+    internal static RoundId NewRoundId(Random random)
     {
         Span<byte> bytes = stackalloc byte[16];
         random.NextBytes(bytes);

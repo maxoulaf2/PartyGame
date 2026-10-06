@@ -83,6 +83,15 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="ShowJoinCodeAsync"/>, as the clients call it.</summary>
     public const string ShowJoinCode = nameof(ShowJoinCode);
 
+    /// <summary>SignalR target of <see cref="StartPreviewAsync"/>, as the clients call it.</summary>
+    public const string StartPreview = nameof(StartPreview);
+
+    /// <summary>SignalR target of <see cref="ShowPreviewStepAsync"/>, as the clients call it.</summary>
+    public const string ShowPreviewStep = nameof(ShowPreviewStep);
+
+    /// <summary>SignalR target of <see cref="StopPreviewAsync"/>, as the clients call it.</summary>
+    public const string StopPreview = nameof(StopPreview);
+
     /// <summary>SignalR target of <see cref="SendRoundIntentAsync"/>, as the clients call it.</summary>
     public const string SendRoundIntent = nameof(SendRoundIntent);
 
@@ -643,6 +652,62 @@ internal sealed class GameHub(
             .SubmitAsync(new Engine.Inputs.ShowJoinCode(request.Shown, timeProvider.GetUtcNow()), CancellationToken.None)
             .ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Previews a pack on the TV screen at the request of the game master, in the lobby, from its first step. Nothing is
+    /// answered: the snapshots show the preview, or the lobby when the request is rejected.
+    /// </summary>
+    /// <param name="message">A <see cref="StartPreviewRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(StartPreview)]
+    public async Task StartPreviewAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<StartPreviewRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(StartPreview, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(new Engine.Inputs.StartPreview(request.PackId, timeProvider.GetUtcNow()), CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Shows a step of the pack previewed on the TV screen, at the request of the game master. The request names the step,
+    /// so that a double tap or two consoles show it once. Nothing is answered: the snapshots show the step either way.
+    /// </summary>
+    /// <param name="message">A <see cref="ShowPreviewStepRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(ShowPreviewStep)]
+    public async Task ShowPreviewStepAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<ShowPreviewStepRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(ShowPreviewStep, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs
+            .SubmitAsync(
+                new Engine.Inputs.ShowPreviewStep(request.RoundNumber, request.StepNumber, request.PlayExcerpt, timeProvider.GetUtcNow()),
+                CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Ends the preview of a pack at the request of the game master: the TV screen goes back to the lobby. Nothing is
+    /// answered: the snapshots show the lobby either way.
+    /// </summary>
+    /// <remarks>No message: there is nothing to tell but the intent itself.</remarks>
+    [GameMasterOnly]
+    [HubMethodName(StopPreview)]
+    public async Task StopPreviewAsync() =>
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        await inputs.SubmitAsync(new Engine.Inputs.StopPreview(timeProvider.GetUtcNow()), CancellationToken.None).ConfigureAwait(false);
 
     /// <summary>
     /// Hands what a player does in the round in progress to its game mode, through the loop. Every game mode goes through

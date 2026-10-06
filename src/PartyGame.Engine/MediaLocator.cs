@@ -21,6 +21,12 @@ public sealed class MediaLocator(GameModes modes)
     {
         ArgumentNullException.ThrowIfNull(state);
 
+        if (state.Preview is { } preview)
+        {
+            // The TV screen shows the media files of the step previewed only.
+            return preview.Media.Find(id) is { } shown ? new MediaLocation(shown, preview.Round, preview.StepIndex + 1) : null;
+        }
+
         if (state.Media.Find(id) is not { } media)
         {
             return null;

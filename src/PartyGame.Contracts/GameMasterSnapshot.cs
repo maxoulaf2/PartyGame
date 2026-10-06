@@ -54,6 +54,7 @@ namespace PartyGame.Contracts;
 /// <param name="JoinCodeShown">
 /// Whether the TV screen shows the QR code over the game, at the request of the game master, outside the lobby.
 /// </param>
+/// <param name="Preview">The step of a pack the TV screen previews, in the lobby, or <see langword="null"/>.</param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -71,4 +72,5 @@ public sealed record GameMasterSnapshot(
     string? NextRoundTitle,
     bool RoundSkipped,
     GameMasterSavedGame? SavedGame,
-    bool JoinCodeShown);
+    bool JoinCodeShown,
+    GameMasterPreview? Preview);

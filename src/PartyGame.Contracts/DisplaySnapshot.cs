@@ -32,6 +32,10 @@ namespace PartyGame.Contracts;
 /// <param name="JoinCodeShown">
 /// Whether the game master asked to show the QR code over the game, outside the lobby, which always shows it.
 /// </param>
+/// <param name="Preview">
+/// The step of a pack the game master previews on the TV screen, in the lobby, or <see langword="null"/>. The phones never
+/// receive it: they stay on the lobby.
+/// </param>
 public sealed record DisplaySnapshot(
     GameId GameId,
     long Version,
@@ -42,4 +46,5 @@ public sealed record DisplaySnapshot(
     RoundInfo? Round,
     DisplayRoundView? RoundView,
     ImmutableArray<RankedPlayer> Ranking,
-    bool JoinCodeShown);
+    bool JoinCodeShown,
+    DisplayPreview? Preview);

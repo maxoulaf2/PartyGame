@@ -10,9 +10,9 @@ using PartyGame.Server.Persistence;
 namespace PartyGame.Server.Packs;
 
 /// <summary>
-/// Serves the media files of the pack the game plays, by the identifiers drawn when the game started. The file served
-/// comes from the state only, never from the URL: no request can reach another file of the disk, nor a file of another
-/// pack, nor a media file before the game starts.
+/// Serves the media files of the pack the game plays, by the identifiers drawn when the game started, or of the pack the
+/// game master previews in the lobby. The file served comes from the state only, never from the URL: no request can reach
+/// another file of the disk, nor a file of another pack, nor a media file before the game or the preview starts.
 /// </summary>
 internal sealed class PackMediaFiles(GameLoop game, IOptions<PersistenceOptions> persistence, ILogger<PackMediaFiles> logger)
 {
@@ -91,13 +91,19 @@ internal sealed class PackMediaFiles(GameLoop game, IOptions<PersistenceOptions>
             .OrderBy(media => media.Value, StringComparer.Ordinal)];
 
     /// <summary>
-    /// The full path of the media file an identifier designates in the pack of the game: in its folder of the pack
-    /// directory, or else in the cache the zip packs are extracted to.
+    /// The full path of the media file an identifier designates in the pack of the game, or of the pack previewed in the
+    /// lobby: in its folder of the pack directory, or else in the cache the zip packs are extracted to.
     /// </summary>
     /// <returns>The path, or <see langword="null"/> when the game has no media file with this identifier.</returns>
     internal static string? Find(GameState state, MediaId id, string cacheDirectory)
     {
-        if (state is not { Pack: not null, SelectedPackId: { } packId } || state.Media.Find(id) is not { } media)
+        var (packId, files) = state switch
+        {
+            { Pack: not null, SelectedPackId: { } selected } => (selected, state.Media),
+            { Preview: { } preview } => (preview.PackId, preview.Media),
+            _ => (null, PackMedia.Empty),
+        };
+        if (packId is null || files.Find(id) is not { } media)
         {
             return null;
         }

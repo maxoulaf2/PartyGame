@@ -229,6 +229,32 @@ public sealed class QuizMode : GameMode<QuizRoundDescriptor, QuizRound>
     }
 
     /// <summary>
+    /// One step per question.
+    /// </summary>
+    /// <inheritdoc />
+    public override int CountPreviewSteps(QuizRoundDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return descriptor.Questions.Length;
+    }
+
+    /// <summary>
+    /// The question revealed, its choices all shown in the order of the descriptor.
+    /// </summary>
+    /// <inheritdoc />
+    public override RoundPreview Preview(QuizRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        var choices = descriptor.Questions[stepIndex].Choices.Length;
+        var round = new QuizRound(descriptor, stepIndex, QuizPhase.Revealed, [.. Enumerable.Range(0, choices)])
+        {
+            QuestionShown = true,
+            ShownChoiceCount = choices,
+        };
+        return new(round, HasExcerpt: false);
+    }
+
+    /// <summary>
     /// Presents a question of the round, its choices in the order of the descriptor, or shuffled when the round asks for
     /// it. The shuffle draws from the generator of the context, so that it is reproducible.
     /// </summary>

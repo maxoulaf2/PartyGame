@@ -37,7 +37,7 @@ internal static class Launch
         // Copied into the game, which then depends neither on the catalog nor on the disk: it is persisted with it (E11).
         // The identifiers of the media files are drawn now, once for the whole game, so that a URL always serves the same
         // file and a client may cache it.
-        var started = state with { Pack = pack.Descriptor, Media = PackMedia.Draw(pack.Media, context.Random) };
+        var started = state with { Pack = pack.Descriptor, Media = PackMedia.Draw(pack.Media, context.Random), Preview = null };
 
         // Checked once and for all here, so that no round can fail to start in the middle of the game.
         if (started.Rounds.Any(descriptor => !modes.TryFind(descriptor, out _)))

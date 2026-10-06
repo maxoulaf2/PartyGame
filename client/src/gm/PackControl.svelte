@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ConfirmDialog from '../shared/components/ConfirmDialog.svelte';
     import type { GameMasterPack, GameMasterSnapshot } from '../shared/contracts';
     import type { GameMasterSession } from '../shared/connection/gameMasterSession.svelte';
     import { countText } from '../shared/i18n/countText';
@@ -21,6 +22,8 @@
     let selectFailed = $state(false);
     let reloading = $state(false);
     let reloadFailed = $state(false);
+    // The pack whose preview waits for the game master to confirm that answers will show.
+    let previewing = $state<string | null>(null);
 
     // A derived primitive only changes with the selection itself, not with every snapshot.
     const selected = $derived(snapshot.selectedPackId);
@@ -51,6 +54,13 @@
             pending = null;
             selectFailed = outcome === 'SelectionFailed';
         }
+    }
+
+    function preview() {
+        if (previewing !== null) {
+            void session.startPreview(previewing);
+        }
+        previewing = null;
     }
 
     async function reload() {
@@ -105,6 +115,13 @@
                         <div id="pack-{index}-details" class="details">
                             <p class="state">{stateOf(pack)}</p>
                             {#if pack.isValid}
+                                <button
+                                    type="button"
+                                    disabled={!interactive}
+                                    onclick={() => (previewing = pack.id)}
+                                >
+                                    {fr.gm.preview.action}
+                                </button>
                                 <ol class="rounds">
                                     {#each pack.rounds as round, number (number)}
                                         <li>
@@ -162,6 +179,18 @@
         </div>
     {/if}
 </section>
+
+{#if previewing !== null}
+    <ConfirmDialog
+        title={fr.gm.preview.confirmTitle}
+        message={fr.gm.preview.confirmMessage}
+        confirmLabel={fr.gm.preview.confirm}
+        cancelLabel={fr.gm.preview.cancel}
+        confirmDisabled={!interactive}
+        onconfirm={preview}
+        oncancel={() => (previewing = null)}
+    />
+{/if}
 
 <style>
     .packs,
