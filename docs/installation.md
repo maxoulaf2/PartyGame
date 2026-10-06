@@ -120,14 +120,14 @@ Les téléphones restent sur le lobby et ne reçoivent rien du pack. L'aperçu n
 
 La commande `validate` vérifie un pack avec exactement le chargement du serveur, puis s'arrête sans écouter le réseau ni afficher de code GM :
 
-```bash
-dotnet run --project src/PartyGame.Server -- validate packs/quiz-exemple   # un pack (son dossier, ou son pack.json)
-dotnet run --project src/PartyGame.Server -- validate soiree.zip           # un pack zip, extrait dans un dossier temporaire supprimé ensuite
-dotnet run --project src/PartyGame.Server -- validate packs                # chaque pack d'un dossier de packs
-./PartyGame.Server validate /home/pi/packs                                 # avec l'exécutable publié
+```powershell
+dotnet run --project src/PartyGame.Server -- validate "$PWD\packs\quiz-exemple"   # un pack (son dossier, ou son pack.json)
+dotnet run --project src/PartyGame.Server -- validate "$PWD\soiree.zip"           # un pack zip, extrait dans un dossier temporaire supprimé ensuite
+dotnet run --project src/PartyGame.Server -- validate "$PWD\packs"                # chaque pack d'un dossier de packs
+./PartyGame.Server validate /home/pi/packs                                       # avec l'exécutable publié
 ```
 
-Pour un pack valide, elle affiche son titre, ses manches (titre et mode) et « Pack valide ». Pour un pack invalide, elle affiche chaque problème en français, avec le fichier, le chemin dans le descripteur et le code. Pour un dossier de packs, elle résume par exemple « 3 packs valides, 1 invalide ». Le chemin est relatif au dossier courant.
+Pour un pack valide, elle affiche son titre, ses manches (titre et mode) et « Pack valide ». Pour un pack invalide, elle affiche chaque problème en français, avec le fichier, le chemin dans le descripteur et le code. Pour un dossier de packs, elle résume par exemple « 3 packs valides, 1 invalide ». Avec l'exécutable publié, un chemin relatif l'est au dossier courant. Sous `dotnet run`, il le serait au dossier du projet serveur, depuis lequel `dotnet run` lance le serveur : donnez un chemin complet, comme ci-dessus avec `$PWD`. Le [guide de rédaction des packs](guide-packs.md) montre les problèmes les plus courants et leur correction.
 
 | Code de sortie | Signification |
 |---|---|

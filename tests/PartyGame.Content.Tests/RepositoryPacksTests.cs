@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
@@ -13,13 +14,14 @@ namespace PartyGame.Content.Tests;
 /// The packs of the repository, used in development, in the tests and for the demonstrations, checked as the server
 /// checks them, with the game modes it registers.
 /// </summary>
-public sealed class RepositoryPacksTests
+public sealed partial class RepositoryPacksTests
 {
     // The repository holds no zip pack: nothing is ever extracted there.
     private static readonly string _noCache = Path.Combine(Path.GetTempPath(), "partygame-tests", "no-cache");
 
-    private static readonly PackLibrary _library =
-        new PackLoader(new GameModes([new QuizMode(), new BuzzerMode(), new BlindTestMode(), new OpenQuestionMode()]).Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"), _noCache);
+    private static readonly GameModes _modes = new([new QuizMode(), new BuzzerMode(), new BlindTestMode(), new OpenQuestionMode()]);
+
+    private static readonly PackLibrary _library = new PackLoader(_modes.Validate).LoadAll(Path.Combine(RepositoryRoot.Find(), "packs"), _noCache);
 
     [Fact]
     public void LoadAll_RepositoryPacks_AreAllValid()
@@ -84,6 +86,47 @@ public sealed class RepositoryPacksTests
     }
 
     [Fact]
+    public void SampleEveningPack_Content_PlaysOneRoundOfEachMode()
+    {
+        var pack = Assert.Single(_library.Packs, pack => pack.Id == "soiree-exemple");
+        Assert.True(pack.IsValid);
+
+        Assert.Equal(
+            [typeof(QuizRoundDescriptor), typeof(OpenQuestionRoundDescriptor), typeof(BuzzerRoundDescriptor), typeof(BlindTestRoundDescriptor)],
+            pack.Descriptor.Rounds.Select(round => round.GetType()));
+        Assert.True(File.Exists(Path.Combine(pack.Folder, "LICENCE.md")));
+    }
+
+    [Theory]
+    [InlineData("quiz")]
+    [InlineData("buzzer")]
+    [InlineData("blindtest")]
+    [InlineData("openquestion")]
+    public void ModeDocumentation_Example_IsAValidPack(string mode)
+    {
+        // Given: the complete example of docs/modes/<mode>.md, in a copy of the sample pack of the mode, whose media it uses.
+        // The loader checks the structure and bounds the schema is generated from, then the media and the consistency.
+        var page = File.ReadAllText(Path.Combine(RepositoryRoot.Find(), "docs", "modes", $"{mode}.md"));
+        var example = Assert.Single(JsonBlock().Matches(page)).Groups[1].Value;
+        var sample = Path.Combine(RepositoryRoot.Find(), "packs", $"{mode}-exemple");
+        using var packs = new TestPacks();
+        var folder = packs.Add(mode, example);
+        foreach (var media in Directory.EnumerateFiles(sample, "*", SearchOption.AllDirectories).Where(file => Path.GetFileName(file) != PackDescriptor.FileName))
+        {
+            var copy = Path.Combine(folder, Path.GetRelativePath(sample, media));
+            Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
+            File.Copy(media, copy);
+        }
+
+        // When
+        var pack = new PackLoader(_modes.Validate).Load(folder);
+
+        // Then
+        Assert.True(pack.IsValid, string.Join(Environment.NewLine, TestPacks.Describe(pack)));
+        Assert.All(pack.Descriptor.Rounds, round => Assert.Equal(mode, GameModes.TypeOf(round)));
+    }
+
+    [Fact]
     public void EndToEndPacks_AreTheValidAndInvalidPacksTheBrowserTestsExpect()
     {
         // Given: the packs of the Playwright tests (client/e2e/packs), which check what the console shows of them
@@ -106,4 +149,9 @@ public sealed class RepositoryPacksTests
             broken.Problems.Select(problem => (problem.Code, problem.Path)).Order());
         Assert.Equal("images/tour-eiffel.jpg", broken.Problems.Single(p => p.Code == PackProblemCode.PackMediaMissing).Parameters["media"]);
     }
+
+    [GeneratedRegex(@"^```json
+?
+(.*?)^```", RegexOptions.Multiline | RegexOptions.Singleline)]
+    private static partial Regex JsonBlock();
 }
