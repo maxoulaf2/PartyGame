@@ -76,6 +76,7 @@ type GameMasterIntentMethod =
     | 'SkipRound'
     | 'ReturnToLobby'
     | 'ShowJoinCode'
+    | 'PauseGame'
     | 'StartPreview'
     | 'ShowPreviewStep'
     | 'StopPreview'
@@ -303,6 +304,14 @@ export class GameMasterSession {
      */
     showJoinCode(shown: boolean): Promise<IntentOutcome> {
         return this.#send('ShowJoinCode', { shown });
+    }
+
+    /**
+     * Pauses or resumes the game. The request names the game and the outcome, so that a double tap
+     * or another console never pauses or resumes twice.
+     */
+    pauseGame(gameId: GameId, paused: boolean): Promise<IntentOutcome> {
+        return this.#send('PauseGame', { gameId, paused });
     }
 
     /**

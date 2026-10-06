@@ -39,6 +39,7 @@ internal static class LobbyReturn
                 Pack = null,
                 Media = PackMedia.Empty,
                 CurrentRound = null,
+                PausedAt = null,
             },
             effects);
     }

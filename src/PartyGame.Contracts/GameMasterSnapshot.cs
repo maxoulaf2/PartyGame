@@ -55,6 +55,11 @@ namespace PartyGame.Contracts;
 /// Whether the TV screen shows the QR code over the game, at the request of the game master, outside the lobby.
 /// </param>
 /// <param name="Preview">The step of a pack the TV screen previews, in the lobby, or <see langword="null"/>.</param>
+/// <param name="PausedAt">
+/// When the game master paused the game, in milliseconds since the Unix epoch on the clock of the server, or
+/// <see langword="null"/> while it is not paused. The countdowns of the screens stand still at that time, and the phones
+/// show the pause instead of anything interactive.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -73,4 +78,5 @@ public sealed record GameMasterSnapshot(
     bool RoundSkipped,
     GameMasterSavedGame? SavedGame,
     bool JoinCodeShown,
-    GameMasterPreview? Preview);
+    GameMasterPreview? Preview,
+    long? PausedAt);

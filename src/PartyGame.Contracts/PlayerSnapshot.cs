@@ -30,6 +30,11 @@ namespace PartyGame.Contracts;
 /// otherwise, and for a game saved before it existed. The phone tells the rank of the player once the TV screen reveals it: the screens reveal the podium step by step from then on, all at
 /// the same time, and a screen opened later knows where the reveal stands.
 /// </param>
+/// <param name="PausedAt">
+/// When the game master paused the game, in milliseconds since the Unix epoch on the clock of the server, or
+/// <see langword="null"/> while it is not paused. The countdowns of the screens stand still at that time, and the phones
+/// show the pause instead of anything interactive.
+/// </param>
 public sealed record PlayerSnapshot(
     GameId GameId,
     long Version,
@@ -41,4 +46,5 @@ public sealed record PlayerSnapshot(
     RoundInfo? Round,
     PlayerRoundView? RoundView,
     PlayerStanding? Standing,
-    long? FinishedAt);
+    long? FinishedAt,
+    long? PausedAt);

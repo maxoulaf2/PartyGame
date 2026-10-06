@@ -76,7 +76,10 @@
 
 <ViewBoundary shown={game.current} fallback={inProgress}>
     {#if session.joined && game.current && screen}
-        {#if screen.kind === 'lobby'}
+        {#if game.current.pausedAt !== null}
+            <!-- Nothing to tap until the game master resumes the game. -->
+            <WaitingScreen title={fr.app.name} message={fr.player.paused} />
+        {:else if screen.kind === 'lobby'}
             <LobbyScreen snapshot={game.current} />
         {:else if screen.kind === 'roundIntro'}
             <RoundIntroScreen round={screen.round} />

@@ -6,6 +6,7 @@
     import { countText } from '../shared/i18n/countText';
     import { fill } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
+    import { pausedClock } from '../shared/pausedClock';
     import AddressControl from './AddressControl.svelte';
     import ConnectionQualityLine from './ConnectionQualityLine.svelte';
     import IncidentPanel from './IncidentPanel.svelte';
@@ -40,6 +41,15 @@
     const displayQuality = $derived(connections.find((c) => c.playerId === null) ?? null);
     const playerQualities = $derived(new Map(connections.map((c) => [c.playerId, c])));
 
+    // Only a game in progress can be paused. While it is, the round stands still: its controls wait.
+    const pausable = $derived(
+        snapshot.phase === 'RoundIntro' ||
+            snapshot.phase === 'Round' ||
+            snapshot.phase === 'BetweenRounds',
+    );
+    const paused = $derived(snapshot.pausedAt !== null);
+    const roundInteractive = $derived(interactive && !paused);
+
     // The pack the TV screen previews, from the catalog of the lobby.
     const previewed = $derived(
         snapshot.preview &&
@@ -72,12 +82,37 @@
     {#if (snapshot.phase === 'Round' || snapshot.phase === 'RoundIntro') && snapshot.round !== null && session.incidents.isFailing(snapshot.round.roundId)}
         <!-- Keyed: a confirmation open for one round never skips another. -->
         {#key snapshot.round.roundId}
-            <SkipRoundBanner roundId={snapshot.round.roundId} {session} {interactive} />
+            <SkipRoundBanner
+                roundId={snapshot.round.roundId}
+                {session}
+                interactive={roundInteractive}
+            />
         {/key}
     {/if}
 
+    {#if pausable}
+        <!-- The snapshot tells whether the game is paused, whichever console asked. -->
+        <button
+            type="button"
+            class="pause"
+            aria-pressed={paused}
+            disabled={!interactive}
+            onclick={() => session.pauseGame(snapshot.gameId, !paused)}
+        >
+            {paused ? fr.gm.pause.resume : fr.gm.pause.pause}
+        </button>
+        {#if paused}
+            <p class="paused" role="status">{fr.gm.pause.paused}</p>
+        {/if}
+    {/if}
+
     {#if snapshot.phase !== 'Lobby'}
-        <RoundControl {snapshot} {session} {clock} {interactive} />
+        <RoundControl
+            {snapshot}
+            {session}
+            clock={pausedClock(clock, snapshot.pausedAt)}
+            interactive={roundInteractive}
+        />
         <!-- Keyed: a confirmation open for one game never ends another. -->
         {#key snapshot.gameId}
             <ReturnToLobbyControl
@@ -308,7 +343,14 @@
         cursor: pointer;
     }
 
-    .join-code {
+    .paused {
+        margin: 0;
+        color: var(--color-accent);
+        font-weight: 700;
+    }
+
+    .join-code,
+    .pause {
         align-self: flex-start;
         touch-action: manipulation;
     }

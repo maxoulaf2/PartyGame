@@ -242,7 +242,7 @@ public sealed class SnapshotsTests
 
         // Then
         Assert.Equal(
-            new PlayerSnapshot(state.GameId, 7, Phase.Lobby, Games.PlayerIdOf(2), "Max", Score: 0, PlayerCount: 2, Round: null, RoundView: null, Standing: null, FinishedAt: null),
+            new PlayerSnapshot(state.GameId, 7, Phase.Lobby, Games.PlayerIdOf(2), "Max", Score: 0, PlayerCount: 2, Round: null, RoundView: null, Standing: null, FinishedAt: null, PausedAt: null),
             snapshot);
     }
 

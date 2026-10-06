@@ -57,6 +57,7 @@ function fakeLobby(
         savedGame: null,
         joinCodeShown: false,
         preview: null,
+        pausedAt: null,
     };
 }
 

@@ -73,6 +73,12 @@ public sealed class SnapshotsLeakTests
 
         yield return ("other address chosen", Games.PlayedUpTo(phase, Games.Accepted(Games.LobbyWith("Zoé"), Games.ChooseAddress(Games.OtherAddress))));
 
+        if (phase is GamePhase.RoundIntro or GamePhase.Round or GamePhase.BetweenRounds)
+        {
+            var state = Games.InPhase(phase, "Zoé", "Max");
+            yield return ("paused", Games.Accepted(state, new PauseGame(state.GameId, Paused: true, Games.Now)));
+        }
+
         if (phase == GamePhase.Lobby)
         {
             // The TV screen previews a pack, the chosen one or another: the phones learn nothing of it.

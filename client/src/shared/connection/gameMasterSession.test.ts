@@ -181,6 +181,7 @@ function snapshot(version: number): GameMasterSnapshot {
         savedGame: null,
         joinCodeShown: false,
         preview: null,
+        pausedAt: null,
     };
 }
 

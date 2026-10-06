@@ -84,6 +84,7 @@ function displaySnapshot(version: number, view: Partial<DisplaySnapshot> = {}): 
         joinCodeShown: false,
         preview: null,
         finishedAt: null,
+        pausedAt: null,
         ...view,
     };
 }
@@ -115,6 +116,7 @@ function playerSnapshot(version: number, view: Partial<QuizPlayerView> = {}): Pl
         },
         standing: null,
         finishedAt: null,
+        pausedAt: null,
     };
 }
 
@@ -163,6 +165,7 @@ function gameMasterSnapshot(
         savedGame: null,
         joinCodeShown: false,
         preview: null,
+        pausedAt: null,
     };
 }
 

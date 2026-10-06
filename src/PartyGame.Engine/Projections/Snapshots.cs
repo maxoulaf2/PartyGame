@@ -40,7 +40,8 @@ public sealed class Snapshots(GameModes modes)
                     // Without any player, and with the media files of the preview: the round is projected as during a game.
                     previewMode.ProjectForDisplay(shown.Round, state with { Players = [], Media = preview.Media }))
                 : null,
-            FinishedAtOf(state));
+            FinishedAtOf(state),
+            PausedAtOf(state));
     }
 
     /// <summary>
@@ -70,7 +71,8 @@ public sealed class Snapshots(GameModes modes)
             state.JoinCodeShown,
             PreviewOf(state) is var (_, preview, step, shown)
                 ? new GameMasterPreview(preview.PackId, preview.Round, step, shown.HasExcerpt)
-                : null);
+                : null,
+            PausedAtOf(state));
     }
 
     /// <summary>
@@ -93,8 +95,11 @@ public sealed class Snapshots(GameModes modes)
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State!, state, player) : null,
             StandingOf(state, player),
-            FinishedAtOf(state));
+            FinishedAtOf(state),
+            PausedAtOf(state));
     }
+
+    private static long? PausedAtOf(GameState state) => state.PausedAt?.ToUnixTimeMilliseconds();
 
     private static long? FinishedAtOf(GameState state) =>
         state.Phase == GamePhase.Finished ? state.FinishedAt?.ToUnixTimeMilliseconds() : null;

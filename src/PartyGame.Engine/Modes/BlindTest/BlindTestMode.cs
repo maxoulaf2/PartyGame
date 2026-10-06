@@ -117,12 +117,16 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         ArgumentNullException.ThrowIfNull(game);
 
         var excerpt = round.Track.Excerpt;
+        var end = ExcerptPlayback.EndOf(excerpt);
         var revealed = round.Phase == BlindTestPhase.Revealed;
+
+        // A paused game stands still where it was paused: its resumption moves the start of the playback on.
+        var playback = game.PausedAt is { } pausedAt ? round.Playback.Pause(pausedAt, end) : round.Playback;
         return new BlindTestDisplayView(
             round.TrackNumber,
             round.Descriptor.Tracks.Length,
             PhaseOf(round),
-            round.Playback.Project(game.Media.UrlOf(excerpt.File), ExcerptPlayback.EndOf(excerpt)),
+            playback.Project(game.Media.UrlOf(excerpt.File), end),
             WinnerOf(round, game),
             NicknameOf(game, round.TitleFoundBy),
             NicknameOf(game, round.ArtistFoundBy),
