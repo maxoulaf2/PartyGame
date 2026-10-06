@@ -15,7 +15,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 /// When the answers close, in milliseconds since the Unix epoch on the clock of the server, while their countdown runs;
 /// <see langword="null"/> otherwise.
 /// </param>
-/// <param name="AnsweredCount">How many players taking part answered: 0 until the answers open.</param>
+/// <param name="AnsweredCount">How many players taking part answered: 0 until the question shows.</param>
 /// <param name="ParticipantCount">
 /// How many players take part in the question, the players registered when the question showed, connected or not: 0
 /// until then.

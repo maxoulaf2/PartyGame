@@ -6,7 +6,7 @@ namespace PartyGame.Contracts.OpenQuestion;
 public enum OpenQuestionQuestionPhase
 {
     /// <summary>
-    /// The TV screen shows the number of the question, the game master reads it: the answers are not open yet.
+    /// The TV screen shows the number of the question, the game master reads it: the players may already answer, without countdown.
     /// </summary>
     Presentation,
 

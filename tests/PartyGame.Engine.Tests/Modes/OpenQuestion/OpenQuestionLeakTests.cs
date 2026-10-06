@@ -27,6 +27,7 @@ public sealed class OpenQuestionLeakTests
             ("illustrated question", OpenQuestionGames.Skipped(Started())),
             ("numeric question", OpenQuestionGames.Skipped(OpenQuestionGames.Skipped(Started()))),
             ("player joined during the presentation", OpenQuestionGames.Accepted(OpenQuestionGames.Started(_rounds, ["Zoé", "Max"]), Games.Join("Léa", player: 3))),
+            ("answers while the question is read", AnsweredWhileRead(Started(), (2, "Picasso"), (1, "Vinci"))),
             ("countdown just started", OpenQuestionGames.Answering(Started())),
             ("illustrated question shown", OpenQuestionGames.Answering(OpenQuestionGames.Skipped(Started()))),
             ("some answers", OpenQuestionGames.Answering(Started(), (2, "Picasso"), (1, "Vinci"))),
@@ -66,6 +67,7 @@ public sealed class OpenQuestionLeakTests
             ExpectedAnswerPair("expected answer of the skipped question", state => OpenQuestionGames.Skipped(OpenQuestionGames.Locked(state, (1, "Vinci"))), Audience.Everyone),
 
             // The answer of a player is told to nobody but them and the game master.
+            AnswerPair("answer of Zoé, question read", AnsweredWhileRead),
             AnswerPair("answer of Zoé, answers open", OpenQuestionGames.Answering),
             AnswerPair("answer of Zoé, locked", OpenQuestionGames.Locked),
 
@@ -85,6 +87,11 @@ public sealed class OpenQuestionLeakTests
                 OpenQuestionGames.Answering(Started(), (2, "Picasso")),
                 Audience.OtherPlayersThan("Zoé")),
             new SecretPair<GameState>(
+                "whether Zoé answered, question read",
+                AnsweredWhileRead(Started(), (2, "Picasso"), (1, "Vinci")),
+                AnsweredWhileRead(Started(), (2, "Picasso")),
+                Audience.AllButGameMasterAnd("Zoé")),
+            new SecretPair<GameState>(
                 "whether Zoé answered, locked",
                 OpenQuestionGames.Locked(Started(), (2, "Picasso"), (1, "Vinci")),
                 OpenQuestionGames.Locked(Started(), (2, "Picasso")),
@@ -102,6 +109,12 @@ public sealed class OpenQuestionLeakTests
     public void OpenQuestionViews_WithoutTheSecrets_LookTheSameToWhomTheyAreHiddenFrom() => _suite.AssertPairsLookTheSame();
 
     private static GameState Started() => OpenQuestionGames.Started(_rounds, _players);
+
+    /// <summary>
+    /// The same game, its question in progress answered by the given players while the game master reads it, before it shows.
+    /// </summary>
+    private static GameState AnsweredWhileRead(GameState state, params (int Player, string Answer)[] answers) =>
+        answers.Aggregate(state, (s, answer) => OpenQuestionGames.Accepted(s, OpenQuestionGames.Answer(s, answer.Player, answer.Answer)));
 
     /// <summary>
     /// The same game, its first question expecting one answer or another, with other variants.

@@ -783,7 +783,6 @@ export const fr = {
                 // Labels the field the answer is typed in.
                 answerLabel: 'Ta réponse',
                 // Before the game master shows the question on the TV screen.
-                waitQuestion: 'Lis la question sur la TV dès qu’elle s’affiche',
                 send: 'Envoyer',
                 // The answer is sent, not confirmed by the server yet.
                 pending: 'Envoi de ta réponse…',

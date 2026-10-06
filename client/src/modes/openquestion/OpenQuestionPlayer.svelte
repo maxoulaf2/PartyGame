@@ -8,8 +8,8 @@
     import { formatNumber } from '../../shared/i18n/numberText';
     import type { PlayerViewProps } from '../../shared/modeViews';
 
-    // A field to type the answer in: the question is read on the TV screen, so that players look
-    // up from their phones.
+    // A field to type the answer in, open while the game master reads the question, before the TV
+    // screen shows it.
     let {
         view,
         round,
@@ -40,7 +40,7 @@
         draftStorage.save(`${draftKey}\n${text}`);
     }
 
-    const answersOpen = $derived(view.phase === 'Answering');
+    const answersOpen = $derived(view.phase === 'Presentation' || view.phase === 'Answering');
 
     // The answer sent and not acknowledged yet, shown at once, even after a reload. The snapshot
     // always wins: once it holds the answer, or leaves the answers, the pending one no longer shows.
@@ -67,10 +67,9 @@
             return fr.modes.openquestion.player.pending;
         }
         // Without an answer, only the end of the countdown locks them: the others lock once everybody answered.
-        if (view.phase === 'Locked' || view.phase === 'Judged') {
-            return fr.modes.openquestion.timeUp;
-        }
-        return view.phase === 'Presentation' ? fr.modes.openquestion.player.waitQuestion : null;
+        return view.phase === 'Locked' || view.phase === 'Judged'
+            ? fr.modes.openquestion.timeUp
+            : null;
     });
 
     function submit(event: SubmitEvent) {

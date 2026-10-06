@@ -47,7 +47,7 @@ test('the players type their answer on their phones until every one answered', a
     await startGame(gm);
 
     // The question is presented: its number on the TV screen, its text and its answer on the
-    // console, a field still closed on the phones.
+    // console, a field already open on the phones, without countdown.
     await expect(
         display.getByText(fill(texts.display.upcoming, { number: 1 }), { exact: true }),
     ).toBeVisible();
@@ -58,24 +58,17 @@ test('the players type their answer on their phones until every one answered', a
         gm.getByText(fill(texts.gm.expectedAnswer, { answer: 'Léonard de Vinci' })),
     ).toBeVisible();
     for (const player of table.players) {
-        await expect(field(player.page)).toBeDisabled();
-    }
-
-    // The game master shows it: on the TV screen, and the fields open with the countdown.
-    await gm.getByRole('button', { name: texts.gm.showQuestion }).click();
-    await expect(display.getByRole('heading', { name: 'Qui a peint La Joconde ?' })).toBeVisible();
-    await expect(display.getByText(answered(0))).toBeVisible();
-    for (const player of table.players) {
         const input = field(player.page);
         await expect(input).toBeEnabled();
         await expect(input).toHaveAttribute('inputmode', 'text');
         await expect(input).toHaveAttribute('autocapitalize', 'off');
         await expect(input).toHaveAttribute('autocorrect', 'off');
         await expect(input).toHaveAttribute('maxlength', '30');
-        await expect(player.page.getByRole('timer')).toBeVisible();
+        await expect(player.page.getByRole('timer')).toHaveCount(0);
     }
 
-    // Zoé types her answer: it survives a reload before she sends it, with the Enter key.
+    // Zoé answers while the game master reads the question: her answer survives a reload before
+    // she sends it, with the Enter key.
     await field(zoe.page).fill('Léonard de Vinci');
     await zoe.page.reload();
     await expect(field(zoe.page)).toHaveValue('Léonard de Vinci');
@@ -83,6 +76,14 @@ test('the players type their answer on their phones until every one answered', a
     await field(zoe.page).press('Enter');
     await expect(zoe.page.getByText(texts.player.recorded)).toBeVisible();
     await expect(field(zoe.page)).toBeDisabled();
+
+    // The game master shows it: on the TV screen, and the countdown starts.
+    await gm.getByRole('button', { name: texts.gm.showQuestion }).click();
+    await expect(display.getByRole('heading', { name: 'Qui a peint La Joconde ?' })).toBeVisible();
+    for (const player of [max, lea]) {
+        await expect(field(player.page)).toBeEnabled();
+        await expect(player.page.getByRole('timer')).toBeVisible();
+    }
 
     // The TV screen counts it, the console shows it, the other phones know nothing of it.
     await expect(display.getByText(answered(1))).toBeVisible();

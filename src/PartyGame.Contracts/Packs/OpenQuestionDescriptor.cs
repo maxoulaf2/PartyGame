@@ -11,7 +11,7 @@ namespace PartyGame.Contracts.Packs;
 public sealed record OpenQuestionDescriptor
 {
     /// <summary>
-    /// The text of the question, shown on the TV screen as the answers open.
+    /// The text of the question, shown on the TV screen as the countdown of the answers starts.
     /// </summary>
     [StringLength(200, MinimumLength = 1)]
     [Description("Texte de la question, affiché sur l'écran TV à l'ouverture des réponses.")]

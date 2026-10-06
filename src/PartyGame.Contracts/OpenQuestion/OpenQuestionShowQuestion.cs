@@ -1,8 +1,8 @@
 namespace PartyGame.Contracts.OpenQuestion;
 
 /// <summary>
-/// The game master shows on the TV screen the question presented, with its image: the answers open on the phones and their
-/// countdown starts.
+/// The game master shows on the TV screen the question presented, with its image: the countdown of the answers starts,
+/// the phones having accepted them since the question was presented.
 /// </summary>
 /// <param name="RoundId">The round the intent is aimed at.</param>
 /// <param name="QuestionNumber">

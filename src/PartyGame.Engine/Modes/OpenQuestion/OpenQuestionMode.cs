@@ -82,7 +82,8 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         new(new OpenQuestionRound(descriptor, 0, OpenQuestionPhase.Presentation), []);
 
     /// <summary>
-    /// Plays the intents of the round, each aimed at the question it names. The answers open when the question shows, lock
+    /// Plays the intents of the round, each aimed at the question it names. The answers open while the game master reads the
+    /// question, before it shows, lock
     /// once every participant answered, or when their timer elapses, then the game master judges them and reveals them.
     /// </summary>
     /// <inheritdoc />
@@ -100,7 +101,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
             GameMasterRoundInput { RoundIntent: OpenQuestionRevealAnswer reveal } => RevealAnswer(round, reveal),
             GameMasterRoundInput { RoundIntent: OpenQuestionNextQuestion next } => NextQuestion(round, next),
             PlayerRoundInput { RoundIntent: OpenQuestionSubmitAnswer answer } submitted =>
-                SubmitAnswer(round, submitted.PlayerId, answer, submitted.ReceivedAt),
+                SubmitAnswer(round, game, submitted.PlayerId, answer, submitted.ReceivedAt),
             TimerElapsed timer => CloseAnswers(round, timer),
             _ => RoundTransition.Rejected(round, RejectionReason.IntentUnsupported),
         };
@@ -138,7 +139,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
             round.Descriptor.MaxLength,
             CloseTimeOf(round),
 
-            // Whoever is registered before the question shows takes part once it opens the answers.
+            // Whoever is registered before the question shows takes part, and may already answer.
             round.Phase == OpenQuestionPhase.Presentation || round.Participants.Contains(player.Id),
             round.Answers.TryGetValue(player.Id, out var answer) ? answer.Text : null,
             round.Phase == OpenQuestionPhase.Revealed ? round.Question.Answer : null,
@@ -162,8 +163,8 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
             shown && round.Question.Image is { } image ? game.Media.UrlOf(image) : null,
             CloseTimeOf(round),
 
-            // How many answered, never what.
-            round.Answers.Count,
+            // How many answered, never what, once the question shows.
+            shown ? round.Answers.Count : 0,
             round.Participants.Length,
             round.Phase == OpenQuestionPhase.Revealed ? RevealOf(round, game) : null);
     }
@@ -236,8 +237,8 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
     }
 
     /// <summary>
-    /// Shows the question presented on the TV screen, with its image: the answers open to the players registered now, and
-    /// their countdown starts.
+    /// Shows the question presented on the TV screen, with its image: the players registered now take part, and the
+    /// countdown starts, unless they all answered while the question was read.
     /// </summary>
     private static RoundTransition ShowQuestion(OpenQuestionRound round, OpenQuestionShowQuestion show, GameState game, GameContext context)
     {
@@ -253,7 +254,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         // Fixed now, so that the last answer expected is known: a player who joins later plays the next question.
         var closeAt = context.Now.AddSeconds(round.Question.AnswerSeconds ?? round.Descriptor.AnswerSeconds);
         var shown = round with { Participants = [.. game.Players.Select(player => player.Id)], AnswersCloseAt = closeAt };
-        return shown.Participants.IsEmpty
+        return shown.Answers.Count == shown.Participants.Length
             ? new(Lock(shown), [])
             : new(shown with { Phase = OpenQuestionPhase.Answering }, [new ScheduleTimer(AnswersTimer, closeAt)]);
     }
@@ -354,18 +355,22 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
 
     /// <summary>
     /// Records the first answer of a participant, received before the answers close, as typed: never truncated, rejected
-    /// when too long or empty once normalized. Locks the answers once every participant answered: nobody is left to wait
+    /// when too long or empty once normalized. The answers open while the game master reads the question, before it shows:
+    /// any registered player may answer then. Locks the answers once every participant answered: nobody is left to wait
     /// for.
     /// </summary>
-    private static RoundTransition SubmitAnswer(OpenQuestionRound round, PlayerId playerId, OpenQuestionSubmitAnswer answer, DateTimeOffset receivedAt)
+    private static RoundTransition SubmitAnswer(OpenQuestionRound round, GameState game, PlayerId playerId, OpenQuestionSubmitAnswer answer, DateTimeOffset receivedAt)
     {
+        var presented = round.Phase == OpenQuestionPhase.Presentation;
         RejectionReason? rejection =
             answer.QuestionNumber != round.QuestionNumber ? RejectionReason.QuestionMismatch
-            : round.Phase != OpenQuestionPhase.Answering ? RejectionReason.PhaseMismatch
+            : !presented && round.Phase != OpenQuestionPhase.Answering ? RejectionReason.PhaseMismatch
 
             // Received once closed, although the loop has not handled the timer yet: the time of reception decides.
             : receivedAt >= round.AnswersCloseAt ? RejectionReason.AnswerTooLate
-            : !round.Participants.Contains(playerId) ? RejectionReason.NotParticipating
+
+            // Before the question shows, its participants are not fixed yet: whoever is registered then takes part.
+            : !(presented ? game.Players.Any(player => player.Id == playerId) : round.Participants.Contains(playerId)) ? RejectionReason.NotParticipating
             : round.Answers.ContainsKey(playerId) ? RejectionReason.AlreadyAnswered
             : answer.Answer.Length > round.Descriptor.MaxLength ? RejectionReason.AnswerTooLong
             : OpenAnswers.Normalize(answer.Answer).Length == 0 ? RejectionReason.AnswerEmpty
@@ -376,7 +381,7 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
         }
 
         var answered = round with { Answers = round.Answers.Add(playerId, new OpenAnswer(answer.Answer, receivedAt)) };
-        return answered.Answers.Count == answered.Participants.Length
+        return !presented && answered.Answers.Count == answered.Participants.Length
             ? new(Lock(answered), [new CancelTimer(AnswersTimer)])
             : new(answered, []);
     }
