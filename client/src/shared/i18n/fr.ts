@@ -914,6 +914,13 @@ export const fr = {
                 wrong: 'Mauvaise réponse',
                 // Heads the players taking part who did not answer, once revealed.
                 unanswered: 'Sans réponse',
+                // Read by screen readers: the players taking part, until the reveal.
+                participantsLabel: 'Joueurs de la question',
+                // How long a player took to answer, written by formatSeconds.
+                answerTime: '{seconds} s',
+                // Read by screen readers: the mark of a player who answered, or not yet.
+                answeredMark: 'A répondu',
+                waitingMark: 'Pas encore répondu',
             },
             player: {
                 // Labels the field the answer is typed in.

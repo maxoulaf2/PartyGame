@@ -328,6 +328,34 @@ public sealed class OpenQuestionAnswersTests
         Assert.Null(max.Answer);
     }
 
+    [Fact]
+    public void ProjectForDisplay_WhileAnswering_ListsTheParticipantsWithTheTimeTheyTookToAnswer()
+    {
+        // Given: Zoé answered while the question was read, Max 4.25 s after it showed, Léa not yet
+        var presented = Presented();
+        var state = OpenQuestionGames.Accepted(presented, OpenQuestionGames.Answer(presented, 1, "Vinci", Games.Now.AddSeconds(-3)));
+        state = OpenQuestionGames.Answering(state);
+        state = OpenQuestionGames.Accepted(state, OpenQuestionGames.Answer(state, 2, "Picasso", Games.Now.AddMilliseconds(4250)));
+
+        // When
+        var view = Assert.IsType<OpenQuestionDisplayView>(OpenQuestionGames.Snapshots.ForDisplay(state).RoundView);
+
+        // Then
+        OpenQuestionDisplayParticipant[] expected = [new("Zoé", 0), new("Max", 4250), new("Léa", null)];
+        Assert.Equal(expected, view.Participants.ToArray());
+    }
+
+    [Fact]
+    public void ProjectForDisplay_Presented_ListsNobody()
+    {
+        var presented = Presented();
+        var state = OpenQuestionGames.Accepted(presented, OpenQuestionGames.Answer(presented, 1, "Vinci"));
+
+        var view = Assert.IsType<OpenQuestionDisplayView>(OpenQuestionGames.Snapshots.ForDisplay(state).RoundView);
+
+        Assert.Empty(view.Participants);
+    }
+
     private static GameState Presented() => OpenQuestionGames.Started(_rounds, _players);
 
     private static void AssertRejected(GameState state, Func<GameState, GameInput> input, RejectionReason reason)

@@ -3,6 +3,7 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
+import type { OpenQuestionDisplayParticipant } from './OpenQuestionDisplayParticipant';
 import type { OpenQuestionDisplayReveal } from './OpenQuestionDisplayReveal';
 import type { OpenQuestionQuestionPhase } from './OpenQuestionQuestionPhase';
 
@@ -16,5 +17,6 @@ export interface OpenQuestionDisplayView {
     readonly answersCloseAt: number | null;
     readonly answeredCount: number;
     readonly participantCount: number;
+    readonly participants: readonly OpenQuestionDisplayParticipant[];
     readonly reveal: OpenQuestionDisplayReveal | null;
 }
