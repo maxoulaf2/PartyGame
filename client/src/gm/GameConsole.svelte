@@ -17,6 +17,7 @@
     import ResumeOffer from './ResumeOffer.svelte';
     import ReturnToLobbyControl from './ReturnToLobbyControl.svelte';
     import RoundControl from './RoundControl.svelte';
+    import ScoreForm from './ScoreForm.svelte';
     import SkipRoundBanner from './SkipRoundBanner.svelte';
     import StartControl from './StartControl.svelte';
 
@@ -33,6 +34,8 @@
 
     // One rename at a time: the player whose form is open, followed by identifier through renames.
     let renaming = $state<PlayerId | null>(null);
+    // One score adjustment at a time, likewise.
+    let adjusting = $state<PlayerId | null>(null);
 
     const connectedCount = $derived(snapshot.players.filter((p) => p.isConnected).length);
 
@@ -211,6 +214,18 @@
                                 {fr.gm.rename.action}
                             </button>
                         {/if}
+                        {#if snapshot.phase !== 'Lobby' && adjusting !== player.id}
+                            <button
+                                type="button"
+                                disabled={!interactive}
+                                aria-label={fill(fr.gm.adjustScore.actionFor, {
+                                    nickname: player.nickname,
+                                })}
+                                onclick={() => (adjusting = player.id)}
+                            >
+                                {fr.gm.adjustScore.action}
+                            </button>
+                        {/if}
                     </div>
                     {#if renaming === player.id}
                         <RenameForm
@@ -218,6 +233,15 @@
                             {session}
                             {interactive}
                             onclose={() => (renaming = null)}
+                        />
+                    {/if}
+                    <!-- The scores mean nothing in the lobby: a return to it closes the form. -->
+                    {#if adjusting === player.id && snapshot.phase !== 'Lobby'}
+                        <ScoreForm
+                            {player}
+                            {session}
+                            {interactive}
+                            onclose={() => (adjusting = null)}
                         />
                     {/if}
                 </li>

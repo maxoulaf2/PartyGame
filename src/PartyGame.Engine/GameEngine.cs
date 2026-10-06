@@ -2,6 +2,7 @@ using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Lobby;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Rounds;
+using PartyGame.Engine.Scores;
 
 namespace PartyGame.Engine;
 
@@ -41,6 +42,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             PlayerConnectionLost lost => Presence.ConnectionLost(state, lost),
             PlayerConnectionRestored restored => Presence.ConnectionRestored(state, restored),
             RenamePlayer rename => Renaming.Rename(state, rename),
+            AdjustScore adjust => ScoreAdjustment.Adjust(state, adjust),
             StartGame start => Launch.Start(state, start, modes, context),
             PauseGame pause => GamePause.Handle(state, pause, modes, context),
             ReturnToLobby back => LobbyReturn.Return(state, back, context),

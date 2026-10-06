@@ -86,6 +86,9 @@ internal sealed class GameHub(
     /// <summary>SignalR target of <see cref="PauseGameAsync"/>, as the clients call it.</summary>
     public const string PauseGame = nameof(PauseGame);
 
+    /// <summary>SignalR target of <see cref="AdjustScoreAsync"/>, as the clients call it.</summary>
+    public const string AdjustScore = nameof(AdjustScore);
+
     /// <summary>SignalR target of <see cref="ShowJoinCodeAsync"/>, as the clients call it.</summary>
     public const string ShowJoinCode = nameof(ShowJoinCode);
 
@@ -682,6 +685,34 @@ internal sealed class GameHub(
         if (outcome.Status == InputStatus.Accepted)
         {
             logger.GamePaused(request.GameId.Value, request.Paused);
+        }
+    }
+
+    /// <summary>
+    /// Corrects the score of a player at the request of the game master. The loop alone decides whether the request still
+    /// makes sense, so that a request sent twice or two consoles never adjust a score twice. Nothing is answered: the
+    /// snapshots show the score either way.
+    /// </summary>
+    /// <param name="message">An <see cref="AdjustScoreRequest"/>.</param>
+    [GameMasterOnly]
+    [HubMethodName(AdjustScore)]
+    public async Task AdjustScoreAsync(JsonElement message)
+    {
+        if (!HubMessage.TryRead<AdjustScoreRequest>(message, out var request, out var invalidPath))
+        {
+            logger.MessageMalformed(AdjustScore, Context.ConnectionId, invalidPath);
+            return;
+        }
+
+        // Not cancelled with the connection: once enqueued, the request may be accepted whoever is left to see it.
+        var outcome = await inputs
+            .SubmitAsync(
+                new Engine.Inputs.AdjustScore(request.PlayerId, request.ExpectedScore, request.NewScore, timeProvider.GetUtcNow()),
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        if (outcome.Status == InputStatus.Accepted)
+        {
+            logger.ScoreAdjusted(request.PlayerId.Value, request.ExpectedScore, request.NewScore);
         }
     }
 

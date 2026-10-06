@@ -526,6 +526,23 @@ export const fr = {
                 failed: 'Le renommage n’a pas abouti : réessayez.',
             },
         },
+        adjustScore: {
+            action: 'Modifier le score',
+            // Read by screen readers: several « Modifier le score » buttons must be told apart.
+            actionFor: 'Modifier le score de {nickname}',
+            legend: 'Score de {nickname}',
+            modes: {
+                add: 'Ajouter',
+                remove: 'Retirer',
+                set: 'Nouveau total',
+            },
+            amount: 'Points',
+            // Shown before confirmation: the total the console sees, and the one it asks for.
+            preview: '{old} → {new} points',
+            negative: 'Le score ne peut pas être négatif.',
+            submit: 'Confirmer',
+            cancel: 'Annuler',
+        },
     },
     // The page /diagnostic/, opened on a phone by the game master on arrival at the venue.
     diagnostic: {

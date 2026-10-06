@@ -59,6 +59,9 @@ internal static partial class HubLog
     [LoggerMessage(Level = LogLevel.Information, Message = "Game {GameId} paused by the game master: {Paused}")]
     public static partial void GamePaused(this ILogger logger, Guid gameId, bool paused);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Score of player {PlayerId} adjusted by the game master from {OldScore} to {NewScore}")]
+    public static partial void ScoreAdjusted(this ILogger logger, Guid playerId, int oldScore, int newScore);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "ResumeSession from connection {ConnectionId} ignored: it already identified a player")]
     public static partial void ResumeRepeated(this ILogger logger, string connectionId);
 
