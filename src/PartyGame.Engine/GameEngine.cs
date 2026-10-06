@@ -56,6 +56,7 @@ public sealed class GameEngine(GameModes modes) : IGameEngine
             NextRound next => RoundFlow.Next(state, next, context),
             StartRound start => RoundFlow.Start(state, start, modes, context),
             SkipRound skip => RoundFlow.Skip(state, skip, context),
+            ReorderRounds reorder => Programme.Reorder(state, reorder),
             PlayerRoundInput player => RoundFlow.HandlePlayerIntent(state, player, modes, context),
             GameMasterRoundInput gameMaster => RoundFlow.HandleGameMasterIntent(state, gameMaster, modes, context),
 

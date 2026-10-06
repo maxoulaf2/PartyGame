@@ -17,6 +17,7 @@
     import ResumeOffer from './ResumeOffer.svelte';
     import ReturnToLobbyControl from './ReturnToLobbyControl.svelte';
     import RoundControl from './RoundControl.svelte';
+    import ScheduleControl from './ScheduleControl.svelte';
     import ScoreForm from './ScoreForm.svelte';
     import SkipRoundBanner from './SkipRoundBanner.svelte';
     import StartControl from './StartControl.svelte';
@@ -81,12 +82,14 @@
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
 
-    <!-- A round announced may fail to start: it is skipped the same way. -->
-    {#if (snapshot.phase === 'Round' || snapshot.phase === 'RoundIntro') && snapshot.round !== null && session.incidents.isFailing(snapshot.round.roundId)}
+    <!-- Offered for any round announced or in progress, as an alert when it keeps failing: a round
+         announced may fail to start, and is skipped the same way. -->
+    {#if (snapshot.phase === 'Round' || snapshot.phase === 'RoundIntro') && snapshot.round !== null}
         <!-- Keyed: a confirmation open for one round never skips another. -->
         {#key snapshot.round.roundId}
             <SkipRoundBanner
                 roundId={snapshot.round.roundId}
+                failing={session.incidents.isFailing(snapshot.round.roundId)}
                 {session}
                 interactive={roundInteractive}
             />
@@ -116,6 +119,15 @@
             clock={pausedClock(clock, snapshot.pausedAt)}
             interactive={roundInteractive}
         />
+        {#if snapshot.schedule.length > 0}
+            <!-- Changing the programme moves no round: it stays open during a pause. -->
+            <ScheduleControl
+                gameId={snapshot.gameId}
+                schedule={snapshot.schedule}
+                {session}
+                interactive={interactive && pausable}
+            />
+        {/if}
         <!-- Keyed: a confirmation open for one game never ends another. -->
         {#key snapshot.gameId}
             <ReturnToLobbyControl

@@ -73,8 +73,17 @@ internal sealed class SavedGameLoader(
         }
 
         logger.SavedGameFound(file, saved.Game.Players.Length, saved.SavedAt);
-        return saved;
+        return WithSchedule(saved);
     }
+
+    /// <summary>
+    /// The game saved with its programme. A game saved before the programme existed has none: its rounds follow the order
+    /// of the pack. With more than one round, a game started always has some round past, to come or withdrawn.
+    /// </summary>
+    private static SavedGame WithSchedule(SavedGame saved) =>
+        saved.Game is { CurrentRound: { } round, Rounds.Length: > 1, Schedule: { Past.IsEmpty: true, Upcoming.IsEmpty: true, Withdrawn.IsEmpty: true } }
+            ? saved with { Game = saved.Game with { Schedule = RoundSchedule.InPackOrder(round.Index, saved.Game.Rounds.Length) } }
+            : saved;
 
     private void SetAside(string file, string problem)
     {

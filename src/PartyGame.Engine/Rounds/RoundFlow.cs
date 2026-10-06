@@ -14,18 +14,30 @@ namespace PartyGame.Engine.Rounds;
 internal static class RoundFlow
 {
     /// <summary>
-    /// Announces a round of the pack, which its game mode does not play until the game master starts it. The ranking the
-    /// players leave is remembered, for the next one to show who gained or lost places: none before the first round.
+    /// Announces the first round to come of the programme, which its game mode does not play until the game master starts
+    /// it; the current round, if any, joins those past. The ranking the players leave is remembered, for the next one to
+    /// show who gained or lost places: none before the first round.
     /// </summary>
-    public static Transition Announce(GameState state, int index, GameContext context)
+    public static Transition Announce(GameState state, GameContext context)
     {
-        var ranks = index == 0 ? [] : Ranking.Of(state.Players).ToDictionary(s => s.Player.Id, s => s.Rank);
+        var schedule = state.Schedule;
+        if (state.CurrentRound is { } previous)
+        {
+            schedule = schedule with
+            {
+                Past = schedule.Past.Add(previous.Index),
+                Skipped = previous.IsSkipped ? schedule.Skipped.Add(previous.Index) : schedule.Skipped,
+            };
+        }
+
+        var ranks = state.CurrentRound is null ? [] : Ranking.Of(state.Players).ToDictionary(s => s.Player.Id, s => s.Rank);
         return new(
             state with
             {
                 Phase = GamePhase.RoundIntro,
                 Players = [.. state.Players.Select(p => p with { PreviousRank = ranks.TryGetValue(p.Id, out var rank) ? rank : null })],
-                CurrentRound = new PlayedRound(NewRoundId(context.Random), index, State: null),
+                CurrentRound = new PlayedRound(NewRoundId(context.Random), schedule.Upcoming[0], State: null),
+                Schedule = schedule with { Upcoming = schedule.Upcoming.RemoveAt(0) },
             },
             []);
     }
@@ -60,7 +72,8 @@ internal static class RoundFlow
 
     /// <summary>
     /// Announces the round that follows the one the game master names, which must be the one that just finished: a request
-    /// sent twice, or by two consoles at once, announces it only once.
+    /// sent twice, or by two consoles at once, announces it only once. When the game master withdrew every round to come
+    /// since, the game is finished instead.
     /// </summary>
     public static Transition Next(GameState state, NextRound next, GameContext context)
     {
@@ -75,7 +88,9 @@ internal static class RoundFlow
             return Transition.Rejected(state, RejectionReason.RoundMismatch);
         }
 
-        return Announce(state, finished.Index + 1, context);
+        return state.Schedule.Upcoming.IsEmpty
+            ? new Transition(state with { Phase = GamePhase.Finished, FinishedAt = context.Now }, [])
+            : Announce(state, context);
     }
 
     /// <summary>
@@ -229,10 +244,10 @@ internal static class RoundFlow
     }
 
     /// <summary>
-    /// The game once its current round is over: between two rounds, or finished after the last one, from now on.
+    /// The game once its current round is over: between two rounds, or finished when no round is to come, from now on.
     /// </summary>
     private static GameState Ended(GameState state, GameContext context) =>
-        state.CurrentRound!.Index == state.Rounds.Length - 1
+        state.Schedule.Upcoming.IsEmpty
             ? state with { Phase = GamePhase.Finished, FinishedAt = context.Now }
             : state with { Phase = GamePhase.BetweenRounds };
 

@@ -60,6 +60,11 @@ namespace PartyGame.Contracts;
 /// <see langword="null"/> while it is not paused. The countdowns of the screens stand still at that time, and the phones
 /// show the pause instead of anything interactive.
 /// </param>
+/// <param name="Schedule">
+/// Every round of the pack once the game is started: those played or skipped in the order they were, the current one,
+/// those to come in the order they will be, then those withdrawn; empty in the lobby. Only this projection holds it: the
+/// others discover the rounds as they are played.
+/// </param>
 public sealed record GameMasterSnapshot(
     GameId GameId,
     long Version,
@@ -79,4 +84,5 @@ public sealed record GameMasterSnapshot(
     GameMasterSavedGame? SavedGame,
     bool JoinCodeShown,
     GameMasterPreview? Preview,
-    long? PausedAt);
+    long? PausedAt,
+    ImmutableArray<GameMasterScheduledRound> Schedule);

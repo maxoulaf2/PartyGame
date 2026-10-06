@@ -1,0 +1,36 @@
+{
+  "formatVersion": 1,
+  "title": "Soirée au programme",
+  "rounds": [
+    {
+      "type": "quiz",
+      "title": "Échauffement",
+      "questions": [
+        {
+          "text": "Combien de pattes a une araignée ?",
+          "choices": [{ "text": "6" }, { "text": "8", "correct": true }]
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "Intermède",
+      "questions": [
+        {
+          "text": "Combien de continents compte-t-on ?",
+          "choices": [{ "text": "5" }, { "text": "7", "correct": true }]
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "Finale",
+      "questions": [
+        {
+          "text": "Quel est le plus grand océan ?",
+          "choices": [{ "text": "Atlantique" }, { "text": "Pacifique", "correct": true }]
+        }
+      ]
+    }
+  ]
+}

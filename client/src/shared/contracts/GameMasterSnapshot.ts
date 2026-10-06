@@ -10,6 +10,7 @@ import type { GameMasterPlayer } from './GameMasterPlayer';
 import type { GameMasterPreview } from './GameMasterPreview';
 import type { GameMasterRoundView } from './GameMasterRoundView';
 import type { GameMasterSavedGame } from './GameMasterSavedGame';
+import type { GameMasterScheduledRound } from './GameMasterScheduledRound';
 import type { Phase } from './Phase';
 import type { RankedPlayer } from './RankedPlayer';
 import type { RoundInfo } from './RoundInfo';
@@ -34,4 +35,5 @@ export interface GameMasterSnapshot {
     readonly joinCodeShown: boolean;
     readonly preview: GameMasterPreview | null;
     readonly pausedAt: number | null;
+    readonly schedule: readonly GameMasterScheduledRound[];
 }

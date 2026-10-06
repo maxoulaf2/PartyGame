@@ -1,6 +1,6 @@
 ### US-E19-03 — Saut et réordonnancement des manches
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** voir le programme des manches, en sauter et en changer l'ordre pendant la soirée
@@ -25,6 +25,12 @@ Défaut : rien côté joueurs et public. Une intention obsolète est rejetée, e
 - Projection `GameMaster` seulement : le programme complet. Les projections `Display` et `Player` ne portent que le numéro de la manche en cours et le total des manches programmées.
 - Le numéro d'une manche (« Manche 2/3 ») est sa position dans la partie, pas dans le pack.
 - La console GM utilise des boutons « Monter » et « Descendre », utilisables au doigt sur un téléphone, plutôt qu'un glisser-déposer.
+- Réalisation : moteur. `GameState.Schedule` (`RoundSchedule`) porte les manches passées (et celles d’entre elles qui ont été passées par le GM), à venir et retirées, en indices du pack ; avec la manche courante, chaque manche du pack y figure une fois. Le lancement programme toutes les manches dans l’ordre du pack ; `RoundFlow.Announce` prend la première manche à venir, et la partie se termine quand il n’en reste aucune, à la fin de la manche en cours ou à `NextRound` si le GM a tout retiré entre deux manches. `Programme` traite `ReorderRounds` dans les phases `RoundIntro`, `Round` et `BetweenRounds`, pendant une pause comprise. Rejets : `NotReorderable` (lobby, partie terminée ; `GamePending` pendant le choix d’une partie trouvée), `GameMismatch`, `ScheduleObsolete` (ordre attendu périmé), `RoundUnknown`, `RoundFixed` (manche passée ou courante), `ScheduleIncomplete` (manche manquante ou en double). Un ordre identique est accepté sans changement.
+- Réalisation : projections. `RoundInfo.Number` et `Count` viennent du programme ; seule la projection `GameMaster` porte `Schedule` (`GameMasterScheduledRound` : indice, titre, mode, `ScheduledRoundStatus`), et `NextRoundTitle` suit le programme.
+- Réalisation : persistance. Le programme est enregistré avec la partie ; une partie enregistrée avant lui suit l’ordre du pack (`SavedGameLoader`).
+- Réalisation : hub. `ReorderRounds` (`ReorderRoundsRequest`), `[GameMasterOnly]`, ne répond rien ; un changement accepté est journalisé en `Information`.
+- Réalisation : client. `gm/ScheduleControl.svelte`, repliable sous « Programme » : statut de chaque manche, « Monter », « Descendre » et « Retirer » pour les manches à venir, « Remettre » pour les manches retirées, calculés par `gm/scheduleEdit.ts`. « Passer la manche » (`SkipRoundBanner`) est proposé pour toute manche annoncée ou en cours, en alerte seulement pour une manche défaillante. Entre deux manches, sans manche à venir, le bouton devient « Classement final ».
+- Réalisation : tests. `ProgrammeTests` (ordre, retrait, remise, fin de partie, pause, manche passée, rejets, retour au lobby, aller-retour JSON), scénarios et paire « order of the rounds to come » de `SnapshotsLeakTests`, `ReorderRoundsTests` côté hub (dont une partie enregistrée avant le programme), `scheduleEdit.test.ts` et `e2e/schedule.spec.ts`.
 
 **Hors périmètre**
 - Rejouer une manche déjà jouée ou passée.

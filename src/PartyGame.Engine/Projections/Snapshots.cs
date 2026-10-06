@@ -72,7 +72,8 @@ public sealed class Snapshots(GameModes modes)
             PreviewOf(state) is var (_, preview, step, shown)
                 ? new GameMasterPreview(preview.PackId, preview.Round, step, shown.HasExcerpt)
                 : null,
-            PausedAtOf(state));
+            PausedAtOf(state),
+            ScheduleOf(state));
     }
 
     /// <summary>
@@ -171,8 +172,37 @@ public sealed class Snapshots(GameModes modes)
             return null;
         }
 
+        // Its position in the game, not in the pack: the rounds withdrawn do not count.
         var descriptor = state.Rounds[round.Index];
-        return new RoundInfo(round.Id, round.Index + 1, state.Rounds.Length, descriptor.Title, GameModes.TypeOf(descriptor), descriptor.Description);
+        return new RoundInfo(
+            round.Id,
+            state.Schedule.Past.Length + 1,
+            state.Schedule.Count,
+            descriptor.Title,
+            GameModes.TypeOf(descriptor),
+            descriptor.Description);
+    }
+
+    /// <summary>
+    /// Every round of the pack, where it stands in the programme, once the game is started.
+    /// </summary>
+    private static ImmutableArray<GameMasterScheduledRound> ScheduleOf(GameState state)
+    {
+        if (state.CurrentRound is not { } current)
+        {
+            return [];
+        }
+
+        var schedule = state.Schedule;
+        GameMasterScheduledRound Of(int index, ScheduledRoundStatus status) =>
+            new(index, state.Rounds[index].Title, GameModes.TypeOf(state.Rounds[index]), status);
+        return
+        [
+            .. schedule.Past.Select(i => Of(i, schedule.Skipped.Contains(i) ? ScheduledRoundStatus.Skipped : ScheduledRoundStatus.Played)),
+            Of(current.Index, ScheduledRoundStatus.Current),
+            .. schedule.Upcoming.Select(i => Of(i, ScheduledRoundStatus.Upcoming)),
+            .. schedule.Withdrawn.Select(i => Of(i, ScheduledRoundStatus.Withdrawn)),
+        ];
     }
 
     /// <summary>
@@ -204,7 +234,7 @@ public sealed class Snapshots(GameModes modes)
             : [];
 
     private static string? NextRoundTitleOf(GameState state) =>
-        state is { Phase: GamePhase.BetweenRounds, CurrentRound: { } round } ? state.Rounds[round.Index + 1].Title : null;
+        state is { Phase: GamePhase.BetweenRounds, Schedule.Upcoming: [var next, ..] } ? state.Rounds[next].Title : null;
 
     /// <summary>
     /// The step of the pack previewed, built by the game mode of its round. Never part of the projection of a player.

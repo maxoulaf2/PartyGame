@@ -83,6 +83,18 @@ public sealed class SnapshotsLeakTests
         {
             var state = Games.InPhase(phase, "Zoé", "Max");
             yield return ("paused", Games.Accepted(state, new PauseGame(state.GameId, Paused: true, Games.Now)));
+
+            // The programme changed by the game master: a round moved, another withdrawn.
+            var programme = Games.PlayedUpTo(phase, ProgrammeTests.ThreeRoundLobby());
+            yield return ("reordered programme", Games.Accepted(programme, ProgrammeTests.Reorder(programme, (2, false), (1, true))));
+        }
+
+        if (phase == GamePhase.Finished)
+        {
+            // Every round to come withdrawn: the game ends with them unplayed.
+            var programme = Games.PlayedUpTo(GamePhase.Round, ProgrammeTests.ThreeRoundLobby());
+            programme = Games.Accepted(programme, ProgrammeTests.Reorder(programme, (1, true), (2, true)));
+            yield return ("rounds withdrawn", Games.Accepted(programme, Games.GameMasterActs(programme, FakeGameMasterIntent.Finish)));
         }
 
         if (phase == GamePhase.Lobby)
@@ -188,6 +200,17 @@ public sealed class SnapshotsLeakTests
                 Audience.OtherPlayersThan("Zoé"));
         }
 
+        // The order of the rounds to come is the game master's: the others discover the rounds as they are played.
+        if (phase is GamePhase.RoundIntro or GamePhase.Round or GamePhase.BetweenRounds)
+        {
+            var programme = Games.PlayedUpTo(phase, ProgrammeTests.ThreeRoundLobby());
+            yield return new SecretPair<GameState>(
+                "order of the rounds to come",
+                programme,
+                Games.Accepted(programme, ProgrammeTests.Reorder(programme, (2, false), (1, false))),
+                Audience.AllButGameMaster);
+        }
+
         // Nor where the others stood in the ranking before.
         yield return new SecretPair<GameState>(
             "previous rank of another player",
@@ -256,9 +279,12 @@ public sealed class SnapshotsLeakTests
             }
         }
 
-        // The rounds of the game are discovered as they are played.
-        var played = state.CurrentRound?.Index ?? -1;
-        foreach (var round in chosen?.Rounds.Skip(played + 1) ?? [])
+        // The rounds of the game are discovered as they are played: those to come and those withdrawn are no one's but
+        // the game master's.
+        var unplayed = state.CurrentRound is null
+            ? chosen?.Rounds ?? []
+            : [.. state.Schedule.Upcoming.Concat(state.Schedule.Withdrawn).Select(i => state.Rounds[i])];
+        foreach (var round in unplayed)
         {
             yield return new Secret(round.Title, RoundsHiddenFrom(state.Pack is null ? state.SelectedPackId : null));
             if (round.Description is { } description)
