@@ -1,6 +1,6 @@
 ### US-E18-02 — Classements animés et podium révélé marche par marche
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** public
 **je veux** voir qui a gagné ou perdu des places entre deux manches, puis découvrir le podium marche par marche
@@ -22,6 +22,10 @@ Défaut : rien côté joueurs et public. Si l'animation échoue, la vue protég�
 - Le moteur mémorise le rang de chaque joueur au classement précédent ; `RankedPlayer` reçoit le rang précédent (`null` après la première manche ou pour un joueur arrivé depuis). Le client ne calcule aucun rang.
 - La séquence du podium part de l'instant de fin de partie, en heure serveur, porté par le snapshot : la TV et les téléphones restent alignés grâce à la synchronisation d'horloge, et une TV rechargée sait où en est la séquence.
 - Animations en CSS (`transform`, `opacity`) uniquement, pour rester fluides sur un Raspberry Pi ; aucune bibliothèque d'animation.
+- Réalisation : moteur. À l'annonce de chaque manche (`RoundFlow.Announce`), le rang de chaque joueur est mémorisé dans `Player.PreviousRank` : aucun avant la première manche, aucun pour un joueur arrivé depuis. La fin de la dernière manche, par son mode ou par `SkipRound`, enregistre `GameState.FinishedAt` (heure du contexte).
+- Réalisation : contrats. `RankedPlayer.PreviousRank` ; `DisplaySnapshot.FinishedAt` et `PlayerSnapshot.FinishedAt` (ms depuis l'epoch Unix, heure serveur), présents seulement une fois la partie terminée, nuls pour une partie enregistrée avant.
+- Réalisation : client. `display/RankingScreen.svelte` affiche « ▲ 2 », « ▼ 1 » ou « = » avec une phrase pour les lecteurs d'écran (`fr.game.rankMove`, `rankMoveLabel`) et fait glisser les lignes depuis l'ordre précédent (`display/rankMoves.ts`, `Element.animate` sur `transform`, aucune animation sous `prefers-reduced-motion`). La séquence du podium est dans `shared/podium.ts` (`revealDelay`, `isRevealed`, `untilNextReveal`) : le reste à la fin, puis les marches 3, 2 et 1 toutes les 2,5 s. `display/FinalRankingScreen.svelte` masque chaque marche jusqu'à sa révélation, à sa place ; `player/FinalScreen.svelte` affiche « Le classement se dévoile sur l'écran… » jusqu'à celle du rang du joueur.
+- Réalisation : tests. `RankingSnapshotsTests` (premier classement, classement suivant avec égalités, joueur arrivé depuis, instant de fin, y compris après un saut), paire de non-fuite « previous rank of another player », `podium.test.ts` et `rankMoves.test.ts` en Vitest, `e2e/display.spec.ts` (évolutions) et `e2e/podium.spec.ts` (révélation sur la TV et un téléphone, TV rechargée).
 
 **Hors périmètre**
 - Un roulement de tambour ou une fanfare (US-E20-02).
