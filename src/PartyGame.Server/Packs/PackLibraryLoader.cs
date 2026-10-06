@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using PartyGame.Content;
 using PartyGame.Engine.Modes;
+using PartyGame.Server.Persistence;
 
 namespace PartyGame.Server.Packs;
 
@@ -8,11 +9,15 @@ namespace PartyGame.Server.Packs;
 /// Loads and checks every pack of the pack directory, with the consistency checks of the registered game modes, and logs
 /// what the operator needs to fix them: at startup, then on each reload asked by the game master.
 /// </summary>
-internal sealed class PackLibraryLoader(IOptions<PacksOptions> options, GameModes modes, ILogger<PackLibrary> logger)
+internal sealed class PackLibraryLoader(
+    IOptions<PacksOptions> options,
+    IOptions<PersistenceOptions> persistence,
+    GameModes modes,
+    ILogger<PackLibrary> logger)
 {
     public PackLibrary Load()
     {
-        var library = new PackLoader(modes.Validate).LoadAll(options.Value.FullDirectory);
+        var library = new PackLoader(modes.Validate).LoadAll(options.Value.FullDirectory, persistence.Value.FullPackCacheDirectory);
 
         if (!library.DirectoryExists)
         {

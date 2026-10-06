@@ -288,6 +288,16 @@ export const fr = {
                     'L’extrait commence à {start} s, après la fin du morceau ({duration} s)',
                 PackLoadFailed:
                     'Le pack n’a pas pu être chargé à cause d’une erreur inattendue, détaillée dans le journal du serveur.',
+                PackArchiveInvalid: 'Fichier zip illisible ou endommagé : recréez le zip du pack.',
+                PackArchiveDescriptorMissing:
+                    'Aucun pack.json dans le zip : il doit être à la racine du zip, ou dans un unique dossier à sa racine.',
+                PackArchiveEntryOutside:
+                    'Le zip contient un chemin qui sort du dossier du pack : {entry}',
+                PackArchiveTooLarge: 'Le zip dépasse 2 Go une fois décompressé.',
+                PackArchiveExtractionFailed:
+                    'Le zip n’a pas pu être décompressé sur le serveur : disque plein ou écriture refusée.',
+                PackIdConflict:
+                    'Un dossier et un zip, ou deux zips, s’appellent tous deux « {id} » : renommez ou retirez l’un d’eux.',
                 QuizCorrectChoiceMissing:
                     'Question sans bonne réponse : marquez une proposition avec "correct": true',
                 QuizCorrectChoiceDuplicated:

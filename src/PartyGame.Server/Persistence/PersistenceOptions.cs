@@ -13,4 +13,7 @@ internal sealed class PersistenceOptions
     public string Directory { get; init; } = DefaultDirectory;
 
     public string FullDirectory => Path.GetFullPath(Directory, AppContext.BaseDirectory);
+
+    // Where the zip packs are extracted: kept across restarts, so that an unchanged zip is not extracted again.
+    public string FullPackCacheDirectory => Path.Combine(FullDirectory, "packs-cache");
 }

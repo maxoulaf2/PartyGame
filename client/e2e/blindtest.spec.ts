@@ -1,8 +1,12 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
 import { fill } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { expect, test } from './fixtures/table.ts';
+import { zipFolder } from './zip.ts';
 
 // A blind test round on a table of its own: the TV screen plays the excerpt when the server
 // decides, pauses it as a player gets the hand, and finds it back where it was after a reload.
@@ -106,6 +110,26 @@ async function judge(gm: Page, ...verdicts: string[]): Promise<void> {
     }
     await gm.getByRole('button', { name: fr.modes.blindtest.gm.validate, exact: true }).click();
 }
+
+test.describe('a pack shared as a zip', () => {
+    // The same pack, as the only zip of its pack directory: the server extracts it, then serves its
+    // excerpts as those of a folder.
+    const zipped = mkdtempSync(join(tmpdir(), 'partygame-e2e-zip-'));
+    zipFolder(join(blindTestPacks, 'blindtest'), join(zipped, 'blindtest.zip'));
+    test.use({ serverPacks: zipped });
+
+    test('its excerpt plays on the TV screen', async ({ table }) => {
+        const { display, gm } = table;
+        await unlockAudio(display);
+        await startGame(gm);
+        await expect(display.getByRole('heading', { name: track(1) })).toBeVisible();
+
+        await gm.getByRole('button', { name: fr.modes.blindtest.gm.play }).click();
+
+        await expect.poll(async () => (await audioOf(display)).currentTime).toBeGreaterThan(0.5);
+        expect((await audioOf(display)).paused).toBe(false);
+    });
+});
 
 test('a round of two tracks: found by two players, then revealed by the game master', async ({
     table,

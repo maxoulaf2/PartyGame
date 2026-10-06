@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -41,6 +42,12 @@ public sealed class PackMediaTests : IAsyncDisposable
         TestPacks.WriteMedia(_packs.Path, "soiree", Portrait, [4, 5, 6]);
         TestPacks.Write(_packs.Path, "voisin", TestPacks.IllustratedQuiz("Pack voisin", NeighbourImage));
         TestPacks.WriteMedia(_packs.Path, "voisin", NeighbourImage, [7, 8, 9]);
+
+        // A third one shared as a zip, whose media files are served from the cache it is extracted to.
+        TestPacks.Write(_packs.Path, "album", TestPacks.IllustratedQuiz("Album", Flag));
+        TestPacks.WriteMedia(_packs.Path, "album", Flag, _flagContent);
+        ZipFile.CreateFromDirectory(Path.Combine(_packs.Path, "album"), Path.Combine(_packs.Path, "album.zip"));
+        Directory.Delete(Path.Combine(_packs.Path, "album"), recursive: true);
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder
             .UseScratchDirectory(_logs.Path)
             .UseSetting("GameMaster:Code", Code)
@@ -77,6 +84,24 @@ public sealed class PackMediaTests : IAsyncDisposable
         Assert.Equal(File.ReadAllBytes(Path.Combine([_packs.Path, "soiree", .. media.Split('/')])), await response.Content.ReadAsByteArrayAsync(Ct));
         Assert.Contains("bytes", response.Headers.AcceptRanges);
         Assert.True(response.Headers.CacheControl?.Private);
+    }
+
+    [Fact]
+    public async Task Get_RangeOfAMediaOfAZipPack_ServesThePartAskedFromTheExtractedFile()
+    {
+        // Given
+        await StartGameAsync("album");
+        using var client = CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, UrlOf(Flag));
+        request.Headers.Range = new RangeHeaderValue(10, 19);
+
+        // When
+        using var response = await client.SendAsync(request, Ct);
+
+        // Then
+        Assert.Equal(HttpStatusCode.PartialContent, response.StatusCode);
+        Assert.Equal(_flagContent[10..20], await response.Content.ReadAsByteArrayAsync(Ct));
+        Assert.DoesNotContain("album", UrlOf(Flag), StringComparison.Ordinal);
     }
 
     [Fact]

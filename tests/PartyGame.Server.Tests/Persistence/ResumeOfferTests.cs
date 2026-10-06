@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -89,6 +90,24 @@ public sealed class ResumeOfferTests : IAsyncDisposable
             new Secret("Soirée test", Audience.AllButGameMaster),
             new Secret("Manche illustrée", Audience.AllButGameMaster));
         LeakAssert.NoSecretReceived(Viewer.GameMaster, toGameMaster.Json, new Secret("Zoé", Audience.Everyone), new Secret(Image, Audience.Everyone));
+    }
+
+    [Fact]
+    public async Task Startup_GameOfAZipPackWithItsCacheDeleted_ExtractsItAgainAndFindsEveryMedia()
+    {
+        // Given: the pack shared as a zip, a game saved with it, then the cache of the extracted zips deleted
+        var folder = Path.Combine(_packs.Path, "soiree");
+        ZipFile.CreateFromDirectory(folder, folder + ".zip");
+        Directory.Delete(folder, recursive: true);
+        await SaveGameAsync(started: true, "Zoé");
+        Directory.Delete(Path.Combine(_data.Path, "packs-cache"), recursive: true);
+
+        // When
+        Restart();
+
+        // Then
+        Assert.Equal(GamePhase.ResumePending, Game.State.Phase);
+        Assert.Empty(Game.State.PendingGame!.MissingMedia);
     }
 
     [Fact]

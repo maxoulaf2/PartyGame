@@ -58,7 +58,7 @@ internal static class GameLoopExtensions
                         address,
                         candidates,
                         catalog,
-                        new PendingGame(saved.Game, saved.SavedAt, PackMediaFiles.Missing(saved.Game))),
+                        new PendingGame(saved.Game, saved.SavedAt, PackMediaFiles.Missing(saved.Game, services.GetRequiredService<IOptions<PersistenceOptions>>().Value.FullPackCacheDirectory))),
                 Random.Shared.Next(),
                 services.GetRequiredService<GameInputQueue>(),
                 services.GetRequiredService<IGameEngine>(),

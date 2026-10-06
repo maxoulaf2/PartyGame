@@ -21,7 +21,7 @@ public sealed class PackLibraryTests : IDisposable
         File.WriteAllText(Path.Combine(_packs.Root, "not-a-pack", "notes.txt"), "Pas un pack");
 
         // When
-        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root);
+        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root, _packs.Cache);
 
         // Then
         Assert.True(library.DirectoryExists);
@@ -40,7 +40,7 @@ public sealed class PackLibraryTests : IDisposable
         File.Move(Path.Combine(folder, PackDescriptor.FileName), Path.Combine(folder, "Pack.json"));
 
         // When
-        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root);
+        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root, _packs.Cache);
 
         // Then
         Assert.Empty(library.Packs);
@@ -50,7 +50,7 @@ public sealed class PackLibraryTests : IDisposable
     public void LoadAll_MissingDirectory_ReturnsNoPackAndSaysTheDirectoryIsMissing()
     {
         // When
-        var library = new PackLoader(NoModeCheck).LoadAll(Path.Combine(_packs.Root, "missing"));
+        var library = new PackLoader(NoModeCheck).LoadAll(Path.Combine(_packs.Root, "missing"), _packs.Cache);
 
         // Then
         Assert.False(library.DirectoryExists);
@@ -64,7 +64,7 @@ public sealed class PackLibraryTests : IDisposable
         Directory.CreateDirectory(_packs.Root);
 
         // When
-        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root);
+        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root, _packs.Cache);
 
         // Then
         Assert.True(library.DirectoryExists);
@@ -81,7 +81,7 @@ public sealed class PackLibraryTests : IDisposable
         var loader = new PackLoader((round, path) => round.Title == "Bug" ? throw failure : []);
 
         // When
-        var library = loader.LoadAll(_packs.Root);
+        var library = loader.LoadAll(_packs.Root, _packs.Cache);
 
         // Then
         var broken = library.Packs[0];
@@ -99,7 +99,7 @@ public sealed class PackLibraryTests : IDisposable
         var folder = _packs.Add("pack", Pack(Quiz(ValidQuestion)));
 
         // When
-        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root);
+        var library = new PackLoader(NoModeCheck).LoadAll(_packs.Root, _packs.Cache);
         File.Delete(Path.Combine(folder, PackDescriptor.FileName));
 
         // Then

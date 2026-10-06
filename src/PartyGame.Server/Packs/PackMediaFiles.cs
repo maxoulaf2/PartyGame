@@ -1,9 +1,11 @@
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Options;
 using PartyGame.Content;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine;
 using PartyGame.Server.Games;
+using PartyGame.Server.Persistence;
 
 namespace PartyGame.Server.Packs;
 
@@ -12,7 +14,7 @@ namespace PartyGame.Server.Packs;
 /// comes from the state only, never from the URL: no request can reach another file of the disk, nor a file of another
 /// pack, nor a media file before the game starts.
 /// </summary>
-internal sealed class PackMediaFiles(GameLoop game, ILogger<PackMediaFiles> logger)
+internal sealed class PackMediaFiles(GameLoop game, IOptions<PersistenceOptions> persistence, ILogger<PackMediaFiles> logger)
 {
     // An identifier designates the same file for the whole game: the TV screen loads each one once.
     private const string CacheControl = "private, max-age=86400, immutable";
@@ -31,7 +33,7 @@ internal sealed class PackMediaFiles(GameLoop game, ILogger<PackMediaFiles> logg
     {
         ArgumentNullException.ThrowIfNull(response);
 
-        if (Find(game.State, new MediaId(id)) is not { } file)
+        if (Find(game.State, new MediaId(id), persistence.Value.FullPackCacheDirectory) is not { } file)
         {
             return Results.NotFound();
         }
@@ -82,24 +84,31 @@ internal sealed class PackMediaFiles(GameLoop game, ILogger<PackMediaFiles> logg
     /// The media files of the pack of a game missing from the disk, as the server would fail to serve them, in the ordinal
     /// order of their path: a game is resumed only once none is.
     /// </summary>
-    internal static ImmutableArray<MediaPath> Missing(GameState state) =>
+    internal static ImmutableArray<MediaPath> Missing(GameState state, string cacheDirectory) =>
         [.. state.Media.Files
-            .Where(media => Find(state, media.Key) is not { } file || !File.Exists(file))
+            .Where(media => Find(state, media.Key, cacheDirectory) is not { } file || !File.Exists(file))
             .Select(media => media.Value)
             .OrderBy(media => media.Value, StringComparer.Ordinal)];
 
     /// <summary>
-    /// The full path of the media file an identifier designates in the pack of the game.
+    /// The full path of the media file an identifier designates in the pack of the game: in its folder of the pack
+    /// directory, or else in the cache the zip packs are extracted to.
     /// </summary>
     /// <returns>The path, or <see langword="null"/> when the game has no media file with this identifier.</returns>
-    internal static string? Find(GameState state, MediaId id)
+    internal static string? Find(GameState state, MediaId id, string cacheDirectory)
     {
         if (state is not { Pack: not null, SelectedPackId: { } packId } || state.Media.Find(id) is not { } media)
         {
             return null;
         }
 
+        // The loading never lets a folder and a zip with the same identifier be chosen: the one holding pack.json is it.
         var folder = Path.GetFullPath(Path.Combine(state.Catalog.Directory, packId));
+        if (!File.Exists(Path.Combine(folder, PackDescriptor.FileName)))
+        {
+            folder = Path.GetFullPath(Path.Combine(cacheDirectory, packId));
+        }
+
         var file = Path.GetFullPath(Path.Combine([folder, .. media.Value.Split('/')]));
 
         // The loading refuses any path out of the pack. Checked again all the same: a file out of it would expose the disk.

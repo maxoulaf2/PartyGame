@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Features;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Projections;
@@ -33,6 +34,7 @@ internal sealed class GameHub(
     GamePersistence persistence,
     PlayerConnections playerConnections,
     PackReloader packReloader,
+    IOptions<PersistenceOptions> persistenceOptions,
     IncidentJournal incidents,
     IIncidentReporter incidentReporter,
     MediaLocator mediaLocator,
@@ -757,7 +759,7 @@ internal sealed class GameHub(
 
         // Not cancelled with the connection: the other consoles get the result whoever is left to see it.
         await inputs
-            .SubmitAsync(new Engine.Inputs.SavedGameMediaChecked(pending.Game.GameId, PackMediaFiles.Missing(pending.Game)), CancellationToken.None)
+            .SubmitAsync(new Engine.Inputs.SavedGameMediaChecked(pending.Game.GameId, PackMediaFiles.Missing(pending.Game, persistenceOptions.Value.FullPackCacheDirectory)), CancellationToken.None)
             .ConfigureAwait(false);
     }
 

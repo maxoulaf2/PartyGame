@@ -8,7 +8,7 @@
 | US | Titre | Statut | Dépend de |
 |---|---|---|---|
 | [US-E17-01](US-E17-01-validation-en-ligne-de-commande.md) | Validation d'un pack en ligne de commande | Terminée | — |
-| [US-E17-02](US-E17-02-packs-zip.md) | Packs au format zip | À faire | — |
+| [US-E17-02](US-E17-02-packs-zip.md) | Packs au format zip | Terminée | — |
 | [US-E17-03](US-E17-03-apercu-sur-la-tv.md) | Aperçu d'un pack sur la TV | À faire | — |
 | [US-E17-04](US-E17-04-guide-et-pack-complet.md) | Guide de rédaction et pack d'exemple de tous les modes | À faire | US-E16-04, US-E17-01, US-E17-02 |
 

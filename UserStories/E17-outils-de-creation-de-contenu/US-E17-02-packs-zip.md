@@ -1,6 +1,6 @@
 ### US-E17-02 — Packs au format zip
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant qu'** auteur de pack
 **je veux** partager mon pack en un seul fichier zip, que le GM dépose tel quel dans le dossier des packs
@@ -23,6 +23,7 @@ Contenu invalide : pack non sélectionnable, problème listé au GM avant la par
 - `System.IO.Compression.ZipFile`, inclus dans .NET : aucune dépendance ajoutée.
 - L'extraction se fait hors de la boucle de jeu, comme le chargement des dossiers ; le moteur ne voit aucune différence.
 - La règle de casse des chemins de médias (US-E06-02) s'applique aux entrées du zip.
+- Réalisation : `PackArchive` (`PartyGame.Content`) extrait le zip dans `packs-cache/<id>/`, `pack.json` à la racine, et écrit à côté un fichier `<id>.stamp` (taille et date du zip) une fois l'extraction complète ; le dossier `__MACOSX/` du Finder est ignoré. Les entrées et la taille déclarée sont vérifiées avant toute écriture, puis la taille réellement décompressée. Le service des médias cherche le pack dans le dossier des packs, puis dans le cache s'il n'y a pas de `pack.json`. Le test E2E construit son zip avec `e2e/zip.ts` (zip sans compression, sans dépendance).
 
 **Hors périmètre**
 - Téléverser un zip depuis la console GM.
