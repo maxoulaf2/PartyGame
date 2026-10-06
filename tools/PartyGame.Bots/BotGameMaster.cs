@@ -3,6 +3,9 @@ using System.Threading.Channels;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Client;
 using PartyGame.Contracts;
+using PartyGame.Contracts.BlindTest;
+using PartyGame.Contracts.Buzzer;
+using PartyGame.Contracts.OpenQuestion;
 using PartyGame.Contracts.Quiz;
 using PartyGame.Contracts.Serialization;
 
@@ -24,11 +27,17 @@ internal sealed class BotGameMaster : IAsyncDisposable
     private readonly string? _packId;
     private readonly int _playerCount;
     private readonly TimeSpan _stepDelay;
+    private readonly TimeSpan _buzzTimeout;
+    private readonly Random _random = new();
 
     // True for a welcome, false for a snapshot.
     private readonly Channel<bool> _wakeUps = Channel.CreateUnbounded<bool>();
     private readonly Lock _gate = new();
     private GameMasterSnapshot? _snapshot;
+
+    // The round view in progress, and since when it has not changed: a buzzer nobody presses is given up on.
+    private GameMasterRoundView? _view;
+    private DateTimeOffset _viewSince;
 
     /// <param name="serverUrl">The address of the server.</param>
     /// <param name="code">The game master code the server console shows.</param>
@@ -36,19 +45,22 @@ internal sealed class BotGameMaster : IAsyncDisposable
     /// <param name="playerCount">How many connected players to wait for before starting.</param>
     /// <param name="stepDelay">The pause before each step, for the screens to be read.</param>
     /// <param name="configure">Changes the transport, for a test server reached in memory.</param>
+    /// <param name="buzzTimeout">How long a buzzer stays open without a buzz before the answer is revealed.</param>
     public BotGameMaster(
         Uri serverUrl,
         string code,
         string? packId,
         int playerCount,
         TimeSpan stepDelay,
-        Action<HttpConnectionOptions>? configure = null)
+        Action<HttpConnectionOptions>? configure = null,
+        TimeSpan? buzzTimeout = null)
     {
         _serverUrl = serverUrl;
         _code = code;
         _packId = packId;
         _playerCount = playerCount;
         _stepDelay = stepDelay;
+        _buzzTimeout = buzzTimeout ?? TimeSpan.FromSeconds(10);
         _connection = BotHub.Create(serverUrl, configure);
         _connection.On<Welcome>(nameof(IGameClient.ReceiveWelcome), _ => _wakeUps.Writer.TryWrite(true));
         _connection.On<GameMasterSnapshot>(nameof(IGameClient.ReceiveGameMasterSnapshot), Receive);
@@ -104,8 +116,11 @@ internal sealed class BotGameMaster : IAsyncDisposable
                     return;
                 }
 
-                actedOn = snapshot.Version;
-                await StepAsync(snapshot, cancellationToken).ConfigureAwait(false);
+                // A snapshot nothing was done on is looked at again on the next wake-up: a buzzer may have timed out.
+                if (await StepAsync(snapshot, cancellationToken).ConfigureAwait(false))
+                {
+                    actedOn = snapshot.Version;
+                }
             }
             catch (Exception ex) when (ex is not BotException && !cancellationToken.IsCancellationRequested)
             {
@@ -127,31 +142,60 @@ internal sealed class BotGameMaster : IAsyncDisposable
         }
     }
 
-    private async Task StepAsync(GameMasterSnapshot snapshot, CancellationToken cancellationToken)
+    /// <summary>
+    /// Takes the step the snapshot calls for, if any, and tells whether it took one.
+    /// </summary>
+    private async Task<bool> StepAsync(GameMasterSnapshot snapshot, CancellationToken cancellationToken)
     {
         switch (snapshot)
         {
             case { Phase: Phase.Lobby }:
                 await PrepareAsync(snapshot, cancellationToken).ConfigureAwait(false);
-                break;
-
-            // One strategy per game mode; a mode the bot does not know leaves the game to a human console.
-            case { Phase: Phase.Round, Round: { } round, RoundView: QuizGameMasterView view }
-                when QuizBot.NextStep(round.RoundId, view) is { } step:
+                return true;
+            case { Phase: Phase.Round, Round: { } round, RoundView: { } view }
+                when NextStep(round.RoundId, view) is { } step:
                 await _connection
                     .InvokeAsync("SendGameMasterRoundIntent", JsonSerializer.SerializeToElement(step, ContractJsonOptions.Default), cancellationToken)
                     .ConfigureAwait(false);
-                break;
+                return true;
             case { Phase: Phase.RoundIntro, Round: { } announced }:
                 await _connection.InvokeAsync("StartRound", new StartRoundRequest(announced.RoundId), cancellationToken).ConfigureAwait(false);
-                break;
+                return true;
             case { Phase: Phase.BetweenRounds, Round: { } finished }:
                 await _connection.InvokeAsync("NextRound", new NextRoundRequest(finished.RoundId), cancellationToken).ConfigureAwait(false);
-                break;
+                return true;
             default:
-                // Answers open, or a saved game for a human to resolve.
-                break;
+                // Answers open, a buzzer open, or a saved game for a human to resolve.
+                return false;
         }
+    }
+
+    /// <summary>
+    /// One strategy per game mode; a mode the bot does not know leaves the game to a human console.
+    /// </summary>
+    private GameMasterRoundIntent? NextStep(RoundId roundId, GameMasterRoundView view) => view switch
+    {
+        QuizGameMasterView quiz => QuizBot.NextStep(roundId, quiz),
+        OpenQuestionGameMasterView open => OpenQuestionBot.NextStep(roundId, open, _random),
+        BuzzerGameMasterView buzzer => BuzzerBot.NextStep(roundId, buzzer, Stalled(buzzer), _random),
+        BlindTestGameMasterView blindTest => BlindTestBot.NextStep(roundId, blindTest, Stalled(blindTest), _random),
+        _ => null,
+    };
+
+    /// <summary>
+    /// Whether the round view has not changed for the buzz timeout. A new view schedules a wake-up for that time: no
+    /// snapshot comes while nobody buzzes.
+    /// </summary>
+    private bool Stalled(GameMasterRoundView view)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (!view.Equals(_view))
+        {
+            (_view, _viewSince) = (view, now);
+            _ = Task.Delay(_buzzTimeout).ContinueWith(_ => _wakeUps.Writer.TryWrite(false), TaskScheduler.Default);
+        }
+
+        return now - _viewSince >= _buzzTimeout;
     }
 
     /// <summary>

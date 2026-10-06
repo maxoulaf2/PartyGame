@@ -4,6 +4,9 @@ using System.Threading.Channels;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Client;
 using PartyGame.Contracts;
+using PartyGame.Contracts.BlindTest;
+using PartyGame.Contracts.Buzzer;
+using PartyGame.Contracts.OpenQuestion;
 using PartyGame.Contracts.Quiz;
 using PartyGame.Contracts.Serialization;
 
@@ -39,7 +42,7 @@ internal sealed class BotPlayer : IAsyncDisposable
     private long _clientSeq;
     private string? _identifiedConnection;
     private long _clockOffsetMs;
-    private (RoundId Round, int Question)? _question;
+    private (RoundId Round, int Question, int Opening)? _question;
     private long? _answerAt;
 
     /// <param name="serverUrl">The address of the server.</param>
@@ -216,13 +219,42 @@ internal sealed class BotPlayer : IAsyncDisposable
         switch (snapshot.RoundView)
         {
             case QuizPlayerView view when QuizBot.CanAnswer(view):
-                if (!IsDue((round.RoundId, view.QuestionNumber), now => QuizBot.AnswerAt(view, _behavior, now, _random)))
+                if (!IsDue((round.RoundId, view.QuestionNumber, 0), now => QuizBot.AnswerAt(view.AnswersCloseAt, _behavior, now, _random)))
                 {
                     return;
                 }
 
                 var answer = QuizBot.Answer(round.RoundId, view, _behavior, _random);
                 (intent, reflects) = (answer, s => QuizBot.Reflects(s, answer));
+                break;
+            case OpenQuestionPlayerView view when OpenQuestionBot.CanAnswer(view):
+                if (!IsDue((round.RoundId, view.QuestionNumber, 0), now => QuizBot.AnswerAt(view.AnswersCloseAt, _behavior, now, _random)))
+                {
+                    return;
+                }
+
+                var guess = OpenQuestionBot.Answer(round.RoundId, view, _random);
+                (intent, reflects) = (guess, s => OpenQuestionBot.Reflects(s, guess));
+                break;
+
+            // Each opening of a buzzer draws its own time: a reopened one is pressed again by those not blocked.
+            case BuzzerPlayerView view when view.Buzzer == BuzzerButtonState.Open:
+                if (!IsDue((round.RoundId, view.QuestionNumber, view.Opening), now => BuzzerBot.BuzzAt(now, _behavior, _random)))
+                {
+                    return;
+                }
+
+                var buzz = new BuzzerBuzz(round.RoundId, view.QuestionNumber, view.Opening, ServerNow);
+                (intent, reflects) = (buzz, s => BuzzerBot.Reflects(s, buzz));
+                break;
+            case BlindTestPlayerView view when view.Buzzer == BuzzerButtonState.Open:
+                if (!IsDue((round.RoundId, view.TrackNumber, view.Opening), now => BuzzerBot.BuzzAt(view.OpensAt ?? now, _behavior, _random)))
+                {
+                    return;
+                }
+
+                var trackBuzz = new BlindTestBuzz(round.RoundId, view.TrackNumber, view.Opening, ServerNow);
+                (intent, reflects) = (trackBuzz, s => BlindTestBot.Reflects(s, trackBuzz));
                 break;
             default:
                 return;
@@ -241,7 +273,7 @@ internal sealed class BotPlayer : IAsyncDisposable
     /// Whether the bot acts on the question now: the time is drawn once per question, as soon as the behavior can tell it,
     /// and a wake-up is scheduled for it.
     /// </summary>
-    private bool IsDue((RoundId, int) question, Func<long, long?> actAt)
+    private bool IsDue((RoundId, int, int) question, Func<long, long?> actAt)
     {
         if (_question != question)
         {
