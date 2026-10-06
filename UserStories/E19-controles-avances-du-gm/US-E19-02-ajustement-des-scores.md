@@ -1,6 +1,6 @@
 ### US-E19-02 — Ajustement manuel des scores
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** game master
 **je veux** corriger le score d'un joueur à tout moment de la partie
@@ -22,6 +22,10 @@ Défaut : rien côté joueurs et public. Un ajustement rejeté laisse la console
 - Intention GM `AdjustScore(playerId, expectedScore, newScore)`, `[GameMasterOnly]`, traitée par le moteur hors des modes : elle modifie `Player.Score` comme l'attribution des points à la révélation.
 - Les ajustements ne sont pas tracés dans l'état ; le serveur les journalise en `Information` (joueur, ancien et nouveau score).
 - Le classement entre deux manches et l'évolution des rangs (US-E18-02) sont recalculés à chaque snapshot : un ajustement entre deux manches peut donc changer le classement affiché.
+- Réalisation : moteur. `ScoreAdjustment` traite `AdjustScore` dans les phases `RoundIntro`, `Round`, `BetweenRounds` et `Finished`, pendant une pause comprise. Rejets : `NotAdjustable` (lobby ; `GamePending` pendant le choix d’une partie trouvée), `PlayerUnknown`, `ScoreNegative`, `ScoreObsolete` (score attendu périmé). Un nouveau total égal à l’ancien est accepté sans changement.
+- Réalisation : hub. `AdjustScore` (`AdjustScoreRequest`) ne répond rien : comme `PauseGame`, les snapshots montrent le score dans tous les cas. Un ajustement accepté est journalisé en `Information`.
+- Réalisation : client. Un bouton « Modifier le score » par joueur hors du lobby ouvre `gm/ScoreForm.svelte` : « Ajouter », « Retirer » ou « Nouveau total », puis des points en chiffres seuls (clavier numérique du téléphone), avec l’ancien et le nouveau total, calculés par `gm/scoreEntry.ts` depuis le score du dernier snapshot. Le formulaire se ferme une fois l’intention envoyée, acceptée ou non.
+- Réalisation : tests. `ScoreAdjustmentTests` (chaque phase, pause, points de la révélation ajoutés, rejets, retour au lobby, aller-retour JSON), scénario et paire « adjusted score » de `SnapshotsLeakTests`, `AdjustScoreTests` côté hub, `scoreEntry.test.ts` et `e2e/scoreAdjustment.spec.ts`.
 
 **Hors périmètre**
 - L'historique des ajustements dans la console.
