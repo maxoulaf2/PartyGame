@@ -350,7 +350,7 @@
 
     .code {
         color: var(--color-text-muted);
-        font-family: ui-monospace, monospace;
+        font-family: var(--font-family-mono);
         letter-spacing: 0.1em;
     }
 

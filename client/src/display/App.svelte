@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { fade } from 'svelte/transition';
     import ConnectionIndicator from '../shared/components/ConnectionIndicator.svelte';
     import ViewBoundary from '../shared/components/ViewBoundary.svelte';
     import WaitingScreen from '../shared/components/WaitingScreen.svelte';
@@ -27,6 +28,7 @@
     import LobbyScreen from './LobbyScreen.svelte';
     import RankingScreen from './RankingScreen.svelte';
     import RoundIntroScreen from './RoundIntroScreen.svelte';
+    import { screenChangeMilliseconds, screenIn, screenOut } from './screenChange';
 
     const game = new SnapshotStore<DisplaySnapshot>();
     const connection = createGameConnection();
@@ -51,6 +53,20 @@
             ? game.current.joinAddress
             : null,
     );
+    // What changes the screen, and starts it afresh: a new round, step of a preview or ranking
+    // replaces the previous one, never lingering in it. The phases of a round stay within its view.
+    const screenKey = $derived.by(() => {
+        if (screen?.kind === 'round') {
+            return `round/${screen.round.roundId}`;
+        }
+        if (preview) {
+            return `preview/${preview.round.roundId}/${preview.step.number}`;
+        }
+        if (screen?.kind === 'roundIntro' || screen?.kind === 'betweenRounds') {
+            return `${screen.kind}/${screen.round.roundId}`;
+        }
+        return game.current?.phase === 'ResumePending' ? 'resumePending' : (screen?.kind ?? null);
+    });
     const mediaFailed = (url: string) => reportMediaFailure(connection, url);
     const paused = $derived(game.current?.pausedAt ?? null);
     // While paused, the countdowns of the round stand still with the time they had left.
@@ -97,31 +113,37 @@
 {/snippet}
 
 <ViewBoundary shown={game.current} fallback={continuing}>
+    <!-- The screen going out fades away over the one coming in, stacked in the same place: never
+         an empty screen between them. Going out, a screen keeps what it showed. -->
+    <div class="screens">
+        {#key screenKey}
+            <div class="screen" in:screenIn out:screenOut>
+                {@render current()}
+            </div>
+        {/key}
+    </div>
+</ViewBoundary>
+
+{#snippet current()}
     {#if screen?.kind === 'round'}
         {@const ModeView = screen.component}
         <ViewBoundary shown={game.current} fallback={continuing}>
-            <!-- A new round starts its view afresh: nothing of the previous one lingers. -->
-            {#key screen.round.roundId}
-                <ModeView
-                    view={screen.view}
-                    round={screen.round}
-                    clock={roundClock}
-                    reportMediaFailure={mediaFailed}
-                />
-            {/key}
+            <ModeView
+                view={screen.view}
+                round={screen.round}
+                clock={roundClock}
+                reportMediaFailure={mediaFailed}
+            />
         </ViewBoundary>
     {:else if preview}
         <ViewBoundary shown={game.current} fallback={continuing}>
             {#if PreviewView}
-                <!-- Each step starts its view afresh, as each round does in a game. -->
-                {#key `${preview.round.roundId}/${preview.step.number}`}
-                    <PreviewView
-                        view={preview.view}
-                        round={preview.round}
-                        {clock}
-                        reportMediaFailure={mediaFailed}
-                    />
-                {/key}
+                <PreviewView
+                    view={preview.view}
+                    round={preview.round}
+                    {clock}
+                    reportMediaFailure={mediaFailed}
+                />
             {:else}
                 {@render continuing()}
             {/if}
@@ -153,11 +175,13 @@
         <!-- Until the server first answers, the TV screen waits neutrally. -->
         <WaitingScreen title={fr.app.name} message={fr.display.waiting} />
     {/if}
-</ViewBoundary>
+{/snippet}
 
 {#if paused !== null}
     <!-- Over the current screen, which stays as it was: the game resumes where it stood. -->
-    <div class="paused" role="status"><p>{fr.display.paused}</p></div>
+    <div class="paused" role="status" transition:fade={{ duration: screenChangeMilliseconds }}>
+        <p>{fr.display.paused}</p>
+    </div>
 {/if}
 
 {#if joinCodeAddress}
@@ -173,6 +197,17 @@
 <ConnectionIndicator {status} tv />
 
 <style>
+    /* Every screen fills the TV screen, and its zoom in or out stays within it. */
+    .screens {
+        display: grid;
+        overflow: hidden;
+    }
+
+    .screen {
+        grid-area: 1 / 1;
+        min-width: 0;
+    }
+
     /* Over the view of the step, within the 5% margin TVs may crop: nobody takes it for a game. */
     .preview-banner {
         position: fixed;

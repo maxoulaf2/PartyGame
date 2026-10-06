@@ -130,6 +130,13 @@
         overflow-wrap: anywhere;
     }
 
+    /* The title, the moment it is revealed. */
+    @media (prefers-reduced-motion: no-preference) {
+        .title {
+            animation: reveal-highlight 0.6s ease-out;
+        }
+    }
+
     .artist {
         font-size: 3.5rem;
         font-weight: 700;

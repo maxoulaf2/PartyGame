@@ -285,6 +285,13 @@
         }
     }
 
+    /* The correct choice, the moment it is revealed. */
+    @media (prefers-reduced-motion: no-preference) {
+        .choices > li.correct {
+            animation: reveal-highlight 0.6s ease-out;
+        }
+    }
+
     /* A fade alone: nothing moves, so that nothing ever crosses the edges of the screen. */
     @keyframes appear {
         from {

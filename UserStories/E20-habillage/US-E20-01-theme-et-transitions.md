@@ -1,6 +1,6 @@
 ### US-E20-01 — Thème visuel et transitions de l'écran TV
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** public
 **je veux** un écran TV au style soigné, qui passe d'un écran à l'autre sans à-coups
@@ -22,6 +22,10 @@ Défaut : si la police ne se charge pas, la pile de polices système prend le re
 - Police au format `woff2` dans `client/src/assets/fonts/`, sous licence OFL, avec sa licence copiée à côté ; un ou deux styles seulement pour limiter le poids. `font-display: swap`.
 - Transitions entre écrans avec les transitions de Svelte (`svelte/transition`), en `opacity` et `transform` uniquement ; aucune bibliothèque d'animation.
 - Les vues des modes gardent leur contenu ; seul le conteneur de chaque page orchestre les transitions entre écrans, sans connaître les modes.
+- Réalisation : police. Nunito variable (graisses 200 à 1 000 en un seul fichier, sous-ensemble latin, 39 Ko) dans `client/src/assets/fonts/`, avec sa licence `OFL.txt`, déclarée par `@font-face` dans `shared/theme.css` en tête de `--font-family` ; Vite l'émet sous `/assets`. Les dernières couleurs et polices en dur passent par le thème : `--color-backdrop`, `--color-white` et `--color-black` (QR code, flash du diagnostic), `--font-family-mono`.
+- Réalisation : transitions. `display/App.svelte` enveloppe l'écran courant dans un `{#key}` dont la clé change avec l'écran (lobby, introduction, manche, classement, podium, aperçu, attente) ; les écrans sortant et entrant, superposés dans la même cellule de grille, se croisent en 450 ms (`display/screenChange.ts` : fondu et léger zoom jamais au-delà de la taille naturelle, pour ne rien pousser dans la marge que les TV rognent ; fondu seul sous `prefers-reduced-motion`). L'écran sortant garde son contenu et devient `inert` et `aria-hidden`. La pause apparaît et disparaît en fondu. Les phases d'une manche (question, révélation) restent dans la vue du mode.
+- Réalisation : révélation. L'animation `reveal-highlight` de `display/display.css` (la réponse se pose, rebondit une fois et se stabilise, sans dépasser sa taille) est appliquée à la bonne proposition du quiz, au titre du blind test, à la réponse attendue et aux réponses acceptées des questions ouvertes, sauf sous `prefers-reduced-motion`.
+- Réalisation : tests. `e2e/display.spec.ts` vérifie le chargement de la police depuis le serveur sans requête externe, et le fondu enchaîné sans écran vide ; les tests existants vérifient l'absence de requête externe sur les quatre pages.
 
 **Hors périmètre**
 - Plusieurs thèmes au choix, ou un thème fourni par le pack.

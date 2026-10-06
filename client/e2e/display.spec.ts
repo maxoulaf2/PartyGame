@@ -17,7 +17,7 @@ import { countText } from '../src/shared/i18n/countText.ts';
 import { fill, roundText } from '../src/shared/i18n/fill.ts';
 import { fr } from '../src/shared/i18n/fr.ts';
 import { rankText } from '../src/shared/i18n/rankText.ts';
-import { serveDisplaySnapshot } from './fakeHub.ts';
+import { serveDisplaySnapshot, serveScriptedHub } from './fakeHub.ts';
 import { advertisedAddress } from './gameServer.ts';
 import { trackExternalRequests } from './localRequests.ts';
 import { joinOnNewPhone, uniqueNickname } from './players.ts';
@@ -101,6 +101,23 @@ test('/display/ shows a QR code and the join url without external requests', asy
     await expect(qrCode).toHaveAttribute('data-qr-text', expectedUrl);
     await expect(page.getByText(expectedUrl)).toBeVisible();
     await expect(page.getByText(fr.display.scanToJoin)).toBeVisible();
+    expect(external).toEqual([]);
+});
+
+test('/display/ loads its self-hosted font from the server', async ({ page }) => {
+    const external = trackExternalRequests(page);
+
+    await page.goto('/display/');
+
+    await expect(page.getByText(fr.display.scanToJoin)).toBeVisible();
+    // A family the page never loaded passes `document.fonts.check`: only the face's status tells.
+    const loaded = await page.evaluate(async () => {
+        await document.fonts.ready;
+        return [...document.fonts].some(
+            (face) => face.family.replaceAll('"', '') === 'Nunito' && face.status === 'loaded',
+        );
+    });
+    expect(loaded).toBe(true);
     expect(external).toEqual([]);
 });
 
@@ -428,6 +445,26 @@ test('/display/ announces a round without description with its rule alone', asyn
 
     await expect(page.getByText(fr.modes.quiz.rule)).toBeVisible();
     await expect(page.locator('main p')).toHaveCount(3);
+});
+
+test('/display/ fades the screen going out over the one coming in, never an empty screen', async ({
+    page,
+}) => {
+    const hub = await serveScriptedHub(
+        page,
+        'ReceiveDisplaySnapshot',
+        fakeSnapshot([], advertisedAddress, 'RoundIntro'),
+    );
+    await page.goto('/display/');
+    const rule = page.getByText(fr.modes.quiz.rule);
+    await expect(rule).toBeVisible();
+
+    hub.push({ ...fakeSnapshot([], advertisedAddress, 'Lobby'), version: 2 });
+
+    // Both at once while the lobby comes in, the announcement as it was, then the lobby alone.
+    await expect(page.getByText(fr.display.scanToJoin)).toBeVisible();
+    await expect(rule).toBeVisible();
+    await expect(rule).toHaveCount(0);
 });
 
 // Scores of 20 players: distinct but for a few ex aequo, every player ex aequo, and one player

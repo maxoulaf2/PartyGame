@@ -4,3 +4,20 @@
     --font-size-title: 6rem;
     --space-l: 5vw;
 }
+
+/* The answer a reveal puts forward, shared by the views of every mode: it lands, bounces once and
+   settles. Never larger than its natural size, so that it never crosses into the 5% margin TVs may
+   crop. */
+@keyframes reveal-highlight {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.85);
+    }
+    55% {
+        opacity: 1;
+        transform: none;
+    }
+    75% {
+        transform: scale(0.96);
+    }
+}

@@ -1,14 +1,30 @@
-/* Theme tokens shared by every page. Fonts are system stacks until a self-hosted font lands (E20):
-   nothing may be fetched from outside the local network. */
+/* Theme tokens shared by every page. Components take their colors and fonts from here only. */
+
+/* Self-hosted, as nothing may be fetched from outside the local network: one variable file covers
+   every weight. The system stack takes over while it loads, or if it fails to. */
+@font-face {
+    font-family: Nunito;
+    font-style: normal;
+    font-weight: 200 1000;
+    font-display: swap;
+    src: url('../assets/fonts/nunito-latin-wght.woff2') format('woff2');
+}
+
 :root {
     --color-bg: #14121f;
     --color-surface: #221f33;
     --color-text: #f5f3ff;
     --color-text-muted: #b9b4d0;
     --color-accent: #ffc531;
+    --color-backdrop: rgb(0 0 0 / 60%);
+    /* Whatever the theme: the QR code (phone cameras expect dark on light), the flash of the
+       diagnostic page. */
+    --color-white: #fff;
+    --color-black: #000;
 
     --font-family:
-        system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        Nunito, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-family-mono: ui-monospace, monospace;
     --font-size-base: 1rem;
     --font-size-title: 2rem;
     --line-height: 1.4;

@@ -42,14 +42,14 @@
         justify-content: center;
         padding: var(--space-l);
         border: none;
-        background: #000;
-        color: #666;
+        background: var(--color-black);
+        color: color-mix(in srgb, var(--color-white) 40%, var(--color-black));
         font: inherit;
         touch-action: manipulation;
         cursor: pointer;
     }
 
     .flash.lit {
-        background: #fff;
+        background: var(--color-white);
     }
 </style>
