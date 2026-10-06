@@ -18,7 +18,7 @@
 Sans objet.
 
 **Notes techniques**
-- Le test de contraste lit `shared/theme.css`, calcule les ratios WCAG et nomme le couple fautif ; pas de nouvelle dépendance (décision 5 du README).
+- Le test de contraste lit `shared/theme.css` et `shared/pop.css` (thème des pages joueur et TV), calcule les ratios WCAG et nomme le couple fautif ; pas de nouvelle dépendance (décision 5 du README).
 - Le simulateur de daltonisme des outils de développement de Chrome sert à la revue manuelle.
 - La liste de contrôle de `docs/accessibilite.md` est référencée par `docs/coding-guidelines.md`.
 
