@@ -170,4 +170,10 @@ public enum RejectionReason
 
     /// <summary>The judgment accepts the answer of a player who gave none.</summary>
     PlayerWithoutAnswer,
+
+    /// <summary>No pack is previewed: the preview ended, or never started.</summary>
+    PreviewNotStarted,
+
+    /// <summary>The pack previewed has no such round, or the round no such step.</summary>
+    PreviewStepUnknown,
 }

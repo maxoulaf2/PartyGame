@@ -51,6 +51,11 @@ internal sealed class FaultyQuizMode(Role? failingRole = null) : GameMode<QuizRo
         return _quiz.ProjectForGameMaster(round.Quiz, game);
     }
 
+    public override int CountPreviewSteps(QuizRoundDescriptor descriptor) => _quiz.CountPreviewSteps(descriptor);
+
+    public override RoundPreview Preview(QuizRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt) =>
+        new(new TestQuizRound((QuizRound)_quiz.Preview(descriptor, stepIndex, excerptStartsAt).Round, PlayerIntents: 0), HasExcerpt: false);
+
     private void ThrowIfFailing(Role role)
     {
         if (role == failingRole)

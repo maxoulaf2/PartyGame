@@ -111,4 +111,23 @@ public interface IGameMode
     /// </summary>
     /// <param name="round">The state of the round, as this mode produced it.</param>
     RoundStep? StepOf(RoundState round);
+
+    /// <summary>
+    /// How many steps the preview of an activity shows, such as its questions: at least one.
+    /// </summary>
+    /// <param name="descriptor">The activity of the pack, of type <see cref="DescriptorType"/>.</param>
+    int CountPreviewSteps(RoundDescriptor descriptor);
+
+    /// <summary>
+    /// A step of the preview of an activity, which the game master shows on the TV screen before the evening: the round at
+    /// that step, revealed, without any player. The engine projects it with <see cref="ProjectForDisplay"/>, so that the TV
+    /// screen shows it as during a game.
+    /// </summary>
+    /// <param name="descriptor">The activity of the pack, of type <see cref="DescriptorType"/>.</param>
+    /// <param name="stepIndex">The step, from 0, below <see cref="CountPreviewSteps"/>.</param>
+    /// <param name="excerptStartsAt">
+    /// When the TV screen plays the excerpt of the step from its start, in server time, or <see langword="null"/> while it
+    /// stands still. Ignored by a step without excerpt.
+    /// </param>
+    RoundPreview Preview(RoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt);
 }

@@ -16,6 +16,7 @@
     import { createGameConnection } from '../shared/connection/gameHub';
     import { connectErrorReporting } from '../shared/errors/errorReporting';
     import { SnapshotStore } from '../shared/connection/snapshotStore.svelte';
+    import { fill } from '../shared/i18n/fill';
     import { fr } from '../shared/i18n/fr';
     import { selectGameScreen } from '../shared/gameScreen';
     import { findDisplayView } from '../modes/registry';
@@ -32,6 +33,9 @@
     const status = new ConnectionStatus(() => game.fresh);
 
     const screen = $derived(game.current && selectGameScreen(game.current, findDisplayView));
+    // A pack the game master previews from the lobby, shown by the view of its mode as in a game.
+    const preview = $derived(screen?.kind === 'lobby' ? (game.current?.preview ?? null) : null);
+    const PreviewView = $derived(preview && findDisplayView(preview.view));
     // Outside a round and the rankings, the lobby stays on screen with what is going on: its QR code
     // still lets late arrivals join, since registration stays open.
     const notice = $derived(screen?.kind === 'waiting' ? fr.display.inProgress : null);
@@ -100,6 +104,30 @@
                 />
             {/key}
         </ViewBoundary>
+    {:else if preview}
+        <ViewBoundary shown={game.current} fallback={continuing}>
+            {#if PreviewView}
+                <!-- Each step starts its view afresh, as each round does in a game. -->
+                {#key `${preview.round.roundId}/${preview.step.number}`}
+                    <PreviewView
+                        view={preview.view}
+                        round={preview.round}
+                        {clock}
+                        reportMediaFailure={mediaFailed}
+                    />
+                {/key}
+            {:else}
+                {@render continuing()}
+            {/if}
+        </ViewBoundary>
+        <p class="preview-banner" role="status">
+            {fr.display.previewBanner} · {fill(fr.game.previewPosition, {
+                number: preview.round.number,
+                count: preview.round.count,
+                step: preview.step.number,
+                steps: preview.step.count,
+            })}
+        </p>
     {:else if game.current && screen?.kind === 'betweenRounds'}
         <RankingScreen snapshot={game.current} round={screen.round} />
     {:else if game.current && screen?.kind === 'finished'}
@@ -128,6 +156,21 @@
 <ConnectionIndicator {status} tv />
 
 <style>
+    /* Over the view of the step, within the 5% margin TVs may crop: nobody takes it for a game. */
+    .preview-banner {
+        position: fixed;
+        top: 5vh;
+        right: 5vw;
+        z-index: 1;
+        margin: 0;
+        padding: var(--space-s) var(--space-m);
+        border-radius: var(--radius);
+        background: var(--color-accent);
+        color: var(--color-bg);
+        font-size: 2.5rem;
+        font-weight: 800;
+    }
+
     /* Above the QR code of the lobby, within the 5% margin TVs may crop. */
     .start-audio {
         position: fixed;

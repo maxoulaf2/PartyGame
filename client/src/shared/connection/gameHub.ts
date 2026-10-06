@@ -33,7 +33,9 @@ import type {
     SelectPackRequest,
     SelectPackResult,
     ShowJoinCodeRequest,
+    ShowPreviewStepRequest,
     SkipRoundRequest,
+    StartPreviewRequest,
     ReturnToLobbyRequest,
     StaleBuildReport,
     StartGameResult,
@@ -67,6 +69,9 @@ export interface GameHubMethods {
     SkipRound: { args: [request: SkipRoundRequest]; result: null };
     ReturnToLobby: { args: [request: ReturnToLobbyRequest]; result: null };
     ShowJoinCode: { args: [request: ShowJoinCodeRequest]; result: null };
+    StartPreview: { args: [request: StartPreviewRequest]; result: null };
+    ShowPreviewStep: { args: [request: ShowPreviewStepRequest]; result: null };
+    StopPreview: { args: []; result: null };
     SendRoundIntent: { args: [envelope: PlayerIntentEnvelope]; result: null };
     SendGameMasterRoundIntent: { args: [intent: GameMasterRoundIntent]; result: null };
     SyncClock: { args: []; result: ClockSyncResult };

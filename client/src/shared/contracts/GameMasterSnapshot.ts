@@ -7,6 +7,7 @@ import type { GameId } from './GameId';
 import type { GameMasterJoinAddress } from './GameMasterJoinAddress';
 import type { GameMasterPackCatalog } from './GameMasterPackCatalog';
 import type { GameMasterPlayer } from './GameMasterPlayer';
+import type { GameMasterPreview } from './GameMasterPreview';
 import type { GameMasterRoundView } from './GameMasterRoundView';
 import type { GameMasterSavedGame } from './GameMasterSavedGame';
 import type { Phase } from './Phase';
@@ -31,4 +32,5 @@ export interface GameMasterSnapshot {
     readonly roundSkipped: boolean;
     readonly savedGame: GameMasterSavedGame | null;
     readonly joinCodeShown: boolean;
+    readonly preview: GameMasterPreview | null;
 }

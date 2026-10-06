@@ -31,7 +31,15 @@ public sealed class Snapshots(GameModes modes)
             RoundInfoOf(state),
             RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State, state) : null,
             RankingOf(state),
-            state.JoinCodeShown);
+            state.JoinCodeShown,
+            PreviewOf(state) is var (previewMode, preview, step, shown)
+                ? new DisplayPreview(
+                    preview.Round,
+                    step,
+
+                    // Without any player, and with the media files of the preview: the round is projected as during a game.
+                    previewMode.ProjectForDisplay(shown.Round, state with { Players = [], Media = preview.Media }))
+                : null);
     }
 
     /// <summary>
@@ -58,7 +66,10 @@ public sealed class Snapshots(GameModes modes)
             NextRoundTitleOf(state),
             state.CurrentRound?.IsSkipped ?? false,
             SavedGameOf(state),
-            state.JoinCodeShown);
+            state.JoinCodeShown,
+            PreviewOf(state) is var (_, preview, step, shown)
+                ? new GameMasterPreview(preview.PackId, preview.Round, step, shown.HasExcerpt)
+                : null);
     }
 
     /// <summary>
@@ -179,6 +190,25 @@ public sealed class Snapshots(GameModes modes)
 
     private static string? NextRoundTitleOf(GameState state) =>
         state is { Phase: GamePhase.BetweenRounds, CurrentRound: { } round } ? state.Rounds[round.Index + 1].Title : null;
+
+    /// <summary>
+    /// The step of the pack previewed, built by the game mode of its round. Never part of the projection of a player.
+    /// </summary>
+    private (IGameMode Mode, PackPreview Preview, RoundStep Step, RoundPreview Shown)? PreviewOf(GameState state)
+    {
+        if (state.Preview is not { } preview)
+        {
+            return null;
+        }
+
+        var descriptor = preview.Pack.Rounds[preview.RoundIndex];
+        var mode = modes.For(descriptor);
+        return (
+            mode,
+            preview,
+            new RoundStep(preview.StepIndex + 1, mode.CountPreviewSteps(descriptor)),
+            mode.Preview(descriptor, preview.StepIndex, preview.ExcerptStartsAt));
+    }
 
     /// <summary>
     /// The round in progress and its game mode, which alone knows what each role may see of it. Between two rounds, the

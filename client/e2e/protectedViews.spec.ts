@@ -80,6 +80,7 @@ function displaySnapshot(version: number, view: Partial<DisplaySnapshot> = {}): 
         roundView: displayView(),
         ranking: [],
         joinCodeShown: false,
+        preview: null,
         ...view,
     };
 }
@@ -157,6 +158,7 @@ function gameMasterSnapshot(
         roundSkipped: false,
         savedGame: null,
         joinCodeShown: false,
+        preview: null,
     };
 }
 

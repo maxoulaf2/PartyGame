@@ -95,6 +95,9 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                     method === 'SkipRound' ||
                     method === 'ReturnToLobby' ||
                     method === 'ShowJoinCode' ||
+                    method === 'StartPreview' ||
+                    method === 'ShowPreviewStep' ||
+                    method === 'StopPreview' ||
                     method === 'SendGameMasterRoundIntent'
                 ) {
                     return null;
@@ -176,6 +179,7 @@ function snapshot(version: number): GameMasterSnapshot {
         roundSkipped: false,
         savedGame: null,
         joinCodeShown: false,
+        preview: null,
     };
 }
 
@@ -789,6 +793,25 @@ describe('GameMasterSession', () => {
             expect(server.connection.invoke).toHaveBeenLastCalledWith('ShowJoinCode', {
                 shown: true,
             });
+        });
+    });
+
+    describe('preview', () => {
+        it('names the pack, then the step shown', async () => {
+            const { session, server } = await grantedSession();
+
+            expect(await session.startPreview('soiree')).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('StartPreview', {
+                packId: 'soiree',
+            });
+            expect(await session.showPreviewStep(2, 4, true)).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('ShowPreviewStep', {
+                roundNumber: 2,
+                stepNumber: 4,
+                playExcerpt: true,
+            });
+            expect(await session.stopPreview()).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('StopPreview');
         });
     });
 

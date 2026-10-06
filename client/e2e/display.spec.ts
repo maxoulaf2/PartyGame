@@ -55,6 +55,7 @@ function fakeSnapshot(
         roundView,
         ranking: [],
         joinCodeShown: false,
+        preview: null,
     };
 }
 

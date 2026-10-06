@@ -75,6 +75,9 @@ type GameMasterIntentMethod =
     | 'SkipRound'
     | 'ReturnToLobby'
     | 'ShowJoinCode'
+    | 'StartPreview'
+    | 'ShowPreviewStep'
+    | 'StopPreview'
     | 'SendGameMasterRoundIntent';
 
 // Six ASCII digits, like `GameMasterCode` on the server.
@@ -289,6 +292,31 @@ export class GameMasterSession {
      */
     showJoinCode(shown: boolean): Promise<IntentOutcome> {
         return this.#send('ShowJoinCode', { shown });
+    }
+
+    /**
+     * Previews `packId` on the TV screen, from its first step, in the lobby. The phones stay on the
+     * lobby; the preview reaches the TV screen and every console through the next snapshots.
+     */
+    startPreview(packId: string): Promise<IntentOutcome> {
+        return this.#send('StartPreview', { packId });
+    }
+
+    /**
+     * Shows a step of the pack previewed on the TV screen, and plays its excerpt from its start when
+     * asked. The request names the step rather than a move, so that a double tap shows it once.
+     */
+    showPreviewStep(
+        roundNumber: number,
+        stepNumber: number,
+        playExcerpt = false,
+    ): Promise<IntentOutcome> {
+        return this.#send('ShowPreviewStep', { roundNumber, stepNumber, playExcerpt });
+    }
+
+    /** Ends the preview: the TV screen goes back to the lobby. */
+    stopPreview(): Promise<IntentOutcome> {
+        return this.#send('StopPreview');
     }
 
     /**

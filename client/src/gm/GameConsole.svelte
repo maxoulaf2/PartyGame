@@ -11,6 +11,7 @@
     import IncidentPanel from './IncidentPanel.svelte';
     import NetworkPanel from './NetworkPanel.svelte';
     import PackControl from './PackControl.svelte';
+    import PreviewControl from './PreviewControl.svelte';
     import RenameForm from './RenameForm.svelte';
     import ResumeOffer from './ResumeOffer.svelte';
     import ReturnToLobbyControl from './ReturnToLobbyControl.svelte';
@@ -38,6 +39,12 @@
     const connections = $derived(session.network?.connections ?? []);
     const displayQuality = $derived(connections.find((c) => c.playerId === null) ?? null);
     const playerQualities = $derived(new Map(connections.map((c) => [c.playerId, c])));
+
+    // The pack the TV screen previews, from the catalog of the lobby.
+    const previewed = $derived(
+        snapshot.preview &&
+            snapshot.packCatalog?.packs.find((p) => p.id === snapshot.preview?.packId),
+    );
 </script>
 
 <main>
@@ -103,6 +110,16 @@
         network={session.network}
         open={snapshot.phase === 'Lobby'}
     />
+
+    {#if snapshot.preview && previewed}
+        <PreviewControl
+            preview={snapshot.preview}
+            title={previewed.title ?? fr.gm.packs.untitled}
+            rounds={previewed.rounds}
+            {session}
+            {interactive}
+        />
+    {/if}
 
     <PackControl {snapshot} {session} {interactive} />
 

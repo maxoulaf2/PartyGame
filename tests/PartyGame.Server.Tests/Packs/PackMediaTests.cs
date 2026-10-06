@@ -198,6 +198,44 @@ public sealed class PackMediaTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Get_MediaOfAPackPreviewed_ServesIt()
+    {
+        // Given: the game master previews another pack than the one chosen, in the lobby
+        await using var gameMaster = await ConnectGameMasterAsync();
+        Assert.Null((await SelectAsync(gameMaster, "soiree")).Refusal);
+        await gameMaster.InvokeAsync(GameHub.StartPreview, new StartPreviewRequest("voisin"), Ct);
+        using var client = CreateClient();
+
+        // When
+        using var response = await client.GetAsync(Game.State.Preview!.Media.UrlOf(new MediaPath(NeighbourImage)), Ct);
+
+        // Then
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal([7, 8, 9], await response.Content.ReadAsByteArrayAsync(Ct));
+    }
+
+    [Fact]
+    public async Task Get_MediaOfAPreviewEnded_IsNotFound()
+    {
+        // Given: a zip pack previewed, its media served from the cache it is extracted to
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await gameMaster.InvokeAsync(GameHub.StartPreview, new StartPreviewRequest("album"), Ct);
+        var url = Game.State.Preview!.Media.UrlOf(new MediaPath(Flag));
+        using var client = CreateClient();
+        using (var served = await client.GetAsync(url, Ct))
+        {
+            Assert.Equal(_flagContent, await served.Content.ReadAsByteArrayAsync(Ct));
+        }
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.StopPreview, Ct);
+        using var response = await client.GetAsync(url, Ct);
+
+        // Then
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_MediaDeletedDuringTheGame_IsNotFoundAndLogged()
     {
         // Given

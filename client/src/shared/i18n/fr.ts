@@ -11,6 +11,8 @@ export const fr = {
     // The progress of the game, the same on every page.
     game: {
         round: 'Manche {number}/{count}',
+        // Where the preview of a pack stands, on the TV screen and the console.
+        previewPosition: 'Manche {number}/{count} · Question {step}/{steps}',
         roundEnded: 'Fin de la manche {number}/{count}',
         finished: 'Partie terminée',
         // The ranking shown between two rounds, written by rankText and standingText.
@@ -114,6 +116,8 @@ export const fr = {
         resumePending: 'Reprise de la partie…',
         // Clicked once on the TV screen to let its browser play sound.
         startAudio: 'Démarrer',
+        // Over a pack the game master previews before the evening, answers included.
+        previewBanner: 'Aperçu',
         // Shown instead of what the TV screen could not render, until the next update.
         continuing: 'La partie continue…',
         // Shown next to the QR code between two rounds, for late arrivals.
@@ -406,6 +410,22 @@ export const fr = {
             failed: 'La manche n’a pas pu être passée : réessayez.',
             // Between two rounds or once the game is finished, on the console alone.
             skipped: 'Manche passée : les points de la question en cours n’ont pas été attribués.',
+        },
+        // The preview of a pack on the TV screen, from the lobby, answers included.
+        preview: {
+            action: 'Aperçu',
+            confirmTitle: 'Aperçu sur la TV ?',
+            confirmMessage:
+                'Les réponses s’afficheront sur la TV. Les téléphones restent sur le lobby.',
+            confirm: 'Afficher l’aperçu',
+            cancel: 'Annuler',
+            title: 'Aperçu sur la TV : {title}',
+            previous: 'Précédente',
+            next: 'Suivante',
+            roundLabel: 'Manche',
+            playExcerpt: 'Écouter l’extrait',
+            stop: 'Quitter l’aperçu',
+            failed: 'L’aperçu n’a pas pu être piloté : réessayez.',
         },
         returnToLobby: {
             action: 'Revenir au lobby',

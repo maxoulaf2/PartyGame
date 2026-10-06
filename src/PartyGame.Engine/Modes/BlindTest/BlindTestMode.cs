@@ -158,6 +158,31 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
     }
 
     /// <summary>
+    /// One step per track.
+    /// </summary>
+    /// <inheritdoc />
+    public override int CountPreviewSteps(BlindTestRoundDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return descriptor.Tracks.Length;
+    }
+
+    /// <summary>
+    /// The track revealed, found by nobody, its excerpt played from its start when asked.
+    /// </summary>
+    /// <inheritdoc />
+    public override RoundPreview Preview(BlindTestRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        var round = new BlindTestRound(descriptor, stepIndex)
+        {
+            // Opened once and closed: the phase of a track revealed.
+            Buzzer = new Buzzers.Buzzer { Opening = 1, IsClosed = true },
+        };
+        return new(round with { Playback = round.Playback with { StartsAt = excerptStartsAt } }, HasExcerpt: true);
+    }
+
+    /// <summary>
     /// The number of the track whose excerpt or image the file is: the track in progress when it is, since the TV screen
     /// plays only its excerpt, or else the first one of the round.
     /// </summary>

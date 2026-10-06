@@ -18,13 +18,15 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
 
     public const int AwardedPoints = 10;
 
+    public const int PreviewStepCount = 3;
+
     public override ImmutableArray<PackProblem> Validate(FakeRoundDescriptor descriptor, string path) => [];
 
     public override RoundTransition Start(FakeRoundDescriptor descriptor, GameState game, GameContext context)
     {
         var dueAt = context.Now + CountdownDuration;
         return new RoundTransition(
-            new FakeRoundState(descriptor.Title, dueAt, [$"start with {game.Players.Length} players"]),
+            new FakeRoundState(descriptor.Title, dueAt, [$"start with {game.Players.Length} players"]) { Image = descriptor.Image },
             [new ScheduleTimer(Countdown, dueAt)]);
     }
 
@@ -71,13 +73,22 @@ internal sealed class FakeMode : GameMode<FakeRoundDescriptor, FakeRoundState>
         new FakeDisplayView(
             round.Title,
             round.Inputs.Count,
-            game.Rounds[game.CurrentRound!.Index] is FakeRoundDescriptor { Image: { } image } ? game.Media.UrlOf(image) : null);
+            round.Image is { } image ? game.Media.UrlOf(image) : null);
 
     public override GameMasterRoundView ProjectForGameMaster(FakeRoundState round, GameState game) =>
         new FakeGameMasterView(round.Title, [.. round.Inputs]);
 
     /// <summary>The number of inputs the round recorded, the start included, out of 10.</summary>
     public override RoundStep? StepOf(FakeRoundState round) => new(round.Inputs.Count, 10);
+
+    /// <summary>Three steps, whatever the activity.</summary>
+    public override int CountPreviewSteps(FakeRoundDescriptor descriptor) => PreviewStepCount;
+
+    /// <summary>The step and the start of its excerpt recorded as inputs; only the second step has an excerpt.</summary>
+    public override RoundPreview Preview(FakeRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt) =>
+        new(
+            new FakeRoundState(descriptor.Title, default, [$"preview step {stepIndex + 1}", $"excerpt at {excerptStartsAt:O}"]) { Image = descriptor.Image },
+            HasExcerpt: stepIndex == 1);
 
     private static RoundTransition Record(FakeRoundState round, string input) =>
         new(round with { Inputs = round.Inputs.Add(input) }, []);

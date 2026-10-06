@@ -1,4 +1,5 @@
 using PartyGame.Contracts;
+using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Projections;
 using PartyGame.Engine.Tests.Rounds;
 using PartyGame.Tests.Shared.Leaks;
@@ -69,6 +70,28 @@ public sealed class SnapshotsLeakTests
         yield return ("illustrated pack", Games.PlayedUpTo(phase, Games.IllustratedLobbyWith("Zoé", "Max")));
 
         yield return ("other address chosen", Games.PlayedUpTo(phase, Games.Accepted(Games.LobbyWith("Zoé"), Games.ChooseAddress(Games.OtherAddress))));
+
+        if (phase == GamePhase.Lobby)
+        {
+            // The TV screen previews a pack, the chosen one or another: the phones learn nothing of it.
+            yield return ("preview of another pack", Previewed("illustre"));
+            yield return ("preview of the chosen pack", Previewed(Games.PackId));
+        }
+    }
+
+    /// <summary>
+    /// A lobby where <see cref="Games.Pack"/> is chosen and the given pack previewed at its last step: the chosen one, or
+    /// another one, illustrated, whose rounds are named apart.
+    /// </summary>
+    private static GameState Previewed(string packId)
+    {
+        var other = Games.ValidPack(
+            "illustre",
+            "Soirée illustrée",
+            [new FakeRoundDescriptor { Title = "Manche aperçue", Image = Games.Flag }, new FakeRoundDescriptor { Title = "Dernière manche aperçue", Image = Games.Monument }]);
+        var lobby = Games.Accepted(Games.LobbyWith("Zoé", "Max"), Games.Loaded(Games.Pack, other));
+        var state = Games.Accepted(lobby, new StartPreview(packId, Games.Now));
+        return Games.Accepted(state, new ShowPreviewStep(2, FakeMode.PreviewStepCount, PlayExcerpt: true, Games.Now));
     }
 
     private static IEnumerable<SecretPair<GameState>> Pairs(GamePhase phase)
@@ -80,6 +103,12 @@ public sealed class SnapshotsLeakTests
             var another = Games.WithScores(Games.InPhase(GamePhase.BetweenRounds, "Léa"), 3000) with { Version = found.Version };
             yield return new SecretPair<GameState>("game found", Games.Pending(found), Games.Pending(another), Audience.AllButGameMaster);
             yield break;
+        }
+
+        if (phase == GamePhase.Lobby)
+        {
+            var previewed = Previewed("illustre");
+            yield return new SecretPair<GameState>("preview", previewed, previewed with { Preview = null }, Audience.Players);
         }
 
         var state = Games.InPhase(phase, "Zoé", "Max");
@@ -137,8 +166,9 @@ public sealed class SnapshotsLeakTests
             }
         }
 
-        // The packs: only the title of the chosen one reaches the TV screen.
+        // The packs: only the title of the chosen one reaches the TV screen, and the rounds of the one it previews.
         var chosen = state.Pack ?? (state.SelectedPackId is { } id ? state.Catalog.Find(id)?.Descriptor : null);
+        Audience RoundsHiddenFrom(string? packId) => packId == state.Preview?.PackId ? Audience.Players : Audience.AllButGameMaster;
         var chosenRounds = chosen?.Rounds.Select(r => r.Title).ToHashSet(StringComparer.Ordinal) ?? [];
         if (state.Catalog.Directory.Length > 0)
         {
@@ -155,7 +185,7 @@ public sealed class SnapshotsLeakTests
 
             foreach (var round in pack.Descriptor?.Rounds.Where(r => !chosenRounds.Contains(r.Title)) ?? [])
             {
-                yield return new Secret(round.Title, Audience.AllButGameMaster);
+                yield return new Secret(round.Title, RoundsHiddenFrom(pack.Id));
             }
 
             foreach (var problem in pack.Problems)
@@ -173,11 +203,13 @@ public sealed class SnapshotsLeakTests
         var played = state.CurrentRound?.Index ?? -1;
         foreach (var round in chosen?.Rounds.Skip(played + 1) ?? [])
         {
-            yield return new Secret(round.Title, Audience.AllButGameMaster);
+            yield return new Secret(round.Title, RoundsHiddenFrom(state.Pack is null ? state.SelectedPackId : null));
         }
 
         // A media file is named after what it shows, which may be the answer.
-        var media = state.Media.Files.Values.Concat(state.Catalog.Packs.Where(p => p.Id == state.SelectedPackId).SelectMany(p => p.Media));
+        var media = state.Media.Files.Values
+            .Concat(state.Catalog.Packs.Where(p => p.Id == state.SelectedPackId).SelectMany(p => p.Media))
+            .Concat(state.Preview?.Media.Files.Values ?? []);
         foreach (var path in media.Select(m => m.Value).Distinct())
         {
             yield return new Secret(path, Audience.Everyone);

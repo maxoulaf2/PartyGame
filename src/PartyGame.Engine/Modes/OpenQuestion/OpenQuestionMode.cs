@@ -212,6 +212,23 @@ public sealed class OpenQuestionMode : GameMode<OpenQuestionRoundDescriptor, Ope
     }
 
     /// <summary>
+    /// One step per question.
+    /// </summary>
+    /// <inheritdoc />
+    public override int CountPreviewSteps(OpenQuestionRoundDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return descriptor.Questions.Length;
+    }
+
+    /// <summary>
+    /// The question revealed with its answer, without any answer of a player.
+    /// </summary>
+    /// <inheritdoc />
+    public override RoundPreview Preview(OpenQuestionRoundDescriptor descriptor, int stepIndex, DateTimeOffset? excerptStartsAt) =>
+        new(new OpenQuestionRound(descriptor, stepIndex, OpenQuestionPhase.Revealed), HasExcerpt: false);
+
+    /// <summary>
     /// The number of the question the image illustrates: the question in progress when it does, since the TV screen shows
     /// only its image, or else the first one of the round.
     /// </summary>
