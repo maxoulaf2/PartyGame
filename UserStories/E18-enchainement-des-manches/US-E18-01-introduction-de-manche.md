@@ -1,6 +1,6 @@
 ### US-E18-01 — Écran d'introduction de chaque manche
 
-**Statut :** À faire
+**Statut :** Terminée
 
 **En tant que** public
 **je veux** qu'un écran annonce chaque manche avant sa première question
@@ -26,6 +26,10 @@ Défaut : rien côté joueurs et public. Une description trop longue est une err
 - Projections : le type de mode, le numéro, le titre et la description de la manche annoncée dans les trois snapshots. Le titre de la manche n'est plus réservé au GM une fois l'introduction ouverte.
 - Client : écran d'introduction dans `display/`, `player/` et `gm/` (pas dans `modes/`, comme les classements) ; textes de règle de chaque mode dans `fr.ts`, dont l'exhaustivité est vérifiée à la compilation, comme `modes/registry.ts`.
 - Le bot GM de `tools/PartyGame.Bots` démarre la manche après l'introduction.
+- Réalisation : moteur. `StartGame` et `NextRound` annoncent la manche (`RoundFlow.Announce`) : phase `RoundIntro`, `CurrentRound` porte déjà son `RoundId` et son index, mais pas d'état de mode (`PlayedRound.State` nul). `StartRound(roundId)` appelle `Start` du mode et passe en `Round` en gardant le même `RoundId` ; il est rejeté hors introduction (`NoRoundAnnounced`, ce qui couvre la seconde demande) ou s'il nomme une autre manche (`RoundMismatch`). Pendant l'introduction, les intentions et timers de manche sont rejetés (`NotInRound`, `UnexpectedTimer`), `SkipRound` passe la manche annoncée (une manche dont le démarrage échoue reste ainsi passable : l'incident porte la manche annoncée), `ReturnToLobby` et la reprise après redémarrage la conservent telle quelle.
+- Réalisation : contrats. `Phase.RoundIntro`, `StartRoundRequest`, méthode `StartRound` du hub (`[GameMasterOnly]`). `RoundInfo` gagne `Mode` (le `type` de l'activité) et `Description`, dans toutes les phases ; en introduction, il décrit la manche annoncée, et aucune vue de mode n'est projetée, même pour le GM. `RoundDescriptor.Description` (1 à 300 caractères) est vérifiée par les contraintes communes (`PackTextLengthOutOfRange`). Le journal d'exploitation annonce « Round … started » au démarrage, pas à l'annonce.
+- Réalisation : client. `selectGameScreen` rend `roundIntro` ; `display/RoundIntroScreen.svelte` (numéro, titre, nom du mode, règle, description), `player/RoundIntroScreen.svelte` (numéro, titre, règle, aucun bouton) et la branche d'introduction de `gm/RoundControl.svelte` (même annonce, « Commencer la manche »). Le nom et la règle de chaque mode sont dans `fr.modes.<type>.name` et `.rule`, dont `modes/registry.ts` vérifie l'exhaustivité à la compilation (`findModeTexts`) ; la liste des packs de la console en tire aussi le nom des modes. Le bouton entre deux manches devient « Manche suivante ». Le bandeau « Passer la manche » est aussi proposé pendant l'introduction.
+- Réalisation : tests. `RoundIntroTests` (moteur), scénarios `RoundIntro` de `SnapshotsLeakTests` (manches décrites, et paire qui ne diffère que par le contenu de la manche annoncée, identique pour tous les rôles), limite de `description` dans `DescriptorProblemsTests`, tests du hub (annonce sans question, démarrage, double démarrage, message malformé), reprise après redémarrage pendant l'introduction (`TransparentResumeTests`), et `e2e/roundIntro.spec.ts` qui enchaîne une manche de quiz et une manche buzzer décrite.
 
 **Hors périmètre**
 - Un jingle d'introduction (US-E20-02).
