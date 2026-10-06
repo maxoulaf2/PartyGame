@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
+using PartyGame.Contracts;
 using PartyGame.Contracts.Serialization;
+using PartyGame.Server.Games;
+using PartyGame.Server.Hubs;
 
 namespace PartyGame.Server.Tests.Hubs;
 
@@ -106,5 +109,23 @@ internal static class HubClients
         var cancellationToken = TestContext.Current.CancellationToken;
         await clients.Client(connection.ConnectionId!).SendCoreAsync(Flush, [], cancellationToken);
         await flushed.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+    }
+
+    /// <summary>
+    /// Starts the game from the console of the game master, then the round it announces: what a test needs when it plays
+    /// the first round rather than its introduction.
+    /// </summary>
+    /// <param name="gameMaster">A connection announced as game master.</param>
+    /// <param name="game">The loop of the test server, which tells the round announced.</param>
+    /// <param name="cancellationToken">Cancels the calls.</param>
+    public static async Task<StartGameResult> StartGameAndFirstRoundAsync(this HubConnection gameMaster, GameLoop game, CancellationToken cancellationToken)
+    {
+        var result = await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, cancellationToken);
+        if (result.Refusal is null)
+        {
+            await gameMaster.InvokeAsync(GameHub.StartRound, new StartRoundRequest(game.State.CurrentRound!.Id), cancellationToken);
+        }
+
+        return result;
     }
 }

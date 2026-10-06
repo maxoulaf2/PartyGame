@@ -288,7 +288,7 @@ public sealed class PackMediaTests : IAsyncDisposable
         Assert.Null((await SelectAsync(gameMaster, packId)).Refusal);
         var joined = await (player ?? zoe!).InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
         Assert.Null(joined.Refusal);
-        var started = await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        var started = await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         Assert.Null(started.Refusal);
     }
 

@@ -1,5 +1,6 @@
 import type { Component } from 'svelte';
 import type { DisplayRoundView, GameMasterRoundView, PlayerRoundView } from '../shared/contracts';
+import { fr } from '../shared/i18n/fr';
 import type {
     DisplayViewProps,
     GameMasterViewProps,
@@ -38,6 +39,25 @@ export const modes = {
         gm: OpenQuestionGameMaster,
     },
 } satisfies { readonly [T in RoundViewType]: ModeViews<T> };
+
+/** What every page tells of a mode when one of its rounds is announced. */
+export interface ModeTexts {
+    readonly name: string;
+    readonly rule: string;
+}
+
+/**
+ * The name and rule of every mode, by the type of its rounds. Checked like the views: a mode
+ * without them fails `npm run check`.
+ */
+const modeTexts = fr.modes satisfies { readonly [T in RoundViewType]: ModeTexts };
+
+/** The name and rule of the mode of type `mode`, or null for a mode this build does not know. */
+export function findModeTexts(mode: string): ModeTexts | null {
+    const byMode: Readonly<Partial<Record<string, ModeTexts>>> = modeTexts;
+    // Own keys only, as for the views.
+    return Object.hasOwn(byMode, mode) ? (byMode[mode] ?? null) : null;
+}
 
 /** The views of a mode, as the pages use them, whatever the type of the round. */
 interface AnyModeViews {

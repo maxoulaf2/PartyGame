@@ -36,6 +36,8 @@ const round: RoundInfo = {
     number: 1,
     count: 2,
     title: 'Échauffement',
+    mode: 'quiz',
+    description: null,
 };
 
 const question = 'Quelle est la capitale de l’Australie ?';

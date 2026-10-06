@@ -3,4 +3,4 @@
 // change the C# types, then run `npm run generate:contracts` from client/.
 // </auto-generated>
 
-export type Phase = 'Lobby' | 'Round' | 'BetweenRounds' | 'Finished' | 'ResumePending';
+export type Phase = 'Lobby' | 'RoundIntro' | 'Round' | 'BetweenRounds' | 'Finished' | 'ResumePending';

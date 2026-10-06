@@ -12,20 +12,20 @@ public sealed class RoundFlowTests
     public static TheoryData<GamePhase> NotBetweenRounds => [GamePhase.Lobby, GamePhase.Round, GamePhase.Finished];
 
     [Fact]
-    public void Handle_StartGameWithRounds_StartsTheFirstRoundWithItsMode()
+    public void Handle_StartRoundAnnounced_StartsTheRoundWithItsMode()
     {
         // Given
-        var state = Games.InPhase(GamePhase.Lobby, "Zoé", "Max");
+        var state = Games.InPhase(GamePhase.RoundIntro, "Zoé", "Max");
 
         // When
-        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+        var transition = Games.Engine.Handle(state, Games.StartRound(state), Games.Context());
 
         // Then
         Assert.Null(transition.Rejection);
         var started = transition.State;
         Assert.Equal(GamePhase.Round, started.Phase);
         var round = Assert.IsType<PlayedRound>(started.CurrentRound);
-        Assert.Equal(0, round.Index);
+        Assert.Equal((state.CurrentRound!.Id, 0), (round.Id, round.Index));
         var roundState = Assert.IsType<FakeRoundState>(round.State);
         Assert.Equal(("Échauffement", Games.Now + FakeMode.CountdownDuration), (roundState.Title, roundState.CountdownDueAt));
         Assert.Equal(["start with 2 players"], roundState.Inputs);
@@ -33,13 +33,13 @@ public sealed class RoundFlowTests
     }
 
     [Fact]
-    public void Handle_StartGameWithRounds_MarksTheTimersOfTheModeWithTheRound()
+    public void Handle_StartRound_MarksTheTimersOfTheModeWithTheRound()
     {
         // Given
-        var state = Games.InPhase(GamePhase.Lobby, "Zoé");
+        var state = Games.InPhase(GamePhase.RoundIntro, "Zoé");
 
         // When
-        var transition = Games.Engine.Handle(state, Games.Start(), Games.Context());
+        var transition = Games.Engine.Handle(state, Games.StartRound(state), Games.Context());
 
         // Then
         var timer = Assert.IsType<ScheduleTimer>(Assert.Single(transition.Effects));
@@ -94,7 +94,7 @@ public sealed class RoundFlowTests
         Assert.Equal(state.CurrentRound!.Id, transition.State.CurrentRound!.Id);
         Assert.Equal(
             ["start with 2 players", $"player {Games.PlayerIdOf(2).Value} answers B"],
-            ((FakeRoundState)transition.State.CurrentRound.State).Inputs);
+            ((FakeRoundState)transition.State.CurrentRound.State!).Inputs);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public sealed class RoundFlowTests
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(["start with 1 players", "game master reveals"], ((FakeRoundState)transition.State.CurrentRound!.State).Inputs);
+        Assert.Equal(["start with 1 players", "game master reveals"], ((FakeRoundState)transition.State.CurrentRound!.State!).Inputs);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public sealed class RoundFlowTests
         state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Finish));
         state = Games.Accepted(state, Games.Join("Max", player: 2));
         Assert.Equal([FakeMode.AwardedPoints, 0], state.Players.Select(p => p.Score));
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
 
         // When
         state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Award));
@@ -199,7 +199,7 @@ public sealed class RoundFlowTests
         // Given: an intent of the first round, sent again once the second one started
         var first = Games.InPhase(GamePhase.Round, "Zoé");
         var state = Games.Accepted(first, Games.GameMasterActs(first, FakeGameMasterIntent.Finish));
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
 
         // When
         Transition[] transitions =
@@ -251,7 +251,7 @@ public sealed class RoundFlowTests
     {
         // Given
         var state = Games.InPhase(GamePhase.BetweenRounds, "Zoé");
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
 
         // When
         var transition = Games.Engine.Handle(state, Games.GameMasterActs(state, FakeGameMasterIntent.Finish), Games.Context());
@@ -263,7 +263,7 @@ public sealed class RoundFlowTests
     }
 
     [Fact]
-    public void Handle_NextRoundAfterTheFinishedRound_StartsTheNextRound()
+    public void Handle_NextRoundAfterTheFinishedRound_AnnouncesTheNextRound()
     {
         // Given
         var state = Games.InPhase(GamePhase.BetweenRounds, "Zoé", "Max");
@@ -271,17 +271,14 @@ public sealed class RoundFlowTests
         // When
         var transition = Games.Engine.Handle(state, Games.NextRound(state), Games.Context(seed: 43));
 
-        // Then
+        // Then: its game mode does not play it yet
         Assert.Null(transition.Rejection);
-        Assert.Equal(GamePhase.Round, transition.State.Phase);
+        Assert.Equal(GamePhase.RoundIntro, transition.State.Phase);
         var round = transition.State.CurrentRound!;
         Assert.Equal(1, round.Index);
         Assert.NotEqual(state.CurrentRound!.Id, round.Id);
-        var roundState = Assert.IsType<FakeRoundState>(round.State);
-        Assert.Equal("Finale", roundState.Title);
-        Assert.Equal(["start with 2 players"], roundState.Inputs);
-        var timer = Assert.IsType<ScheduleTimer>(Assert.Single(transition.Effects));
-        Assert.Equal(round.Id, timer.RoundId);
+        Assert.Null(round.State);
+        Assert.Empty(transition.Effects);
     }
 
     [Fact]
@@ -344,7 +341,7 @@ public sealed class RoundFlowTests
 
         // Then
         Assert.Null(transition.Rejection);
-        Assert.Equal(["start with 1 players", "timer fake-countdown"], ((FakeRoundState)transition.State.CurrentRound!.State).Inputs);
+        Assert.Equal(["start with 1 players", "timer fake-countdown"], ((FakeRoundState)transition.State.CurrentRound!.State!).Inputs);
     }
 
     [Fact]
@@ -429,7 +426,7 @@ public sealed class RoundFlowTests
         Assert.Null(transition.Rejection);
         var resumed = Assert.IsType<FakeRoundState>(transition.State.CurrentRound!.State);
         Assert.Equal("resume after 3 min", resumed.Inputs[^1]);
-        var dueAt = ((FakeRoundState)round.State).CountdownDueAt.AddMinutes(3);
+        var dueAt = ((FakeRoundState)round.State!).CountdownDueAt.AddMinutes(3);
         Assert.Equal(new ScheduleTimer(FakeMode.Countdown, dueAt) { RoundId = round.Id }, Assert.Single(transition.Effects));
     }
 

@@ -27,7 +27,7 @@ public sealed class PendingSnapshotsTests
                 Games.SavedAt.ToUnixTimeMilliseconds(),
                 Phase.Round,
                 Games.Pack.Title,
-                new RoundInfo(found.CurrentRound!.Id, 1, 2, "Échauffement"),
+                new RoundInfo(found.CurrentRound!.Id, 1, 2, "Échauffement", Mode: "", Description: null),
                 new RoundStep(1, 10),
                 PlayerCount: 3,
                 savedGame.MissingMedia),

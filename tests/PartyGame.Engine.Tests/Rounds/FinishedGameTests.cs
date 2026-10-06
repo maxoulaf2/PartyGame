@@ -22,7 +22,7 @@ public sealed class FinishedGameTests
     {
         // Given: the points of the last question of the last round, awarded at its reveal
         var state = Games.InPhase(GamePhase.BetweenRounds, "Zoé", "Max");
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
         state = Games.WithScores(state, 2000, 1000);
         state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Award));
 

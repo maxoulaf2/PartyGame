@@ -92,6 +92,7 @@ function fakeServer(options: { startFails?: boolean } = {}) {
                     method === 'ResolveSavedGame' ||
                     method === 'CheckSavedGameMedia' ||
                     method === 'NextRound' ||
+                    method === 'StartRound' ||
                     method === 'SkipRound' ||
                     method === 'ReturnToLobby' ||
                     method === 'ShowJoinCode' ||
@@ -692,6 +693,28 @@ describe('GameMasterSession', () => {
 
             expect(server.connection.invoke).not.toHaveBeenCalledWith(
                 'NextRound',
+                expect.anything(),
+            );
+        });
+    });
+
+    describe('startRound', () => {
+        it('names the round announced', async () => {
+            const { session, server } = await grantedSession();
+
+            const outcome = await session.startRound(roundId);
+
+            expect(outcome).toBe('sent');
+            expect(server.connection.invoke).toHaveBeenLastCalledWith('StartRound', { roundId });
+        });
+
+        it('sends nothing while disconnected', async () => {
+            const { session, server } = await grantedSession();
+            server.drop();
+
+            expect(await session.startRound(roundId)).toBe('unreachable');
+            expect(server.connection.invoke).not.toHaveBeenCalledWith(
+                'StartRound',
                 expect.anything(),
             );
         });

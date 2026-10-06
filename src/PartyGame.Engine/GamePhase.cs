@@ -8,6 +8,12 @@ public enum GamePhase
     /// <summary>Players join and wait for the game master to start the game.</summary>
     Lobby,
 
+    /// <summary>
+    /// A round is announced, its rule recalled: <see cref="GameState.CurrentRound"/> is that round, which its game mode does
+    /// not play until the game master starts it.
+    /// </summary>
+    RoundIntro,
+
     /// <summary>A round is in progress: the engine hands the inputs aimed at it to its game mode.</summary>
     Round,
 

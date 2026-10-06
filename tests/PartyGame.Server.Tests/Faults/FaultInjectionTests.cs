@@ -74,7 +74,7 @@ public sealed class FaultInjectionTests : IAsyncDisposable
         using var toDisplay = new ReceivedSnapshots(display);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
         using var toZoe = new ReceivedSnapshots(zoe);
-        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(Game, Ct)).Refusal);
         var first = Game.State.CurrentRound!.Id;
         await ShowQuestionAsync(gameMaster, first);
         await FlushAsync(display, gameMaster, zoe);
@@ -103,6 +103,7 @@ public sealed class FaultInjectionTests : IAsyncDisposable
         await gameMaster.InvokeAsync(GameHub.SkipRound, Message(new SkipRoundRequest(first)), Ct);
         await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
         var final = Game.State.CurrentRound!.Id;
+        await gameMaster.InvokeAsync(GameHub.StartRound, Message(new StartRoundRequest(final)), Ct);
         await ShowQuestionAsync(gameMaster, final);
         await PlayerIntents.SendAsync(zoe, clientSeq: 2, new QuizSubmitAnswer(final, 1, QuizChoiceLetter.A));
 
@@ -131,7 +132,7 @@ public sealed class FaultInjectionTests : IAsyncDisposable
         Assert.Null((await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct)).Refusal);
         await using var gameMaster = await HubClients.ConnectAsync(_factory!);
         await AnnounceAsync(gameMaster, Role.GameMaster, Code);
-        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(Game, Ct)).Refusal);
         var round = Game.State.CurrentRound!.Id;
         await ShowQuestionAsync(gameMaster, round);
 

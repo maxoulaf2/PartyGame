@@ -29,7 +29,7 @@ public sealed class Snapshots(GameModes modes)
             [.. state.Players.Select(p => new DisplayPlayer(p.Id, p.Nickname, p.IsConnected))],
             PackTitleOf(state),
             RoundInfoOf(state),
-            RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State, state) : null,
+            RoundInProgress(state) is var (mode, round) ? mode.ProjectForDisplay(round.State!, state) : null,
             RankingOf(state),
             state.JoinCodeShown,
             PreviewOf(state) is var (previewMode, preview, step, shown)
@@ -61,7 +61,7 @@ public sealed class Snapshots(GameModes modes)
             state.SelectedPackId,
             PackTitleOf(state),
             RoundInfoOf(state),
-            RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State, state) : null,
+            RoundInProgress(state) is var (mode, round) ? mode.ProjectForGameMaster(round.State!, state) : null,
             RankingOf(state),
             NextRoundTitleOf(state),
             state.CurrentRound?.IsSkipped ?? false,
@@ -90,13 +90,14 @@ public sealed class Snapshots(GameModes modes)
             player.Score,
             state.Players.Length,
             RoundInfoOf(state),
-            RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State, state, player) : null,
+            RoundInProgress(state) is var (mode, round) ? mode.ProjectForPlayer(round.State!, state, player) : null,
             StandingOf(state, player));
     }
 
     private static Phase PhaseOf(GameState state) => state.Phase switch
     {
         GamePhase.Lobby => Phase.Lobby,
+        GamePhase.RoundIntro => Phase.RoundIntro,
         GamePhase.Round => Phase.Round,
         GamePhase.BetweenRounds => Phase.BetweenRounds,
         GamePhase.Finished => Phase.Finished,
@@ -125,7 +126,7 @@ public sealed class Snapshots(GameModes modes)
                 PhaseOf(pending.Game),
                 PackTitleOf(pending.Game),
                 RoundInfoOf(pending.Game),
-                RoundInProgress(pending.Game) is var (mode, round) ? mode.StepOf(round.State) : null,
+                RoundInProgress(pending.Game) is var (mode, round) ? mode.StepOf(round.State!) : null,
                 pending.Game.Players.Length,
                 [.. pending.MissingMedia.Select(media => media.Value)])
             : null;
@@ -148,16 +149,20 @@ public sealed class Snapshots(GameModes modes)
             ]);
 
     /// <summary>
-    /// What every role knows of the round in progress, or of the round that just finished between two rounds and once the
-    /// game is finished; <see langword="null"/> before the first round.
+    /// What every role knows of the round announced or in progress, or of the round that just finished between two rounds
+    /// and once the game is finished; <see langword="null"/> before the first round.
     /// </summary>
     /// <param name="state">The current state.</param>
     public static RoundInfo? RoundInfoOf(GameState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return state.CurrentRound is { } round
-            ? new RoundInfo(round.Id, round.Index + 1, state.Rounds.Length, state.Rounds[round.Index].Title)
-            : null;
+        if (state.CurrentRound is not { } round)
+        {
+            return null;
+        }
+
+        var descriptor = state.Rounds[round.Index];
+        return new RoundInfo(round.Id, round.Index + 1, state.Rounds.Length, descriptor.Title, GameModes.TypeOf(descriptor), descriptor.Description);
     }
 
     /// <summary>

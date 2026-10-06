@@ -170,6 +170,7 @@ public sealed class DescriptorProblemsTests : IDisposable
     [InlineData("""{ "type": "quiz", "title": "Manche", "answerSeconds": 4, "questions": [Q] }""", "PackValueOutOfRange pack.json $.rounds[0].answerSeconds max=120 min=5")]
     [InlineData("""{ "type": "quiz", "title": "Manche", "points": 10001, "questions": [Q] }""", "PackValueOutOfRange pack.json $.rounds[0].points max=10000 min=0")]
     [InlineData("""{ "type": "quiz", "title": "Manche", "questions": [] }""", "PackItemCountOutOfRange pack.json $.rounds[0].questions max=50 min=1")]
+    [InlineData("""{ "type": "quiz", "title": "Manche", "description": "", "questions": [Q] }""", "PackTextLengthOutOfRange pack.json $.rounds[0].description max=300 min=1")]
     [InlineData("""{ "type": "quiz", "title": "Manche", "questions": [{ "text": "Question ?", "choices": [{ "text": "Oui", "correct": true }] }] }""",
         "PackItemCountOutOfRange pack.json $.rounds[0].questions[0].choices max=4 min=2")]
     [InlineData("""{ "type": "quiz", "title": "Manche", "questions": [{ "text": "Question ?", "choices": [{ "text": "", "correct": true }, { "text": "Non" }] }] }""",
@@ -181,6 +182,21 @@ public sealed class DescriptorProblemsTests : IDisposable
 
         // Then
         Assert.Equal([problem], Describe(pack));
+    }
+
+    [Theory]
+    [InlineData(300, true)]
+    [InlineData(301, false)]
+    public void Load_DescriptionOfARound_IsLimitedTo300Characters(int length, bool valid)
+    {
+        // Given
+        var round = $$"""{ "type": "quiz", "title": "Manche", "description": "{{new string('é', length)}}", "questions": [{{ValidQuestion}}] }""";
+
+        // When
+        var pack = _packs.Load(Pack(round));
+
+        // Then
+        Assert.Equal(valid ? [] : ["PackTextLengthOutOfRange pack.json $.rounds[0].description max=300 min=1"], Describe(pack));
     }
 
     [Fact]

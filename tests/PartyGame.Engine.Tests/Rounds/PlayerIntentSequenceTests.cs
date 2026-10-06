@@ -20,7 +20,7 @@ public sealed class PlayerIntentSequenceTests
         // Then: the number is the player's own, and the mode got the intent
         Assert.Null(transition.Rejection);
         Assert.Equal([3L, 0L], transition.State.Players.Select(p => p.LastClientSeq));
-        Assert.Contains($"player {Games.PlayerIdOf(1).Value} answers A", ((FakeRoundState)transition.State.CurrentRound!.State).Inputs);
+        Assert.Contains($"player {Games.PlayerIdOf(1).Value} answers A", ((FakeRoundState)transition.State.CurrentRound!.State!).Inputs);
     }
 
     [Fact]

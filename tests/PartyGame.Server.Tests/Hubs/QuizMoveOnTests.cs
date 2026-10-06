@@ -62,7 +62,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         // Her answer, the only one expected, locks the answers.
         await AnswerAsync(zoe, 1, QuizChoiceLetter.A);
@@ -97,7 +97,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
         await using var max = await JoinAsync("Max");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         await AnswerAsync(zoe, 1, QuizChoiceLetter.A);
         // What the previous intents sent is received first: only what follows is recorded.
@@ -132,7 +132,7 @@ public sealed class QuizMoveOnTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await SendAsync(gameMaster, new QuizSkipQuestion(RoundId, 1));
         await SendAsync(gameMaster, new QuizSkipQuestion(RoundId, 2));
         await PresentAsync(gameMaster, 3);

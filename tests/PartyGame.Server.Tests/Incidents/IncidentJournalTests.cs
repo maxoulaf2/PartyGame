@@ -6,8 +6,8 @@ namespace PartyGame.Server.Tests.Incidents;
 
 public sealed class IncidentJournalTests
 {
-    private static readonly RoundInfo _warmUp = new(new RoundId(Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e")), Number: 1, Count: 2, "Échauffement");
-    private static readonly RoundInfo _final = new(new RoundId(Guid.Parse("7c9e6679-7425-40de-944b-e07fc1f90ae7")), Number: 2, Count: 2, "Finale");
+    private static readonly RoundInfo _warmUp = new(new RoundId(Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e")), Number: 1, Count: 2, "Échauffement", Mode: "quiz", Description: null);
+    private static readonly RoundInfo _final = new(new RoundId(Guid.Parse("7c9e6679-7425-40de-944b-e07fc1f90ae7")), Number: 2, Count: 2, "Finale", Mode: "quiz", Description: null);
 
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 3, 21, 0, 0, TimeSpan.Zero));
     private readonly IncidentJournal _journal;
@@ -78,7 +78,7 @@ public sealed class IncidentJournalTests
         _journal.Record(IncidentCode.EffectFailed, round: null);
         for (var number = 1; number < IncidentJournal.Capacity; number++)
         {
-            _journal.Record(IncidentCode.RoundHandlerFailed, new RoundInfo(new RoundId(Guid.NewGuid()), number, IncidentJournal.Capacity, "Manche"));
+            _journal.Record(IncidentCode.RoundHandlerFailed, new RoundInfo(new RoundId(Guid.NewGuid()), number, IncidentJournal.Capacity, "Manche", Mode: "quiz", Description: null));
         }
 
         _journal.Record(IncidentCode.EffectFailed, round: null);

@@ -69,7 +69,8 @@ internal static class QuizGames
             Media = [.. rounds.SelectMany(r => r.Questions).Select(q => q.Image).OfType<MediaPath>().Distinct()],
         };
         var lobby = Games.Accepted(Games.Accepted(Games.LobbyWith(nicknames), Games.Loaded(pack)), Games.Select(PackId));
-        return Accepted(lobby, Games.Start(), seed);
+        var announced = Accepted(lobby, Games.Start(), seed);
+        return Accepted(announced, Games.StartRound(announced), seed);
     }
 
     /// <summary>

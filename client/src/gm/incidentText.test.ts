@@ -47,6 +47,8 @@ describe('incidentRoundText', () => {
             number: 2,
             count: 3,
             title: 'Cinéma',
+            mode: 'quiz',
+            description: null,
         };
 
         expect(incidentRoundText(incident({ round }))).toBe('Manche 2/3 : Cinéma');
@@ -59,6 +61,8 @@ describe('incidentRoundText', () => {
             number: 1,
             count: 2,
             title: 'Drapeaux',
+            mode: 'quiz',
+            description: null,
         };
 
         expect(incidentRoundText(incident({ code: 'DisplayMediaFailed', round, step: 4 }))).toBe(

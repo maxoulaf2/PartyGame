@@ -5,11 +5,6 @@
 
 import type { RoundId } from './RoundId';
 
-export interface RoundInfo {
+export interface StartRoundRequest {
     readonly roundId: RoundId;
-    readonly number: number;
-    readonly count: number;
-    readonly title: string;
-    readonly mode: string;
-    readonly description: string | null;
 }

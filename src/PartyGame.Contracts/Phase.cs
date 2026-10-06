@@ -8,6 +8,12 @@ public enum Phase
     /// <summary>Players join and wait for the game master to start the game.</summary>
     Lobby,
 
+    /// <summary>
+    /// A round of the pack is announced, its rule recalled, and the game master has yet to start it: its game mode does not
+    /// play it yet.
+    /// </summary>
+    RoundIntro,
+
     /// <summary>A round of the pack is in progress, played by its game mode.</summary>
     Round,
 

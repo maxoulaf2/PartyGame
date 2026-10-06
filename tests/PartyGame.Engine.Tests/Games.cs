@@ -132,6 +132,17 @@ internal static class Games
 
     public static NextRound NextRound(GameState state) => new(state.CurrentRound!.Id, Now);
 
+    public static StartRound StartRound(GameState state) => new(state.CurrentRound!.Id, Now);
+
+    /// <summary>
+    /// The state once the game master asked for the next round, between two rounds, and started it after its introduction.
+    /// </summary>
+    public static GameState NextRoundStarted(GameState state)
+    {
+        var announced = Accepted(state, NextRound(state), seed: 43);
+        return Accepted(announced, StartRound(announced));
+    }
+
     public static SkipRound SkipRound(GameState state) => new(state.CurrentRound!.Id, Now);
 
     public static ReturnToLobby ReturnToLobby(GameState state) => new(state.GameId, Now);
@@ -172,8 +183,8 @@ internal static class Games
     }
 
     /// <summary>
-    /// A game of <see cref="Pack"/> with the given players, in the given phase: the first round in progress, between
-    /// the two rounds, or finished.
+    /// A game of <see cref="Pack"/> with the given players, in the given phase: the first round announced or in progress,
+    /// between the two rounds, or finished.
     /// </summary>
     public static GameState InPhase(GamePhase phase, params string[] nicknames) => PlayedUpTo(phase, LobbyWith(nicknames));
 
@@ -182,13 +193,12 @@ internal static class Games
     /// </summary>
     public static GameState InLastRound(params string[] nicknames)
     {
-        var state = InPhase(GamePhase.BetweenRounds, nicknames);
-        return Accepted(state, NextRound(state), seed: 43);
+        return NextRoundStarted(InPhase(GamePhase.BetweenRounds, nicknames));
     }
 
     /// <summary>
-    /// Plays a lobby whose selected pack has two rounds up to the given phase: the first round in progress, between the two
-    /// rounds, or finished. Waiting for a decision of the game master, the game found is in its first round.
+    /// Plays a lobby whose selected pack has two rounds up to the given phase: the first round announced or in progress,
+    /// between the two rounds, or finished. Waiting for a decision of the game master, the game found is in its first round.
     /// </summary>
     public static GameState PlayedUpTo(GamePhase phase, GameState lobby)
     {
@@ -203,6 +213,12 @@ internal static class Games
         }
 
         var state = Accepted(lobby, Start());
+        if (phase == GamePhase.RoundIntro)
+        {
+            return state;
+        }
+
+        state = Accepted(state, StartRound(state));
         if (phase == GamePhase.Round)
         {
             return state;
@@ -214,7 +230,7 @@ internal static class Games
             return state;
         }
 
-        state = Accepted(state, NextRound(state), seed: 43);
+        state = NextRoundStarted(state);
         return Accepted(state, GameMasterActs(state, FakeGameMasterIntent.Finish));
     }
 

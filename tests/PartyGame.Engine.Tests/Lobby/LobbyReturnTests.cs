@@ -38,7 +38,7 @@ public sealed class LobbyReturnTests
         state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Award));
         state = Games.Accepted(state, Games.PlayerActs(state, player: 1, "answers A"));
         state = Games.Accepted(state, Games.SkipRound(state));
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
         state = Games.Accepted(state, Games.SkipRound(state));
         state = Games.Accepted(state, Games.Join("Léa", player: 3));
 
@@ -91,7 +91,7 @@ public sealed class LobbyReturnTests
         var started = Games.Accepted(state, Games.Start(), seed: 43);
 
         // Then
-        Assert.Equal(GamePhase.Round, started.Phase);
+        Assert.Equal(GamePhase.RoundIntro, started.Phase);
         Assert.Equal(0, started.CurrentRound!.Index);
     }
 

@@ -75,7 +75,7 @@ public sealed class RankingSnapshotsTests
         // Given: Max joined between the two rounds, and scored in the last one
         var state = Games.InPhase(GamePhase.BetweenRounds, "Zoé");
         state = Games.Accepted(state, Games.Join("Max", player: 2));
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
         state = Games.Accepted(Games.WithScores(state, 1000, 0), Games.GameMasterActs(state, FakeGameMasterIntent.Award));
         state = Games.Accepted(state, Games.GameMasterActs(state, FakeGameMasterIntent.Finish));
 

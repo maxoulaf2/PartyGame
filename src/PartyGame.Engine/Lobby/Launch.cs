@@ -5,8 +5,8 @@ using PartyGame.Engine.Rounds;
 namespace PartyGame.Engine.Lobby;
 
 /// <summary>
-/// Start of the game by the game master, once: the pack chosen is fixed, and its first round starts. Registration stays
-/// open afterwards.
+/// Start of the game by the game master, once: the pack chosen is fixed, and its first round is announced. Registration
+/// stays open afterwards.
 /// </summary>
 internal static class Launch
 {
@@ -45,6 +45,6 @@ internal static class Launch
             return Transition.Rejected(state, RejectionReason.GameModeMissing);
         }
 
-        return RoundFlow.Start(started, index: 0, modes, context);
+        return RoundFlow.Announce(started, index: 0, context);
     }
 }

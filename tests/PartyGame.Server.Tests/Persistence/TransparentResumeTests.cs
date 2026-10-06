@@ -115,6 +115,46 @@ public sealed class TransparentResumeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task ResolveSavedGame_ResumeDuringTheIntroduction_EveryScreenFindsTheIntroductionAgain()
+    {
+        // Given: the server stopped while the first round was announced
+        var first = CreateFactory(PreviousCode, mode: null);
+        string token;
+        await using (var phone = await HubClients.ConnectAsync(first))
+        await using (var console = await HubClients.ConnectAsync(first))
+        {
+            token = (await phone.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct)).Token!;
+            await AnnounceAsync(console, Role.GameMaster, PreviousCode);
+            Assert.Null((await console.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        }
+
+        var announced = first.Services.GetRequiredService<GameLoop>().State.CurrentRound!.Id;
+        await first.DisposeAsync();
+        Restart(mode: null);
+        await using var display = await HubClients.ConnectAsync(_factory!);
+        await AnnounceAsync(display, Role.Display, code: null);
+        await using var gameMaster = await HubClients.ConnectAsync(_factory!);
+        await AnnounceAsync(gameMaster, Role.GameMaster, Code);
+        await FlushAsync(display, gameMaster);
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.ResolveSavedGame, new ResolveSavedGameRequest(Game.State.PendingGame!.Game.GameId, Resume: true), Ct);
+        await using var zoe = await HubClients.ConnectAsync(_factory!);
+        using var toZoe = new ReceivedSnapshots(zoe);
+        Assert.Null((await zoe.InvokeAsync<ResumeSessionResult>(GameHub.ResumeSession, new ResumeSessionRequest(token), Ct)).Refusal);
+
+        // Then: the same round announced on every screen, which the game master then starts
+        await FlushAsync(display, gameMaster, zoe);
+        Assert.Equal((Phase.RoundIntro, announced), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round!.RoundId));
+        Assert.Equal((Phase.RoundIntro, announced), (toGameMaster.GameMaster[^1].Phase, toGameMaster.GameMaster[^1].Round!.RoundId));
+        Assert.Equal((Phase.RoundIntro, announced), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round!.RoundId));
+        await gameMaster.InvokeAsync(GameHub.StartRound, new StartRoundRequest(announced), Ct);
+        Assert.Equal((GamePhase.Round, announced), (Game.State.Phase, Game.State.CurrentRound!.Id));
+    }
+
+    [Fact]
     public async Task ResolveSavedGame_ResumeDuringTheCountdown_LocksTheAnswersAtTheNewDeadline()
     {
         // Given
@@ -177,7 +217,7 @@ public sealed class TransparentResumeTests : IAsyncDisposable
 
         await using var gameMaster = await HubClients.ConnectAsync(factory);
         await AnnounceAsync(gameMaster, Role.GameMaster, PreviousCode);
-        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(factory.Services.GetRequiredService<GameLoop>(), Ct)).Refusal);
         var roundId = factory.Services.GetRequiredService<GameLoop>().State.CurrentRound!.Id;
         if (mode is not null)
         {

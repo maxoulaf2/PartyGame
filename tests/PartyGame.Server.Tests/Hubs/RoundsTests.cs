@@ -53,7 +53,7 @@ public sealed class RoundsTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task StartGame_WithRounds_ShowsTheFirstRoundAndTheViewOfItsModeOnEveryInterface()
+    public async Task StartGame_WithRounds_AnnouncesTheFirstRoundOnEveryInterfaceWithoutItsQuestions()
     {
         // Given
         await using var display = await HubClients.ConnectAsync(_factory);
@@ -68,9 +68,40 @@ public sealed class RoundsTests : IAsyncDisposable
         // When
         Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
 
+        // Then: the round and its mode, but nothing of its questions, not even on the console
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
+        var round = new RoundInfo(Game.State.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement", Mode: "quiz", Description: null);
+        Assert.Equal((Phase.RoundIntro, round, null), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round, toDisplay.Display[^1].RoundView));
+        Assert.Equal((Phase.RoundIntro, round, null), (toGameMaster.GameMaster[^1].Phase, toGameMaster.GameMaster[^1].Round, toGameMaster.GameMaster[^1].RoundView));
+        Assert.Equal((Phase.RoundIntro, round, null), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round, toZoe.Player[^1].RoundView));
+        var question = new Secret("Question ?", Audience.Everyone);
+        LeakAssert.NoSecretReceived(Viewer.Display, toDisplay.Json, question);
+        LeakAssert.NoSecretReceived(Viewer.GameMaster, toGameMaster.Json, question);
+        LeakAssert.NoSecretReceived(Viewer.PhoneOf("Zoé"), toZoe.Json, question);
+        Assert.DoesNotContain(LoggedEvent.ReadAll(_logs), e => e.Template.StartsWith("Round {RoundNumber} of {RoundCount} started", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StartRound_Announced_ShowsTheViewOfItsModeOnEveryInterface()
+    {
+        // Given
+        await using var display = await HubClients.ConnectAsync(_factory);
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await AnnounceAsync(display, Role.Display);
+        await JoinAsync(zoe, "Zoé");
+        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
+        using var toDisplay = new ReceivedSnapshots(display);
+        using var toGameMaster = new ReceivedSnapshots(gameMaster);
+        using var toZoe = new ReceivedSnapshots(zoe);
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.StartRound, Message(new StartRoundRequest(Game.State.CurrentRound!.Id)), Ct);
+
         // Then
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe));
-        var round = new RoundInfo(Game.State.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement");
+        var round = new RoundInfo(Game.State.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement", Mode: "quiz", Description: null);
         Assert.Equal((Phase.Round, round), (toDisplay.Display[^1].Phase, toDisplay.Display[^1].Round));
         Assert.Equal((Phase.Round, round), (toGameMaster.GameMaster[^1].Phase, toGameMaster.GameMaster[^1].Round));
         Assert.Equal((Phase.Round, round), (toZoe.Player[^1].Phase, toZoe.Player[^1].Round));
@@ -84,21 +115,67 @@ public sealed class RoundsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task StartRound_TwiceAtOnce_StartsTheRoundOnce()
+    {
+        // Given: two game master consoles during the introduction
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var secondGameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await JoinAsync(zoe, "Zoé");
+        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        var request = Message(new StartRoundRequest(Game.State.CurrentRound!.Id));
+        var version = Game.State.Version;
+
+        // When
+        await Task.WhenAll(
+            gameMaster.InvokeAsync(GameHub.StartRound, request, Ct),
+            secondGameMaster.InvokeAsync(GameHub.StartRound, request, Ct));
+
+        // Then
+        Assert.Equal((GamePhase.Round, 0), (Game.State.Phase, Game.State.CurrentRound!.Index));
+        Assert.Equal(version + 1, Game.State.Version);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"roundId":"pas-un-guid"}""")]
+    [InlineData("null")]
+    public async Task StartRound_Malformed_IsIgnoredWithAWarning(string json)
+    {
+        // Given
+        await using var gameMaster = await ConnectGameMasterAsync();
+        await using var zoe = await HubClients.ConnectAsync(_factory);
+        await JoinAsync(zoe, "Zoé");
+        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        var state = Game.State;
+
+        // When
+        await gameMaster.InvokeAsync(GameHub.StartRound, JsonDocument.Parse(json).RootElement, Ct);
+
+        // Then
+        Assert.Same(state, Game.State);
+        Assert.Contains(
+            LoggedEvent.ReadAll(_logs),
+            e => e.Level == "Warning" && e.Template.StartsWith("Malformed", StringComparison.Ordinal)
+                && e.Line.Contains(GameHub.StartRound, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Rounds_PlayedToTheEnd_GoBetweenRoundsThenFinishTheGame()
     {
         // Given
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
 
         // When: a player acts, the game master ends the round, asks for the next one and ends it as well
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
-        var played = (TestQuizRound)Game.State.CurrentRound!.State;
+        var played = (TestQuizRound)Game.State.CurrentRound!.State!;
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
         var betweenRounds = Game.State.Phase;
-        await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
+        await NextRoundStartedAsync(gameMaster, first);
         var second = Game.State.CurrentRound!;
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(second.Id, 1)), Ct);
 
@@ -124,7 +201,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
         await JoinAsync(max, "Max");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
         using var toDisplay = new ReceivedSnapshots(display);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
@@ -161,11 +238,11 @@ public sealed class RoundsTests : IAsyncDisposable
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
         await JoinAsync(max, "Max");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
-        await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
+        await NextRoundStartedAsync(gameMaster, first);
         var last = Game.State.CurrentRound!.Id;
         using var toDisplay = new ReceivedSnapshots(display);
         using var toGameMaster = new ReceivedSnapshots(gameMaster);
@@ -202,10 +279,10 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var lea = await HubClients.ConnectAsync(_factory);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
-        await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct);
+        await NextRoundStartedAsync(gameMaster, first);
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(Game.State.CurrentRound!.Id, 1)), Ct);
         using var toDisplay = new ReceivedSnapshots(display);
         using var toLea = new ReceivedSnapshots(lea);
@@ -221,14 +298,14 @@ public sealed class RoundsTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task NextRound_TwiceAtOnce_StartsTheNextRoundOnce()
+    public async Task NextRound_TwiceAtOnce_AnnouncesTheNextRoundOnce()
     {
         // Given: two game master consoles between the rounds
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var secondGameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
         await gameMaster.InvokeAsync(GameHub.SendGameMasterRoundIntent, Message<GameMasterRoundIntent>(new QuizSkipQuestion(first, 1)), Ct);
         var version = Game.State.Version;
@@ -239,7 +316,7 @@ public sealed class RoundsTests : IAsyncDisposable
             secondGameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(first)), Ct));
 
         // Then
-        Assert.Equal((GamePhase.Round, 1), (Game.State.Phase, Game.State.CurrentRound!.Index));
+        Assert.Equal((GamePhase.RoundIntro, 1), (Game.State.Phase, Game.State.CurrentRound!.Index));
         Assert.Equal(version + 1, Game.State.Version);
     }
 
@@ -250,7 +327,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var state = Game.State;
 
         // When: the console, which identified no player, tries to act for one
@@ -280,7 +357,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var state = Game.State;
 
         // When
@@ -304,7 +381,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(first, 1, QuizChoiceLetter.A));
         using var toDisplay = new ReceivedSnapshots(display);
@@ -335,7 +412,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var secondGameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var first = Game.State.CurrentRound!.Id;
         var version = Game.State.Version;
 
@@ -359,7 +436,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var state = Game.State;
 
         // When
@@ -382,7 +459,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await AnnounceAsync(display, Role.Display);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var ended = Game.State.GameId;
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(Game.State.CurrentRound!.Id, 1, QuizChoiceLetter.A));
         using var toDisplay = new ReceivedSnapshots(display);
@@ -410,7 +487,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var secondGameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var request = Message(new ReturnToLobbyRequest(Game.State.GameId));
         var version = Game.State.Version;
 
@@ -434,7 +511,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var state = Game.State;
 
         // When
@@ -451,6 +528,7 @@ public sealed class RoundsTests : IAsyncDisposable
     [Theory]
     [InlineData(GameHub.SendGameMasterRoundIntent)]
     [InlineData(GameHub.NextRound)]
+    [InlineData(GameHub.StartRound)]
     [InlineData(GameHub.SkipRound)]
     [InlineData(GameHub.ReturnToLobby)]
     public async Task GameMasterRoundIntent_NotAuthenticatedAsGameMaster_IsIgnored(string method)
@@ -459,7 +537,7 @@ public sealed class RoundsTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         await JoinAsync(zoe, "Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         var roundId = Game.State.CurrentRound!.Id;
         if (method == GameHub.NextRound)
         {
@@ -470,6 +548,7 @@ public sealed class RoundsTests : IAsyncDisposable
         var message = method switch
         {
             GameHub.NextRound => Message(new NextRoundRequest(roundId)),
+            GameHub.StartRound => Message(new StartRoundRequest(roundId)),
             GameHub.SkipRound => Message(new SkipRoundRequest(roundId)),
             GameHub.ReturnToLobby => Message(new ReturnToLobbyRequest(Game.State.GameId)),
             _ => Message<GameMasterRoundIntent>(new QuizSkipQuestion(roundId, 1)),
@@ -505,6 +584,15 @@ public sealed class RoundsTests : IAsyncDisposable
     {
         var result = await connection.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest(nickname), Ct);
         Assert.Null(result.Refusal);
+    }
+
+    /// <summary>
+    /// Asks for the round after <paramref name="finished"/>, then starts it once announced.
+    /// </summary>
+    private async Task NextRoundStartedAsync(HubConnection gameMaster, RoundId finished)
+    {
+        await gameMaster.InvokeAsync(GameHub.NextRound, Message(new NextRoundRequest(finished)), Ct);
+        await gameMaster.InvokeAsync(GameHub.StartRound, Message(new StartRoundRequest(Game.State.CurrentRound!.Id)), Ct);
     }
 
     private Task FlushAsync(HubConnection connection) => HubClients.FlushAsync<GameHub>(_factory, connection);

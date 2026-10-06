@@ -38,7 +38,7 @@ public sealed class MediaLocator(GameModes modes)
             return new MediaLocation(media, Round: null, Step: null);
         }
 
-        var step = modes.For(state.Rounds[round.Index]).LocateMedia(round.State, media);
+        var step = modes.For(state.Rounds[round.Index]).LocateMedia(round.State!, media);
         return new MediaLocation(media, Snapshots.RoundInfoOf(state), step);
     }
 }

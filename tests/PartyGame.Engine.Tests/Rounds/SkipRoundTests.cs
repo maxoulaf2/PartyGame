@@ -94,12 +94,12 @@ public sealed class SkipRoundTests
         state = Games.Accepted(state, Games.SkipRound(state));
 
         // When
-        var next = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        var next = Games.NextRoundStarted(state);
 
         // Then
         Assert.Equal(GamePhase.Round, next.Phase);
         Assert.Equal((1, false), (next.CurrentRound!.Index, next.CurrentRound.IsSkipped));
-        Assert.Equal(["start with 1 players"], ((FakeRoundState)next.CurrentRound.State).Inputs);
+        Assert.Equal(["start with 1 players"], ((FakeRoundState)next.CurrentRound.State!).Inputs);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class SkipRoundTests
         // Given: a skip of the first round, delayed until the second one started
         var first = Games.InPhase(GamePhase.Round, "Zoé");
         var state = Games.Accepted(first, Games.GameMasterActs(first, FakeGameMasterIntent.Finish));
-        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        state = Games.NextRoundStarted(state);
 
         // When
         var transition = Games.Engine.Handle(state, Games.SkipRound(first), Games.Context());

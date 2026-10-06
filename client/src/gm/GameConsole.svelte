@@ -68,7 +68,8 @@
             · {countText(fr.gm.playersConnected, connectedCount)}{/if}
     </p>
 
-    {#if snapshot.phase === 'Round' && snapshot.round !== null && session.incidents.isFailing(snapshot.round.roundId)}
+    <!-- A round announced may fail to start: it is skipped the same way. -->
+    {#if (snapshot.phase === 'Round' || snapshot.phase === 'RoundIntro') && snapshot.round !== null && session.incidents.isFailing(snapshot.round.roundId)}
         <!-- Keyed: a confirmation open for one round never skips another. -->
         {#key snapshot.round.roundId}
             <SkipRoundBanner roundId={snapshot.round.roundId} {session} {interactive} />

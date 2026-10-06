@@ -10,6 +10,7 @@ public sealed class SnapshotsTests
     public static TheoryData<GamePhase, Phase> Phases => new()
     {
         { GamePhase.Lobby, Phase.Lobby },
+        { GamePhase.RoundIntro, Phase.RoundIntro },
         { GamePhase.Round, Phase.Round },
         { GamePhase.BetweenRounds, Phase.BetweenRounds },
         { GamePhase.Finished, Phase.Finished },
@@ -288,7 +289,7 @@ public sealed class SnapshotsTests
         // Given
         var state = Games.InPhase(GamePhase.Round, "Zoé", "Max");
         state = Games.Accepted(state, Games.PlayerActs(state, player: 1, "answers A"));
-        var expected = new RoundInfo(state.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement");
+        var expected = new RoundInfo(state.CurrentRound!.Id, Number: 1, Count: 2, "Échauffement", Mode: "", Description: null);
 
         // When
         var display = Games.Snapshots.ForDisplay(state);
@@ -302,6 +303,32 @@ public sealed class SnapshotsTests
             ["start with 2 players", $"player {Games.PlayerIdOf(1).Value} answers A"],
             Assert.IsType<FakeGameMasterView>(gameMaster.RoundView).Inputs);
         Assert.Equal((expected, new FakePlayerView("Max", 2)), (player.Round, player.RoundView));
+    }
+
+    [Fact]
+    public void ForEachRole_RoundIntro_ShowsTheRoundAnnouncedWithItsModeAndDescriptionButNoView()
+    {
+        // Given
+        var pack = Games.ValidPack(
+            "decrite",
+            "Soirée décrite",
+            [new FakeRoundDescriptor { Title = "Échauffement" }, new FakeRoundDescriptor { Title = "Finale", Description = "Tout se joue ici." }]);
+        var lobby = Games.Accepted(Games.Accepted(Games.LobbyWith("Zoé"), Games.Loaded(Games.Pack, pack)), Games.Select(pack.Id));
+        var state = Games.PlayedUpTo(GamePhase.BetweenRounds, lobby);
+        state = Games.Accepted(state, Games.NextRound(state), seed: 43);
+        var expected = new RoundInfo(state.CurrentRound!.Id, Number: 2, Count: 2, "Finale", Mode: "", "Tout se joue ici.");
+
+        // When
+        (RoundInfo? Round, object? View)[] projected =
+        [
+            (Games.Snapshots.ForDisplay(state).Round, Games.Snapshots.ForDisplay(state).RoundView),
+            (Games.Snapshots.ForGameMaster(state).Round, Games.Snapshots.ForGameMaster(state).RoundView),
+            (Games.Snapshots.ForPlayer(state, state.Players[0]).Round, Games.Snapshots.ForPlayer(state, state.Players[0]).RoundView),
+        ];
+
+        // Then
+        Assert.All(projected, p => Assert.Equal((expected, null), p));
+        Assert.Null(Games.Snapshots.ForGameMaster(state).NextRoundTitle);
     }
 
     [Fact]
@@ -326,7 +353,7 @@ public sealed class SnapshotsTests
     {
         // Given
         var state = Games.InPhase(phase, "Zoé");
-        var expected = new RoundInfo(state.CurrentRound!.Id, number, Count: 2, title);
+        var expected = new RoundInfo(state.CurrentRound!.Id, number, Count: 2, title, Mode: "", Description: null);
 
         // When
         (RoundInfo? Round, object? View)[] projected =

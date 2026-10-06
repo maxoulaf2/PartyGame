@@ -65,7 +65,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await using var max = await JoinAsync("Max");
         await using var lea = await JoinAsync("Léa");
-        Assert.Null((await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct)).Refusal);
+        Assert.Null((await gameMaster.StartGameAndFirstRoundAsync(Game, Ct)).Refusal);
         // What the previous intents sent is received first: only what follows is recorded.
         await Task.WhenAll(FlushAsync(display), FlushAsync(gameMaster), FlushAsync(zoe), FlushAsync(max));
         using var toDisplay = new ReceivedSnapshots(display);
@@ -108,7 +108,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
         await using var max = await JoinAsync("Max");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         await AnswerAsync(zoe, QuizChoiceLetter.B);
         var version = Game.State.Version;
@@ -129,7 +129,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         var joined = await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         var answer = new QuizSubmitAnswer(RoundId, 1, QuizChoiceLetter.B);
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, answer);
@@ -157,7 +157,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await HubClients.ConnectAsync(_factory);
         var joined = await zoe.InvokeAsync<JoinResult>(GameHub.JoinGame, new JoinRequest("Zoé"), Ct);
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         await PlayerIntents.SendAsync(zoe, clientSeq: 1, new QuizSubmitAnswer(RoundId, 1, QuizChoiceLetter.B));
         var code = Game.State.ReconnectionCodes[joined.PlayerId!.Value];
@@ -178,7 +178,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         // What the previous intents sent is received first: only what follows is recorded.
         await Task.WhenAll(FlushAsync(display), FlushAsync(zoe));
@@ -208,7 +208,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         // Given
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
 
         // When: the only participant answers, then the countdown would have run out
@@ -233,7 +233,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var zoe = await JoinAsync("Zoé");
         await using var max = await JoinAsync("Max");
         await using var lea = await JoinAsync("Léa");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await PresentAsync(gameMaster, 1);
         await AnswerAsync(zoe, QuizChoiceLetter.A);
         await AnswerAsync(max, QuizChoiceLetter.B);
@@ -281,7 +281,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         await using var gameMaster = await ConnectGameMasterAsync();
         await AnnounceAsync(display, Role.Display);
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
         await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A));
         // What the previous intents sent is received first: only what follows is recorded.
@@ -315,7 +315,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         // Given: the first choice shows, the second one not yet
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
         await SendAsync(gameMaster, new QuizShowChoice(RoundId, 1, QuizChoiceLetter.A));
         var state = Game.State;
@@ -333,7 +333,7 @@ public sealed class QuizAnswersTests : IAsyncDisposable
         // Given
         await using var gameMaster = await ConnectGameMasterAsync();
         await using var zoe = await JoinAsync("Zoé");
-        await gameMaster.InvokeAsync<StartGameResult>(GameHub.StartGame, Ct);
+        await gameMaster.StartGameAndFirstRoundAsync(Game, Ct);
         await SendAsync(gameMaster, new QuizShowQuestion(RoundId, 1));
         var state = Game.State;
 

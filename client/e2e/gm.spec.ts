@@ -65,6 +65,8 @@ const firstRound: RoundInfo = {
     number: 1,
     count: 3,
     title: 'Échauffement',
+    mode: 'quiz',
+    description: null,
 };
 
 /** The first of three rounds in progress, shown by `roundView`. */

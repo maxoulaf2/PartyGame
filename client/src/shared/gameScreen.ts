@@ -10,6 +10,7 @@ export interface GameProgress<V extends { readonly type: string }> {
 /**
  * The screen a page shows for its snapshot, whatever its role:
  * - `lobby`: the game has not started;
+ * - `roundIntro`: `round` is announced, its rule recalled, and the game master has yet to start it;
  * - `round`: a round is in progress, shown by `component`, the view of its mode for the role;
  * - `betweenRounds`: `round` just finished, and the next one waits for the game master;
  * - `finished`: the last round is over;
@@ -18,6 +19,7 @@ export interface GameProgress<V extends { readonly type: string }> {
  */
 export type GameScreen<V, C> =
     | { readonly kind: 'lobby' }
+    | { readonly kind: 'roundIntro'; readonly round: RoundInfo }
     | {
           readonly kind: 'round';
           readonly round: RoundInfo;
@@ -42,6 +44,8 @@ export function selectGameScreen<V extends { readonly type: string }, C>(
     switch (snapshot.phase) {
         case 'Lobby':
             return { kind: 'lobby' };
+        case 'RoundIntro':
+            return round ? { kind: 'roundIntro', round } : waiting;
         case 'Round': {
             const component = round && roundView ? findView(roundView) : null;
             return round && roundView && component !== null

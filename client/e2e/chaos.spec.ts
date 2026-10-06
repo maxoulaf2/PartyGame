@@ -30,6 +30,8 @@ async function startGame(gm: Page): Promise<void> {
         .getByRole('dialog', { name: fr.gm.start.confirmTitle })
         .getByRole('button', { name: fr.gm.start.confirm, exact: true })
         .click();
+    // The first round is announced first.
+    await gm.getByRole('button', { name: fr.gm.startRound.action }).click();
 }
 
 /** The game master shows the question, then its two choices: the answers open. */
@@ -255,6 +257,7 @@ test.describe('with a fault injected in the answers', () => {
             .click();
         await expect(gm.getByText(fr.gm.skipRound.skipped)).toBeVisible();
         await gm.getByRole('button', { name: fr.gm.nextRound.action }).click();
+        await gm.getByRole('button', { name: fr.gm.startRound.action }).click();
         await showWholeQuestion(gm);
         await answer(players[0].page, 'B');
         await expect(display.getByText(answeredText(1))).toBeVisible();

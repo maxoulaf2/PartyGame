@@ -14,6 +14,8 @@ export const fr = {
         // Where the preview of a pack stands, on the TV screen and the console.
         previewPosition: 'Manche {number}/{count} · Question {step}/{steps}',
         roundEnded: 'Fin de la manche {number}/{count}',
+        // Read by screen readers on the introduction of a round: the rule of its mode.
+        ruleLabel: 'Règle',
         finished: 'Partie terminée',
         // The ranking shown between two rounds, written by rankText and standingText.
         rankingAfter: 'Classement après la manche {number}',
@@ -244,10 +246,6 @@ export const fr = {
             selectFailed: 'Le choix du pack n’a pas abouti : réessayez.',
             // Once the game is started, its pack is fixed.
             played: 'Pack : {title}',
-            // The game modes, by the type of activity of the packs; an unknown one shows as is.
-            modes: {
-                quiz: 'Quiz QCM',
-            },
             // What a value should be, inserted in the message of PackValueTypeInvalid.
             valueTypes: {
                 string: 'un texte entre guillemets',
@@ -386,10 +384,15 @@ export const fr = {
         // Shown instead of the whole console when it could not render, until the next update.
         consoleUnavailable: 'Console momentanément indisponible : elle revient d’elle-même.',
         nextRound: {
-            // The round the game master starts next, with its title from the pack.
+            // The round the game master announces next, with its title from the pack.
             upcoming: 'Manche suivante ({number}/{count}) : {title}',
-            action: 'Lancer la manche suivante',
-            hint: 'La manche suivante démarre sur tous les écrans dès que vous la lancez.',
+            action: 'Manche suivante',
+            hint: 'Tous les écrans annoncent la manche suivante et rappellent sa règle, avant qu’elle commence.',
+        },
+        // While a round is announced: the game master tells its rule, then starts it.
+        startRound: {
+            action: 'Commencer la manche',
+            hint: 'Prenez le temps d’expliquer la règle : la manche démarre sur tous les écrans dès que vous la commencez.',
         },
         // Offered while the round in progress keeps failing: the server could not handle several
         // of its actions. Players and TV screen see the usual end of round, nothing about it.
@@ -581,9 +584,13 @@ export const fr = {
             stop: 'Touchez l’écran pour arrêter',
         },
     },
-    // The texts of each game mode, under the type of its rounds.
+    // The texts of each game mode, under the type of its rounds. `name` and `rule` are shown when
+    // one of its rounds is announced, and the name in the list of the packs; the registry checks
+    // that every mode has them.
     modes: {
         quiz: {
+            name: 'Quiz QCM',
+            rule: 'Lisez la question et ses propositions sur l’écran, puis touchez la bonne lettre sur votre téléphone avant la fin du compte à rebours. Un seul choix, définitif.',
             question: 'Question {number}/{count}',
             // Read by screen readers: the choices of the question, each with its letter.
             choicesLabel: 'Propositions',
@@ -672,6 +679,8 @@ export const fr = {
             },
         },
         buzzer: {
+            name: 'Questions buzzer',
+            rule: 'Buzzez sur votre téléphone dès que vous connaissez la réponse, puis donnez-la à voix haute. Le plus rapide a la main, et une mauvaise réponse vous bloque pour la question.',
             question: 'Question {number}/{count}',
             // The player who has the hand, on every screen but their own phone.
             hasHand: '{nickname} a la main',
@@ -723,6 +732,8 @@ export const fr = {
             },
         },
         blindtest: {
+            name: 'Blind test',
+            rule: 'Écoutez l’extrait et buzzez dès que vous reconnaissez le morceau, puis donnez le titre et l’artiste à voix haute. Chacun rapporte ses points, et vous n’avez qu’un buzz par extrait.',
             track: 'Extrait {number} / {count}',
             // The player who has the hand, on every screen but their own phone.
             hasHand: '{nickname} a la main',
@@ -797,6 +808,8 @@ export const fr = {
             },
         },
         openquestion: {
+            name: 'Question ouverte',
+            rule: 'Tapez votre réponse sur votre téléphone avant la fin du compte à rebours. Une seule réponse, sans retour en arrière : les petites fautes de frappe sont pardonnées.',
             question: 'Question {number}/{count}',
             // Shown once the countdown locked the answers.
             timeUp: 'Temps écoulé',

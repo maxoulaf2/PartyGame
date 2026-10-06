@@ -7,6 +7,8 @@ const finale = {
     number: 2,
     count: 3,
     title: 'Finale',
+    mode: 'quiz',
+    description: null,
 };
 
 function found(game: Partial<GameMasterSavedGame>): GameMasterSavedGame {

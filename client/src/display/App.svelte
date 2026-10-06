@@ -25,6 +25,7 @@
     import JoinCodeCorner from './JoinCodeCorner.svelte';
     import LobbyScreen from './LobbyScreen.svelte';
     import RankingScreen from './RankingScreen.svelte';
+    import RoundIntroScreen from './RoundIntroScreen.svelte';
 
     const game = new SnapshotStore<DisplaySnapshot>();
     const connection = createGameConnection();
@@ -42,7 +43,8 @@
     // The lobby shows the QR code already, as does the screen it shows while waiting.
     const joinCodeAddress = $derived(
         game.current?.joinCodeShown &&
-            (screen?.kind === 'round' ||
+            (screen?.kind === 'roundIntro' ||
+                screen?.kind === 'round' ||
                 screen?.kind === 'betweenRounds' ||
                 screen?.kind === 'finished')
             ? game.current.joinAddress
@@ -128,6 +130,8 @@
                 steps: preview.step.count,
             })}
         </p>
+    {:else if screen?.kind === 'roundIntro'}
+        <RoundIntroScreen round={screen.round} />
     {:else if game.current && screen?.kind === 'betweenRounds'}
         <RankingScreen snapshot={game.current} round={screen.round} />
     {:else if game.current && screen?.kind === 'finished'}
