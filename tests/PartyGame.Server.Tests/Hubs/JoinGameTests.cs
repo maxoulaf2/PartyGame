@@ -52,7 +52,7 @@ public sealed class JoinGameTests : IAsyncDisposable
         Assert.Equal(new PlayerSnapshot(Game.State.GameId, 2, Phase.Lobby, result.PlayerId.Value, "Zoé", Score: 0, PlayerCount: 1, Round: null, RoundView: null, Standing: null, FinishedAt: null, PausedAt: null), snapshot);
         var player = Assert.Single(Game.State.Players);
         Assert.True(player.IsConnected);
-        Assert.Equal(result.PlayerId, Game.State.PlayerTokens[new Engine.PlayerToken(result.Token!)]);
+        Assert.Equal(result.PlayerId, Game.State.PlayerTokens[new Engine.State.PlayerToken(result.Token!)]);
         Assert.Equal([HubGroups.Player(result.PlayerId.Value)], await GroupsOfAsync(connection, result.PlayerId.Value));
     }
 

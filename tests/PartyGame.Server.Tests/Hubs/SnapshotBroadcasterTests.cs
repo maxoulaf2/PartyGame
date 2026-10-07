@@ -6,6 +6,7 @@ using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Projections;
+using PartyGame.Engine.State;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Tests.Games;
 

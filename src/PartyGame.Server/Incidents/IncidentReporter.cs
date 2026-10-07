@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using PartyGame.Contracts;
-using PartyGame.Engine;
 using PartyGame.Engine.Projections;
+using PartyGame.Engine.State;
 using PartyGame.Server.Hubs;
 
 namespace PartyGame.Server.Incidents;

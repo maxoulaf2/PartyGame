@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 using System.Net;
-using PartyGame.Engine;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Server.Network;
 

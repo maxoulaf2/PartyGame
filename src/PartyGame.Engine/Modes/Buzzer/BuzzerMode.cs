@@ -2,9 +2,10 @@ using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Packs;
-using PartyGame.Engine.Buzzers;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.Modes.Common;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Modes.Buzzer;
 
@@ -248,7 +249,7 @@ public sealed class BuzzerMode : GameMode<BuzzerRoundDescriptor, BuzzerRound>
         }
 
         var revealed = round with { Buzzer = round.Buzzer.Close(), Revealed = true };
-        return new(revealed, round.Phase == BuzzerPhase.Arbitrating ? [new CancelTimer(Buzzers.Buzzer.ArbitrationTimer)] : []);
+        return new(revealed, round.Phase == BuzzerPhase.Arbitrating ? [new CancelTimer(Common.Buzzer.ArbitrationTimer)] : []);
     }
 
     /// <summary>

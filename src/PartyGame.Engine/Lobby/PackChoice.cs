@@ -1,4 +1,6 @@
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.Packs;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Lobby;
 
@@ -27,8 +29,7 @@ internal static class PackChoice
 
         if (string.Equals(state.SelectedPackId, pack.Id, StringComparison.Ordinal))
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         return new Transition(state with { SelectedPackId = pack.Id }, []);

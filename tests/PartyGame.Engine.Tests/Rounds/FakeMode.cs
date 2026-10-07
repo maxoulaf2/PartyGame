@@ -3,6 +3,7 @@ using PartyGame.Contracts;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Tests.Rounds;
 

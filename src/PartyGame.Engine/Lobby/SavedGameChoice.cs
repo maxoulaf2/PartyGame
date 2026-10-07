@@ -1,6 +1,7 @@
 using PartyGame.Contracts;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Lobby;
 
@@ -43,8 +44,7 @@ internal static class SavedGameChoice
 
         if (pending.MissingMedia.SequenceEqual(check.MissingMedia))
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         return new Transition(state with { PendingGame = pending with { MissingMedia = check.MissingMedia } }, []);

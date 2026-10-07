@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.NetworkInformation;
-using PartyGame.Engine;
+using PartyGame.Engine.State;
 using PartyGame.Server.Network;
 using static PartyGame.Server.Tests.Network.TestInterfaces;
 

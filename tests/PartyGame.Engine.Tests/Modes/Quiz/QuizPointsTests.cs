@@ -1,6 +1,7 @@
 using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Quiz;
 using PartyGame.Engine.Modes.Quiz;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Tests.Modes.Quiz;
 

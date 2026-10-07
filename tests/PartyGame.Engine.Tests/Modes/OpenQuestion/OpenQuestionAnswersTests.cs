@@ -4,6 +4,7 @@ using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes.OpenQuestion;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Tests.Modes.OpenQuestion;
 

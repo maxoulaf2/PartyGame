@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PartyGame.Contracts;
-using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.State;
 using PartyGame.Server.Games;
 
 namespace PartyGame.Server.Tests.Games;

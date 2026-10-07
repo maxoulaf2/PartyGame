@@ -3,10 +3,10 @@ using PartyGame.Contracts;
 using PartyGame.Contracts.BlindTest;
 using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Packs;
-using PartyGame.Engine.Audio;
-using PartyGame.Engine.Buzzers;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.Modes.Common;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Modes.BlindTest;
 
@@ -181,7 +181,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         var round = new BlindTestRound(descriptor, stepIndex)
         {
             // Opened once and closed: the phase of a track revealed.
-            Buzzer = new Buzzers.Buzzer { Opening = 1, IsClosed = true },
+            Buzzer = new Common.Buzzer { Opening = 1, IsClosed = true },
         };
         return new(round with { Playback = round.Playback with { StartsAt = excerptStartsAt } }, HasExcerpt: true);
     }
@@ -288,7 +288,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
 
         var transition = Reveal(round, context);
         return round.Phase == BlindTestPhase.Arbitrating
-            ? transition with { Effects = [new CancelTimer(Buzzers.Buzzer.ArbitrationTimer)] }
+            ? transition with { Effects = [new CancelTimer(Common.Buzzer.ArbitrationTimer)] }
             : transition;
     }
 
@@ -332,7 +332,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
             return RoundTransition.Rejected(round, RejectionReason.QuestionMismatch);
         }
 
-        ImmutableArray<Effect> effects = round.Phase == BlindTestPhase.Arbitrating ? [new CancelTimer(Buzzers.Buzzer.ArbitrationTimer)] : [];
+        ImmutableArray<Effect> effects = round.Phase == BlindTestPhase.Arbitrating ? [new CancelTimer(Common.Buzzer.ArbitrationTimer)] : [];
         return MoveOn(round, effects);
     }
 

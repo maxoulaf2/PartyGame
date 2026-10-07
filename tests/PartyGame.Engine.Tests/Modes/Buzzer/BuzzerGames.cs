@@ -5,9 +5,11 @@ using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Packs;
 using PartyGame.Engine.Projections;
+using PartyGame.Engine.State;
 using PartyGame.Tests.Shared.Leaks;
-using EngineBuzzer = PartyGame.Engine.Buzzers.Buzzer;
+using EngineBuzzer = PartyGame.Engine.Modes.Common.Buzzer;
 
 namespace PartyGame.Engine.Tests.Modes.Buzzer;
 

@@ -1,5 +1,5 @@
 using PartyGame.Contracts;
-using PartyGame.Engine;
+using PartyGame.Engine.State;
 using PartyGame.Server.Incidents;
 
 namespace PartyGame.Server.Tests.Games;

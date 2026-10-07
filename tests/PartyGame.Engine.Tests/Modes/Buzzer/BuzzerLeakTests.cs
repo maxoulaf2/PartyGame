@@ -1,5 +1,6 @@
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.State;
 using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Engine.Tests.Modes.Buzzer;

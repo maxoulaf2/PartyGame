@@ -1,3 +1,5 @@
+using PartyGame.Engine.State;
+
 namespace PartyGame.Engine.Tests.Lobby;
 
 public sealed class AddressChoiceTests

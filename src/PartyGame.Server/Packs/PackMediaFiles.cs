@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
 using PartyGame.Content;
 using PartyGame.Contracts.Packs;
-using PartyGame.Engine;
+using PartyGame.Engine.Packs;
+using PartyGame.Engine.State;
 using PartyGame.Server.Games;
 using PartyGame.Server.Persistence;
 

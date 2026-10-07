@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using PartyGame.Engine.Effects;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine;
 
@@ -15,6 +16,13 @@ public sealed record Transition(GameState State, ImmutableArray<Effect> Effects)
     /// The game loop logs it, and answers it to the sender of an input that waits for an answer.
     /// </summary>
     public RejectionReason? Rejection { get; private init; }
+
+    /// <summary>
+    /// Accepts an input that changes nothing: the same state instance tells the game loop that there is nothing to
+    /// broadcast.
+    /// </summary>
+    /// <param name="state">The state the input was handled in.</param>
+    public static Transition Unchanged(GameState state) => new(state, []);
 
     /// <summary>
     /// Rejects an input: same state instance, no effect.

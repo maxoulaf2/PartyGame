@@ -1,7 +1,9 @@
-using PartyGame.Engine.Audio;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.Modes.Common;
+using PartyGame.Engine.Packs;
 using PartyGame.Engine.Rounds;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine.Lobby;
 
@@ -69,9 +71,7 @@ internal static class PackPreviewing
             StepIndex = stepIndex,
             ExcerptStartsAt = show.PlayExcerpt ? context.Now + ExcerptPlayback.Lead : null,
         };
-
-        // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-        return shown == preview ? new Transition(state, []) : new Transition(state with { Preview = shown }, []);
+        return shown == preview ? Transition.Unchanged(state) : new Transition(state with { Preview = shown }, []);
     }
 
     public static Transition Stop(GameState state) =>
