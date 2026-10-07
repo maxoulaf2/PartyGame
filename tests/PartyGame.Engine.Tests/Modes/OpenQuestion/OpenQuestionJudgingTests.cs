@@ -126,7 +126,7 @@ public sealed class OpenQuestionJudgingTests
 
     private static GameState Presented() => OpenQuestionGames.Started(_rounds, _players);
 
-    private static int PlayerNumber(PartyGame.Contracts.PlayerId id) =>
+    private static int PlayerNumber(Contracts.PlayerId id) =>
         Enumerable.Range(1, _players.Length).Single(number => Games.PlayerIdOf(number) == id);
 
     private static void AssertRejected(GameState state, Func<GameState, GameInput> input, RejectionReason reason)

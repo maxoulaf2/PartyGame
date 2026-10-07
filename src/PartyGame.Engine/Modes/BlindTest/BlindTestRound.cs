@@ -32,7 +32,7 @@ public sealed record BlindTestRound(BlindTestRoundDescriptor Descriptor, int Tra
     /// <summary>
     /// The buzzer of the track in progress: closed until the game master plays its excerpt, a fresh one for each track.
     /// </summary>
-    public Common.Buzzer Buzzer { get; init; } = new();
+    public Buzzer Buzzer { get; init; } = new();
 
     /// <summary>
     /// The player whose answer gave the title of the track in progress, or <see langword="null"/>.

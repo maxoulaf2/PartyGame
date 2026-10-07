@@ -4,14 +4,14 @@ using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
-using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.QuizBuzzer;
 using PartyGame.Engine.Packs;
 using PartyGame.Engine.Projections;
 using PartyGame.Engine.State;
 using PartyGame.Tests.Shared.Leaks;
 using EngineBuzzer = PartyGame.Engine.Modes.Common.Buzzer;
 
-namespace PartyGame.Engine.Tests.Modes.Buzzer;
+namespace PartyGame.Engine.Tests.Modes.QuizBuzzer;
 
 /// <summary>
 /// Builds the rounds of buzzer questions and the games that play them, with the real buzzer mode.

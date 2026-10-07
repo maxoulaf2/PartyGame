@@ -1,9 +1,9 @@
 using PartyGame.Contracts.Packs;
-using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.QuizBuzzer;
 using PartyGame.Engine.State;
 using PartyGame.Tests.Shared.Leaks;
 
-namespace PartyGame.Engine.Tests.Modes.Buzzer;
+namespace PartyGame.Engine.Tests.Modes.QuizBuzzer;
 
 /// <summary>
 /// What the views of a round of buzzer questions may show to each viewer: the expected answer to the game master only, a

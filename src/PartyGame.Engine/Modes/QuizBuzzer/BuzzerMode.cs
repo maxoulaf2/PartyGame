@@ -7,7 +7,7 @@ using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes.Common;
 using PartyGame.Engine.State;
 
-namespace PartyGame.Engine.Modes.Buzzer;
+namespace PartyGame.Engine.Modes.QuizBuzzer;
 
 /// <summary>
 /// Plays the rounds of buzzer questions of the packs: the game master asks each question, which opens the buzzer, the

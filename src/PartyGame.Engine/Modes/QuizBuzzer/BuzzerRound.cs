@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 
-namespace PartyGame.Engine.Modes.Buzzer;
+namespace PartyGame.Engine.Modes.QuizBuzzer;
 
 /// <summary>
 /// State of a round of buzzer questions: the question in progress, its buzzer, and its reveal.

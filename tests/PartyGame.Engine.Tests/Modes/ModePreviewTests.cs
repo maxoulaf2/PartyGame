@@ -12,7 +12,7 @@ using PartyGame.Engine.Packs;
 using PartyGame.Engine.Projections;
 using PartyGame.Engine.State;
 using PartyGame.Engine.Tests.Modes.BlindTest;
-using PartyGame.Engine.Tests.Modes.Buzzer;
+using PartyGame.Engine.Tests.Modes.QuizBuzzer;
 using PartyGame.Engine.Tests.Modes.OpenQuestion;
 using PartyGame.Engine.Tests.Modes.Quiz;
 

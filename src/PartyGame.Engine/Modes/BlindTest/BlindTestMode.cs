@@ -181,7 +181,7 @@ public sealed class BlindTestMode : GameMode<BlindTestRoundDescriptor, BlindTest
         var round = new BlindTestRound(descriptor, stepIndex)
         {
             // Opened once and closed: the phase of a track revealed.
-            Buzzer = new Common.Buzzer { Opening = 1, IsClosed = true },
+            Buzzer = new Buzzer { Opening = 1, IsClosed = true },
         };
         return new(round with { Playback = round.Playback with { StartsAt = excerptStartsAt } }, HasExcerpt: true);
     }

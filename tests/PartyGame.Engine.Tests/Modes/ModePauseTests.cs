@@ -5,15 +5,12 @@ using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
-using PartyGame.Engine.Modes.BlindTest;
-using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.QuizBuzzer;
 using PartyGame.Engine.Modes.Common;
-using PartyGame.Engine.Modes.OpenQuestion;
-using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Engine.Projections;
 using PartyGame.Engine.State;
 using PartyGame.Engine.Tests.Modes.BlindTest;
-using PartyGame.Engine.Tests.Modes.Buzzer;
+using PartyGame.Engine.Tests.Modes.QuizBuzzer;
 using PartyGame.Engine.Tests.Modes.OpenQuestion;
 using PartyGame.Engine.Tests.Modes.Quiz;
 
@@ -44,7 +41,7 @@ public sealed class ModePauseTests
     public void PauseThenResume_EveryQuizPhase_ResumesAsAfterARestart()
     {
         var started = QuizGames.Started([QuizGames.Round(QuizGames.CapitalQuestion, QuizGames.LastQuestion)], _players);
-        AssertEveryPhase<QuizPhase>(
+        AssertEveryPhase(
             state => QuizGames.RoundOf(state).Phase,
             started,
             QuizGames.Answering(started, (1, QuizChoiceLetter.A)),
@@ -70,7 +67,7 @@ public sealed class ModePauseTests
     public void PauseThenResume_EveryOpenQuestionPhase_ResumesAsAfterARestart()
     {
         var started = OpenQuestionGames.Started([OpenQuestionGames.Round(OpenQuestionGames.PaintingQuestion, OpenQuestionGames.YearQuestion)], _players);
-        AssertEveryPhase<OpenQuestionPhase>(
+        AssertEveryPhase(
             state => OpenQuestionGames.RoundOf(state).Phase,
             started,
             OpenQuestionGames.Answering(started, (1, "Vinci")),
@@ -83,7 +80,7 @@ public sealed class ModePauseTests
     public void PauseThenResume_EveryBlindTestPhase_ResumesAsAfterARestart()
     {
         var started = BlindTestGames.Started(BlindTestGames.Round(BlindTestGames.Ode, BlindTestGames.Moon), _players);
-        AssertEveryPhase<BlindTestPhase>(
+        AssertEveryPhase(
             state => BlindTestGames.RoundOf(state).Phase,
             started,
             BlindTestGames.Played(started),

@@ -3,11 +3,11 @@ using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
-using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.QuizBuzzer;
 using PartyGame.Engine.State;
 using EngineBuzzer = PartyGame.Engine.Modes.Common.Buzzer;
 
-namespace PartyGame.Engine.Tests.Modes.Buzzer;
+namespace PartyGame.Engine.Tests.Modes.QuizBuzzer;
 
 /// <summary>
 /// A question of a round of buzzer questions: announced, asked by the game master, which opens the buzzer, then given to

@@ -1,4 +1,4 @@
-namespace PartyGame.Engine.Modes.Buzzer;
+namespace PartyGame.Engine.Modes.QuizBuzzer;
 
 /// <summary>
 /// Phase of the question in progress in a round of buzzer questions, derived from its buzzer.

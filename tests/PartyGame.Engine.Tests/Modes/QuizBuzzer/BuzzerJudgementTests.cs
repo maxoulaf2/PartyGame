@@ -1,11 +1,11 @@
 using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Effects;
-using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.QuizBuzzer;
 using PartyGame.Engine.State;
 using EngineBuzzer = PartyGame.Engine.Modes.Common.Buzzer;
 
-namespace PartyGame.Engine.Tests.Modes.Buzzer;
+namespace PartyGame.Engine.Tests.Modes.QuizBuzzer;
 
 /// <summary>
 /// The answer of the player who has the hand, judged by the game master: a correct one wins the points and reveals the

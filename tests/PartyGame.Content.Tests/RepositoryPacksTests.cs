@@ -3,7 +3,7 @@ using PartyGame.Contracts;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Modes.BlindTest;
-using PartyGame.Engine.Modes.Buzzer;
+using PartyGame.Engine.Modes.QuizBuzzer;
 using PartyGame.Engine.Modes.OpenQuestion;
 using PartyGame.Engine.Modes.Quiz;
 using PartyGame.Tests.Shared;
