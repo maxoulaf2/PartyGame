@@ -19,8 +19,7 @@ internal static class AddressChoice
 
         if (string.Equals(state.JoinAddress, choice.Address, StringComparison.Ordinal))
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         return new Transition(state with { JoinAddress = choice.Address }, []);

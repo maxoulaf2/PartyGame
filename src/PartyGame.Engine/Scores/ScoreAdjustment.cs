@@ -10,7 +10,7 @@ internal static class ScoreAdjustment
 {
     public static Transition Adjust(GameState state, AdjustScore request)
     {
-        if (state.Phase is not (GamePhase.RoundIntro or GamePhase.Round or GamePhase.BetweenRounds or GamePhase.Finished))
+        if (!state.IsInProgress && state.Phase != GamePhase.Finished)
         {
             return Transition.Rejected(state, RejectionReason.NotAdjustable);
         }
@@ -33,8 +33,7 @@ internal static class ScoreAdjustment
 
         if (request.NewScore == player.Score)
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         return new Transition(state with { Players = state.Players.Replace(player, player with { Score = request.NewScore }) }, []);

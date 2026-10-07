@@ -173,7 +173,7 @@ internal static class RoundFlow
     /// </summary>
     public static Transition Resume(GameState state, GameResumed resumed, GameModes modes, GameContext context) =>
         state.Phase != GamePhase.Round || state.PausedAt is not null
-            ? new Transition(state, [])
+            ? Transition.Unchanged(state)
             : ResumeRound(state, context.Now - resumed.SavedAt, modes, context);
 
     /// <summary>
@@ -231,8 +231,7 @@ internal static class RoundFlow
 
         if (!handled.IsFinished && ReferenceEquals(handled.State, round.State) && handled.Points.IsEmpty)
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, effects);
+            return Transition.Unchanged(state) with { Effects = effects };
         }
 
         var played = state with

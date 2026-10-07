@@ -10,7 +10,6 @@ internal static class JoinCodeVisibility
 {
     public static Transition Show(GameState state, ShowJoinCode show) =>
         state.JoinCodeShown == show.Shown
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            ? new Transition(state, [])
+            ? Transition.Unchanged(state)
             : new Transition(state with { JoinCodeShown = show.Shown }, []);
 }

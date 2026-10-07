@@ -43,8 +43,7 @@ internal static class SavedGameChoice
 
         if (pending.MissingMedia.SequenceEqual(check.MissingMedia))
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         return new Transition(state with { PendingGame = pending with { MissingMedia = check.MissingMedia } }, []);

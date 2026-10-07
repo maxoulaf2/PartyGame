@@ -70,6 +70,12 @@ public sealed record GameState(
     public ImmutableArray<RoundDescriptor> Rounds => Pack?.Rounds ?? [];
 
     /// <summary>
+    /// Whether the game is started and not finished yet: a round is announced, in progress, or just finished.
+    /// </summary>
+    [JsonIgnore] // read from the phase, which is persisted
+    public bool IsInProgress => Phase is GamePhase.RoundIntro or GamePhase.Round or GamePhase.BetweenRounds;
+
+    /// <summary>
     /// The game found saved when the server restarted, while <see cref="Phase"/> is <see cref="GamePhase.ResumePending"/>;
     /// <see langword="null"/> otherwise. Secret: only the game master gets a description of it.
     /// </summary>

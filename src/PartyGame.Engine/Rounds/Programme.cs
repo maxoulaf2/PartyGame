@@ -13,7 +13,7 @@ internal static class Programme
 {
     public static Transition Reorder(GameState state, ReorderRounds request)
     {
-        if (state.Phase is not (GamePhase.RoundIntro or GamePhase.Round or GamePhase.BetweenRounds))
+        if (!state.IsInProgress)
         {
             return Transition.Rejected(state, RejectionReason.NotReorderable);
         }
@@ -51,8 +51,7 @@ internal static class Programme
 
         if (request.NewOrder.SequenceEqual(order))
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         return new Transition(

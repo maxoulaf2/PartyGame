@@ -13,7 +13,7 @@ internal static class GamePause
 {
     public static Transition Handle(GameState state, PauseGame request, GameModes modes, GameContext context)
     {
-        if (state.Phase is not (GamePhase.RoundIntro or GamePhase.Round or GamePhase.BetweenRounds))
+        if (!state.IsInProgress)
         {
             return Transition.Rejected(state, RejectionReason.NotPausable);
         }

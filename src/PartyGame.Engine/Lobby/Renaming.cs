@@ -29,8 +29,7 @@ internal static class Renaming
 
         if (string.Equals(player.Nickname, nickname, StringComparison.Ordinal))
         {
-            // Accepted, but nothing changes: the same instance tells the loop that there is nothing to broadcast.
-            return new Transition(state, []);
+            return Transition.Unchanged(state);
         }
 
         var newState = state with { Players = state.Players.Replace(player, player with { Nickname = nickname }) };
