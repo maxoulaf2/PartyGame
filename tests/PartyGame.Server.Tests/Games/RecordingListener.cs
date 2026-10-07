@@ -1,4 +1,4 @@
-using PartyGame.Engine;
+using PartyGame.Engine.State;
 using PartyGame.Server.Games;
 
 namespace PartyGame.Server.Tests.Games;

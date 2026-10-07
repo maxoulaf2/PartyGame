@@ -6,6 +6,7 @@ using PartyGame.Engine.Modes.BlindTest;
 using PartyGame.Engine.Modes.Buzzer;
 using PartyGame.Engine.Modes.OpenQuestion;
 using PartyGame.Engine.Modes.Quiz;
+using PartyGame.Engine.State;
 using PartyGame.Engine.Tests.Modes.Quiz;
 using PartyGame.Engine.Tests.Rounds;
 using PartyGame.Tests.Shared.Leaks;

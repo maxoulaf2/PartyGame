@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using PartyGame.Contracts;
-using PartyGame.Engine;
+using PartyGame.Engine.State;
 using PartyGame.Server.Games;
 using PartyGame.Server.Hubs;
 using PartyGame.Server.Packs;

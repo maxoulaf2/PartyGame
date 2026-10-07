@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Modes.OpenQuestion;
+using PartyGame.Engine.State;
 using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Engine.Tests.Modes.OpenQuestion;

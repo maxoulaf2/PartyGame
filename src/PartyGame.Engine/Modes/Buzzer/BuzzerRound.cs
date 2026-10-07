@@ -26,7 +26,7 @@ public sealed record BuzzerRound(BuzzerRoundDescriptor Descriptor, int QuestionI
     /// <summary>
     /// The buzzer of the question in progress: closed until the game master asks it, a fresh one for each question.
     /// </summary>
-    public Buzzers.Buzzer Buzzer { get; init; } = new();
+    public Common.Buzzer Buzzer { get; init; } = new();
 
     /// <summary>
     /// Whether the TV screen shows the question in progress: asked, the game master may keep it hidden while they read it

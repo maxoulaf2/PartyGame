@@ -1,6 +1,7 @@
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes.BlindTest;
+using PartyGame.Engine.State;
 using PartyGame.Tests.Shared.Leaks;
 
 namespace PartyGame.Engine.Tests.Modes.BlindTest;

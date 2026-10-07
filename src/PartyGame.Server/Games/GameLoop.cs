@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using PartyGame.Contracts;
 using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.State;
 using PartyGame.Server.Incidents;
 
 namespace PartyGame.Server.Games;

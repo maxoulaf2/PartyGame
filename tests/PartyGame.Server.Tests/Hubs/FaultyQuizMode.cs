@@ -5,6 +5,7 @@ using PartyGame.Engine;
 using PartyGame.Engine.Inputs;
 using PartyGame.Engine.Modes;
 using PartyGame.Engine.Modes.Quiz;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Server.Tests.Hubs;
 

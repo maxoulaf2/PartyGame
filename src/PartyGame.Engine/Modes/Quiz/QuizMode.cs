@@ -5,6 +5,7 @@ using PartyGame.Contracts.Packs;
 using PartyGame.Contracts.Quiz;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Inputs;
+using PartyGame.Engine.State;
 using PartyGame.Engine.Text;
 
 namespace PartyGame.Engine.Modes.Quiz;

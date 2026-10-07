@@ -2,7 +2,8 @@ using PartyGame.Contracts.Buzzer;
 using PartyGame.Contracts.Packs;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Modes.Buzzer;
-using EngineBuzzer = PartyGame.Engine.Buzzers.Buzzer;
+using PartyGame.Engine.State;
+using EngineBuzzer = PartyGame.Engine.Modes.Common.Buzzer;
 
 namespace PartyGame.Engine.Tests.Modes.Buzzer;
 

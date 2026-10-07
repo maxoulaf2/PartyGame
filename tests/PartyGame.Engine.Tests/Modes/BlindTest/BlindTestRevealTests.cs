@@ -1,9 +1,10 @@
 using PartyGame.Contracts.BlindTest;
 using PartyGame.Contracts.Packs;
-using PartyGame.Engine.Audio;
 using PartyGame.Engine.Effects;
 using PartyGame.Engine.Modes.BlindTest;
-using EngineBuzzer = PartyGame.Engine.Buzzers.Buzzer;
+using PartyGame.Engine.Modes.Common;
+using PartyGame.Engine.State;
+using EngineBuzzer = PartyGame.Engine.Modes.Common.Buzzer;
 
 namespace PartyGame.Engine.Tests.Modes.BlindTest;
 

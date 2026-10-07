@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using PartyGame.Contracts.Serialization;
 using PartyGame.Engine.Modes;
+using PartyGame.Engine.State;
 
 namespace PartyGame.Engine;
 

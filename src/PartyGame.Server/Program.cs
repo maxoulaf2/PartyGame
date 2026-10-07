@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Options;
 using PartyGame.Contracts.Serialization;
+using PartyGame.Engine.State;
 using PartyGame.Server;
 using PartyGame.Server.Faults;
 using PartyGame.Server.FrontEnd;
@@ -59,7 +60,7 @@ try
         app.Services.GetRequiredService<IOptions<NetworkOptions>>().Value.Port,
         app.Services.GetRequiredService<GameMasterCode>(),
         packs,
-        game.State.Phase == PartyGame.Engine.GamePhase.ResumePending)));
+        game.State.Phase == GamePhase.ResumePending)));
 
     app.Run();
     return 0;
